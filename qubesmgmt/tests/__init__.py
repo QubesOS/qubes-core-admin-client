@@ -34,7 +34,7 @@ class QubesTest(qubesmgmt.app.QubesBase):
         #: actual calls made
         self.actual_calls = []
 
-    def _do_qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None):
         call_key = (dest, method, arg, payload)
         self.actual_calls.append(call_key)
         if call_key not in self.expected_calls:

@@ -47,7 +47,7 @@ class PropertyHolder(object):
         self._properties = None
         self._properties_help = None
 
-    def _do_qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None):
         '''
         Call into qubesd using appropriate mechanism. This method should be
         defined by a subclass.
@@ -60,7 +60,7 @@ class PropertyHolder(object):
         '''
         # have the actual implementation at Qubes() instance
         if self.app:
-            return self.app._do_qubesd_call(dest, method, arg, payload)
+            return self.app.qubesd_call(dest, method, arg, payload)
         raise NotImplementedError
 
     def _parse_qubesd_response(self, response_data):
@@ -81,7 +81,7 @@ class PropertyHolder(object):
 
     def property_list(self):
         if self._properties is None:
-            properties_str = self._do_qubesd_call(
+            properties_str = self.qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'List',
                 None,
@@ -93,7 +93,7 @@ class PropertyHolder(object):
     def property_is_default(self, item):
         if item.startswith('_'):
             raise AttributeError(item)
-        property_str = self._do_qubesd_call(
+        property_str = self.qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'Get',
                 item,
@@ -108,7 +108,7 @@ class PropertyHolder(object):
     def __getattr__(self, item):
         if item.startswith('_'):
             raise AttributeError(item)
-        property_str = self._do_qubesd_call(
+        property_str = self.qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'Get',
                 item,
@@ -123,7 +123,7 @@ class PropertyHolder(object):
         if key.startswith('_') or key in dir(self):
             return super(PropertyHolder, self).__setattr__(key, value)
         if value is DEFAULT:
-            self._do_qubesd_call(
+            self.qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'Reset',
                 key,
@@ -131,7 +131,7 @@ class PropertyHolder(object):
         else:
             if isinstance(value, qubesmgmt.vm.QubesVM):
                 value = value._name
-            self._do_qubesd_call(
+            self.qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'Set',
                 key,
@@ -140,7 +140,7 @@ class PropertyHolder(object):
     def __delattr__(self, name):
         if name.startswith('_') or name in dir(self):
             return super(PropertyHolder, self).__delattr__(name)
-        self._do_qubesd_call(
+        self.qubesd_call(
             self._method_dest,
             self._method_prefix + 'Reset',
             name

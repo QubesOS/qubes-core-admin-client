@@ -37,7 +37,7 @@ class VMCollection(object):
     def refresh_cache(self, force=False):
         if not force and self._vm_list is not None:
             return
-        vm_list_data = self.app._do_qubesd_call(
+        vm_list_data = self.app.qubesd_call(
             'dom0',
             'mgmt.vm.List'
         )
@@ -83,7 +83,7 @@ class QubesBase(qubesmgmt.PropertyHolder):
 
 
 class QubesLocal(QubesBase):
-    def _do_qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None):
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             client_socket.connect(QUBESD_SOCK)
@@ -103,7 +103,7 @@ class QubesLocal(QubesBase):
 
 
 class QubesRemote(QubesBase):
-    def _do_qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None):
         service_name = method
         if arg is not None:
             service_name += '+' + arg
