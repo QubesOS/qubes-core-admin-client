@@ -63,11 +63,12 @@ class PropertyHolder(object):
             return self.app.qubesd_call(dest, method, arg, payload)
         raise NotImplementedError
 
-    def _parse_qubesd_response(self, response_data):
+    @staticmethod
+    def _parse_qubesd_response(response_data):
         if response_data[0:2] == b'\x30\x00':
             return response_data[2:]
         elif response_data[0:2] == b'\x32\x00':
-            (_, exc_type, traceback, format_string, args) = \
+            (_, exc_type, _traceback, format_string, args) = \
                 response_data.split(b'\x00', 4)
             # drop last field because of terminating '\x00'
             args = [arg.decode() for arg in args.split(b'\x00')[:-1]]
@@ -98,7 +99,7 @@ class PropertyHolder(object):
                 self._method_prefix + 'Get',
                 item,
                 None)
-        (default, value) = property_str.split(b' ', 1)
+        (default, _value) = property_str.split(b' ', 1)
         assert default.startswith(b'default=')
         is_default_str = default.split(b'=')[1]
         is_default = ast.literal_eval(is_default_str.decode('ascii'))
@@ -113,7 +114,7 @@ class PropertyHolder(object):
                 self._method_prefix + 'Get',
                 item,
                 None)
-        (default, value) = property_str.split(' ', 1)
+        (_default, value) = property_str.split(' ', 1)
         if value[0] == '\'':
             return ast.literal_eval('b' + value)
         else:
@@ -130,6 +131,7 @@ class PropertyHolder(object):
                 None)
         else:
             if isinstance(value, qubesmgmt.vm.QubesVM):
+                # pylint: disable=protected-access
                 value = value._name
             self.qubesd_call(
                 self._method_dest,
@@ -146,7 +148,7 @@ class PropertyHolder(object):
             name
         )
 
-
+# pylint: disable=wrong-import-position
 import qubesmgmt.app
 
 if os.path.exists(qubesmgmt.app.QUBESD_SOCK):
