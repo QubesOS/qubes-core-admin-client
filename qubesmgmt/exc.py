@@ -23,4 +23,3 @@ class QubesException(Exception):
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
         super(QubesException, self).__init__(message_format % args, **kwargs)
-
