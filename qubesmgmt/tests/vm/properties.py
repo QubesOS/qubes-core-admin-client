@@ -121,7 +121,7 @@ class TC_00_Properties(qubesmgmt.tests.vm.VMTestCase):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Reset', 'prop1', None)] = \
             b'0\x00'
-        self.vm.prop1 = qubesmgmt.property.DEFAULT
+        self.vm.prop1 = qubesmgmt.DEFAULT
         self.assertAllCalled()
 
     def test_031_reset(self):

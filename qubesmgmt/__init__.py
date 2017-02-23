@@ -24,9 +24,7 @@ import os
 
 import qubesmgmt.exc
 
-
-class property(object):
-    DEFAULT = object()
+DEFAULT = object()
 
 
 class PropertyHolder(object):
@@ -124,7 +122,7 @@ class PropertyHolder(object):
     def __setattr__(self, key, value):
         if key.startswith('_') or key in dir(self):
             return super(PropertyHolder, self).__setattr__(key, value)
-        if value is property.DEFAULT:
+        if value is DEFAULT:
             self._do_qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'Reset',
