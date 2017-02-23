@@ -1,0 +1,31 @@
+sudo: required
+dist: trusty
+language: python
+python:
+  - '2.7'
+  - '3.4'
+  - '3.5'
+#install:
+#  - pip install --quiet -r ci/requirements.txt
+#  - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
+script:
+  - pylint --rcfile=ci/pylintrc qubesmgmt
+  - python -m unittest discover -p '*.py' -v
+#  - ~/qubes-builder/scripts/travis-build
+#env:
+# - DIST_DOM0=fc23 USE_QUBES_REPO_VERSION=3.2 USE_QUBES_REPO_TESTING=1
+
+#after_success:
+#  - ~/qubes-builder/scripts/travis-deploy
+
+# don't build tags which are meant for code signing only
+branches:
+  except:
+    - /.*_.*/
+
+addons:
+  apt:
+    packages:
+      - debootstrap
+
+# vim: ts=2 sts=2 sw=2 et
