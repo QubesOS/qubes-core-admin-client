@@ -44,10 +44,10 @@ class VMCollection(object):
         new_vm_list = {}
         # FIXME: this will probably change
         for vm_data in vm_list_data.splitlines():
-            vm_name, props = vm_data.split(b' ', 1)
-            props = props.split(b' ')
+            vm_name, props = vm_data.decode('ascii').split(' ', 1)
+            props = props.split(' ')
             new_vm_list[vm_name] = dict(
-                [vm_prop.split(b'=', 1) for vm_prop in props])
+                [vm_prop.split('=', 1) for vm_prop in props])
 
         self._vm_list = new_vm_list
 

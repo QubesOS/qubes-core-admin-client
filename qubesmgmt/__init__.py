@@ -73,6 +73,7 @@ class PropertyHolder(object):
             # drop last field because of terminating '\x00'
             args = [arg.decode() for arg in args.split(b'\x00')[:-1]]
             format_string = format_string.decode('utf-8')
+            exc_type = exc_type.decode('ascii')
             exc_class = getattr(qubesmgmt.exc, exc_type, 'QubesException')
             # TODO: handle traceback if given
             raise exc_class(format_string, *args)
@@ -87,7 +88,7 @@ class PropertyHolder(object):
                 self._method_prefix + 'List',
                 None,
                 None)
-            self._properties = properties_str.splitlines()
+            self._properties = properties_str.decode('ascii').splitlines()
         # TODO: make it somehow immutable
         return self._properties
 
@@ -114,9 +115,10 @@ class PropertyHolder(object):
                 self._method_prefix + 'Get',
                 item,
                 None)
-        (_default, value) = property_str.split(' ', 1)
+        (_default, value) = property_str.split(b' ', 1)
+        value = value.decode()
         if value[0] == '\'':
-            return ast.literal_eval('b' + value)
+            return ast.literal_eval('u' + value)
         else:
             return ast.literal_eval(value)
 
@@ -137,7 +139,7 @@ class PropertyHolder(object):
                 self._method_dest,
                 self._method_prefix + 'Set',
                 key,
-                bytes(value))
+                str(value).encode('utf-8'))
 
     def __delattr__(self, name):
         if name.startswith('_') or name in dir(self):

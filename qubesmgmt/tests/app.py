@@ -26,7 +26,7 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=running\n'
         self.assertEqual(
-            self.app.domains.keys(),
+            list(self.app.domains.keys()),
             ['test-vm'])
         self.assertAllCalled()
 
