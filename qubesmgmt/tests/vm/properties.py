@@ -131,3 +131,25 @@ class TC_00_Properties(qubesmgmt.tests.vm.VMTestCase):
         del self.vm.prop1
         self.assertAllCalled()
 
+
+class TC_01_SpecialCases(qubesmgmt.tests.vm.VMTestCase):
+    def test_000_get_name(self):
+        # should not make any mgmt call
+        self.assertEqual(self.vm.name, 'test-vm')
+        self.assertAllCalled()
+
+    def test_001_set_name(self):
+        # but this one should still do a call
+        self.app.expected_calls[
+            ('test-vm', 'mgmt.vm.property.Set', 'name', b'test-vm2')] = \
+            b'0\x00'
+        self.vm.name = 'test-vm2'
+        self.assertEqual(self.vm.name, 'test-vm2')
+        self.assertAllCalled()
+
+        # check if VM list cache was cleared
+        self.app.actual_calls = []
+        del self.app.expected_calls[
+            ('test-vm', 'mgmt.vm.property.Set', 'name', b'test-vm2')]
+        vm = self.app.domains['test-vm']
+        self.assertAllCalled()

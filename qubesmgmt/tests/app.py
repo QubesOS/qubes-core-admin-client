@@ -35,7 +35,7 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
             b'0\x00test-vm class=AppVM state=running\n'
         try:
             vm = self.app.domains['test-vm']
-            self.assertEqual(vm._name, 'test-vm')
+            self.assertEqual(vm.name, 'test-vm')
         except KeyError:
             self.fail('VM not found in collection')
         self.assertAllCalled()
@@ -56,7 +56,7 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
     def test_003_iter(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=running\n'
-        self.assertEqual([vm._name for vm in self.app.domains], ['test-vm'])
+        self.assertEqual([vm.name for vm in self.app.domains], ['test-vm'])
         self.assertAllCalled()
 
 

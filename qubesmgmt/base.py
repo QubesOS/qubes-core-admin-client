@@ -138,8 +138,7 @@ class PropertyHolder(object):
                 None)
         else:
             if isinstance(value, qubesmgmt.vm.QubesVM):
-                # pylint: disable=protected-access
-                value = value._name
+                value = value.name
             self.qubesd_call(
                 self._method_dest,
                 self._method_prefix + 'Set',

@@ -34,7 +34,12 @@ class VMCollection(object):
         self.app = app
         self._vm_list = None
 
+    def clear_cache(self):
+        '''Clear cached list of VMs'''
+        self._vm_list = None
+
     def refresh_cache(self, force=False):
+        '''Refresh cached list of VMs'''
         if not force and self._vm_list is not None:
             return
         vm_list_data = self.app.qubesd_call(

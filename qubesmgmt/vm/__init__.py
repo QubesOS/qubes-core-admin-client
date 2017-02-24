@@ -23,6 +23,19 @@ import qubesmgmt.base
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
     def __init__(self, app, name, vm_class):
-        self._name = name
         self._class = vm_class
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
+
+    @property
+    def name(self):
+        return self._method_dest
+
+    @name.setter
+    def name(self, new_value):
+        self.qubesd_call(
+            self._method_dest,
+            self._method_prefix + 'Set',
+            'name',
+            str(new_value).encode('utf-8'))
+        self._method_dest = new_value
+        self.app.domains.clear_cache()
