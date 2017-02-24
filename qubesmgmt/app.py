@@ -22,7 +22,7 @@ import socket
 
 import subprocess
 
-import qubesmgmt
+import qubesmgmt.base
 import qubesmgmt.vm
 import qubesmgmt.exc
 
@@ -71,7 +71,7 @@ class VMCollection(object):
         return self._vm_list.keys()
 
 
-class QubesBase(qubesmgmt.PropertyHolder):
+class QubesBase(qubesmgmt.base.PropertyHolder):
     '''Main Qubes application'''
 
     #: domains (VMs) collection

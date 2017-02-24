@@ -18,10 +18,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-import qubesmgmt
+import qubesmgmt.base
 
 
-class QubesVM(qubesmgmt.PropertyHolder):
+class QubesVM(qubesmgmt.base.PropertyHolder):
     def __init__(self, app, name, vm_class):
         self._name = name
         self._class = vm_class
