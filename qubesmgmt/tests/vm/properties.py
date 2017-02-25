@@ -144,6 +144,7 @@ class TC_01_SpecialCases(qubesmgmt.tests.vm.VMTestCase):
             ('test-vm', 'mgmt.vm.property.Set', 'name', b'test-vm2')] = \
             b'0\x00'
         self.vm.name = 'test-vm2'
+        # here should be no separate mgmt.vm.property.Get+name call
         self.assertEqual(self.vm.name, 'test-vm2')
         self.assertAllCalled()
 

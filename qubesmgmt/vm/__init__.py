@@ -28,6 +28,7 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
 
     @property
     def name(self):
+        '''Domain name'''
         return self._method_dest
 
     @name.setter
@@ -39,3 +40,72 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
             str(new_value).encode('utf-8'))
         self._method_dest = new_value
         self.app.domains.clear_cache()
+
+    def start(self):
+        '''
+        Start domain.
+
+        :return:
+        '''
+        self.qubesd_call(self._method_dest, 'mgmt.vm.Start')
+
+    def shutdown(self):
+        '''
+        Shutdown domain.
+
+        :return:
+        '''
+        # TODO: force parameter
+        # TODO: wait parameter (using event?)
+        self.qubesd_call(self._method_dest, 'mgmt.vm.Shutdown')
+
+    def kill(self):
+        '''
+        Kill domain (forcefuly shutdown).
+
+        :return:
+        '''
+        self.qubesd_call(self._method_dest, 'mgmt.vm.Kill')
+
+    def pause(self):
+        '''
+        Pause domain.
+
+        Pause its execution without any prior notification.
+
+        :return:
+        '''
+        self.qubesd_call(self._method_dest, 'mgmt.vm.Pause')
+
+    def unpause(self):
+        '''
+        Unpause domain.
+
+        Opposite to :py:meth:`pause`.
+
+        :return:
+        '''
+        self.qubesd_call(self._method_dest, 'mgmt.vm.Unpause')
+
+    def suspend(self):
+        '''
+        Suspend domain.
+
+        Give domain a chance to prepare for suspend - for example suspend
+        used PCI devices.
+
+        :return:
+        '''
+        raise NotImplementedError
+        #self.qubesd_call(self._method_dest, 'mgmt.vm.Suspend')
+
+    def resume(self):
+        '''
+        Resume domain.
+
+        Opposite to :py:meth:`suspend`.
+
+        :return:
+        '''
+        raise NotImplementedError
+        #self.qubesd_call(self._method_dest, 'mgmt.vm.Resume')
