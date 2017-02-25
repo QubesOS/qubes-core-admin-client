@@ -18,8 +18,11 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-class QubesException(Exception):
+'''Exception hierarchy.'''
 
+
+class QubesException(Exception):
+    '''Base exception for all Qubes-related errors.'''
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
         super(QubesException, self).__init__(message_format % args, **kwargs)

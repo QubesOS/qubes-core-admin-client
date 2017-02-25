@@ -18,8 +18,12 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-import socket
 
+'''
+Main Qubes() class and related classes.
+'''
+
+import socket
 import subprocess
 
 import qubesmgmt.base
@@ -29,7 +33,9 @@ import qubesmgmt.exc
 QUBESD_SOCK = '/var/run/qubesd.sock'
 BUF_SIZE = 4096
 
+
 class VMCollection(object):
+    '''Collection of VMs objects'''
     def __init__(self, app):
         self.app = app
         self._vm_list = None
@@ -72,6 +78,7 @@ class VMCollection(object):
             yield self[vm]
 
     def keys(self):
+        '''Get list of VM names.'''
         self.refresh_cache()
         return self._vm_list.keys()
 
@@ -88,6 +95,10 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
 
 
 class QubesLocal(QubesBase):
+    '''Application object communicating through local socket.
+
+    Used when running in dom0.
+    '''
     def qubesd_call(self, dest, method, arg=None, payload=None):
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -108,6 +119,10 @@ class QubesLocal(QubesBase):
 
 
 class QubesRemote(QubesBase):
+    '''Application object communicating through qrexec services.
+
+    Used when running in VM.
+    '''
     def qubesd_call(self, dest, method, arg=None, payload=None):
         service_name = method
         if arg is not None:

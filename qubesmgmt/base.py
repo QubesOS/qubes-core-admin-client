@@ -17,10 +17,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+
+'''Base classes for managed objects'''
+
 import ast
 import qubesmgmt.exc
 
 DEFAULT = object()
+
 
 class PropertyHolder(object):
     '''A base class for object having properties retrievable using mgmt API.
@@ -60,6 +64,11 @@ class PropertyHolder(object):
 
     @staticmethod
     def _parse_qubesd_response(response_data):
+        '''Parse response from qubesd.
+
+        In case of success, return actual data. In case of error,
+        raise appropriate exception.
+        '''
         if response_data[0:2] == b'\x30\x00':
             return response_data[2:]
         elif response_data[0:2] == b'\x32\x00':

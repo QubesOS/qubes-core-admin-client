@@ -18,10 +18,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
+'''Qubes VM objects.'''
+
 import qubesmgmt.base
 
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
+    '''Qubes domain.'''
     def __init__(self, app, name, vm_class):
         self._class = vm_class
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
