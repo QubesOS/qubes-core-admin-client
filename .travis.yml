@@ -7,16 +7,21 @@ python:
   - '3.5'
 install:
   - pip install --quiet -r ci/requirements.txt
-#  - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
+  - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
 script:
-  - pylint --rcfile=ci/pylintrc qubesmgmt
-  - python -m unittest discover -p '*.py' -v
-#  - ~/qubes-builder/scripts/travis-build
-#env:
-# - DIST_DOM0=fc23 USE_QUBES_REPO_VERSION=3.2 USE_QUBES_REPO_TESTING=1
+  - test -z "$TESTS_ONLY" || pylint --rcfile=ci/pylintrc qubesmgmt
+  - test -z "$TESTS_ONLY" || python -m unittest discover -p '*.py' -v
+  - test -n "$TESTS_ONLY" ||  ~/qubes-builder/scripts/travis-build
+env:
+ - TESTS_ONLY=1
 
-#after_success:
-#  - ~/qubes-builder/scripts/travis-deploy
+matrix:
+  include:
+    - env: DIST_DOM0=fc23 USE_QUBES_REPO_VERSION=3.2 USE_QUBES_REPO_TESTING=1
+      python: 2.7
+
+after_success:
+  - ~/qubes-builder/scripts/travis-deploy
 
 # don't build tags which are meant for code signing only
 branches:
