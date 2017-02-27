@@ -109,12 +109,15 @@ class QubesLocal(QubesBase):
 
         # src, method, dest, arg
         for call_arg in ('dom0', method, dest, arg):
-            client_socket.sendall(call_arg.encode('ascii'))
+            if call_arg is not None:
+                client_socket.sendall(call_arg.encode('ascii'))
             client_socket.sendall(b'\0')
         if payload is not None:
             client_socket.sendall(payload)
 
-        return_data = b''.join(iter(client_socket.recv(BUF_SIZE), b''))
+        client_socket.shutdown(socket.SHUT_WR)
+
+        return_data = b''.join(iter(lambda: client_socket.recv(BUF_SIZE), b''))
         return self._parse_qubesd_response(return_data)
 
 
