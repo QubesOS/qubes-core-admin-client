@@ -25,4 +25,6 @@ class QubesException(Exception):
     '''Base exception for all Qubes-related errors.'''
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
-        super(QubesException, self).__init__(message_format % args, **kwargs)
+        super(QubesException, self).__init__(
+            message_format % tuple(int(d) if d.isdigit() else d for d in args),
+            **kwargs)

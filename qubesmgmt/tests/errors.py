@@ -39,7 +39,6 @@ class TC_00_Errors(qubesmgmt.tests.QubesTestCase):
         self.assertEqual(str(context.exception),
             'An error occurred: string, other')
 
-    @unittest.expectedFailure
     def test_002_exception_with_numbers(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
             b'2\x00QubesException\x00\x00' \
@@ -49,7 +48,7 @@ class TC_00_Errors(qubesmgmt.tests.QubesTestCase):
                 vms = list(self.app.domains)
         except TypeError as e:
             self.fail('TypeError: {!s}'.format(e))
-        self.assertEqual(str(context.exception), 'An error occurred: 1 2')
+        self.assertEqual(str(context.exception), 'An error occurred: 1, 2')
 
     def test_010_empty(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = b''\
