@@ -1,3 +1,4 @@
+# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -32,7 +33,8 @@ import subprocess
 import sys
 import textwrap
 
-import qubes.log
+import qubesmgmt.log
+import qubesmgmt.exc
 
 #: constant returned when some action should be performed on all qubes
 VM_ALL = object()
@@ -105,46 +107,47 @@ class SinglePropertyAction(argparse.Action):
             if self.const is None else self.const
 
 
-class HelpPropertiesAction(argparse.Action):
-    '''Action for argument parser that displays all properties and exits.'''
-    # pylint: disable=redefined-builtin,too-few-public-methods
-    def __init__(self,
-            option_strings,
-            klass=None,
-            dest=argparse.SUPPRESS,
-            default=argparse.SUPPRESS,
-            help='list all available properties with short descriptions'
-                ' and exit'):
-        super(HelpPropertiesAction, self).__init__(
-            option_strings=option_strings,
-            dest=dest,
-            default=default,
-            nargs=0,
-            help=help)
-
-        # late import because of circular dependency
-        import qubes # pylint: disable=redefined-outer-name
-        self._klass = klass if klass is not None else qubes.Qubes
-
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        # pylint: disable=redefined-outer-name
-        properties = self._klass.property_list()
-        width = max(len(prop.__name__) for prop in properties)
-        wrapper = textwrap.TextWrapper(width=80,
-            initial_indent='  ', subsequent_indent=' ' * (width + 6))
-
-        text = 'Common properties:\n' + '\n'.join(
-            wrapper.fill('{name:{width}s}  {doc}'.format(
-                name=prop.__name__,
-                doc=qubes.utils.format_doc(prop.__doc__) if prop.__doc__ else'',
-                width=width))
-            for prop in sorted(properties))
-        if self._klass is not qubes.Qubes:
-            text += '\n\n' \
-                'There may be more properties in specific domain classes.\n'
-        parser.exit(message=text)
-
+# class HelpPropertiesAction(argparse.Action):
+#     '''Action for argument parser that displays all properties and exits.'''
+#     # pylint: disable=redefined-builtin,too-few-public-methods
+#     def __init__(self,
+#             option_strings,
+#             klass=None,
+#             dest=argparse.SUPPRESS,
+#             default=argparse.SUPPRESS,
+#             help='list all available properties with short descriptions'
+#                 ' and exit'):
+#         super(HelpPropertiesAction, self).__init__(
+#             option_strings=option_strings,
+#             dest=dest,
+#             default=default,
+#             nargs=0,
+#             help=help)
+#
+#         # late import because of circular dependency
+#         import qubes # pylint: disable=redefined-outer-name
+#         self._klass = klass if klass is not None else qubes.Qubes
+#
+#
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         # pylint: disable=redefined-outer-name
+#         properties = self._klass.property_list()
+#         width = max(len(prop.__name__) for prop in properties)
+#         wrapper = textwrap.TextWrapper(width=80,
+#             initial_indent='  ', subsequent_indent=' ' * (width + 6))
+#
+#         text = 'Common properties:\n' + '\n'.join(
+#             wrapper.fill('{name:{width}s}  {doc}'.format(
+#                 name=prop.__name__,
+#                 doc=qubesmgmt.utils.format_doc(prop.__doc__) if prop.__doc__
+#                 else'',
+#                 width=width))
+#             for prop in sorted(properties))
+#         if self._klass is not qubes.Qubes:
+#             text += '\n\n' \
+#                 'There may be more properties in specific domain classes.\n'
+#         parser.exit(message=text)
+#
 
 class VmNameAction(QubesAction):
     ''' Action for parsing one ore multiple domains from provided VMNAMEs '''
@@ -290,7 +293,7 @@ class PoolsAction(QubesAction):
             try:
                 pools = [app.get_pool(name) for name in pool_names]
                 setattr(namespace, self.dest, pools)
-            except qubes.exc.QubesException as e:
+            except qubesmgmt.exc.QubesException as e:
                 parser.error(str(e))
                 sys.exit(2)
 
@@ -357,8 +360,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
         if self._want_app and not self._want_app_no_instance:
             self.set_qubes_verbosity(namespace)
-            namespace.app = qubes.Qubes(namespace.app,
-                offline_mode=namespace.offline_mode)
+            namespace.app = qubesmgmt.Qubes()
 
         if self._want_force_root:
             self.dont_run_as_root(namespace)
@@ -419,9 +421,9 @@ class QubesArgumentParser(argparse.ArgumentParser):
         verbose = namespace.verbose - namespace.quiet
 
         if verbose >= 2:
-            qubes.log.enable_debug()
+            qubesmgmt.log.enable_debug()
         elif verbose >= 1:
-            qubes.log.enable()
+            qubesmgmt.log.enable()
 
     # pylint: disable=no-self-use
     def print_error(self, *args, **kwargs):
@@ -430,16 +432,17 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
 
 class AliasedSubParsersAction(argparse._SubParsersAction):
+    '''SubParser with support for action aliases'''
     # source https://gist.github.com/sampsyo/471779
-    # pylint: disable=protected-access,too-few-public-methods
+    # pylint: disable=protected-access,too-few-public-methods,missing-docstring
     class _AliasedPseudoAction(argparse.Action):
         # pylint: disable=redefined-builtin
         def __init__(self, name, aliases, help):
             dest = name
             if aliases:
                 dest += ' (%s)' % ','.join(aliases)
-            sup = super(AliasedSubParsersAction._AliasedPseudoAction, self)
-            sup.__init__(option_strings=[], dest=dest, help=help)
+            super(AliasedSubParsersAction._AliasedPseudoAction, self).\
+                __init__(option_strings=[], dest=dest, help=help)
 
         def __call__(self, **kwargs):
             super(AliasedSubParsersAction._AliasedPseudoAction, self).__call__(
