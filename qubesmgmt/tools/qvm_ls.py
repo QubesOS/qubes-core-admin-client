@@ -111,12 +111,6 @@ class Column(object):
         if ret is None:
             return None
 
-        # late import to avoid circular import
-        # pylint: disable=redefined-outer-name
-        import qubes.vm
-        if isinstance(ret, (qubes.vm.BaseVM, qubes.Label)):
-            return ret.name
-
         if isinstance(ret, int):
             return str(ret)
 
@@ -135,92 +129,33 @@ class Column(object):
         return self.ls_head < other.ls_head
 
 
-def column(width=0, head=None):
-    '''Mark function or plain property as valid column in :program:`qvm-ls`.
-
-    By default all instances of :py:class:`qubes.property` are valid.
-
-    :param int width: Column width
-    :param str head: Column head (default: take property's name)
-    '''
-
-    def decorator(obj):
-        # pylint: disable=missing-docstring
-        # we keep hints on fget, so the order of decorators does not matter
-        holder = obj.fget if isinstance(obj, property) else obj
-
-        try:
-            holder.ls_head = head or holder.__name__.replace('_', '-').upper()
-        except AttributeError:
-            raise TypeError('Cannot find default column name '
-                'for a strange object {!r}'.format(obj))
-
-        holder.ls_width = max(width, len(holder.ls_head) + 1)
-
-        return obj
-
-    return decorator
-
-
 class PropertyColumn(Column):
     '''Column that displays value from property (:py:class:`property` or
     :py:class:`qubes.property`) of domain.
 
-    You shouldn't use this class directly, see :py:func:`column` decorator.
-
-    :param holder: Holder of magic attributes.
+    :param name: Name of VM property.
     '''
 
-    def __init__(self, holder):
+    def __init__(self, name):
+        ls_head = name.replace('_', '-').upper()
         super(PropertyColumn, self).__init__(
-            head=holder.ls_head,
-            width=holder.ls_width,
-            attr=holder.__name__,
-            doc=holder.__doc__)
-        self.holder = holder
+            head=ls_head,
+            attr=name)
 
     def __repr__(self):
-        return '{}(head={!r}, width={!r} holder={!r})'.format(
+        return '{}(head={!r}'.format(
             self.__class__.__name__,
-            self.ls_head,
-            self.ls_width,
-            self.holder)
+            self.ls_head)
 
 
-def process_class(cls):
-    '''Process class after definition to find all listable properties.
+def process_vm(vm):
+    '''Process VM object to find all listable properties.
 
-    It is used in metaclass of the domain.
-
-    :param qubes.vm.BaseVMMeta cls: Class to round up.
+    :param qubesmgmt.vm.QubesVM vm: VM object.
     '''
 
-    for klass in cls.__mro__:
-        for prop in klass.__dict__.values():
-            holder = prop.fget \
-                if isinstance(prop, property) \
-                else prop
-            if not hasattr(holder, 'ls_head') or holder.ls_head is None:
-                continue
-
-            for col in Column.columns.values():
-                if not isinstance(col, PropertyColumn):
-                    continue
-
-                if col.holder.__name__ != holder.__name__:
-                    continue
-
-                if col.ls_head != holder.ls_head:
-                    raise TypeError('Found column head mismatch in class {!r} '
-                        '({!r} != {!r})'.format(cls.__name__,
-                            holder.ls_head, col.ls_head))
-
-                if col.ls_width != holder.ls_width:
-                    raise TypeError('Found column width mismatch in class {!r} '
-                        '({!r} != {!r})'.format(cls.__name__,
-                            holder.ls_width, col.ls_width))
-
-            PropertyColumn(holder)
+    for prop_name in vm.property_list():
+        PropertyColumn(prop_name)
 
 
 def flag(field):
@@ -622,6 +557,11 @@ def main(args=None):
                 parser.error('no such column: {!r}'.format(col))
     else:
         columns = formats[args.format]
+
+    # assume unknown columns are VM properties
+    for col in columns:
+        if col.upper() not in Column.columns:
+            PropertyColumn(col)
 
     table = Table(args.app, columns)
     table.write_table(sys.stdout)
