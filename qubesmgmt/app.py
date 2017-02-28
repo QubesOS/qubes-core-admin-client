@@ -29,6 +29,7 @@ import subprocess
 import qubesmgmt.base
 import qubesmgmt.vm
 import qubesmgmt.exc
+import qubesmgmt.utils
 
 QUBESD_SOCK = '/var/run/qubesd.sock'
 BUF_SIZE = 4096
@@ -39,6 +40,7 @@ class VMCollection(object):
     def __init__(self, app):
         self.app = app
         self._vm_list = None
+        self._vm_objects = {}
 
     def clear_cache(self):
         '''Clear cached list of VMs'''
@@ -61,12 +63,27 @@ class VMCollection(object):
                 [vm_prop.split('=', 1) for vm_prop in props])
 
         self._vm_list = new_vm_list
+        for name, vm in self._vm_objects.items():
+            if vm.name not in self._vm_list:
+                # VM no longer exists
+                del self._vm_objects[name]
+            elif vm.__class__.__name__ != self._vm_list[vm.name]['class']:
+                # VM class have changed
+                del self._vm_objects[name]
+            # TODO: some generation ID, to detect VM re-creation
+            elif name != vm.name:
+                # renamed
+                self._vm_objects[vm.name] = vm
+                del self._vm_objects[name]
 
     def __getitem__(self, item):
         if item not in self:
             raise KeyError(item)
-        return qubesmgmt.vm.QubesVM(
-            self.app, item, self._vm_list[item]['class'])
+        if item not in self._vm_objects:
+            cls = qubesmgmt.utils.get_entry_point_one('qubesmgmt.vm',
+                self._vm_list[item]['class'])
+            self._vm_objects[item] = cls(self.app, item)
+        return self._vm_objects[item]
 
     def __contains__(self, item):
         self.refresh_cache()

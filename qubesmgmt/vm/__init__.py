@@ -25,8 +25,7 @@ import qubesmgmt.base
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
     '''Qubes domain.'''
-    def __init__(self, app, name, vm_class):
-        self._class = vm_class
+    def __init__(self, app, name):
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
 
     @property
@@ -112,3 +111,28 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         '''
         raise NotImplementedError
         #self.qubesd_call(self._method_dest, 'mgmt.vm.Resume')
+
+
+class AdminVM(QubesVM):
+    '''Dom0'''
+    pass
+
+
+class AppVM(QubesVM):
+    '''Application VM'''
+    pass
+
+
+class StandaloneVM(QubesVM):
+    '''Standalone Application VM'''
+    pass
+
+
+class TemplateVM(QubesVM):
+    '''Template for AppVM'''
+    pass
+
+
+class DispVM(QubesVM):
+    '''Disposable VM'''
+    pass
