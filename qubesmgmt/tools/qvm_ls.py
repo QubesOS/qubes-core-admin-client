@@ -34,7 +34,7 @@ import textwrap
 import qubesmgmt
 import qubesmgmt.tools
 import qubesmgmt.utils
-
+import qubesmgmt.vm
 
 #
 # columns
@@ -217,27 +217,18 @@ class StatusColumn(Column):
         When it is HVM (optimised VM), the letter is capital.
         '''
 
-        # late import because of circular dependency
-        # pylint: disable=redefined-outer-name
-        import qubes.vm
-        import qubes.vm.adminvm
-        import qubes.vm.appvm
-        import qubes.vm.dispvm
-        import qubes.vm.qubesvm
-        import qubes.vm.templatevm
-
-        if isinstance(vm, qubes.vm.adminvm.AdminVM):
+        if isinstance(vm, qubesmgmt.vm.AdminVM):
             return '0'
 
         ret = None
         # TODO right order, depending on inheritance
-        if isinstance(vm, qubes.vm.templatevm.TemplateVM):
+        if isinstance(vm, qubesmgmt.vm.TemplateVM):
             ret = 't'
-        if isinstance(vm, qubes.vm.appvm.AppVM):
+        if isinstance(vm, qubesmgmt.vm.AppVM):
             ret = 'a'
-#       if isinstance(vm, qubes.vm.standalonevm.StandaloneVM):
-#           ret = 's'
-        if isinstance(vm, qubes.vm.dispvm.DispVM):
+        if isinstance(vm, qubesmgmt.vm.StandaloneVM):
+            ret = 's'
+        if isinstance(vm, qubesmgmt.vm.DispVM):
             ret = 'd'
 
         if ret is not None:
