@@ -19,6 +19,7 @@ output-format=colorized
 reports=yes
 
 [TYPECHECK]
+ignored-classes=dbus,SystemBus,SessionBus
 
 [BASIC]
 
