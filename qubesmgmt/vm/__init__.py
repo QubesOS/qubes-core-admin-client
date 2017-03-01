@@ -129,6 +129,7 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
                     vm=self.name, vm_name=volname)
         return self._volumes
 
+# pylint: disable=abstract-method
 class AdminVM(QubesVM):
     '''Dom0'''
     pass
