@@ -21,12 +21,14 @@
 '''Qubes VM objects.'''
 
 import qubesmgmt.base
+import qubesmgmt.storage
 
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
     '''Qubes domain.'''
     def __init__(self, app, name):
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
+        self._volumes = None
 
     @property
     def name(self):
@@ -41,6 +43,7 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
             'name',
             str(new_value).encode('utf-8'))
         self._method_dest = new_value
+        self._volumes = None
         self.app.domains.clear_cache()
 
     def start(self):
@@ -112,6 +115,19 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         raise NotImplementedError
         #self.qubesd_call(self._method_dest, 'mgmt.vm.Resume')
 
+    @property
+    def volumes(self):
+        '''VM disk volumes'''
+        if self._volumes is None:
+            volumes_list = self.qubesd_call(
+                self._method_dest, 'mgmt.vm.volume.List')
+            self._volumes = {}
+            for volname in volumes_list.decode('ascii').splitlines():
+                if not volname:
+                    continue
+                self._volumes[volname] = qubesmgmt.storage.Volume(self.app,
+                    vm=self.name, vm_name=volname)
+        return self._volumes
 
 class AdminVM(QubesVM):
     '''Dom0'''
