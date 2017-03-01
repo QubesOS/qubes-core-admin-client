@@ -21,7 +21,8 @@ matrix:
       python: 2.7
 
 after_success:
-  - ~/qubes-builder/scripts/travis-deploy
+#  - ~/qubes-builder/scripts/travis-deploy
+  - codecov  
 
 # don't build tags which are meant for code signing only
 branches:
