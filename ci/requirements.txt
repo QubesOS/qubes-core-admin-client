@@ -3,3 +3,4 @@
 docutils
 pylint
 sphinx
+codecov

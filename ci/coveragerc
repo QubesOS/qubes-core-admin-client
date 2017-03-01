@@ -1,0 +1,3 @@
+[run]
+source = qubesmgmt
+omit = qubesmgmt/tests/*
