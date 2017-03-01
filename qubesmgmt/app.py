@@ -63,7 +63,7 @@ class VMCollection(object):
                 [vm_prop.split('=', 1) for vm_prop in props])
 
         self._vm_list = new_vm_list
-        for name, vm in self._vm_objects.items():
+        for name, vm in list(self._vm_objects.items()):
             if vm.name not in self._vm_list:
                 # VM no longer exists
                 del self._vm_objects[name]
