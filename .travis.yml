@@ -10,7 +10,7 @@ install:
   - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
 script:
   - test -z "$TESTS_ONLY" || pylint --rcfile=ci/pylintrc qubesmgmt
-  - test -z "$TESTS_ONLY" || python -m unittest discover -p '*.py' -v
+  - test -z "$TESTS_ONLY" || ./run-tests
   - test -n "$TESTS_ONLY" ||  ~/qubes-builder/scripts/travis-build
 env:
  - TESTS_ONLY=1
