@@ -22,9 +22,13 @@
 import io
 import sys
 
+
 class StdoutBuffer(object):
     def __init__(self):
-        self.stdout = io.StringIO()
+        if sys.version_info[0] >= 3:
+            self.stdout = io.StringIO()
+        else:
+            self.stdout = io.BytesIO()
 
     def __enter__(self):
         sys.stdout = self.stdout
