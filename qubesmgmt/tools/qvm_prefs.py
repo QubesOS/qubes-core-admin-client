@@ -117,9 +117,9 @@ def process_actions(parser, args, target):
     return 0
 
 
-def main(args=None):  # pylint: disable=missing-docstring
+def main(args=None, app=None):  # pylint: disable=missing-docstring
     parser = get_parser(1)
-    args = parser.parse_args(args)
+    args = parser.parse_args(args, app=app)
     target = args.domains.pop()
     return process_actions(parser, args, target)
 

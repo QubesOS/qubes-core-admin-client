@@ -48,8 +48,8 @@ parser.add_argument('--timeout',
         ' (default: %d)')
 
 
-def main(args=None):  # pylint: disable=missing-docstring
-    args = parser.parse_args(args)
+def main(args=None, app=None):  # pylint: disable=missing-docstring
+    args = parser.parse_args(args, app=app)
 
     for vm in args.domains:
         if not vm.is_halted():

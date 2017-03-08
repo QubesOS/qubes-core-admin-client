@@ -350,14 +350,16 @@ class QubesArgumentParser(argparse.ArgumentParser):
         self.set_defaults(verbose=1, quiet=0)
 
     def parse_args(self, *args, **kwargs):
+        # hack for tests
+        app = kwargs.pop('app', None)
         namespace = super(QubesArgumentParser, self).parse_args(*args, **kwargs)
 
         if self._want_app and not self._want_app_no_instance:
             self.set_qubes_verbosity(namespace)
-            namespace.app = qubesmgmt.Qubes()
-
-        if self._want_force_root:
-            self.dont_run_as_root(namespace)
+            if app is not None:
+                namespace.app = app
+            else:
+                namespace.app = qubesmgmt.Qubes()
 
         for action in self._actions:
             # pylint: disable=protected-access

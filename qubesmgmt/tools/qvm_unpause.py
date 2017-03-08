@@ -29,14 +29,14 @@ parser = qubesmgmt.tools.QubesArgumentParser(
     description='unpause a domain')
 
 
-def main(args=None):
+def main(args=None, app=None):
     '''Main routine of :program:`qvm-unpause`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
     '''
 
-    args = parser.parse_args(args)
+    args = parser.parse_args(args, app=app)
     for domain in args.domains:
         domain.unpause()
 

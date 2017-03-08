@@ -31,9 +31,9 @@ import qubesmgmt
 import qubesmgmt.tools.qvm_prefs
 
 
-def main(args=None):  # pylint: disable=missing-docstring
-    parser = qubesmgmt.tools.qvm_prefs.get_parser(0)
-    args = parser.parse_args(args)
+def main(args=None, app=None):  # pylint: disable=missing-docstring
+    parser = qubesmgmt.tools.qvm_prefs.get_parser(None)
+    args = parser.parse_args(args, app=app)
     target = args.app
     return qubesmgmt.tools.qvm_prefs.process_actions(parser, args, target)
 

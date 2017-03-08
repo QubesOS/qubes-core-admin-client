@@ -29,14 +29,14 @@ parser = qubesmgmt.tools.QubesArgumentParser(
     description='forceful shutdown of a domain', vmname_nargs='+')
 
 
-def main(args=None):
+def main(args=None, app=None):
     '''Main routine of :program:`qvm-kill`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
     '''
 
-    args = parser.parse_args(args)
+    args = parser.parse_args(args, app=app)
 
     exit_code = 0
     for domain in args.domains:
