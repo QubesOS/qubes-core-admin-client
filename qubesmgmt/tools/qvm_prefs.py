@@ -33,56 +33,63 @@ import qubesmgmt.utils
 import qubesmgmt.vm
 
 
-parser = qubesmgmt.tools.QubesArgumentParser(
-    want_force_root=True,
-    vmname_nargs=1)
+def get_parser(vmname_nargs=1):
+    '''Return argument parser for generic property-related tool'''
+    parser = qubesmgmt.tools.QubesArgumentParser(
+        want_force_root=True,
+        vmname_nargs=vmname_nargs)
 
-# parser.add_argument('--help-properties',
-#     action=qubesmgmt.tools.HelpPropertiesAction,
-#     klass=qubesmgmt.vm.QubesVM)
+    # parser.add_argument('--help-properties',
+    #     action=qubesmgmt.tools.HelpPropertiesAction,
+    #     klass=qubesmgmt.vm.QubesVM)
 
-parser.add_argument('--get', '-g',
-    action='store_true',
-    help='Ignored; for compatibility with older scripts.')
+    parser.add_argument('--get', '-g',
+        action='store_true',
+        help='Ignored; for compatibility with older scripts.')
 
-parser.add_argument('--set', '-s',
-    action='store_true',
-    help='Ignored; for compatibility with older scripts.')
+    parser.add_argument('--set', '-s',
+        action='store_true',
+        help='Ignored; for compatibility with older scripts.')
 
-parser.add_argument('property', metavar='PROPERTY',
-    nargs='?',
-    help='name of the property to show or change')
+    parser.add_argument('property', metavar='PROPERTY',
+        nargs='?',
+        help='name of the property to show or change')
 
-parser_value = parser.add_mutually_exclusive_group()
+    parser_value = parser.add_mutually_exclusive_group()
 
-parser_value.add_argument('value', metavar='VALUE',
-    nargs='?',
-    help='new value of the property')
+    parser_value.add_argument('value', metavar='VALUE',
+        nargs='?',
+        help='new value of the property')
 
-parser.add_argument('--unset', '--default', '--delete', '-D',
-    dest='delete',
-    action='store_true',
-    help='unset the property; if property has default value, it will be used'
-        ' instead')
+    parser.add_argument('--unset', '--default', '--delete', '-D',
+        dest='delete',
+        action='store_true',
+        help='unset the property; '
+             'if property has default value, it will be used instead')
+
+    return parser
 
 
-def main(args=None):  # pylint: disable=missing-docstring
-    args = parser.parse_args(args)
-    args.domain = args.domains.pop()
+def process_actions(parser, args, target):
+    '''Handle actions for generic property-related tool
 
+    :param parser: argument parser used to produce args
+    :param args: arguments to handle
+    :param target: object on which actions should be performed
+    '''
     if args.property is None:
-        properties = args.domain.property_list()
+        properties = target.property_list()
         width = max(len(prop.__name__) for prop in properties)
 
         for prop in sorted(properties):
             try:
-                value = getattr(args.domain, prop.__name__)
+                value = getattr(target, prop.__name__)
             except AttributeError:
                 print('{name:{width}s}  U'.format(
                     name=prop.__name__, width=width))
                 continue
 
-            if args.domain.property_is_default(prop):
+            if target.property_is_default(prop):
                 print('{name:{width}s}  D  {value!s}'.format(
                     name=prop.__name__, width=width, value=value))
             else:
@@ -94,22 +101,29 @@ def main(args=None):  # pylint: disable=missing-docstring
         args.property = args.property.replace('-', '_')
 
     if args.property not in [prop.__name__
-                             for prop in args.domain.property_list()]:
+                             for prop in target.property_list()]:
         parser.error('no such property: {!r}'.format(args.property))
 
     if args.value is not None:
-        setattr(args.domain, args.property, args.value)
+        setattr(target, args.property, args.value)
         args.app.save()
         return 0
 
     if args.delete:
-        delattr(args.domain, args.property)
+        delattr(target, args.property)
         args.app.save()
         return 0
 
-    print(str(getattr(args.domain, args.property)))
+    print(str(getattr(target, args.property)))
 
     return 0
+
+
+def main(args=None):  # pylint: disable=missing-docstring
+    parser = get_parser(1)
+    args = parser.parse_args(args)
+    target = args.domains.pop()
+    return process_actions(parser, args, target)
 
 
 if __name__ == '__main__':
