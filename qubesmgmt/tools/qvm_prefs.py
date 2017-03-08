@@ -35,7 +35,6 @@ import qubesmgmt.vm
 def get_parser(vmname_nargs=1):
     '''Return argument parser for generic property-related tool'''
     parser = qubesmgmt.tools.QubesArgumentParser(
-        want_force_root=True,
         vmname_nargs=vmname_nargs)
 
     # parser.add_argument('--help-properties',

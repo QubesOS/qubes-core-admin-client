@@ -302,7 +302,6 @@ class QubesArgumentParser(argparse.ArgumentParser):
     :param bool want_app: instantiate :py:class:`qubes.Qubes` object
     :param bool want_app_no_instance: don't actually instantiate \
         :py:class:`qubes.Qubes` object, just add argument for custom xml file
-    :param bool want_force_root: add ``--force-root`` option
     :param mixed vmname_nargs: The number of ``VMNAME`` arguments that should be
             consumed. Values include:
                 - N (an integer) consumes N arguments (and produces a list)
@@ -312,20 +311,18 @@ class QubesArgumentParser(argparse.ArgumentParser):
     *kwargs* are passed to :py:class:`argparser.ArgumentParser`.
 
     Currenty supported options:
-        ``--force-root`` (optional)
-        ``--qubesxml`` location of :file:`qubes.xml` (help is suppressed)
+        ``--force-root`` (optional, ignored, help is suppressed)
         ``--offline-mode`` do not talk to hypervisor (help is suppressed)
         ``--verbose`` and ``--quiet``
     '''
 
     def __init__(self, want_app=True, want_app_no_instance=False,
-                 want_force_root=False, vmname_nargs=None, **kwargs):
+                 vmname_nargs=None, **kwargs):
 
         super(QubesArgumentParser, self).__init__(**kwargs)
 
         self._want_app = want_app
         self._want_app_no_instance = want_app_no_instance
-        self._want_force_root = want_force_root
         self._vmname_nargs = vmname_nargs
         if self._want_app:
             self.add_argument('--qubesxml', metavar='FILE', action='store',
@@ -340,9 +337,8 @@ class QubesArgumentParser(argparse.ArgumentParser):
         self.add_argument('--quiet', '-q', action='count',
                           help='decrease verbosity')
 
-        if self._want_force_root:
-            self.add_argument('--force-root', action='store_true',
-                              default=False, help='force to run as root')
+        self.add_argument('--force-root', action='store_true',
+                          default=False, help=argparse.SUPPRESS)
 
         if self._vmname_nargs in [argparse.ZERO_OR_MORE, argparse.ONE_OR_MORE]:
             vm_name_group = VmNameGroup(self, self._vmname_nargs)
@@ -386,21 +382,6 @@ class QubesArgumentParser(argparse.ArgumentParser):
         '''
         self.exit(1, '{}: error: {}\n'.format(self.prog, message))
 
-
-    def dont_run_as_root(self, namespace):
-        '''Prevent running as root.
-
-        :param argparse.Namespace args: if there is ``.force_root`` attribute \
-            set to true, run anyway
-        '''
-        try:
-            euid = os.geteuid()
-        except AttributeError: # no geteuid(), probably NT
-            return
-
-        if euid == 0 and not namespace.force_root:
-            self.error_runtime(
-                'refusing to run as root; add --force-root to override')
 
     @staticmethod
     def get_loglevel_from_verbosity(namespace):
