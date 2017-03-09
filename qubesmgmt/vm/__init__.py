@@ -54,7 +54,7 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         '''
         self.qubesd_call(self._method_dest, 'mgmt.vm.Start')
 
-    def shutdown(self):
+    def shutdown(self, force=False):
         '''
         Shutdown domain.
 
@@ -62,6 +62,8 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         '''
         # TODO: force parameter
         # TODO: wait parameter (using event?)
+        if force:
+            raise NotImplementedError
         self.qubesd_call(self._method_dest, 'mgmt.vm.Shutdown')
 
     def kill(self):
