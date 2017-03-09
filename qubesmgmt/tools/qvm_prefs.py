@@ -77,22 +77,22 @@ def process_actions(parser, args, target):
     '''
     if args.property is None:
         properties = target.property_list()
-        width = max(len(prop.__name__) for prop in properties)
+        width = max(len(prop) for prop in properties)
 
         for prop in sorted(properties):
             try:
-                value = getattr(target, prop.__name__)
+                value = getattr(target, prop)
             except AttributeError:
                 print('{name:{width}s}  U'.format(
-                    name=prop.__name__, width=width))
+                    name=prop, width=width))
                 continue
 
             if target.property_is_default(prop):
                 print('{name:{width}s}  D  {value!s}'.format(
-                    name=prop.__name__, width=width, value=value))
+                    name=prop, width=width, value=value))
             else:
                 print('{name:{width}s}  -  {value!s}'.format(
-                    name=prop.__name__, width=width, value=value))
+                    name=prop, width=width, value=value))
 
         return 0
     else:
