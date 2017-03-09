@@ -28,3 +28,76 @@ class QubesException(Exception):
         super(QubesException, self).__init__(
             message_format % tuple(int(d) if d.isdigit() else d for d in args),
             **kwargs)
+
+
+class QubesVMNotFoundError(QubesException, KeyError):
+    '''Domain cannot be found in the system'''
+
+
+class QubesVMError(QubesException):
+    '''Some problem with domain state.'''
+
+
+class QubesVMNotStartedError(QubesVMError):
+    '''Domain is not started.
+
+    This exception is thrown when machine is halted, but should be started
+    (that is, either running or paused).
+    '''
+
+
+class QubesVMNotRunningError(QubesVMNotStartedError):
+    '''Domain is not running.
+
+    This exception is thrown when machine should be running but is either
+    halted or paused.
+    '''
+
+
+class QubesVMNotPausedError(QubesVMNotStartedError):
+    '''Domain is not paused.
+
+    This exception is thrown when machine should be paused, but is not.
+    '''
+
+
+class QubesVMNotSuspendedError(QubesVMError):
+    '''Domain is not suspended.
+
+    This exception is thrown when machine should be suspended but is either
+    halted or running.
+    '''
+
+
+class QubesVMNotHaltedError(QubesVMError):
+    '''Domain is not halted.
+
+    This exception is thrown when machine should be halted, but is not (either
+    running or paused).
+    '''
+
+
+class QubesNoTemplateError(QubesVMError):
+    '''Cannot start domain, because there is no template'''
+
+
+class QubesValueError(QubesException, ValueError):
+    '''Cannot set some value, because it is invalid, out of bounds, etc.'''
+    pass
+
+
+class QubesPropertyValueError(QubesValueError):
+    '''Cannot set value of qubes.property, because user-supplied value is wrong.
+    '''
+
+
+class QubesNotImplementedError(QubesException, NotImplementedError):
+    '''Thrown at user when some feature is not implemented'''
+
+
+class BackupCancelledError(QubesException):
+    '''Thrown at user when backup was manually cancelled'''
+
+
+class QubesMemoryError(QubesException, MemoryError):
+    '''Cannot start domain, because not enough memory is available'''
