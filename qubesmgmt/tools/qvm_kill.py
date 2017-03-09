@@ -41,7 +41,7 @@ def main(args=None, app=None):
     exit_code = 0
     for domain in args.domains:
         try:
-            domain.force_shutdown()
+            domain.kill()
         except (IOError, OSError, qubesmgmt.exc.QubesException) as e:
             exit_code = 1
             parser.print_error(str(e))
