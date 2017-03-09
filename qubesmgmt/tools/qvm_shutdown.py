@@ -28,6 +28,7 @@ import sys
 import time
 
 import qubesmgmt.tools
+import qubesmgmt.exc
 
 parser = qubesmgmt.tools.QubesArgumentParser(
     description=__doc__, vmname_nargs='+')
@@ -52,8 +53,10 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
 
     for vm in args.domains:
-        if not vm.is_halted():
+        try:
             vm.shutdown(force=args.force)
+        except qubesmgmt.exc.QubesVMNotStartedError:
+            pass
 
     if not args.wait:
         return

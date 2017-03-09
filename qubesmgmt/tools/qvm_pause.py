@@ -36,10 +36,15 @@ def main(args=None, app=None):
     '''
 
     args = parser.parse_args(args, app=app)
+    exit_code = 0
     for domain in args.domains:
-        domain.pause()
+        try:
+            domain.pause()
+        except (IOError, OSError, qubesmgmt.exc.QubesException) as e:
+            exit_code = 1
+            parser.print_error(str(e))
 
-    return 0
+    return exit_code
 
 
 if __name__ == '__main__':
