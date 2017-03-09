@@ -78,7 +78,14 @@ class PropertyHolder(object):
             args = [arg.decode() for arg in args.split(b'\x00')[:-1]]
             format_string = format_string.decode('utf-8')
             exc_type = exc_type.decode('ascii')
-            exc_class = getattr(qubesmgmt.exc, exc_type, 'QubesException')
+            try:
+                exc_class = getattr(qubesmgmt.exc, exc_type)
+            except AttributeError:
+                if exc_type.endswith('Error'):
+                    exc_class = __builtins__.get(exc_type,
+                        qubesmgmt.exc.QubesException)
+                else:
+                    exc_class = qubesmgmt.exc.QubesException
             # TODO: handle traceback if given
             raise exc_class(format_string, *args)
         else:
