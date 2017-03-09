@@ -98,21 +98,24 @@ def process_actions(parser, args, target):
     else:
         args.property = args.property.replace('-', '_')
 
-    if args.property not in [prop.__name__
-                             for prop in target.property_list()]:
-        parser.error('no such property: {!r}'.format(args.property))
-
     if args.value is not None:
-        setattr(target, args.property, args.value)
-        args.app.save()
+        try:
+            setattr(target, args.property, args.value)
+        except AttributeError:
+            parser.error('no such property: {!r}'.format(args.property))
         return 0
 
     if args.delete:
-        delattr(target, args.property)
-        args.app.save()
+        try:
+            delattr(target, args.property)
+        except AttributeError:
+            parser.error('no such property: {!r}'.format(args.property))
         return 0
 
-    print(str(getattr(target, args.property)))
+    try:
+        print(str(getattr(target, args.property)))
+    except AttributeError:
+        parser.error('no such property: {!r}'.format(args.property))
 
     return 0
 
