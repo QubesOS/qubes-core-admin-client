@@ -26,13 +26,13 @@ import qubesmgmt.tools.qubes_prefs
 class TC_00_qubes_prefs(qubesmgmt.tests.QubesTestCase):
     def test_000_list(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.global.property.List', None, None)] = \
+            ('dom0', 'mgmt.property.List', None, None)] = \
             b'0\x00prop1\nprop2\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.global.property.Get', 'prop1', None)] = \
+            ('dom0', 'mgmt.property.Get', 'prop1', None)] = \
             b'0\x00default=True \'value1\''
         self.app.expected_calls[
-            ('dom0', 'mgmt.global.property.Get', 'prop2', None)] = \
+            ('dom0', 'mgmt.property.Get', 'prop2', None)] = \
             b'0\x00default=False \'value2\''
         with qubesmgmt.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0, qubesmgmt.tools.qubes_prefs.main([], app=self.app))
@@ -43,7 +43,7 @@ class TC_00_qubes_prefs(qubesmgmt.tests.QubesTestCase):
 
     def test_002_set_property(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.global.property.Set', 'default_user', b'testuser')]\
+            ('dom0', 'mgmt.property.Set', 'default_user', b'testuser')]\
             = b'0\x00'
         self.assertEqual(0, qubesmgmt.tools.qubes_prefs.main([
             'default_user', 'testuser'], app=self.app))
@@ -51,7 +51,7 @@ class TC_00_qubes_prefs(qubesmgmt.tests.QubesTestCase):
 
     def test_003_invalid_property(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.global.property.Get', 'no_such_property', None)] = \
+            ('dom0', 'mgmt.property.Get', 'no_such_property', None)] = \
             b'2\x00AttributeError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
             qubesmgmt.tools.qubes_prefs.main([
@@ -60,7 +60,7 @@ class TC_00_qubes_prefs(qubesmgmt.tests.QubesTestCase):
 
     def test_004_set_invalid_property(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.global.property.Set', 'no_such_property', b'value')]\
+            ('dom0', 'mgmt.property.Set', 'no_such_property', b'value')]\
             = b'2\x00AttributeError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
             qubesmgmt.tools.qubes_prefs.main([
