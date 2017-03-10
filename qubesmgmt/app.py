@@ -107,7 +107,7 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
     domains = None
 
     def __init__(self):
-        super(QubesBase, self).__init__(self, 'mgmt.global.property.', 'dom0')
+        super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
         self.domains = VMCollection(self)
 
 
