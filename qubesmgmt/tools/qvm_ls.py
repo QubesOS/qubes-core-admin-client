@@ -41,11 +41,10 @@ import qubesmgmt.vm
 #
 
 class Column(object):
-    '''A column in qvm-ls output characterised by its head, a width and a way
+    '''A column in qvm-ls output characterised by its head and a way
     to fetch a parameter describing the domain.
 
     :param str head: Column head (usually uppercase).
-    :param int width: Column width.
     :param str attr: Attribute, possibly complex (containing ``.``). This may \
         also be a callable that gets as its only argument the domain.
     :param str doc: Description of column (will be visible in --help-columns).
@@ -54,9 +53,8 @@ class Column(object):
     #: collection of all columns
     columns = {}
 
-    def __init__(self, head, width=0, attr=None, doc=None):
+    def __init__(self, head, attr=None, doc=None):
         self.ls_head = head
-        self.ls_width = max(width, len(self.ls_head) + 1)
         self.__doc__ = doc if doc is None else qubesmgmt.utils.format_doc(doc)
 
         # intentionally not always do set self._attr,
@@ -77,12 +75,12 @@ class Column(object):
             :py:meth:`Column.format` method instead.
 
         :param qubes.vm.qubesvm.QubesVM: Domain to get a value from.
-        :returns: string that is at least as wide as needed to fill table row.
+        :returns: string to display
         :rtype: str
         '''
 
         value = self.format(vm) or '-'
-        return value.ljust(self.ls_width)
+        return value
 
 
     def format(self, vm):
@@ -117,8 +115,8 @@ class Column(object):
         return ret
 
     def __repr__(self):
-        return '{}(head={!r}, width={!r})'.format(self.__class__.__name__,
-            self.ls_head, self.ls_width)
+        return '{}(head={!r})'.format(self.__class__.__name__,
+            self.ls_head)
 
 
     def __eq__(self, other):
@@ -200,7 +198,6 @@ class StatusColumn(Column):
     def __init__(self):
         super(StatusColumn, self).__init__(
             head='STATUS',
-            width=len(self.get_flags()) + 1,
             doc=self.__class__.__doc__)
 
 
@@ -337,41 +334,41 @@ def calc_used(vm, volume_name):
 
 # todo maxmem
 
-Column('GATEWAY', width=15,
+Column('GATEWAY',
     attr='netvm.gateway',
     doc='Network gateway.')
 
-Column('MEMORY', width=5,
+Column('MEMORY',
     attr=(lambda vm: vm.get_mem() / 1024 if vm.is_running() else None),
     doc='Memory currently used by VM')
 
-Column('DISK', width=5,
+Column('DISK',
     attr=(lambda vm: vm.storage.get_disk_utilization() / 1024 / 1024),
     doc='Total disk utilisation.')
 
 
-Column('PRIV-CURR', width=5,
+Column('PRIV-CURR',
     attr=(lambda vm: calc_usage(vm, 'private')),
     doc='Disk utilisation by private image (/home, /usr/local).')
 
-Column('PRIV-MAX', width=5,
+Column('PRIV-MAX',
     attr=(lambda vm: calc_size(vm, 'private')),
     doc='Maximum available space for private image.')
 
-Column('PRIV-USED', width=5,
+Column('PRIV-USED',
     attr=(lambda vm: calc_used(vm, 'private')),
     doc='Disk utilisation by private image as a percentage of available space.')
 
 
-Column('ROOT-CURR', width=5,
+Column('ROOT-CURR',
     attr=(lambda vm: calc_usage(vm, 'root')),
     doc='Disk utilisation by root image (/usr, /lib, /etc, ...).')
 
-Column('ROOT-MAX', width=5,
+Column('ROOT-MAX',
     attr=(lambda vm: calc_size(vm, 'root')),
     doc='Maximum available space for root image.')
 
-Column('ROOT-USED', width=5,
+Column('ROOT-USED',
     attr=(lambda vm: calc_used(vm, 'root')),
     doc='Disk utilisation by root image as a percentage of available space.')
 
@@ -391,21 +388,13 @@ class Table(object):
         self.raw_data = raw_data
 
 
-    def format_head(self):
-        '''Format table head (all column heads).'''
-        return ''.join('{head:{width}s}'.format(
-                head=col.ls_head, width=col.ls_width)
-            for col in self.columns[:-1]) + \
-            self.columns[-1].ls_head
+    def get_head(self):
+        '''Get table head data (all column heads).'''
+        return [col.ls_head for col in self.columns]
 
-
-    def format_row(self, vm):
-        '''Format single table row (all columns for one domain).'''
-        if self.raw_data:
-            return '|'.join(col.format(vm) for col in self.columns)
-        else:
-            return ''.join(col.cell(vm) for col in self.columns)
-
+    def get_row(self, vm):
+        '''Get single table row data (all columns for one domain).'''
+        return [col.cell(vm) for col in self.columns]
 
     def write_table(self, stream=sys.stdout):
         '''Write whole table to file-like object.
@@ -413,10 +402,15 @@ class Table(object):
         :param file stream: Stream to write the table to.
         '''
 
+        table_data = []
         if not self.raw_data:
-            stream.write(self.format_head() + '\n')
-        for vm in self.app.domains:
-            stream.write(self.format_row(vm) + '\n')
+            table_data.append(self.get_head())
+            for vm in self.app.domains:
+                table_data.append(self.get_row(vm))
+            qubesmgmt.tools.print_table(table_data, stream=stream)
+        else:
+            for vm in self.app.domains:
+                stream.write('|'.join(self.get_row(vm)) + '\n')
 
 
 #: Available formats. Feel free to plug your own one.

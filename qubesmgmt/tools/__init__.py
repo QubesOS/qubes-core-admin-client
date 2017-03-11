@@ -497,7 +497,7 @@ class VmNameGroup(argparse._MutuallyExclusiveGroup):
         self.add_argument('VMNAME', action=vm_action, nargs='*', default=[])
 
 
-def print_table(table):
+def print_table(table, stream=sys.stdout):
     ''' Uses the unix column command to print pretty table.
 
         :param str text: list of lists/sets
@@ -508,12 +508,12 @@ def print_table(table):
     text_table += '\n'
 
     # for tests...
-    if sys.stdout != sys.__stdout__:
+    if stream != sys.__stdout__:
         p = subprocess.Popen(cmd + ['-c', '80'], stdin=subprocess.PIPE,
             stdout=subprocess.PIPE)
         p.stdin.write(text_table.encode())
         (out, _) = p.communicate()
-        sys.stdout.write(out.decode())
+        stream.write(out.decode())
     else:
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         p.communicate(text_table.encode())
