@@ -19,12 +19,12 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 ''' Manipulate VM properties.'''
-# TODO list properties for all classes
 # TODO list only non-default properties
 
 from __future__ import print_function
 
 import sys
+import textwrap
 
 import qubesmgmt
 import qubesmgmt.tools
@@ -37,9 +37,9 @@ def get_parser(vmname_nargs=1):
     parser = qubesmgmt.tools.QubesArgumentParser(
         vmname_nargs=vmname_nargs)
 
-    # parser.add_argument('--help-properties',
-    #     action=qubesmgmt.tools.HelpPropertiesAction,
-    #     klass=qubesmgmt.vm.QubesVM)
+    parser.add_argument('--help-properties',
+        action='store_true',
+        help='list all available properties with short descriptions and exit')
 
     parser.add_argument('--get', '-g',
         action='store_true',
@@ -75,6 +75,20 @@ def process_actions(parser, args, target):
     :param args: arguments to handle
     :param target: object on which actions should be performed
     '''
+    if args.help_properties:
+        properties = target.property_list()
+        width = max(len(prop) for prop in properties)
+        wrapper = textwrap.TextWrapper(width=80,
+            initial_indent='  ', subsequent_indent=' ' * (width + 6))
+
+        for prop in sorted(properties):
+            help_text = target.property_help(prop)
+
+            print(wrapper.fill('{name:{width}s}  {help_text!s}'.format(
+                name=prop, width=width, help_text=help_text)))
+
+        return 0
+
     if args.property is None:
         properties = target.property_list()
         width = max(len(prop) for prop in properties)

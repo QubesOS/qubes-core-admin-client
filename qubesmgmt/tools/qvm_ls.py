@@ -451,7 +451,10 @@ class _HelpColumnsAction(argparse.Action):
                 doc=column.__doc__ or '',
                 width=width))
             for column in sorted(Column.columns.values()))
+        text += '\n\nAdditionally any VM property may be used as a column, ' \
+                'see qvm-prefs --help-properties for available values'
         parser.exit(message=text + '\n')
+
 
 class _HelpFormatsAction(argparse.Action):
     '''Action for argument parser that displays all formats and exits.'''
