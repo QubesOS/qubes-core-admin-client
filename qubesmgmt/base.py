@@ -137,11 +137,14 @@ class PropertyHolder(object):
     def __getattr__(self, item):
         if item.startswith('_'):
             raise AttributeError(item)
-        property_str = self.qubesd_call(
-            self._method_dest,
-            self._method_prefix + 'Get',
-            item,
-            None)
+        try:
+            property_str = self.qubesd_call(
+                self._method_dest,
+                self._method_prefix + 'Get',
+                item,
+                None)
+        except qubesmgmt.exc.QubesDaemonNoResponseError:
+            raise qubesmgmt.exc.QubesPropertyAccessError(item)
         (_default, value) = property_str.split(b' ', 1)
         value = value.decode()
         if value[0] == '\'':
@@ -153,25 +156,34 @@ class PropertyHolder(object):
         if key.startswith('_') or key in dir(self):
             return super(PropertyHolder, self).__setattr__(key, value)
         if value is qubesmgmt.DEFAULT:
-            self.qubesd_call(
-                self._method_dest,
-                self._method_prefix + 'Reset',
-                key,
-                None)
+            try:
+                self.qubesd_call(
+                    self._method_dest,
+                    self._method_prefix + 'Reset',
+                    key,
+                    None)
+            except qubesmgmt.exc.QubesDaemonNoResponseError:
+                raise qubesmgmt.exc.QubesPropertyAccessError(key)
         else:
             if isinstance(value, qubesmgmt.vm.QubesVM):
                 value = value.name
-            self.qubesd_call(
-                self._method_dest,
-                self._method_prefix + 'Set',
-                key,
-                str(value).encode('utf-8'))
+            try:
+                self.qubesd_call(
+                    self._method_dest,
+                    self._method_prefix + 'Set',
+                    key,
+                    str(value).encode('utf-8'))
+            except qubesmgmt.exc.QubesDaemonNoResponseError:
+                raise qubesmgmt.exc.QubesPropertyAccessError(key)
 
     def __delattr__(self, name):
         if name.startswith('_') or name in dir(self):
             return super(PropertyHolder, self).__delattr__(name)
-        self.qubesd_call(
-            self._method_dest,
-            self._method_prefix + 'Reset',
-            name
-        )
+        try:
+            self.qubesd_call(
+                self._method_dest,
+                self._method_prefix + 'Reset',
+                name
+            )
+        except qubesmgmt.exc.QubesDaemonNoResponseError:
+            raise qubesmgmt.exc.QubesPropertyAccessError(name)
