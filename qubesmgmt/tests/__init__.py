@@ -23,6 +23,28 @@ import qubesmgmt
 import qubesmgmt.app
 
 
+class TestVM(object):
+    def __init__(self, name, **kwargs):
+        self.name = name
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def get_power_state(self):
+        return getattr(self, 'power_state', 'Running')
+
+    def __str__(self):
+        return self.name
+
+    def __lt__(self, other):
+        if isinstance(other, TestVM):
+            return self.name < other.name
+        return NotImplemented
+
+class TestVMCollection(dict):
+    def __iter__(self):
+        return iter(self.values())
+
+
 class QubesTest(qubesmgmt.app.QubesBase):
     expected_calls = None
     actual_calls = None
