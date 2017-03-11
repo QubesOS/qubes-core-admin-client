@@ -109,10 +109,7 @@ class Column(object):
         if ret is None:
             return None
 
-        if isinstance(ret, int):
-            return str(ret)
-
-        return ret
+        return str(ret)
 
     def __repr__(self):
         return '{}(head={!r})'.format(self.__class__.__name__,
@@ -405,11 +402,11 @@ class Table(object):
         table_data = []
         if not self.raw_data:
             table_data.append(self.get_head())
-            for vm in self.app.domains:
+            for vm in sorted(self.app.domains):
                 table_data.append(self.get_row(vm))
             qubesmgmt.tools.print_table(table_data, stream=stream)
         else:
-            for vm in self.app.domains:
+            for vm in sorted(self.app.domains):
                 stream.write('|'.join(self.get_row(vm)) + '\n')
 
 
@@ -524,16 +521,17 @@ def get_parser():
     return parser
 
 
-def main(args=None):
+def main(args=None, app=None):
     '''Main routine of :program:`qvm-ls`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
+    :param app: Operate on given app object instead of instantiating new one.
     '''
 
     parser = get_parser()
     try:
-        args = parser.parse_args(args)
+        args = parser.parse_args(args, app=app)
     except qubesmgmt.exc.QubesException as e:
         parser.print_error(str(e))
         return 1
