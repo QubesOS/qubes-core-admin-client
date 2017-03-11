@@ -46,6 +46,14 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         self._volumes = None
         self.app.domains.clear_cache()
 
+    def __str__(self):
+        return self._method_dest
+
+    def __lt__(self, other):
+        if isinstance(other, QubesVM):
+            return self.name < other.name
+        return NotImplemented
+
     def start(self):
         '''
         Start domain.
