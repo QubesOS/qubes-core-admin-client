@@ -474,7 +474,7 @@ def print_table(table, stream=None):
             stdout=subprocess.PIPE)
         p.stdin.write(text_table.encode())
         (out, _) = p.communicate()
-        stream.write(out.decode())
+        stream.write(str(out.decode()))
     else:
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         p.communicate(text_table.encode())
