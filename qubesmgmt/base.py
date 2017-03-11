@@ -69,6 +69,11 @@ class PropertyHolder(object):
         In case of success, return actual data. In case of error,
         raise appropriate exception.
         '''
+
+        if len(response_data) == 0:
+            raise qubesmgmt.exc.QubesDaemonNoResponseError(
+                'Got empty response from qubesd')
+
         if response_data[0:2] == b'\x30\x00':
             return response_data[2:]
         elif response_data[0:2] == b'\x32\x00':
@@ -89,7 +94,8 @@ class PropertyHolder(object):
             # TODO: handle traceback if given
             raise exc_class(format_string, *args)
         else:
-            raise qubesmgmt.exc.QubesException('Invalid response format')
+            raise qubesmgmt.exc.QubesDaemonCommunicationError(
+                'Invalid response format')
 
     def property_list(self):
         '''

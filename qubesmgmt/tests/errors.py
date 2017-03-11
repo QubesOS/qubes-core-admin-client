@@ -51,8 +51,9 @@ class TC_00_Errors(qubesmgmt.tests.QubesTestCase):
         self.assertEqual(str(context.exception), 'An error occurred: 1, 2')
 
     def test_010_empty(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = b''\
-        # FIXME: change to appropriate exception when defined
-        with self.assertRaises(qubesmgmt.exc.QubesException) as context:
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = b''
+        with self.assertRaises(qubesmgmt.exc.QubesDaemonNoResponseError) \
+                as context:
             vms = list(self.app.domains)
-        self.assertEqual(str(context.exception), 'Invalid response format')
+        self.assertEqual(str(context.exception),
+            'Got empty response from qubesd')
