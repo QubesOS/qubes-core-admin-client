@@ -101,3 +101,13 @@ class BackupCancelledError(QubesException):
 
 class QubesMemoryError(QubesException, MemoryError):
     '''Cannot start domain, because not enough memory is available'''
+
+
+class QubesDaemonCommunicationError(QubesException, IOError):
+    '''Error while communicating with qubesd, may mean insufficient
+    permissions, as well'''
+
+
+# pylint: disable=too-many-ancestors
+class QubesDaemonNoResponseError(QubesDaemonCommunicationError):
+    '''Got empty response from qubesd'''
