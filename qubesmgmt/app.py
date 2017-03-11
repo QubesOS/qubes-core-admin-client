@@ -134,7 +134,7 @@ class QubesLocal(QubesBase):
 
         client_socket.shutdown(socket.SHUT_WR)
 
-        return_data = b''.join(iter(lambda: client_socket.recv(BUF_SIZE), b''))
+        return_data = client_socket.makefile('rb').read()
         return self._parse_qubesd_response(return_data)
 
 
