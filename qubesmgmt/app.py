@@ -28,6 +28,7 @@ import subprocess
 
 import qubesmgmt.base
 import qubesmgmt.vm
+import qubesmgmt.label
 import qubesmgmt.exc
 import qubesmgmt.utils
 
@@ -100,15 +101,19 @@ class VMCollection(object):
         return self._vm_list.keys()
 
 
+
 class QubesBase(qubesmgmt.base.PropertyHolder):
     '''Main Qubes application'''
 
     #: domains (VMs) collection
     domains = None
+    #: labels collection
+    labels = None
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
         self.domains = VMCollection(self)
+        self.labels = qubesmgmt.label.LabelsCollection(self)
 
 
 class QubesLocal(QubesBase):
