@@ -33,10 +33,10 @@ class TC_00_qvm_prefs(qubesmgmt.tests.QubesTestCase):
             b'0\x00prop1\nprop2\n'
         self.app.expected_calls[
             ('dom0', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=True \'value1\''
+            b'0\x00default=True type=str value1'
         self.app.expected_calls[
             ('dom0', 'mgmt.vm.property.Get', 'prop2', None)] = \
-            b'0\x00default=False \'value2\''
+            b'0\x00default=False type=str value2'
         with qubesmgmt.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0, qubesmgmt.tools.qvm_prefs.main([
                 'dom0'], app=self.app))

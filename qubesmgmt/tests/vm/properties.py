@@ -35,21 +35,21 @@ class TC_00_Properties(qubesmgmt.tests.vm.VMTestCase):
     def test_001_get_str(self):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=False \'value\''
+            b'0\x00default=False type=str value'
         self.assertEqual(self.vm.prop1, 'value')
         self.assertAllCalled()
 
     def test_002_get_int(self):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=False 123'
+            b'0\x00default=False type=int 123'
         self.assertEqual(self.vm.prop1, 123)
         self.assertAllCalled()
 
     def test_003_get_bool(self):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=False True'
+            b'0\x00default=False type=bool True'
         self.assertEqual(self.vm.prop1, True)
         self.assertAllCalled()
 
@@ -57,28 +57,51 @@ class TC_00_Properties(qubesmgmt.tests.vm.VMTestCase):
         self.skipTest('not specified')
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=False \'test-vm\''
+            b'0\x00default=False type=vm test-vm'
         self.assertEqual(self.vm.prop1, True)
         self.assertAllCalled()
 
-    def test_005_get_none(self):
+    def test_005_get_none_vm(self):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=False None'
+            b'0\x00default=False type=vm '
         self.assertEqual(self.vm.prop1, None)
+        self.assertAllCalled()
+
+    def test_006_get_none_bool(self):
+        self.app.expected_calls[
+            ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=False type=bool '
+        with self.assertRaises(AttributeError):
+            self.vm.prop1
+        self.assertAllCalled()
+
+    def test_007_get_none_int(self):
+        self.app.expected_calls[
+            ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=False type=int '
+        with self.assertRaises(AttributeError):
+            self.vm.prop1
+        self.assertAllCalled()
+
+    def test_008_get_none_str(self):
+        self.app.expected_calls[
+            ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=False type=str '
+        self.assertEqual(self.vm.prop1, '')
         self.assertAllCalled()
 
     def test_010_get_default(self):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=False \'value\''
+            b'0\x00default=False type=str value'
         self.assertEqual(self.vm.property_is_default('prop1'), False)
         self.assertAllCalled()
 
     def test_011_get_default(self):
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
-            b'0\x00default=True \'value\''
+            b'0\x00default=True type=str value'
         self.assertEqual(self.vm.property_is_default('prop1'), True)
         self.assertAllCalled()
 

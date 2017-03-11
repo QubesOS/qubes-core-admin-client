@@ -148,6 +148,7 @@ class PropertyHolder(object):
         return is_default
 
     def __getattr__(self, item):
+        # pylint: disable=too-many-return-statements
         if item.startswith('_'):
             raise AttributeError(item)
         try:
@@ -158,12 +159,35 @@ class PropertyHolder(object):
                 None)
         except qubesmgmt.exc.QubesDaemonNoResponseError:
             raise qubesmgmt.exc.QubesPropertyAccessError(item)
-        (_default, value) = property_str.split(b' ', 1)
+        (_default, prop_type, value) = property_str.split(b' ', 2)
+        prop_type = prop_type.decode('ascii')
+        if not prop_type.startswith('type='):
+            raise qubesmgmt.exc.QubesDaemonCommunicationError(
+                'Invalid type prefix received: {}'.format(prop_type))
+        (_, prop_type) = prop_type.split('=', 1)
         value = value.decode()
-        if value[0] == '\'':
-            return ast.literal_eval('u' + value)
-        else:
+        if prop_type == 'str':
+            return str(value)
+        elif prop_type == 'bool':
+            if value == '':
+                raise AttributeError
             return ast.literal_eval(value)
+        elif prop_type == 'int':
+            if value == '':
+                raise AttributeError
+            return ast.literal_eval(value)
+        elif prop_type == 'vm':
+            if value == '':
+                return None
+            return self.app.domains[value]
+        elif prop_type == 'label':
+            if value == '':
+                return None
+            # TODO
+            return self.app.labels[value]
+        else:
+            raise qubesmgmt.exc.QubesDaemonCommunicationError(
+                'Received invalid value type: {}'.format(prop_type))
 
     def __setattr__(self, key, value):
         if key.startswith('_') or key in dir(self):
