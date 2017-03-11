@@ -117,6 +117,42 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         raise NotImplementedError
         #self.qubesd_call(self._method_dest, 'mgmt.vm.Resume')
 
+    def get_power_state(self):
+        '''Return power state description string.
+
+        Return value may be one of those:
+
+        =============== ========================================================
+        return value    meaning
+        =============== ========================================================
+        ``'Halted'``    Machine is not active.
+        ``'Transient'`` Machine is running, but does not have :program:`guid`
+                        or :program:`qrexec` available.
+        ``'Running'``   Machine is ready and running.
+        ``'Paused'``    Machine is paused.
+        ``'Suspended'`` Machine is S3-suspended.
+        ``'Halting'``   Machine is in process of shutting down (OS shutdown).
+        ``'Dying'``     Machine is in process of shutting down (cleanup).
+        ``'Crashed'``   Machine crashed and is unusable.
+        ``'NA'``        Machine is in unknown state.
+        =============== ========================================================
+
+        .. seealso::
+
+            http://wiki.libvirt.org/page/VM_lifecycle
+                Description of VM life cycle from the point of view of libvirt.
+
+            https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
+                Libvirt's enum describing precise state of a domain.
+
+        '''
+
+        vm_list_info = self.qubesd_call(
+            self._method_dest, 'mgmt.vm.List', None, None).decode('ascii')
+        #  name class=... state=... other=...
+        vm_state = vm_list_info.partition('state=')[2].split(' ')[0]
+        return vm_state
+
     @property
     def volumes(self):
         '''VM disk volumes'''
