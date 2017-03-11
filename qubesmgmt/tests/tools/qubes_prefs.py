@@ -54,8 +54,11 @@ class TC_00_qubes_prefs(qubesmgmt.tests.QubesTestCase):
             ('dom0', 'mgmt.property.Get', 'no_such_property', None)] = \
             b'2\x00AttributeError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
-            qubesmgmt.tools.qubes_prefs.main([
-                'no_such_property'], app=self.app)
+            with qubesmgmt.tests.tools.StderrBuffer() as stderr:
+                qubesmgmt.tools.qubes_prefs.main([
+                    'no_such_property'], app=self.app)
+        self.assertIn('no such property: \'no_such_property\'',
+                      stderr.getvalue())
         self.assertAllCalled()
 
     def test_004_set_invalid_property(self):
@@ -63,6 +66,9 @@ class TC_00_qubes_prefs(qubesmgmt.tests.QubesTestCase):
             ('dom0', 'mgmt.property.Set', 'no_such_property', b'value')]\
             = b'2\x00AttributeError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
-            qubesmgmt.tools.qubes_prefs.main([
-                'no_such_property', 'value'], app=self.app)
+            with qubesmgmt.tests.tools.StderrBuffer() as stderr:
+                qubesmgmt.tools.qubes_prefs.main([
+                    'no_such_property', 'value'], app=self.app)
+        self.assertIn('no such property: \'no_such_property\'',
+                      stderr.getvalue())
         self.assertAllCalled()

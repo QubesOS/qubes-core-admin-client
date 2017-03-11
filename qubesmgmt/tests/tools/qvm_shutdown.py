@@ -34,7 +34,10 @@ class TC_00_qvm_shutdown(qubesmgmt.tests.QubesTestCase):
 
     def test_001_missing_vm(self):
         with self.assertRaises(SystemExit):
-            qubesmgmt.tools.qvm_shutdown.main([], app=self.app)
+            with qubesmgmt.tests.tools.StderrBuffer() as stderr:
+                qubesmgmt.tools.qvm_shutdown.main([], app=self.app)
+        self.assertIn('one of the arguments --all VMNAME is required',
+            stderr.getvalue())
         self.assertAllCalled()
 
     def test_002_invalid_vm(self):
@@ -42,7 +45,9 @@ class TC_00_qvm_shutdown(qubesmgmt.tests.QubesTestCase):
             ('dom0', 'mgmt.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         with self.assertRaises(SystemExit):
-            qubesmgmt.tools.qvm_shutdown.main(['no-such-vm'], app=self.app)
+            with qubesmgmt.tests.tools.StderrBuffer() as stderr:
+                qubesmgmt.tools.qvm_shutdown.main(['no-such-vm'], app=self.app)
+        self.assertIn('no such domain', stderr.getvalue())
         self.assertAllCalled()
 
     def test_003_not_running(self):

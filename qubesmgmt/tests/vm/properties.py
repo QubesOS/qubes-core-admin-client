@@ -54,11 +54,11 @@ class TC_00_Properties(qubesmgmt.tests.vm.VMTestCase):
         self.assertAllCalled()
 
     def test_004_get_vm(self):
-        self.skipTest('not specified')
         self.app.expected_calls[
             ('test-vm', 'mgmt.vm.property.Get', 'prop1', None)] = \
             b'0\x00default=False type=vm test-vm'
-        self.assertEqual(self.vm.prop1, True)
+        self.assertIsInstance(self.vm.prop1, qubesmgmt.vm.QubesVM)
+        self.assertEqual(self.vm.prop1.name, 'test-vm')
         self.assertAllCalled()
 
     def test_005_get_none_vm(self):

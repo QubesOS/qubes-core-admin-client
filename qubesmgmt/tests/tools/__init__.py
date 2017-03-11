@@ -37,3 +37,19 @@ class StdoutBuffer(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = sys.__stdout__
         return False
+
+
+class StderrBuffer(object):
+    def __init__(self):
+        if sys.version_info[0] >= 3:
+            self.stderr = io.StringIO()
+        else:
+            self.stderr = io.BytesIO()
+
+    def __enter__(self):
+        sys.stderr = self.stderr
+        return self.stderr
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stderr = sys.__stderr__
+        return False
