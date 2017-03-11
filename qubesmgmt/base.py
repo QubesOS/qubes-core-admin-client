@@ -113,6 +113,19 @@ class PropertyHolder(object):
         # TODO: make it somehow immutable
         return self._properties
 
+    def property_help(self, name):
+        '''
+        Get description of a property.
+
+        :return: property help text
+        '''
+        help_text = self.qubesd_call(
+            self._method_dest,
+            self._method_prefix + 'Help',
+            name,
+            None)
+        return help_text.decode('ascii')
+
     def property_is_default(self, item):
         '''
         Check if given property have default value
