@@ -111,3 +111,11 @@ class QubesDaemonCommunicationError(QubesException, IOError):
 # pylint: disable=too-many-ancestors
 class QubesDaemonNoResponseError(QubesDaemonCommunicationError):
     '''Got empty response from qubesd'''
+
+
+class QubesPropertyAccessError(QubesException, AttributeError):
+    '''Failed to read/write property value, cause is unknown (insufficient
+    permissions, no such property, invalid value, other)'''
+    def __init__(self, prop):
+        super(QubesPropertyAccessError, self).__init__(
+            'Failed to access \'%s\' property' % prop)
