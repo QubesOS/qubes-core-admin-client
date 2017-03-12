@@ -60,8 +60,11 @@ class Volume(object):
         else:
             method = 'mgmt.pool.volume.' + func_name
             dest = 'dom0'
-            # TODO: encode ':' and vid somehow
-            arg = self._pool + ':' + self._vid
+            arg = self._pool
+            if payload is not None:
+                payload = self._vid.encode('ascii') + b' ' + payload
+            else:
+                payload = self._vid.encode('ascii')
         return self.app.qubesd_call(dest, method, arg, payload)
 
     def _fetch_info(self, force=True):

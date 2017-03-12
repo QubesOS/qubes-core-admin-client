@@ -160,7 +160,7 @@ class TestPoolVolume(TestVMVolume):
     def test_000_qubesd_call(self):
         self.app.expected_calls[
             ('dom0', 'mgmt.pool.volume.TestMethod',
-            'test-pool:some-id', None)] = \
+            'test-pool', b'some-id')] = \
             b'0\x00method_result'
         self.assertEqual(self.vol._qubesd_call('TestMethod'),
             b'method_result')
@@ -168,7 +168,7 @@ class TestPoolVolume(TestVMVolume):
 
     def expect_info(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Info', 'test-pool:some-id', None)] = \
+            ('dom0', 'mgmt.pool.volume.Info', 'test-pool', b'some-id')] = \
             b'0\x00' \
             b'pool=test-pool\n' \
             b'vid=some-id\n' \
@@ -183,8 +183,8 @@ class TestPoolVolume(TestVMVolume):
 
     def test_001_fetch_info(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Info', 'test-pool:some-id',
-            None)] = \
+            ('dom0', 'mgmt.pool.volume.Info', 'test-pool',
+            b'some-id')] = \
             b'0\x00prop1=val1\nprop2=val2\n'
         self.vol._fetch_info()
         self.assertEqual(self.vol._info, {'prop1': 'val1', 'prop2': 'val2'})
@@ -203,7 +203,7 @@ class TestPoolVolume(TestVMVolume):
     def test_021_revisions(self):
         self.app.expected_calls[
             ('dom0', 'mgmt.pool.volume.ListSnapshots',
-             'test-pool:some-id', None)] = \
+             'test-pool', b'some-id')] = \
             b'0\x00' \
             b'snapid1\n' \
             b'snapid2\n' \
@@ -215,20 +215,20 @@ class TestPoolVolume(TestVMVolume):
     def test_022_revisions_empty(self):
         self.app.expected_calls[
             ('dom0', 'mgmt.pool.volume.ListSnapshots',
-            'test-pool:some-id', None)] = b'0\x00'
+            'test-pool', b'some-id')] = b'0\x00'
         self.assertEqual(self.vol.revisions, [])
         self.assertAllCalled()
 
     def test_030_resize(self):
         self.app.expected_calls[
             ('dom0', 'mgmt.pool.volume.Resize',
-            'test-pool:some-id', b'2048')] = b'0\x00'
+            'test-pool', b'some-id 2048')] = b'0\x00'
         self.vol.resize(2048)
         self.assertAllCalled()
 
     def test_031_revert(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Revert', 'test-pool:some-id',
-            b'snapid1')] = b'0\x00'
+            ('dom0', 'mgmt.pool.volume.Revert', 'test-pool',
+            b'some-id snapid1')] = b'0\x00'
         self.vol.revert('snapid1')
         self.assertAllCalled()
