@@ -80,6 +80,11 @@ class Volume(object):
         info = info.decode('ascii')
         self._info = dict([line.split('=', 1) for line in info.splitlines()])
 
+    def __eq__(self, other):
+        if isinstance(other, Volume):
+            return self.pool == other.pool and self.vid == other.vid
+        return NotImplemented
+
     @property
     def pool(self):
         '''Storage volume pool name.'''
@@ -175,3 +180,59 @@ class Volume(object):
         if not isinstance(revision, str):
             raise TypeError('revision must be a str')
         self._qubesd_call('Revert', revision.encode('ascii'))
+
+
+class Pool(object):
+    ''' A Pool is used to manage different kind of volumes (File
+        based/LVM/Btrfs/...).
+    '''
+    def __init__(self, app, name=None):
+        ''' Initialize storage pool wrapper
+
+        :param app: Qubes() object
+        :param name: name of the pool
+        '''
+        self.app = app
+        self.name = name
+        self._config = None
+
+    def __str__(self):
+        return self.name
+
+    def __eq__(self, other):
+        if isinstance(other, Pool):
+            return self.name == other.name
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, Pool):
+            return self.name < other.name
+        return NotImplemented
+
+    @property
+    def config(self):
+        ''' Storage pool config '''
+        if self._config is None:
+            pool_info_data = self.app.qubesd_call(
+                'dom0', 'mgmt.pool.Info', self.name, None)
+            pool_info_data = pool_info_data.decode('utf-8')
+            assert pool_info_data.endswith('\n')
+            pool_info_data = pool_info_data[:-1]
+            self._config = dict(
+                l.split('=', 1) for l in pool_info_data.splitlines())
+        return self._config
+
+    @property
+    def driver(self):
+        ''' Storage pool driver '''
+        return self.config['driver']
+
+    @property
+    def volumes(self):
+        ''' Volumes managed by this pool '''
+        volumes_data = self.app.qubesd_call(
+            'dom0', 'mgmt.pool.volume.List', self.name, None)
+        assert volumes_data.endswith(b'\n')
+        volumes_data = volumes_data[:-1].decode('ascii')
+        for vid in volumes_data.splitlines():
+            yield Volume(self.app, self.name, vid)

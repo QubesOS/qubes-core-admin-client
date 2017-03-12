@@ -232,3 +232,78 @@ class TestPoolVolume(TestVMVolume):
             b'some-id snapid1')] = b'0\x00'
         self.vol.revert('snapid1')
         self.assertAllCalled()
+
+
+class TestPool(qubesmgmt.tests.QubesTestCase):
+    def test_000_list(self):
+        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+            b'0\x00file\nlvm\n'
+        seen = set()
+        for pool in self.app.pools:
+            self.assertIsInstance(pool, qubesmgmt.storage.Pool)
+            self.assertIn(pool.name, ('file', 'lvm'))
+            self.assertNotIn(pool.name, seen)
+            seen.add(pool.name)
+
+        self.assertEqual(seen, set(['file', 'lvm']))
+        self.assertAllCalled()
+
+    def test_010_config(self):
+        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+            b'0\x00file\nlvm\n'
+        self.app.expected_calls[('dom0', 'mgmt.pool.Info', 'file', None)] = \
+            b'0\x00driver=file\n' \
+            b'dir_path=/var/lib/qubes\n' \
+            b'name=file\n' \
+            b'revisions_to_keep=3\n'
+        pool = self.app.pools['file']
+        self.assertEqual(pool.config, {
+            'driver': 'file',
+            'dir_path': '/var/lib/qubes',
+            'name': 'file',
+            'revisions_to_keep': '3',
+        })
+        self.assertAllCalled()
+
+    def test_020_volumes(self):
+        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+            b'0\x00file\nlvm\n'
+        self.app.expected_calls[
+            ('dom0', 'mgmt.pool.volume.List', 'file', None)] = \
+            b'0\x00vol1\n' \
+            b'vol2\n'
+        pool = self.app.pools['file']
+        seen = set()
+        for volume in pool.volumes:
+            self.assertIsInstance(volume, qubesmgmt.storage.Volume)
+            self.assertIn(volume.vid, ('vol1', 'vol2'))
+            self.assertEqual(volume.pool, 'file')
+            self.assertNotIn(volume.vid, seen)
+            seen.add(volume.vid)
+
+        self.assertEqual(seen, set(['vol1', 'vol2']))
+        self.assertAllCalled()
+
+    def test_030_pool_drivers(self):
+        self.app.expected_calls[
+            ('dom0', 'mgmt.pool.ListDrivers', None, None)] = \
+            b'0\x00file dir_path revisions_to_keep\n' \
+            b'lvm volume_group thin_pool revisions_to_keep\n'
+        self.assertEqual(set(self.app.pool_drivers), set(['file', 'lvm']))
+        self.assertEqual(set(self.app.pool_driver_parameters('file')),
+            set(['dir_path', 'revisions_to_keep']))
+        self.assertAllCalled()
+
+    def test_040_add(self):
+        self.app.expected_calls[
+            ('dom0', 'mgmt.pool.Add', 'some-driver',
+            b'name=test-pool\nparam1=value1\nparam2=123\n')] = b'0\x00'
+        self.app.add_pool('test-pool', driver='some-driver',
+            param1='value1', param2=123)
+        self.assertAllCalled()
+
+    def test_050_remove(self):
+        self.app.expected_calls[
+            ('dom0', 'mgmt.pool.Remove', 'test-pool', None)] = b'0\x00'
+        self.app.remove_pool('test-pool')
+        self.assertAllCalled()

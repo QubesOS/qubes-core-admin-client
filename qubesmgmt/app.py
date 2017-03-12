@@ -31,6 +31,7 @@ import qubesmgmt.vm
 import qubesmgmt.label
 import qubesmgmt.exc
 import qubesmgmt.utils
+import qubesmgmt.storage
 
 QUBESD_SOCK = '/var/run/qubesd.sock'
 BUF_SIZE = 4096
@@ -109,12 +110,67 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
     domains = None
     #: labels collection
     labels = None
+    #: storage pools
+    pools = None
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
         self.domains = VMCollection(self)
         self.labels = qubesmgmt.base.WrapperObjectsCollection(
             self, 'mgmt.label.List', qubesmgmt.label.Label)
+        self.pools = qubesmgmt.base.WrapperObjectsCollection(
+            self, 'mgmt.pool.List', qubesmgmt.storage.Pool)
+        #: cache for available storage pool drivers and options to create them
+        self._pool_drivers = None
+
+    def _refresh_pool_drivers(self):
+        '''
+        Refresh cached storage pool drivers and their parameters.
+
+        :return: None
+        '''
+        if self._pool_drivers is None:
+            pool_drivers_data = self.qubesd_call(
+                'dom0', 'mgmt.pool.ListDrivers', None, None)
+            assert pool_drivers_data.endswith(b'\n')
+            pool_drivers = {}
+            for driver_line in pool_drivers_data.decode('ascii').splitlines():
+                if not driver_line:
+                    continue
+                driver_name, driver_options = driver_line.split(' ', 1)
+                pool_drivers[driver_name] = driver_options.split(' ')
+            self._pool_drivers = pool_drivers
+
+    @property
+    def pool_drivers(self):
+        ''' Available storage pool drivers '''
+        self._refresh_pool_drivers()
+        return self._pool_drivers.keys()
+
+    def pool_driver_parameters(self, driver):
+        ''' Parameters to initialize storage pool using given driver '''
+        self._refresh_pool_drivers()
+        return self._pool_drivers[driver]
+
+    def add_pool(self, name, driver, **kwargs):
+        ''' Add a storage pool to config
+
+        :param name: name of storage pool to create
+        :param driver: driver to use, see :py:meth:`pool_drivers` for
+        available drivers
+        :param kwargs: configuration parameters for storage pool,
+        see :py:meth:`pool_driver_parameters` for a list
+        '''
+        # sort parameters only to ease testing, not required by API
+        payload = 'name={}\n'.format(name) + \
+                  ''.join('{}={}\n'.format(key, value)
+            for key, value in sorted(kwargs.items()))
+        self.qubesd_call('dom0', 'mgmt.pool.Add', driver,
+            payload.encode('utf-8'))
+
+    def remove_pool(self, name):
+        ''' Remove a storage pool '''
+        self.qubesd_call('dom0', 'mgmt.pool.Remove', name, None)
 
 
 class QubesLocal(QubesBase):
