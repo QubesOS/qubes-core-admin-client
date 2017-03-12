@@ -113,7 +113,8 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
     def __init__(self):
         super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
         self.domains = VMCollection(self)
-        self.labels = qubesmgmt.label.LabelsCollection(self)
+        self.labels = qubesmgmt.base.WrapperObjectsCollection(
+            self, 'mgmt.label.List', qubesmgmt.label.Label)
 
 
 class QubesLocal(QubesBase):

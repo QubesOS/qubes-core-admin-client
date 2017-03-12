@@ -224,3 +224,63 @@ class PropertyHolder(object):
             )
         except qubesmgmt.exc.QubesDaemonNoResponseError:
             raise qubesmgmt.exc.QubesPropertyAccessError(name)
+
+
+class WrapperObjectsCollection(object):
+    '''Collection of simple named objects'''
+    def __init__(self, app, list_method, object_class):
+        '''
+        Construct manager of named wrapper objects.
+
+        :param app: Qubes() object
+        :param list_method: name of API method used to list objects,
+            must return simple "one name per line" list
+        :param object_class: object class (callable) for wrapper objects,
+            will be called with just two arguments: app and a name
+        '''
+        self.app = app
+        self._list_method = list_method
+        self._object_class = object_class
+        #: names cache
+        self._names_list = None
+        #: returned objects cache
+        self._objects = {}
+
+    def clear_cache(self):
+        '''Clear cached list of names'''
+        self._names_list = None
+
+    def refresh_cache(self, force=False):
+        '''Refresh cached list of names'''
+        if not force and self._names_list is not None:
+            return
+        list_data = self.app.qubesd_call('dom0', self._list_method)
+        list_data = list_data.decode('ascii')
+        assert list_data[-1] == '\n'
+        self._names_list = list_data[:-1].splitlines()
+
+        for name, obj in list(self._objects.items()):
+            if obj.name not in self._names_list:
+                # Object no longer exists
+                del self._objects[name]
+
+    def __getitem__(self, item):
+        if item not in self:
+            raise KeyError(item)
+        if item not in self._objects:
+            self._objects[item] = self._object_class(self.app, item)
+        return self._objects[item]
+
+    def __contains__(self, item):
+        self.refresh_cache()
+        return item in self._names_list
+
+    def __iter__(self):
+        self.refresh_cache()
+        for obj in self._names_list:
+            yield self[obj]
+
+    def keys(self):
+        '''Get list of names.'''
+        self.refresh_cache()
+        return self._names_list.copy()
