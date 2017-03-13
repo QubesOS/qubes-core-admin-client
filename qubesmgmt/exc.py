@@ -103,6 +103,10 @@ class QubesMemoryError(QubesException, MemoryError):
     '''Cannot start domain, because not enough memory is available'''
 
 
+class StoragePoolException(QubesException):
+    ''' A general storage exception '''
+
+
 class QubesDaemonCommunicationError(QubesException, IOError):
     '''Error while communicating with qubesd, may mean insufficient
     permissions, as well'''
