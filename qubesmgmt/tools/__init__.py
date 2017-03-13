@@ -229,6 +229,45 @@ class VolumeAction(QubesAction):
             parser.error('expected a pool & volume id combination like foo:bar')
 
 
+class VMVolumeAction(QubesAction):
+    ''' Action for argument parser that gets the
+        :py:class:``qubes.storage.Volume`` from a VM:VOLUME string.
+    '''
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, help='A pool & volume id combination',
+                 required=True, **kwargs):
+        # pylint: disable=redefined-builtin
+        super(VMVolumeAction, self).__init__(help=help, required=required,
+                                           **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        ''' Set ``namespace.vmname`` to ``values`` '''
+        setattr(namespace, self.dest, values)
+
+    def parse_qubes_app(self, parser, namespace):
+        ''' Acquire the :py:class:``qubes.storage.Volume`` object from
+            ``namespace.app``.
+        '''
+        assert hasattr(namespace, 'app')
+        app = namespace.app
+
+        try:
+            vm_name, vol_name = getattr(namespace, self.dest).split(':')
+            try:
+                vm = app.domains[vm_name]
+                try:
+                    volume = vm.volumes[vol_name]
+                    setattr(namespace, self.dest, volume)
+                except KeyError:
+                    parser.error_runtime('vm {!r} has no volume {!r}'.format(
+                        vm_name, vol_name))
+            except KeyError:
+                parser.error_runtime('no vm {!r}'.format(vm_name))
+        except ValueError:
+            parser.error('expected a vm & volume combination like foo:bar')
+
+
 class PoolsAction(QubesAction):
     ''' Action for argument parser to gather multiple pools '''
     # pylint: disable=too-few-public-methods
@@ -247,7 +286,7 @@ class PoolsAction(QubesAction):
         pool_names = getattr(namespace, self.dest)
         if pool_names:
             try:
-                pools = [app.get_pool(name) for name in pool_names]
+                pools = [app.pools[name] for name in pool_names]
                 setattr(namespace, self.dest, pools)
             except qubesmgmt.exc.QubesException as e:
                 parser.error(str(e))
