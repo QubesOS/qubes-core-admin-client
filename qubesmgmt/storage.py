@@ -92,7 +92,7 @@ class Volume(object):
             return self._pool
         else:
             self._fetch_info()
-            return self._info['pool']
+            return str(self._info['pool'])
 
     @property
     def vid(self):
@@ -101,7 +101,7 @@ class Volume(object):
             return self._vid
         else:
             self._fetch_info()
-            return self._info['vid']
+            return str(self._info['vid'])
 
     @property
     def size(self):
@@ -202,6 +202,8 @@ class Pool(object):
     def __eq__(self, other):
         if isinstance(other, Pool):
             return self.name == other.name
+        elif isinstance(other, str):
+            return self.name == other
         return NotImplemented
 
     def __lt__(self, other):

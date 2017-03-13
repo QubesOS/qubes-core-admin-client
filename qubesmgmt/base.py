@@ -257,7 +257,7 @@ class WrapperObjectsCollection(object):
         list_data = self.app.qubesd_call('dom0', self._list_method)
         list_data = list_data.decode('ascii')
         assert list_data[-1] == '\n'
-        self._names_list = list_data[:-1].splitlines()
+        self._names_list = [str(name) for name in list_data[:-1].splitlines()]
 
         for name, obj in list(self._objects.items()):
             if obj.name not in self._names_list:

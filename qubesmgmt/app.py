@@ -60,6 +60,7 @@ class VMCollection(object):
         # FIXME: this will probably change
         for vm_data in vm_list_data.splitlines():
             vm_name, props = vm_data.decode('ascii').split(' ', 1)
+            vm_name = str(vm_name)
             props = props.split(' ')
             new_vm_list[vm_name] = dict(
                 [vm_prop.split('=', 1) for vm_prop in props])
