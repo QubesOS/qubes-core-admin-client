@@ -27,13 +27,13 @@ import socket
 import subprocess
 
 import qubesmgmt.base
-import qubesmgmt.vm
-import qubesmgmt.label
 import qubesmgmt.exc
-import qubesmgmt.utils
+import qubesmgmt.label
 import qubesmgmt.storage
+import qubesmgmt.utils
+import qubesmgmt.vm
+import qubesmgmt.config
 
-QUBESD_SOCK = '/var/run/qubesd.sock'
 BUF_SIZE = 4096
 
 
@@ -101,7 +101,6 @@ class VMCollection(object):
         '''Get list of VM names.'''
         self.refresh_cache()
         return self._vm_list.keys()
-
 
 
 class QubesBase(qubesmgmt.base.PropertyHolder):
@@ -182,7 +181,7 @@ class QubesLocal(QubesBase):
     def qubesd_call(self, dest, method, arg=None, payload=None):
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            client_socket.connect(QUBESD_SOCK)
+            client_socket.connect(qubesmgmt.config.QUBESD_SOCKET)
         except IOError:
             # TODO:
             raise

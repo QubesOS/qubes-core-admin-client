@@ -18,17 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Qubes OS management client.'''
+'''Configuration variables/constants'''
 
-import os
-
-import qubesmgmt.config
-import qubesmgmt.base
-import qubesmgmt.app
-
-DEFAULT = qubesmgmt.base.DEFAULT
-
-if os.path.exists(qubesmgmt.config.QUBESD_SOCKET):
-    Qubes = qubesmgmt.app.QubesLocal
-else:
-    Qubes = qubesmgmt.app.QubesRemote
+#: path to qubesd socket
+QUBESD_SOCKET = '/var/run/qubesd.sock'
