@@ -40,12 +40,11 @@ Python3 module qubesmgmt.
 
 
 %build
-make %{?_smp_mflags} PYTHON=%{__python2}
-make %{?_smp_mflags} PYTHON=%{__python3}
-
 
 %install
+rm -rf build
 %make_install PYTHON=%{__python2}
+rm -rf build
 %make_install PYTHON=%{__python3}
 
 

@@ -1,10 +1,13 @@
 #!/bin/sh
 
 : "${PYTHON:=python}"
-: "${TESTPYTHONPATH:=test-packages}"
+: "${ROOTDIR:=.}"
+: "${TESTPYTHONPATH:=$ROOTDIR/test-packages}"
 
 PYTHONPATH="${TESTPYTHONPATH}:${PYTHONPATH}"
 export PYTHONPATH
 
-"${PYTHON}" setup.py egg_info --egg-base "${TESTPYTHONPATH}"
-"${PYTHON}" -m coverage run --rcfile=ci/coveragerc -m unittest discover -p '*.py' -v "$@"
+[ -r version ] || ln -s ${ROOTDIR}/version ./
+[ -r setup.py ] || ln -s ${ROOTDIR}/setup.py ./
+"${PYTHON}" ./setup.py egg_info --egg-base "${TESTPYTHONPATH}"
+"${PYTHON}" -m coverage run --rcfile=$ROOTDIR/ci/coveragerc -m unittest discover -s qubesmgmt/tests -p '*.py' -v "$@"
