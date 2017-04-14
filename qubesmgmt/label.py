@@ -22,6 +22,7 @@
 
 import qubesmgmt.exc
 
+
 class Label(object):
     '''Label definition for virtual machines
 
@@ -35,6 +36,7 @@ class Label(object):
         self.app = app
         self._name = name
         self._color = None
+        self._index = None
 
     @property
     def color(self):
@@ -52,6 +54,24 @@ class Label(object):
     def name(self):
         '''label's name like "red" or "green"'''
         return self._name
+
+    @property
+    def icon(self):
+        '''freedesktop icon name, suitable for use in
+        :py:meth:`PyQt4.QtGui.QIcon.fromTheme`'''
+        return 'appvm-' + self.name
+
+    @property
+    def index(self):
+        '''color specification as in HTML (``#abcdef``)'''
+        if self._index is None:
+            try:
+                qubesd_response = self.app.qubesd_call(
+                    'dom0', 'mgmt.label.Index', self._name, None)
+            except qubesmgmt.exc.QubesDaemonNoResponseError:
+                raise AttributeError
+            self._index = int(qubesd_response.decode())
+        return self._index
 
     def __str__(self):
         return self._name

@@ -51,3 +51,18 @@ class TC_00_Label(qubesmgmt.tests.QubesTestCase):
         label = self.app.labels['green']
         self.assertEqual(label.color, '0x00FF00')
 
+    def test_012_get_index(self):
+        self.app.expected_calls[
+            ('dom0', 'mgmt.label.List', None, None)] = \
+            b'0\x00green\nred\nblack\n'
+        self.app.expected_calls[
+            ('dom0', 'mgmt.label.Index', 'green', None)] = b'0\x003'
+        label = self.app.labels['green']
+        self.assertEqual(label.index, 3)
+
+    def test_024_get_icon(self):
+        self.app.expected_calls[
+            ('dom0', 'mgmt.label.List', None, None)] = \
+            b'0\x00green\nred\nblack\n'
+        label = self.app.labels['green']
+        self.assertEqual(label.icon, 'appvm-green')
