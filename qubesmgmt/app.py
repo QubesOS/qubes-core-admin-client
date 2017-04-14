@@ -112,6 +112,8 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
     labels = None
     #: storage pools
     pools = None
+    #: type of qubesd connection: either 'socket' or 'qrexec'
+    qubesd_connection_type = None
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
@@ -178,6 +180,9 @@ class QubesLocal(QubesBase):
 
     Used when running in dom0.
     '''
+
+    qubesd_connection_type = 'socket'
+
     def qubesd_call(self, dest, method, arg=None, payload=None):
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -205,6 +210,9 @@ class QubesRemote(QubesBase):
 
     Used when running in VM.
     '''
+
+    qubesd_connection_type = 'qrexec'
+
     def qubesd_call(self, dest, method, arg=None, payload=None):
         service_name = method
         if arg is not None:
