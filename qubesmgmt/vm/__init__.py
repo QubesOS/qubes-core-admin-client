@@ -20,15 +20,20 @@
 
 '''Qubes VM objects.'''
 
+import logging
 import qubesmgmt.base
 import qubesmgmt.storage
 
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
     '''Qubes domain.'''
+
+    log = None
+
     def __init__(self, app, name):
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
         self._volumes = None
+        self.log = logging.getLogger(name)
 
     @property
     def name(self):

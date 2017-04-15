@@ -29,7 +29,7 @@ import sys
 
 import dbus
 
-FORMAT_CONSOLE = '%(message)s'
+FORMAT_CONSOLE = '%(name)s: %(message)s'
 FORMAT_LOG = '%(asctime)s %(message)s'
 FORMAT_DEBUG = '%(asctime)s ' \
     '[%(processName)s %(module)s.%(funcName)s:%(lineno)d] %(name)s: %(message)s'

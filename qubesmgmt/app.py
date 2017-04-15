@@ -26,6 +26,8 @@ Main Qubes() class and related classes.
 import socket
 import subprocess
 
+import logging
+
 import qubesmgmt.base
 import qubesmgmt.exc
 import qubesmgmt.label
@@ -114,6 +116,8 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
     pools = None
     #: type of qubesd connection: either 'socket' or 'qrexec'
     qubesd_connection_type = None
+    #: logger
+    log = None
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
@@ -124,6 +128,7 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
             self, 'mgmt.pool.List', qubesmgmt.storage.Pool)
         #: cache for available storage pool drivers and options to create them
         self._pool_drivers = None
+        self.log = logging.getLogger('app')
 
     def _refresh_pool_drivers(self):
         '''
