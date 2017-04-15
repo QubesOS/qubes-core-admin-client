@@ -167,8 +167,37 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
         vm_list_info = self.qubesd_call(
             self._method_dest, 'mgmt.vm.List', None, None).decode('ascii')
         #  name class=... state=... other=...
-        vm_state = vm_list_info.partition('state=')[2].split(' ')[0]
+        vm_state = vm_list_info.strip().partition('state=')[2].split(' ')[0]
         return vm_state
+
+
+    def is_halted(self):
+        ''' Check whether this domain's state is 'Halted'
+            :returns: :py:obj:`True` if this domain is halted, \
+                :py:obj:`False` otherwise.
+            :rtype: bool
+        '''
+        return self.get_power_state() == 'Halted'
+
+    def is_paused(self):
+        '''Check whether this domain is paused.
+
+        :returns: :py:obj:`True` if this domain is paused, \
+            :py:obj:`False` otherwise.
+        :rtype: bool
+        '''
+
+        return self.get_power_state() == 'Paused'
+
+    def is_running(self):
+        '''Check whether this domain is running.
+
+        :returns: :py:obj:`True` if this domain is started, \
+            :py:obj:`False` otherwise.
+        :rtype: bool
+        '''
+
+        return self.get_power_state() != 'Halted'
 
     @property
     def volumes(self):
