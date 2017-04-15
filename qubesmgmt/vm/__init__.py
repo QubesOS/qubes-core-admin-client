@@ -22,6 +22,7 @@
 
 import logging
 import qubesmgmt.base
+import qubesmgmt.exc
 import qubesmgmt.storage
 import qubesmgmt.features
 
@@ -212,6 +213,54 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
                 self._volumes[volname] = qubesmgmt.storage.Volume(self.app,
                     vm=self.name, vm_name=volname)
         return self._volumes
+
+    def run_service(self, service, **kwargs):
+        '''Run service on this VM
+
+        :param str service: service name
+        :rtype: subprocess.Popen
+        '''
+        return self.app.run_service(self._method_dest, service, **kwargs)
+
+    def run_service_for_stdio(self, service, input=None, **kwargs):
+        '''Run a service, pass an optional input and return (stdout, stderr).
+
+        Raises an exception if return code != 0.
+
+        *args* and *kwargs* are passed verbatim to :py:meth:`run_service`.
+
+        .. warning::
+            There are some combinations if stdio-related *kwargs*, which are
+            not filtered for problems originating between the keyboard and the
+            chair.
+        '''  # pylint: disable=redefined-builtin
+        p = self.run_service(service, **kwargs)
+
+        # this one is actually a tuple, but there is no need to unpack it
+        stdouterr = p.communicate(input=input)
+
+        if p.returncode:
+            raise qubesmgmt.exc.QubesVMError(self,
+                'service {!r} failed with retcode {!r}; '
+                'stdout={!r} stderr={!r}'.format(
+                    service, p.returncode, *stdouterr))
+
+        return stdouterr
+
+    @staticmethod
+    def prepare_input_for_vmshell(command, input=None):
+        '''Prepare shell input for the given command and optional (real) input
+        '''  # pylint: disable=redefined-builtin
+        if input is None:
+            input = b''
+        return b''.join((command.rstrip('\n').encode('utf-8'), b'\n', input))
+
+    def run(self, command, input=None, **kwargs):
+        '''Run a shell command inside the domain using qubes.VMShell qrexec.
+
+        '''  # pylint: disable=redefined-builtin
+        return self.run_service_for_stdio('qubes.VMShell',
+            input=self.prepare_input_for_vmshell(command, input), **kwargs)
 
 # pylint: disable=abstract-method
 class AdminVM(QubesVM):

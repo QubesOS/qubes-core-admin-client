@@ -22,7 +22,7 @@
 '''
 Main Qubes() class and related classes.
 '''
-
+import shlex
 import socket
 import subprocess
 
@@ -179,6 +179,23 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
         ''' Remove a storage pool '''
         self.qubesd_call('dom0', 'mgmt.pool.Remove', name, None)
 
+    def run_service(self, dest, service, filter_esc=False, user=None,
+            localcmd=None, **kwargs):
+        '''Run qrexec service in a given destination
+
+        *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
+
+        :param str dest: Destination - may be a VM name or empty
+        string for default (for a given service)
+        :param str service: service name
+        :param bool filter_esc: filter escape sequences to protect terminal \
+            emulator
+        :param str user: username to run service as
+        :param str localcmd: Command to connect stdin/stdout to
+        :rtype: subprocess.Popen
+        '''
+        raise NotImplementedError
+
 
 class QubesLocal(QubesBase):
     '''Application object communicating through local socket.
@@ -209,6 +226,41 @@ class QubesLocal(QubesBase):
         return_data = client_socket.makefile('rb').read()
         return self._parse_qubesd_response(return_data)
 
+    def run_service(self, dest, service, filter_esc=False, user=None,
+            localcmd=None, **kwargs):
+        '''Run qrexec service in a given destination
+
+        :param str dest: Destination - may be a VM name or empty
+        string for default (for a given service)
+        :param str service: service name
+        :param bool filter_esc: filter escape sequences to protect terminal \
+            emulator
+        :param str user: username to run service as
+        :param str localcmd: Command to connect stdin/stdout to
+        :rtype: subprocess.Popen
+        '''
+
+        if not dest:
+            raise ValueError('Empty destination name allowed only from a VM')
+        try:
+            self.qubesd_call(dest, 'mgmt.vm.Start')
+        except qubesmgmt.exc.QubesVMNotHaltedError:
+            pass
+        qrexec_opts = ['-d', dest]
+        if filter_esc:
+            qrexec_opts.extend(['-t', '-T'])
+        if localcmd:
+            qrexec_opts.extend(['-l', localcmd])
+        if user is None:
+            user = 'DEFAULT'
+        kwargs.setdefault('stdin', subprocess.PIPE)
+        kwargs.setdefault('stdout', subprocess.PIPE)
+        kwargs.setdefault('stderr', subprocess.PIPE)
+        proc = subprocess.Popen([qubesmgmt.config.QREXEC_CLIENT] +
+            qrexec_opts + ['{}:QUBESRPC {} dom0'.format(user, service)],
+            **kwargs)
+        return proc
+
 
 class QubesRemote(QubesBase):
     '''Application object communicating through qrexec services.
@@ -232,3 +284,30 @@ class QubesRemote(QubesBase):
                 stderr.decode())
 
         return self._parse_qubesd_response(stdout)
+
+    def run_service(self, dest, service, filter_esc=False, user=None,
+            localcmd=None, **kwargs):
+        '''Run qrexec service in a given destination
+
+        :param str dest: Destination - may be a VM name or empty
+        string for default (for a given service)
+        :param str service: service name
+        :param bool filter_esc: filter escape sequences to protect terminal \
+            emulator
+        :param str user: username to run service as
+        :param str localcmd: Command to connect stdin/stdout to
+        :rtype: subprocess.Popen
+        '''
+        if filter_esc:
+            raise NotImplementedError(
+                'filter_esc not implemented for calls from VM')
+        if user:
+            raise ValueError(
+                'non-default user not possible for calls from VM')
+        kwargs.setdefault('stdin', subprocess.PIPE)
+        kwargs.setdefault('stdout', subprocess.PIPE)
+        kwargs.setdefault('stderr', subprocess.PIPE)
+        proc = subprocess.Popen([qubesmgmt.config.QREXEC_CLIENT_VM,
+            dest, service] + shlex.split(localcmd) if localcmd else [],
+            **kwargs)
+        return proc
