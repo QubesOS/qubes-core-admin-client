@@ -33,6 +33,7 @@ import textwrap
 
 import qubesmgmt.log
 import qubesmgmt.exc
+import qubesmgmt.vm
 
 #: constant returned when some action should be performed on all qubes
 VM_ALL = object()
@@ -142,7 +143,8 @@ class VmNameAction(QubesAction):
             namespace.domains = [
                 vm
                 for vm in app.domains
-                if vm.qid != 0 and vm.name not in namespace.exclude
+                if not isinstance(vm, qubesmgmt.vm.AdminVM) and
+                   vm.name not in namespace.exclude
             ]
         else:
             if hasattr(namespace, 'exclude') and namespace.exclude:
