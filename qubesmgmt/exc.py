@@ -103,6 +103,10 @@ class QubesMemoryError(QubesException, MemoryError):
     '''Cannot start domain, because not enough memory is available'''
 
 
+class QubesFeatureNotFoundError(QubesException, KeyError):
+    '''Feature not set for a given domain'''
+
+
 class StoragePoolException(QubesException):
     ''' A general storage exception '''
 

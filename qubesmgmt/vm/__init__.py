@@ -23,6 +23,7 @@
 import logging
 import qubesmgmt.base
 import qubesmgmt.storage
+import qubesmgmt.features
 
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
@@ -30,10 +31,13 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
 
     log = None
 
+    features = None
+
     def __init__(self, app, name):
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
         self._volumes = None
         self.log = logging.getLogger(name)
+        self.features = qubesmgmt.features.Features(self)
 
     @property
     def name(self):
