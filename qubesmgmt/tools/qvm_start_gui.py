@@ -26,12 +26,79 @@ import subprocess
 
 import asyncio
 
+import re
+
 import qubesmgmt
 import qubesmgmt.events
 import qubesmgmt.tools
+import qubesmgmt.vm
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
+
+# "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
+REGEX_OUTPUT = re.compile(r'''
+        (?x)                           # ignore whitespace
+        ^                              # start of string
+        (?P<output>[A-Za-z0-9\-]*)[ ]  # LVDS VGA etc
+        (?P<connect>(dis)?connected)   # dis/connected
+        ([ ]
+        (?P<primary>(primary)?)[ ]?
+        ((                             # a group
+           (?P<width>\d+)x             # either 1024x768+0+0
+           (?P<height>\d+)[+]
+           (?P<x>\d+)[+]
+           (?P<y>\d+)
+         )|[\D])                       # or not a digit
+        ([ ]\(.*\))?[ ]?               # ignore options
+        (                              #  304mm x 228mm
+           (?P<width_mm>\d+)mm[ ]x[ ]
+           (?P<height_mm>\d+)mm
+        )?
+        .*                             # ignore rest of line
+        )?                             # everything after (dis)connect is optional
+        ''')
+
+
+def get_monitor_layout():
+    '''Get list of monitors and their size/position'''
+    outputs = []
+
+    for line in subprocess.Popen(
+            ['xrandr', '-q'], stdout=subprocess.PIPE).stdout:
+        line = line.decode()
+        if not line.startswith("Screen") and not line.startswith(" "):
+            output_params = REGEX_OUTPUT.match(line).groupdict()
+            if output_params['width']:
+                phys_size = ""
+                if output_params['width_mm'] and int(output_params['width_mm']):
+                    # don't provide real values for privacy reasons - see
+                    # #1951 for details
+                    dpi = (int(output_params['width']) * 254 //
+                          int(output_params['width_mm']) // 10)
+                    if dpi > 300:
+                        dpi = 300
+                    elif dpi > 200:
+                        dpi = 200
+                    elif dpi > 150:
+                        dpi = 150
+                    else:
+                        # if lower, don't provide this info to the VM at all
+                        dpi = 0
+                    if dpi:
+                        # now calculate dimensions based on approximate DPI
+                        phys_size = " {} {}".format(
+                            int(output_params['width']) * 254 // dpi // 10,
+                            int(output_params['height']) * 254 // dpi // 10,
+                        )
+                outputs.append("%s %s %s %s%s\n" % (
+                            output_params['width'],
+                            output_params['height'],
+                            output_params['x'],
+                            output_params['y'],
+                            phys_size,
+                ))
+    return outputs
 
 
 class GUILauncher(object):
@@ -134,7 +201,7 @@ class GUILauncher(object):
         return asyncio.create_subprocess_exec(*guid_cmd)
 
     @asyncio.coroutine
-    def start_gui(self, vm, force_stubdom=False):
+    def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
         '''Start GUI daemon regardless of start event.
 
         This function is a coroutine.
@@ -155,6 +222,60 @@ class GUILauncher(object):
         if not os.path.exists(self.guid_pidfile(vm.xid)):
             yield from self.start_gui_for_vm(vm)
 
+        yield from self.send_monitor_layout(vm, layout=monitor_layout,
+            startup=True)
+
+    @asyncio.coroutine
+    def send_monitor_layout(self, vm, layout=None, startup=False):
+        '''Send monitor layout to a given VM
+
+        This function is a coroutine.
+
+        :param vm: VM to which send monitor layout
+        :param layout: monitor layout to send; if None, fetch it from
+        local X server.
+        :param startup:
+        :return: None
+        '''
+        # pylint: disable=no-self-use
+        if vm.features.check_with_template('no-monitor-layout', False) \
+                or not vm.is_running():
+            return
+
+        if layout is None:
+            layout = get_monitor_layout()
+            if not layout:
+                return
+
+        vm.log.info('Sending monitor layout')
+
+        if not startup:
+            with open(self.guid_pidfile(vm.xid)) as pidfile:
+                pid = int(pidfile.read())
+            os.kill(pid, signal.SIGHUP)
+            try:
+                with open(self.guid_pidfile(vm.stubdom_xid)) as pidfile:
+                    pid = int(pidfile.read())
+                os.kill(pid, signal.SIGHUP)
+            except FileNotFoundError:
+                pass
+
+        yield from asyncio.get_event_loop().run_in_executor(None,
+            vm.run_service_for_stdio, 'qubes.SetMonitorLayout',
+                ''.join(layout).encode())
+
+    def send_monitor_layout_all(self):
+        '''Send monitor layout to all (running) VMs'''
+        monitor_layout = get_monitor_layout()
+        for vm in self.app.domains:
+            if isinstance(vm, qubesmgmt.vm.AdminVM):
+                continue
+            if vm.is_running():
+                if not vm.features.check_with_template('gui', True):
+                    continue
+                asyncio.ensure_future(self.send_monitor_layout(vm,
+                    monitor_layout))
+
     def on_domain_spawn(self, vm, _event, **kwargs):
         '''Handler of 'domain-spawn' event, starts GUI daemon for stubdomain'''
         if not vm.features.check_with_template('gui', True):
@@ -172,11 +293,14 @@ class GUILauncher(object):
     def on_connection_established(self, _subject, _event, **_kwargs):
         '''Handler of 'connection-established' event, used to launch GUI
         daemon for domains started before this tool. '''
+
+        monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
             if isinstance(vm, qubesmgmt.vm.AdminVM):
                 continue
             if vm.is_running():
-                asyncio.ensure_future(self.start_gui(vm))
+                asyncio.ensure_future(self.start_gui(vm,
+                    monitor_layout=monitor_layout))
 
     def register_events(self, events):
         '''Register domain startup events in app.events dispatcher'''
@@ -208,6 +332,8 @@ def main(args=None):
         for signame in ('SIGINT', 'SIGTERM'):
             loop.add_signal_handler(getattr(signal, signame),
                 events_listener.cancel)  # pylint: disable=no-member
+
+        loop.add_signal_handler(signal.SIGHUP, launcher.send_monitor_layout_all)
 
         try:
             loop.run_until_complete(events_listener)
