@@ -209,7 +209,10 @@ def main(args=None):
             loop.add_signal_handler(getattr(signal, signame),
                 events_listener.cancel)  # pylint: disable=no-member
 
-        loop.run_until_complete(events_listener)
+        try:
+            loop.run_until_complete(events_listener)
+        except asyncio.CancelledError:
+            pass
         loop.stop()
         loop.run_forever()
         loop.close()

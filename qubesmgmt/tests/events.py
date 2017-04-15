@@ -111,7 +111,8 @@ class TC_00_Events(qubesmgmt.tests.QubesTestCase):
             b'1\0some-vm\0other-event\0\0',
         ]
         asyncio.ensure_future(self.send_events(stream, events))
-        loop.run_until_complete(self.dispatcher.listen_for_events())
+        loop.run_until_complete(self.dispatcher.listen_for_events(
+            reconnect=False))
         self.assertEqual(handler.mock_calls, [
             unittest.mock.call(None, 'some-event', arg1='value1'),
             unittest.mock.call(
