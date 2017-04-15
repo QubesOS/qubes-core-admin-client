@@ -147,7 +147,7 @@ class TC_90_List_with_qubesd_calls(qubesmgmt.tests.QubesTestCase):
             qubesmgmt.tools.qvm_ls.main([], app=self.app)
         self.assertEqual(stdout.getvalue(),
             'NAME       STATUS    LABEL  TEMPLATE   NETVM\n'
-            'sys-net    a--N----  red    template1  sys-net\n'
+            'sys-net    ar-N----  red    template1  sys-net\n'
             'template1  t-U-----  black  -          sys-net\n'
-            'vm1        a-------  green  template1  sys-net\n')
+            'vm1        ar------  green  template1  sys-net\n')
         self.assertAllCalled()

@@ -24,7 +24,7 @@ import qubesmgmt.tests
 class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
     def test_000_list(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=running\n'
+            b'0\x00test-vm class=AppVM state=Running\n'
         self.assertEqual(
             list(self.app.domains.keys()),
             ['test-vm'])
@@ -32,7 +32,7 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
 
     def test_001_getitem(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=running\n'
+            b'0\x00test-vm class=AppVM state=Running\n'
         try:
             vm = self.app.domains['test-vm']
             self.assertEqual(vm.name, 'test-vm')
@@ -46,7 +46,7 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
 
     def test_002_in(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=running\n'
+            b'0\x00test-vm class=AppVM state=Running\n'
         self.assertIn('test-vm', self.app.domains)
         self.assertAllCalled()
 
@@ -55,7 +55,7 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
 
     def test_003_iter(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=running\n'
+            b'0\x00test-vm class=AppVM state=Running\n'
         self.assertEqual([vm.name for vm in self.app.domains], ['test-vm'])
         self.assertAllCalled()
 

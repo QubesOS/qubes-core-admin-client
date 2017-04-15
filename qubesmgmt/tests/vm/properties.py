@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-import qubesmgmt.tests
+import qubesmgmt.tests.vm
 
 
 class TC_00_Properties(qubesmgmt.tests.vm.VMTestCase):
@@ -177,3 +177,35 @@ class TC_01_SpecialCases(qubesmgmt.tests.vm.VMTestCase):
             ('test-vm', 'mgmt.vm.property.Set', 'name', b'test-vm2')]
         vm = self.app.domains['test-vm']
         self.assertAllCalled()
+
+    def test_010_power_state_running(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.assertEqual(self.vm.get_power_state(), 'Running')
+        self.assertTrue(self.vm.is_running())
+        self.assertFalse(self.vm.is_halted())
+        self.assertFalse(self.vm.is_paused())
+
+    def test_011_power_state_paused(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Paused\n'
+        self.assertEqual(self.vm.get_power_state(), 'Paused')
+        self.assertTrue(self.vm.is_running())
+        self.assertFalse(self.vm.is_halted())
+        self.assertTrue(self.vm.is_paused())
+
+    def test_012_power_state_halted(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.assertEqual(self.vm.get_power_state(), 'Halted')
+        self.assertFalse(self.vm.is_running())
+        self.assertTrue(self.vm.is_halted())
+        self.assertFalse(self.vm.is_paused())
+
+    def test_012_power_state_transient(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Transient\n'
+        self.assertEqual(self.vm.get_power_state(), 'Transient')
+        self.assertTrue(self.vm.is_running())
+        self.assertFalse(self.vm.is_halted())
+        self.assertFalse(self.vm.is_paused())
