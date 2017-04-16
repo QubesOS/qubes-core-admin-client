@@ -274,7 +274,8 @@ class QubesRemote(QubesBase):
         service_name = method
         if arg is not None:
             service_name += '+' + arg
-        p = subprocess.Popen(['qrexec-client-vm', dest, service_name],
+        p = subprocess.Popen([qubesmgmt.config.QREXEC_CLIENT_VM,
+            dest, service_name],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (stdout, stderr) = p.communicate(payload)
