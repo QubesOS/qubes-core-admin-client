@@ -28,6 +28,7 @@ import asyncio
 
 import re
 
+import daemon.pidfile
 import qubesmgmt
 import qubesmgmt.events
 import qubesmgmt.tools
@@ -310,10 +311,21 @@ class GUILauncher(object):
             self.on_connection_established)
 
 
+if 'XDG_RUNTIME_DIR' in os.environ:
+    pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
+        'qvm-start-gui.pid')
+else:
+    pidfile_path = os.path.join(os.environ.get('HOME', '/'),
+        '.qvm-start-gui.pid')
+
 parser = qubesmgmt.tools.QubesArgumentParser(
     description='forceful shutdown of a domain', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
     help='Keep watching for further domains startups, must be used with --all')
+parser.add_argument('--pidfile', action='store', default=pidfile_path,
+    help='Pidfile path to create in --watch mode')
+parser.add_argument('--notify-monitory-layout', action='store_true',
+    help='Notify running instance in --watch mode about changed monitor layout')
 
 
 def main(args=None):
@@ -321,27 +333,39 @@ def main(args=None):
     args = parser.parse_args(args)
     if args.watch and not args.all_domains:
         parser.error('--watch option must be used with --all')
+    if args.watch and args.notify_monitor_layout:
+        parser.error('--watch cannot be used with --notify-monitor-layout')
     launcher = GUILauncher(args.app)
     if args.watch:
-        loop = asyncio.get_event_loop()
-        events = qubesmgmt.events.EventsDispatcher(args.app)
-        launcher.register_events(events)
+        with daemon.pidfile.TimeoutPIDLockFile(args.pidfile):
+            loop = asyncio.get_event_loop()
+            events = qubesmgmt.events.EventsDispatcher(args.app)
+            launcher.register_events(events)
 
-        events_listener = asyncio.ensure_future(events.listen_for_events())
+            events_listener = asyncio.ensure_future(events.listen_for_events())
 
-        for signame in ('SIGINT', 'SIGTERM'):
-            loop.add_signal_handler(getattr(signal, signame),
-                events_listener.cancel)  # pylint: disable=no-member
+            for signame in ('SIGINT', 'SIGTERM'):
+                loop.add_signal_handler(getattr(signal, signame),
+                    events_listener.cancel)  # pylint: disable=no-member
 
-        loop.add_signal_handler(signal.SIGHUP, launcher.send_monitor_layout_all)
+            loop.add_signal_handler(signal.SIGHUP,
+                launcher.send_monitor_layout_all)
 
+            try:
+                loop.run_until_complete(events_listener)
+            except asyncio.CancelledError:
+                pass
+            loop.stop()
+            loop.run_forever()
+            loop.close()
+    elif args.notify_monitor_layout:
         try:
-            loop.run_until_complete(events_listener)
-        except asyncio.CancelledError:
-            pass
-        loop.stop()
-        loop.run_forever()
-        loop.close()
+            with open(pidfile_path, 'r') as pidfile:
+                pid = int(pidfile.read().strip())
+            os.kill(pid, signal.SIGHUP)
+        except (FileNotFoundError, ValueError) as e:
+            parser.error('Cannot open pidfile {}: {}'.format(pidfile_path,
+                str(e)))
     else:
         loop = asyncio.get_event_loop()
         tasks = []
