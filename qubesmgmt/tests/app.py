@@ -59,4 +59,10 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
         self.assertEqual([vm.name for vm in self.app.domains], ['test-vm'])
         self.assertAllCalled()
 
+    def test_004_delitem(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.Remove', None, None)] = \
+            b'0\x00'
+        del self.app.domains['test-vm']
+        self.assertAllCalled()
+
 

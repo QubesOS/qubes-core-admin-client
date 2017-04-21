@@ -94,6 +94,10 @@ class VMCollection(object):
         self.refresh_cache()
         return item in self._vm_list
 
+    def __delitem__(self, key):
+        self.app.qubesd_call(key, 'mgmt.vm.Remove')
+        self.clear_cache()
+
     def __iter__(self):
         self.refresh_cache()
         for vm in self._vm_list:
