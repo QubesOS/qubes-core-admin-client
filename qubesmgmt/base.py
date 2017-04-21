@@ -70,7 +70,7 @@ class PropertyHolder(object):
         raise appropriate exception.
         '''
 
-        if len(response_data) == 0:
+        if response_data == b'':
             raise qubesmgmt.exc.QubesDaemonNoResponseError(
                 'Got empty response from qubesd')
 

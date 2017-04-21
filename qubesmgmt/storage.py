@@ -90,18 +90,16 @@ class Volume(object):
         '''Storage volume pool name.'''
         if self._pool is not None:
             return self._pool
-        else:
-            self._fetch_info()
-            return str(self._info['pool'])
+        self._fetch_info()
+        return str(self._info['pool'])
 
     @property
     def vid(self):
         '''Storage volume id, unique within given pool.'''
         if self._vid is not None:
             return self._vid
-        else:
-            self._fetch_info()
-            return str(self._info['vid'])
+        self._fetch_info()
+        return str(self._info['vid'])
 
     @property
     def size(self):
@@ -142,8 +140,7 @@ class Volume(object):
         self._fetch_info()
         if self._info['source']:
             return self._info['source']
-        else:
-            return None
+        return None
 
     @property
     def internal(self):

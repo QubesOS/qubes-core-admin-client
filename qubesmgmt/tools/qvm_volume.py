@@ -72,7 +72,7 @@ class VolumeData(object):
     def __init__(self, volume):
         self.pool = volume.pool
         self.vid = volume.vid
-        if len(volume.revisions) > 0:
+        if volume.revisions:
             self.revisions = 'Yes'
         else:
             self.revisions = 'No'

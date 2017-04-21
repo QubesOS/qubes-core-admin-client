@@ -149,7 +149,7 @@ def main(args=None, app=None):
             if not args.autostart and not vm.is_running():
                 continue
             try:
-                log.info('Running {!r} on {!s}'.format(args.cmd, vm.name))
+                log.info('Running \'%s\' on %s', args.cmd, vm.name)
                 if args.passio and not args.localcmd:
                     loop = asyncio.new_event_loop()
                     loop.add_signal_handler(signal.SIGCHLD, loop.stop)

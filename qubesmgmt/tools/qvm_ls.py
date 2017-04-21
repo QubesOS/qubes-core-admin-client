@@ -228,8 +228,7 @@ class StatusColumn(Column):
         if ret is not None:
             if getattr(vm, 'hvm', False):
                 return ret.upper()
-            else:
-                return ret
+            return ret
 
 
     @flag(2)
