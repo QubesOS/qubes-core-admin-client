@@ -4,3 +4,4 @@ docutils
 pylint
 sphinx
 codecov
+python-daemon

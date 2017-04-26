@@ -23,12 +23,14 @@ This package include managemt tools, like qvm-*.
 
 %package -n python2-qubesmgmt
 Summary:    Python2 module qubesmgmt
+Requires:   python2-daemon
 
 %description -n python2-qubesmgmt
 Python2 module qubesmgmt.
 
 %package -n python3-qubesmgmt
 Summary:    Python3 module qubesmgmt
+Requires:   python3-daemon
 
 %description -n python3-qubesmgmt
 Python3 module qubesmgmt.
