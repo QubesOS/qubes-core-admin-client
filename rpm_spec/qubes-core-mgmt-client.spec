@@ -52,6 +52,7 @@ rm -rf build
 
 %files
 %doc LICENSE
+%config /etc/xdg/autostart/qvm-start-gui.desktop
 
 %files -n python2-qubesmgmt
 %{python_sitelib}/qubesmgmt-*egg-info
