@@ -71,7 +71,12 @@ class PropertyAction(argparse.Action):
         except ValueError:
             parser.error('invalid property token: {!r}'.format(values))
 
-        getattr(namespace, self.dest)[prop] = value
+        properties = getattr(namespace, self.dest)
+        # copy it, to not modify _mutable_ self.default
+        if not properties:
+            properties = properties.copy()
+        properties[prop] = value
+        setattr(namespace, self.dest, properties)
 
 
 class SinglePropertyAction(argparse.Action):
@@ -102,8 +107,13 @@ class SinglePropertyAction(argparse.Action):
 
 
     def __call__(self, parser, namespace, values, option_string=None):
-        getattr(namespace, self.dest)[self.name] = values \
+        properties = getattr(namespace, self.dest)
+        # copy it, to not modify _mutable_ self.default
+        if not properties:
+            properties = properties.copy()
+        properties[self.name] = values \
             if self.const is None else self.const
+        setattr(namespace, self.dest, properties)
 
 
 class VmNameAction(QubesAction):
