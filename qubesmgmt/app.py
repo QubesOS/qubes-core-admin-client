@@ -268,6 +268,47 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
 
         return self.domains[name]
 
+    def clone_vm(self, src_vm, new_name, pool=None, pools=None):
+        '''Clone Virtual Machine
+
+        Example usage with custom storage pools:
+
+        >>> app = qubesmgmt.Qubes()
+        >>> pools = {'private': 'external'}
+        >>> src_vm = app.domains['personal']
+        >>> vm = app.clone_vm(src_vm, 'my-new-vm', pools=pools)
+        >>> vm.label = app.labels['green']
+
+        :param str cls: name of VM class (`AppVM`, `TemplateVM` etc)
+        :param str name: name of VM
+        :param str label: label color for new VM
+        :param str template: template to use (if apply for given VM class),
+        can be also VM object; use None for default value
+        :param str pool: storage pool to use instead of default one
+        :param dict pools: storage pool for specific volumes
+        :return new VM object
+        '''
+
+        if pool and pools:
+            raise ValueError('only one of pool= and pools= can be used')
+
+        if not isinstance(src_vm, str):
+            src_vm = str(src_vm)
+
+        method = 'mgmt.vm.Clone'
+        payload = 'name={}'.format(new_name)
+        if pool:
+            payload += ' pool={}'.format(str(pool))
+            method = 'mgmt.vm.CloneInPool'
+        if pools:
+            payload += ''.join(' pool:{}={}'.format(vol, str(pool))
+                for vol, pool in sorted(pools.items()))
+            method = 'mgmt.vm.CloneInPool'
+
+        self.qubesd_call(src_vm, method, None, payload.encode('utf-8'))
+
+        return self.domains[new_name]
+
     def run_service(self, dest, service, filter_esc=False, user=None,
             localcmd=None, **kwargs):
         '''Run qrexec service in a given destination
