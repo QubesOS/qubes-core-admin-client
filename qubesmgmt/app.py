@@ -37,7 +37,7 @@ import qubesmgmt.vm
 import qubesmgmt.config
 
 BUF_SIZE = 4096
-
+VM_ENTRY_POINT = 'qubesmgmt.vm'
 
 class VMCollection(object):
     '''Collection of VMs objects'''
@@ -85,7 +85,7 @@ class VMCollection(object):
         if item not in self:
             raise KeyError(item)
         if item not in self._vm_objects:
-            cls = qubesmgmt.utils.get_entry_point_one('qubesmgmt.vm',
+            cls = qubesmgmt.utils.get_entry_point_one(VM_ENTRY_POINT,
                 self._vm_list[item]['class'])
             self._vm_objects[item] = cls(self.app, item)
         return self._vm_objects[item]
@@ -182,6 +182,91 @@ class QubesBase(qubesmgmt.base.PropertyHolder):
     def remove_pool(self, name):
         ''' Remove a storage pool '''
         self.qubesd_call('dom0', 'mgmt.pool.Remove', name, None)
+
+    def get_label(self, label):
+        '''Get label as identified by index or name
+
+        :throws KeyError: when label is not found
+        '''
+
+        # first search for name, verbatim
+        try:
+            return self.labels[label]
+        except KeyError:
+            pass
+
+        # then search for index
+        if label.isdigit():
+            for i in self.labels:
+                if i.index == int(label):
+                    return i
+
+        raise KeyError(label)
+
+    @staticmethod
+    def get_vm_class(clsname):
+        '''Find the class for a domain.
+
+        Classes are registered as setuptools' entry points in ``qubes.vm``
+        group. Any package may supply their own classes.
+
+        :param str clsname: name of the class
+        :return type: class
+        '''
+
+        try:
+            return qubesmgmt.utils.get_entry_point_one(
+                VM_ENTRY_POINT, clsname)
+        except KeyError:
+            raise qubesmgmt.exc.QubesException(
+                'no such VM class: {!r}'.format(clsname))
+            # don't catch TypeError
+
+    def add_new_vm(self, cls, name, label, template=None, pool=None,
+            pools=None):
+        '''Create new Virtual Machine
+
+        Example usage with custom storage pools:
+
+        >>> app = qubesmgmt.Qubes()
+        >>> pools = {'private': 'external'}
+        >>> vm = app.add_new_vm('AppVM', 'my-new-vm', 'red',
+        >>>    'my-template', pools=pools)
+        >>> vm.netvm = app.domains['sys-whonix']
+
+        :param str cls: name of VM class (`AppVM`, `TemplateVM` etc)
+        :param str name: name of VM
+        :param str label: label color for new VM
+        :param str template: template to use (if apply for given VM class),
+        can be also VM object; use None for default value
+        :param str pool: storage pool to use instead of default one
+        :param dict pools: storage pool for specific volumes
+        :return new VM object
+        '''
+
+        if not isinstance(cls, str):
+            cls = cls.__name__
+
+        if template is not None:
+            template = str(template)
+
+        if pool and pools:
+            raise ValueError('only one of pool= and pools= can be used')
+
+        method_prefix = 'mgmt.vm.Create.'
+        payload = 'name={} label={}'.format(name, label)
+        if pool:
+            payload += ' pool={}'.format(str(pool))
+            method_prefix = 'mgmt.vm.CreateInPool.'
+        if pools:
+            payload += ''.join(' pool:{}={}'.format(vol, str(pool))
+                for vol, pool in sorted(pools.items()))
+            method_prefix = 'mgmt.vm.CreateInPool.'
+
+        self.qubesd_call('dom0', method_prefix + cls, template,
+            payload.encode('utf-8'))
+
+        return self.domains[name]
 
     def run_service(self, dest, service, filter_esc=False, user=None,
             localcmd=None, **kwargs):

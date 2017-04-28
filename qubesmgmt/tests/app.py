@@ -65,4 +65,75 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
         del self.app.domains['test-vm']
         self.assertAllCalled()
 
+    def test_010_new_simple(self):
+        self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM', None,
+                b'name=new-vm label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Running\n'
+        vm = self.app.add_new_vm('AppVM', 'new-vm', 'red')
+        self.assertEqual(vm.name, 'new-vm')
+        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertAllCalled()
 
+    def test_011_new_template(self):
+        self.app.expected_calls[('dom0', 'mgmt.vm.Create.TemplateVM', None,
+                b'name=new-template label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-template class=TemplateVM state=Running\n'
+        vm = self.app.add_new_vm('TemplateVM', 'new-template', 'red')
+        self.assertEqual(vm.name, 'new-template')
+        self.assertEqual(vm.__class__.__name__, 'TemplateVM')
+        self.assertAllCalled()
+
+    def test_012_new_template_based(self):
+        self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM',
+            'some-template', b'name=new-vm label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Running\n'
+        vm = self.app.add_new_vm('AppVM', 'new-vm', 'red', 'some-template')
+        self.assertEqual(vm.name, 'new-vm')
+        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertAllCalled()
+
+    def test_013_new_objects_params(self):
+        self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM',
+            'some-template', b'name=new-vm label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Running\n' \
+            b'some-template class=TemplateVM state=Running\n'
+        vm = self.app.add_new_vm(self.app.get_vm_class('AppVM'), 'new-vm',
+            self.app.get_label('red'), self.app.domains['some-template'])
+        self.assertEqual(vm.name, 'new-vm')
+        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertAllCalled()
+
+    def test_014_new_pool(self):
+        self.app.expected_calls[('dom0', 'mgmt.vm.CreateInPool.AppVM', None,
+                b'name=new-vm label=red pool=some-pool')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Running\n'
+        vm = self.app.add_new_vm('AppVM', 'new-vm', 'red', pool='some-pool')
+        self.assertEqual(vm.name, 'new-vm')
+        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertAllCalled()
+
+    def test_015_new_pools(self):
+        self.app.expected_calls[('dom0', 'mgmt.vm.CreateInPool.AppVM', None,
+                b'name=new-vm label=red pool:private=some-pool '
+                b'pool:volatile=other-pool')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Running\n'
+        vm = self.app.add_new_vm('AppVM', 'new-vm', 'red',
+            pools={'private': 'some-pool', 'volatile': 'other-pool'})
+        self.assertEqual(vm.name, 'new-vm')
+        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertAllCalled()
+
+    def test_020_get_label(self):
+        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        label = self.app.get_label('red')
+        self.assertEqual(label.name, 'red')
+        self.assertAllCalled()
