@@ -65,6 +65,8 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
         del self.app.domains['test-vm']
         self.assertAllCalled()
 
+
+class TC_10_QubesBase(qubesmgmt.tests.QubesTestCase):
     def test_010_new_simple(self):
         self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM', None,
                 b'name=new-vm label=red')] = b'0\x00'
@@ -136,4 +138,46 @@ class TC_00_VMCollection(qubesmgmt.tests.QubesTestCase):
             b'0\x00red\nblue\n'
         label = self.app.get_label('red')
         self.assertEqual(label.name, 'red')
+        self.assertAllCalled()
+
+    def test_030_clone(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.Clone', None,
+            b'name=new-name')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n'
+        new_vm = self.app.clone_vm('test-vm', 'new-name')
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_031_clone_object(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.Clone', None,
+            b'name=new-name')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n'
+        new_vm = self.app.clone_vm(self.app.domains['test-vm'], 'new-name')
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_032_clone_pool(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.CloneInPool', None,
+            b'name=new-name pool=some-pool')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n'
+        new_vm = self.app.clone_vm('test-vm', 'new-name', pool='some-pool')
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_033_clone_pools(self):
+        self.app.expected_calls[('test-vm', 'mgmt.vm.CloneInPool', None,
+            b'name=new-name pool:private=some-pool '
+            b'pool:volatile=other-pool')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n'
+        new_vm = self.app.clone_vm('test-vm', 'new-name',
+            pools={'private': 'some-pool', 'volatile': 'other-pool'})
+        self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
