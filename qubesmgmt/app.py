@@ -399,6 +399,6 @@ class QubesRemote(QubesBase):
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
         proc = subprocess.Popen([qubesmgmt.config.QREXEC_CLIENT_VM,
-            dest, service] + shlex.split(localcmd) if localcmd else [],
+            dest or '', service] + (shlex.split(localcmd) if localcmd else []),
             **kwargs)
         return proc
