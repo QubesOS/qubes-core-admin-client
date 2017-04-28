@@ -313,6 +313,7 @@ class QubesLocal(QubesBase):
         client_socket.shutdown(socket.SHUT_WR)
 
         return_data = client_socket.makefile('rb').read()
+        client_socket.close()
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
