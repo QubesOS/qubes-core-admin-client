@@ -107,6 +107,9 @@ class SinglePropertyAction(argparse.Action):
 
 
     def __call__(self, parser, namespace, values, option_string=None):
+        if values is self.default and self.default == {}:
+            return
+
         properties = getattr(namespace, self.dest)
         # copy it, to not modify _mutable_ self.default
         if not properties:
