@@ -57,6 +57,8 @@ class PropertyHolder(object):
         :param payload: Payload send to the method
         :return: Data returned by qubesd (string)
         '''
+        if dest is None:
+            dest = self._method_dest
         # have the actual implementation at Qubes() instance
         if self.app:
             return self.app.qubesd_call(dest, method, arg, payload)
