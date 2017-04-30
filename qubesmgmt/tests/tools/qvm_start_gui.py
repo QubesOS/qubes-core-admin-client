@@ -48,7 +48,7 @@ class TC_00_qvm_start_gui(qubesmgmt.tests.QubesTestCase):
             b'KWIN_RUNNING = 0x1\n',
             b'access control enabled, only authorized clients can connect\n'
             b'SI:localuser:root\n'
-            b'SI:localuser:' + os.getlogin().encode() + b'\n',
+            b'SI:localuser:' + os.environ['USER'].encode() + b'\n',
         ]
 
         args = self.launcher.kde_guid_args(self.app.domains['test-vm'])

@@ -22,12 +22,18 @@ import io
 import unittest.mock
 
 import subprocess
+import sys
 
 import qubesmgmt.tests
 import qubesmgmt.tools.qvm_run
 
 
 class TC_00_qvm_run(qubesmgmt.tests.QubesTestCase):
+    def setUp(self):
+        if sys.stdout is not sys.__stdout__ or \
+                sys.stderr is not sys.__stderr__:
+            self.skipTest('qvm-run change behavior on redirected stdout/stderr')
+        super(TC_00_qvm_run, self).setUp()
     def test_000_run_single(self):
         self.app.expected_calls[
             ('dom0', 'mgmt.vm.List', None, None)] = \
