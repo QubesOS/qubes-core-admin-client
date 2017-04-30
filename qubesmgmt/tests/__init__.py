@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import traceback
 import unittest
 
 import io
@@ -73,6 +74,39 @@ class TestProcess(object):
         self.stdin_close()
         return 0
 
+class _AssertNotRaisesContext(object):
+    """A context manager used to implement TestCase.assertNotRaises methods.
+
+    Stolen from unittest and hacked. Regexp support stripped.
+    """ # pylint: disable=too-few-public-methods
+
+    def __init__(self, expected, test_case, expected_regexp=None):
+        if expected_regexp is not None:
+            raise NotImplementedError('expected_regexp is unsupported')
+
+        self.expected = expected
+        self.exception = None
+
+        self.failureException = test_case.failureException
+
+
+    def __enter__(self):
+        return self
+
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type is None:
+            return True
+
+        if issubclass(exc_type, self.expected):
+            raise self.failureException(
+                "{!r} raised, traceback:\n{!s}".format(
+                    exc_value, ''.join(traceback.format_tb(tb))))
+        else:
+            # pass through
+            return False
+
+
 class QubesTest(qubesmgmt.app.QubesBase):
     expected_calls = None
     actual_calls = None
@@ -110,3 +144,32 @@ class QubesTestCase(unittest.TestCase):
         self.assertEqual(
             set(self.app.expected_calls.keys()),
             set(self.app.actual_calls))
+
+    def assertNotRaises(self, excClass, callableObj=None, *args, **kwargs):
+        """Fail if an exception of class excClass is raised
+           by callableObj when invoked with arguments args and keyword
+           arguments kwargs. If a different type of exception is
+           raised, it will not be caught, and the test case will be
+           deemed to have suffered an error, exactly as for an
+           unexpected exception.
+
+           If called with callableObj omitted or None, will return a
+           context object used like this::
+
+                with self.assertRaises(SomeException):
+                    do_something()
+
+           The context manager keeps a reference to the exception as
+           the 'exception' attribute. This allows you to inspect the
+           exception after the assertion::
+
+               with self.assertRaises(SomeException) as cm:
+                   do_something()
+               the_exception = cm.exception
+               self.assertEqual(the_exception.error_code, 3)
+        """
+        context = _AssertNotRaisesContext(excClass, self)
+        if callableObj is None:
+            return context
+        with context:
+            callableObj(*args, **kwargs)
