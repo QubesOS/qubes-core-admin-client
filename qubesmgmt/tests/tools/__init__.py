@@ -25,31 +25,35 @@ import sys
 
 class StdoutBuffer(object):
     def __init__(self):
+        self.orig_stdout = None
         if sys.version_info[0] >= 3:
             self.stdout = io.StringIO()
         else:
             self.stdout = io.BytesIO()
 
     def __enter__(self):
+        self.orig_stdout = sys.stdout
         sys.stdout = self.stdout
         return self.stdout
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = sys.__stdout__
+        sys.stdout = self.orig_stdout
         return False
 
 
 class StderrBuffer(object):
     def __init__(self):
+        self.orig_stderr = None
         if sys.version_info[0] >= 3:
             self.stderr = io.StringIO()
         else:
             self.stderr = io.BytesIO()
 
     def __enter__(self):
+        self.orig_stderr = sys.stderr
         sys.stderr = self.stderr
         return self.stderr
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stderr = sys.__stderr__
+        sys.stderr = self.orig_stderr
         return False
