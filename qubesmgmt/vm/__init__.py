@@ -26,6 +26,7 @@ import qubesmgmt.exc
 import qubesmgmt.storage
 import qubesmgmt.features
 import qubesmgmt.devices
+import qubesmgmt.firewall
 
 
 class QubesVM(qubesmgmt.base.PropertyHolder):
@@ -37,12 +38,15 @@ class QubesVM(qubesmgmt.base.PropertyHolder):
 
     devices = None
 
+    firewall = None
+
     def __init__(self, app, name):
         super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
         self._volumes = None
         self.log = logging.getLogger(name)
         self.features = qubesmgmt.features.Features(self)
         self.devices = qubesmgmt.devices.DeviceManager(self)
+        self.firewall = qubesmgmt.firewall.Firewall(self)
 
     @property
     def name(self):
