@@ -11,6 +11,8 @@ BuildRequires:	python2-setuptools
 BuildRequires:	python3-setuptools
 BuildRequires:	python2-devel
 BuildRequires:	python3-devel
+BuildRequires:	python3-sphinx
+BuildRequires:	python3-dbus
 Requires:   python3-qubesmgmt
 BuildArch:  noarch
 
@@ -42,6 +44,7 @@ Python3 module qubesmgmt.
 
 
 %build
+make -C doc PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} man
 
 %install
 rm -rf build
@@ -49,10 +52,17 @@ rm -rf build
 rm -rf build
 %make_install PYTHON=%{__python3}
 
+make -C doc DESTDIR=$RPM_BUILD_ROOT \
+    PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} \
+    install
+
 
 %files
+%defattr(-,root,root,-)
 %doc LICENSE
 %config /etc/xdg/autostart/qvm-start-gui.desktop
+%{_mandir}/man1/qvm-*.1*
+%{_mandir}/man1/qubes*.1*
 
 %files -n python2-qubesmgmt
 %{python_sitelib}/qubesmgmt-*egg-info
