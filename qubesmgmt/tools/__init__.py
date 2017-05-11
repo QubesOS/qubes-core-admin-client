@@ -473,7 +473,7 @@ def get_parser_for_command(command):
     '''
 
     module = importlib.import_module(
-        '.' + command.replace('-', '_'), 'qubes.tools')
+        '.' + command.replace('-', '_'), 'qubesmgmt.tools')
 
     try:
         parser = module.parser
