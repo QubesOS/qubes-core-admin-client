@@ -5,25 +5,25 @@ import sys
 
 exclude=[]
 if sys.version_info[0:2] < (3, 5):
-    exclude = ['qubesmgmt.events', 'qubesmgmt.tools', 'qubesmgmt.tests.tools']
+    exclude = ['qubesadmin.events', 'qubesadmin.tools', 'qubesadmin.tests.tools']
 
 if __name__ == '__main__':
     setuptools.setup(
-        name='qubesmgmt',
+        name='qubesadmin',
         version=open('version').read().strip(),
         author='Invisible Things Lab',
         author_email='marmarek@invisiblethingslab.com',
-        description='Qubes mgmt API package',
+        description='Qubes Admin API package',
         license='LGPL2.1+',
         url='https://www.qubes-os.org/',
         packages=setuptools.find_packages(exclude=exclude),
         entry_points={
-            'qubesmgmt.vm': [
-                'AppVM = qubesmgmt.vm:AppVM',
-                'TemplateVM = qubesmgmt.vm:TemplateVM',
-                'StandaloneVM = qubesmgmt.vm:StandaloneVM',
-                'AdminVM = qubesmgmt.vm:AdminVM',
-                'DispVM = qubesmgmt.vm:DispVM',
+            'qubesadmin.vm': [
+                'AppVM = qubesadmin.vm:AppVM',
+                'TemplateVM = qubesadmin.vm:TemplateVM',
+                'StandaloneVM = qubesadmin.vm:StandaloneVM',
+                'AdminVM = qubesadmin.vm:AdminVM',
+                'DispVM = qubesadmin.vm:DispVM',
             ],
         },
 

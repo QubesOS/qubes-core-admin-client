@@ -10,7 +10,7 @@ install:
   - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
 script:
   - test -z "$TESTS_ONLY" || python setup.py build
-  - test -z "$TESTS_ONLY" || { cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../ci/pylintrc qubesmgmt; }
+  - test -z "$TESTS_ONLY" || { cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../ci/pylintrc qubesadmin; }
   - test -z "$TESTS_ONLY" || { cd build/lib; ROOTDIR=../.. ../../run-tests; }
   - test -n "$TESTS_ONLY" ||  ~/qubes-builder/scripts/travis-build
 env:

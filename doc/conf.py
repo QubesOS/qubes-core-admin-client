@@ -41,8 +41,8 @@ extensions = [
 ]
 
 try:
-    import qubesmgmt.tools.dochelpers
-    extensions.append('qubesmgmt.tools.dochelpers')
+    import qubesadmin.tools.dochelpers
+    extensions.append('qubesadmin.tools.dochelpers')
 except ImportError:
     pass
 
