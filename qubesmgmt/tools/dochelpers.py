@@ -47,10 +47,12 @@ OPTIONS_TITLE = 'OPTIONS'
 
 
 def make_rst_section(heading, char):
+    '''Format a section header in rst'''
     return '{}\n{}\n\n'.format(heading, char[0] * len(heading))
 
 
 def prepare_manpage(command):
+    '''Build a man page skeleton'''
     parser = qubesmgmt.tools.get_parser_for_command(command)
     stream = io.StringIO()
     stream.write('.. program:: {}\n\n'.format(command))
@@ -282,6 +284,7 @@ def check_man_args(app, doctree, docname):
 
 
 def break_to_pdb(app, *dummy):
+    '''DEBUG'''
     if not app.config.break_to_pdb:
         return
     import pdb
@@ -289,6 +292,7 @@ def break_to_pdb(app, *dummy):
 
 
 def setup(app):
+    '''Setup Sphinx extension'''
     app.add_config_value('break_to_pdb', False, 'env')
 
     app.connect('doctree-resolved', break_to_pdb)

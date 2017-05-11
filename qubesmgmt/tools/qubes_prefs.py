@@ -32,6 +32,7 @@ import qubesmgmt.tools.qvm_prefs
 
 
 def get_parser():
+    '''Prepare argument parser'''
     return qubesmgmt.tools.qvm_prefs.get_parser(None)
 
 
