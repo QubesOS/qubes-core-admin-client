@@ -30,9 +30,14 @@ import re
 
 import daemon.pidfile
 import qubesadmin
-import qubesadmin.events
 import qubesadmin.tools
 import qubesadmin.vm
+have_events = False
+try:
+    import qubesadmin.events
+    have_events = True
+except ImportError:
+    pass
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
@@ -337,9 +342,13 @@ def main(args=None):
         parser.error('--watch cannot be used with --notify-monitor-layout')
     launcher = GUILauncher(args.app)
     if args.watch:
+        if not have_events:
+            parser.error('--watch option require Python >= 3.5')
         with daemon.pidfile.TimeoutPIDLockFile(args.pidfile):
             loop = asyncio.get_event_loop()
+            # pylint: disable=no-member
             events = qubesadmin.events.EventsDispatcher(args.app)
+            # pylint: enable=no-member
             launcher.register_events(events)
 
             events_listener = asyncio.ensure_future(events.listen_for_events())

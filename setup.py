@@ -4,8 +4,10 @@ import setuptools
 import sys
 
 exclude=[]
+if sys.version_info[0:2] < (3, 4):
+    exclude += ['qubesadmin.tools', 'qubesadmin.tests.tools']
 if sys.version_info[0:2] < (3, 5):
-    exclude = ['qubesadmin.events', 'qubesadmin.tools', 'qubesadmin.tests.tools']
+    exclude += ['qubesadmin.events']
 
 if __name__ == '__main__':
     setuptools.setup(
