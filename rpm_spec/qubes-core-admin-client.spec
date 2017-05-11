@@ -61,6 +61,8 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %defattr(-,root,root,-)
 %doc LICENSE
 %config /etc/xdg/autostart/qvm-start-gui.desktop
+%{_bindir}/qubes-*
+%{_bindir}/qvm-*
 %{_mandir}/man1/qvm-*.1*
 %{_mandir}/man1/qubes*.1*
 
