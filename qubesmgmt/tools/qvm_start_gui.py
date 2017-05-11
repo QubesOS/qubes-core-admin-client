@@ -319,7 +319,7 @@ else:
         '.qvm-start-gui.pid')
 
 parser = qubesmgmt.tools.QubesArgumentParser(
-    description='forceful shutdown of a domain', vmname_nargs='*')
+    description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
     help='Keep watching for further domains startups, must be used with --all')
 parser.add_argument('--pidfile', action='store', default=pidfile_path,

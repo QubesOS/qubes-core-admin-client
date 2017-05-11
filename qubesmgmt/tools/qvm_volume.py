@@ -186,7 +186,7 @@ def init_revert_parser(sub_parsers):
 def init_extend_parser(sub_parsers):
     ''' Add 'extend' action related options '''
     extend_parser = sub_parsers.add_parser(
-        "extend", help="extend volume from domain", aliases=('d', 'dt'))
+        "extend", help="extend volume from domain")
     extend_parser.add_argument(metavar='VM:VOLUME', dest='volume',
                                action=qubesmgmt.tools.VMVolumeAction)
     extend_parser.add_argument('size', help='New size in bytes')
