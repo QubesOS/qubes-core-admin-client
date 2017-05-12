@@ -329,7 +329,7 @@ parser.add_argument('--watch', action='store_true',
     help='Keep watching for further domains startups, must be used with --all')
 parser.add_argument('--pidfile', action='store', default=pidfile_path,
     help='Pidfile path to create in --watch mode')
-parser.add_argument('--notify-monitory-layout', action='store_true',
+parser.add_argument('--notify-monitor-layout', action='store_true',
     help='Notify running instance in --watch mode about changed monitor layout')
 
 
