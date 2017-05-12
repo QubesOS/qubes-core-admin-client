@@ -27,16 +27,16 @@ import qubesadmin.tools.qvm_prefs
 class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
     def test_000_list(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.property.List', None, None)] = \
+            ('dom0', 'admin.vm.property.List', None, None)] = \
             b'0\x00prop1\nprop2\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.property.Get', 'prop1', None)] = \
+            ('dom0', 'admin.vm.property.Get', 'prop1', None)] = \
             b'0\x00default=True type=str value1'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.property.Get', 'prop2', None)] = \
+            ('dom0', 'admin.vm.property.Get', 'prop2', None)] = \
             b'0\x00default=False type=str value2'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
@@ -59,10 +59,10 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
 
     def test_002_set_property(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.property.Set', 'default_user', b'testuser')] = \
+            ('dom0', 'admin.vm.property.Set', 'default_user', b'testuser')] = \
             b'0\x00'
         self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
             'dom0', 'default_user', 'testuser'], app=self.app))
@@ -70,10 +70,10 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
 
     def test_003_invalid_property(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.property.Get', 'no_such_property', None)] = \
+            ('dom0', 'admin.vm.property.Get', 'no_such_property', None)] = \
             b'2\x00AttributeError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:
@@ -85,10 +85,10 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
 
     def test_004_set_invalid_property(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.property.Set', 'no_such_property', b'value')] = \
+            ('dom0', 'admin.vm.property.Set', 'no_such_property', b'value')] = \
             b'2\x00AttributeError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:

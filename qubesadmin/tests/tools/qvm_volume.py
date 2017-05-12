@@ -27,13 +27,13 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
 
     def setup_expected_calls_for_list(self, vms=('vm1', 'sys-net')):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00vm1 class=AppVM state=Running\n' \
             b'sys-net class=AppVM state=Running\n'
         for vm in vms:
             for vol in ('root', 'private'):
                 self.app.expected_calls[
-                    (vm, 'mgmt.vm.volume.Info', vol, None)] = \
+                    (vm, 'admin.vm.volume.Info', vol, None)] = \
                     b'0\x00' + \
                     (b'pool=pool-file\n' if vol == 'root' else
                         b'pool=other-pool\n') + \
@@ -41,10 +41,10 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
                     b'internal=True\n' \
                     b'size=10737418240\n'
                 self.app.expected_calls[
-                    (vm, 'mgmt.vm.volume.ListSnapshots', vol, None)] = \
+                    (vm, 'admin.vm.volume.ListSnapshots', vol, None)] = \
                     b'0\x00snap1\n' if vol == 'private' else b'0\x00'
             self.app.expected_calls[
-                (vm, 'mgmt.vm.volume.List', None, None)] = \
+                (vm, 'admin.vm.volume.List', None, None)] = \
                 b'0\x00root\nprivate\n'
 
     def test_000_list(self):
@@ -77,10 +77,10 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
 
     def test_002_list_domain_pool(self):
         self.setup_expected_calls_for_list(vms=('vm1',))
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00pool-file\nother-pool\n'
         del self.app.expected_calls[
-            ('vm1', 'mgmt.vm.volume.ListSnapshots', 'private', None)]
+            ('vm1', 'admin.vm.volume.ListSnapshots', 'private', None)]
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
                 qubesadmin.tools.qvm_volume.main(
@@ -94,12 +94,12 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
 
     def test_003_list_pool(self):
         self.setup_expected_calls_for_list()
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00pool-file\nother-pool\n'
         del self.app.expected_calls[
-            ('vm1', 'mgmt.vm.volume.ListSnapshots', 'private', None)]
+            ('vm1', 'admin.vm.volume.ListSnapshots', 'private', None)]
         del self.app.expected_calls[
-            ('sys-net', 'mgmt.vm.volume.ListSnapshots', 'private', None)]
+            ('sys-net', 'admin.vm.volume.ListSnapshots', 'private', None)]
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
@@ -116,7 +116,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
     def test_004_list_multiple_domains(self):
         self.setup_expected_calls_for_list(vms=('vm1', 'vm2'))
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00vm1 class=AppVM state=Running\n' \
             b'vm2 class=AppVM state=Running\n' \
             b'vm3 class=AppVM state=Running\n'
@@ -134,13 +134,13 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_010_extend(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00testvm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('testvm', 'mgmt.vm.volume.List', None, None)] = \
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'mgmt.vm.volume.Resize', 'private', b'10737418240')] = \
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'10737418240')] = \
             b'0\x00'
         self.assertEqual(0,
             qubesadmin.tools.qvm_volume.main(
@@ -149,13 +149,13 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_011_extend_error(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00testvm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('testvm', 'mgmt.vm.volume.List', None, None)] = \
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'mgmt.vm.volume.Resize', 'private', b'1073741824')] = \
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'1073741824')] = \
             b'2\x00StoragePoolException\x00\x00Failed to resize volume: ' \
             b'shrink not allowed\x00'
         with qubesadmin.tests.tools.StderrBuffer() as stderr:

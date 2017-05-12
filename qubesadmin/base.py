@@ -52,7 +52,7 @@ class PropertyHolder(object):
         defined by a subclass.
 
         :param dest: Destination VM name
-        :param method: Full API method name ('mgmt...')
+        :param method: Full API method name ('admin...')
         :param arg: Method argument (if any)
         :param payload: Payload send to the method
         :return: Data returned by qubesd (string)

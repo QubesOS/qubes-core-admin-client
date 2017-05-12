@@ -405,12 +405,12 @@ class TC_10_Rule(qubesadmin.tests.QubesTestCase):
 class TC_11_Firewall(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super(TC_11_Firewall, self).setUp()
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=AppVM state=Halted\n'
         self.vm = self.app.domains['test-vm']
 
     def test_000_policy_get(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.GetPolicy',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.GetPolicy',
             None, None)] = b'0\0accept'
         policy = self.vm.firewall.policy
         self.assertEqual(policy, 'accept')
@@ -418,19 +418,19 @@ class TC_11_Firewall(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_001_policy_set(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.SetPolicy',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.SetPolicy',
             None, b'drop')] = b'0\0'
         self.vm.firewall.policy = 'drop'
         self.assertAllCalled()
 
     def test_002_policy_set2(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.SetPolicy',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.SetPolicy',
             None, b'drop')] = b'0\0'
         self.vm.firewall.policy = qubesadmin.firewall.Action('drop')
         self.assertAllCalled()
 
     def test_010_load_rules(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
@@ -440,12 +440,12 @@ class TC_11_Firewall(qubesadmin.tests.QubesTestCase):
             qubesadmin.firewall.Rule('action=drop proto=icmp'),
         ])
         # check caching
-        del self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        del self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)]
         rules2 = self.vm.firewall.rules
         self.assertEqual(rules, rules2)
         # then force reload
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org proto=tcp dstports=443\n'
         self.vm.firewall.load_rules()
@@ -461,7 +461,7 @@ class TC_11_Firewall(qubesadmin.tests.QubesTestCase):
             'action=accept dsthost=example.com',
         )
         rules = [qubesadmin.firewall.Rule(rule) for rule in rules_txt]
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Set', None,
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Set', None,
         ''.join(rule + '\n' for rule in rules_txt).encode('ascii'))] = b'0\0'
         self.vm.firewall.rules = rules
         self.assertAllCalled()

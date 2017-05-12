@@ -90,21 +90,21 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
     def test_100_list_with_status(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00vm1 class=AppVM state=Running\n' \
             b'template1 class=TemplateVM state=Halted\n' \
             b'sys-net class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.List', None, None)] = \
+            ('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblack\ngreen\nblue\n'
         self.app.expected_calls[
-            ('vm1', 'mgmt.vm.List', None, None)] = \
+            ('vm1', 'admin.vm.List', None, None)] = \
             b'0\x00vm1 class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('sys-net', 'mgmt.vm.List', None, None)] = \
+            ('sys-net', 'admin.vm.List', None, None)] = \
             b'0\x00sys-net class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('template1', 'mgmt.vm.List', None, None)] = \
+            ('template1', 'admin.vm.List', None, None)] = \
             b'0\x00template1 class=TemplateVM state=Halted\n'
         props = {
             'label': b'type=label green',
@@ -120,7 +120,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         }
         for key, value in props.items():
             self.app.expected_calls[
-                ('vm1', 'mgmt.vm.property.Get', key, None)] = \
+                ('vm1', 'admin.vm.property.Get', key, None)] = \
                 b'0\x00default=True ' + value
 
         # setup template1
@@ -128,10 +128,10 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         props['updateable'] = b'type=bool True'
         for key, value in props.items():
             self.app.expected_calls[
-                ('template1', 'mgmt.vm.property.Get', key, None)] = \
+                ('template1', 'admin.vm.property.Get', key, None)] = \
                 b'0\x00default=True ' + value
         self.app.expected_calls[
-            ('template1', 'mgmt.vm.property.Get', 'template', None)] = \
+            ('template1', 'admin.vm.property.Get', 'template', None)] = \
             b''  # request refused - no such property
 
         # setup sys-net
@@ -140,7 +140,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         props['updateable'] = b'type=bool False'
         for key, value in props.items():
             self.app.expected_calls[
-                ('sys-net', 'mgmt.vm.property.Get', key, None)] = \
+                ('sys-net', 'admin.vm.property.Get', key, None)] = \
                 b'0\x00default=True ' + value
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:

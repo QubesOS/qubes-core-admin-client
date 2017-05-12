@@ -35,13 +35,13 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
     @unittest.mock.patch('subprocess.check_output')
     def test_000_kde_args(self, proc_mock):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'label', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
                 b'0\x00default=False type=label red'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.List', None, None)] = \
+            ('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\n'
 
         proc_mock.side_effect = [
@@ -61,7 +61,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
     @unittest.mock.patch('subprocess.check_output')
     def test_001_kde_args_none(self, proc_mock):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
 
         proc_mock.side_effect = [b'']
@@ -73,22 +73,22 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
     def test_010_common_args(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'label', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
                 b'0\x00default=False type=label red'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'debug', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.List', None, None)] = \
+            ('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.Get', 'red', None)] = \
+            ('dom0', 'admin.label.Get', 'red', None)] = \
             b'0\x000xff0000'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.Index', 'red', None)] = \
+            ('dom0', 'admin.label.Index', 'red', None)] = \
             b'0\x001'
 
         with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
@@ -106,22 +106,22 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
     def test_011_common_args_debug(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'label', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
                 b'0\x00default=False type=label red'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'debug', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool True'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.List', None, None)] = \
+            ('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.Get', 'red', None)] = \
+            ('dom0', 'admin.label.Get', 'red', None)] = \
             b'0\x000xff0000'
         self.app.expected_calls[
-            ('dom0', 'mgmt.label.Index', 'red', None)] = \
+            ('dom0', 'admin.label.Index', 'red', None)] = \
             b'0\x001'
 
         with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
@@ -140,13 +140,13 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
     @unittest.mock.patch('asyncio.create_subprocess_exec')
     def test_020_start_gui_for_vm(self, proc_mock):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'hvm', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
                 b'0\x00default=False type=bool False'
         with unittest.mock.patch.object(self.launcher,
                 'common_guid_args', lambda vm: []):
@@ -159,22 +159,22 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
     @unittest.mock.patch('asyncio.create_subprocess_exec')
     def test_021_start_gui_for_vm_hvm(self, proc_mock):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'stubdom_xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'hvm', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
                 b'0\x00default=False type=bool True'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'debug', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.feature.CheckWithTemplate', 'rpc-clipboard',
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'rpc-clipboard',
             None)] = \
                 b'0\x00True'
         with unittest.mock.patch.object(self.launcher,
@@ -187,22 +187,22 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
     def test_022_start_gui_for_vm_hvm_stubdom(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'stubdom_xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'hvm', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
                 b'0\x00default=False type=bool True'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'debug', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.feature.CheckWithTemplate', 'rpc-clipboard',
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'rpc-clipboard',
             None)] = \
                 b'0\x00True'
         pidfile = tempfile.NamedTemporaryFile()
@@ -230,13 +230,13 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
     def test_030_start_gui_for_stubdomain(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'stubdom_xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
         with unittest.mock.patch('asyncio.create_subprocess_exec') as proc_mock:
             with unittest.mock.patch.object(self.launcher,
@@ -258,26 +258,26 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.addCleanup(loop.close)
 
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.List', None, None)] = \
+            ('test-vm', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.feature.CheckWithTemplate', 'gui', None)] = \
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
             b'0\x00True'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.feature.CheckWithTemplate',
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
             'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'hvm', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
                 b'0\x00default=False type=bool True'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.property.Get', 'stubdom_xid', None)] = \
+            ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
 
         vm = self.app.domains['test-vm']

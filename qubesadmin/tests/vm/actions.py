@@ -25,35 +25,35 @@ import qubesadmin.tests.vm
 class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
     def test_000_start(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Start', None, None)] = \
+            ('test-vm', 'admin.vm.Start', None, None)] = \
             b'0\x00'
         self.vm.start()
         self.assertAllCalled()
 
     def test_001_shutdown(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Shutdown', None, None)] = \
+            ('test-vm', 'admin.vm.Shutdown', None, None)] = \
             b'0\x00'
         self.vm.shutdown()
         self.assertAllCalled()
 
     def test_002_kill(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Kill', None, None)] = \
+            ('test-vm', 'admin.vm.Kill', None, None)] = \
             b'0\x00'
         self.vm.kill()
         self.assertAllCalled()
 
     def test_003_pause(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Pause', None, None)] = \
+            ('test-vm', 'admin.vm.Pause', None, None)] = \
             b'0\x00'
         self.vm.pause()
         self.assertAllCalled()
 
     def test_004_unpause(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Unpause', None, None)] = \
+            ('test-vm', 'admin.vm.Unpause', None, None)] = \
             b'0\x00'
         self.vm.unpause()
         self.assertAllCalled()
@@ -61,7 +61,7 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
     @unittest.skip('Not part of the mgmt API yet')
     def test_005_suspend(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Suspend', None, None)] = \
+            ('test-vm', 'admin.vm.Suspend', None, None)] = \
             b'0\x00'
         self.vm.suspend()
         self.assertAllCalled()
@@ -69,7 +69,7 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
     @unittest.skip('Not part of the mgmt API yet')
     def test_006_resume(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.Resume', None, None)] = \
+            ('test-vm', 'admin.vm.Resume', None, None)] = \
             b'0\x00'
         self.vm.resume()
         self.assertAllCalled()

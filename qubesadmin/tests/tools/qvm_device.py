@@ -34,11 +34,11 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
     ''' Tests the output logic of the qvm-device tool '''
     def setUp(self):
         super(TC_00_qvm_device, self).setUp()
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm1 class=AppVM state=Running\n' \
             b'test-vm2 class=AppVM state=Running\n' \
             b'test-vm3 class=AppVM state=Running\n'
-        self.app.expected_calls[('test-vm1', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm1', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0dev1 description=Description here\n'
         self.vm1 = self.app.domains['test-vm1']
@@ -49,18 +49,18 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         ''' List all exposed vm devices. No devices are attached to other
             domains.
         '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0dev2 description=Description here2\n'
-        self.app.expected_calls[('test-vm3', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm3', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0'
 
-        self.app.expected_calls[('test-vm1', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm1', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
-        self.app.expected_calls[('test-vm3', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm3', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
 
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
@@ -75,17 +75,17 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
     def test_001_list_persistent_attach(self):
         ''' Attach the device exposed by the `vm1` to the `vm3` persistently.
         '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0dev2 description=Description here2\n'
-        self.app.expected_calls[('test-vm3', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm3', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0'
-        self.app.expected_calls[('test-vm1', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm1', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
-        self.app.expected_calls[('test-vm3', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm3', 'admin.vm.device.test.List',
             None, None)] = \
             b'0\0test-vm1+dev1 persistent=yes\n'
 
@@ -101,18 +101,18 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         ''' Attach the device exposed by the `vm1` to the `vm3`
             non-persistently.
         '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0dev2 description=Description here2\n'
-        self.app.expected_calls[('test-vm3', 'mgmt.vm.device.test.Available',
+        self.app.expected_calls[('test-vm3', 'admin.vm.device.test.Available',
             None, None)] = \
             b'0\0'
 
-        self.app.expected_calls[('test-vm1', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm1', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.List',
             None, None)] = b'0\0'
-        self.app.expected_calls[('test-vm3', 'mgmt.vm.device.test.List',
+        self.app.expected_calls[('test-vm3', 'admin.vm.device.test.List',
             None, None)] = \
             b'0\0test-vm1+dev1\n'
 
@@ -126,7 +126,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_010_attach(self):
         ''' Test attach action '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Attach',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Attach',
             'test-vm1+dev1', b'')] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['test', 'attach', 'test-vm2', 'test-vm1:dev1'], app=self.app)
@@ -134,7 +134,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_011_attach_options(self):
         ''' Test attach action '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Attach',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Attach',
             'test-vm1+dev1', b'ro=True')] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['test', 'attach', '-o', 'ro=True', 'test-vm2', 'test-vm1:dev1'],
@@ -143,7 +143,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_011_attach_persistent(self):
         ''' Test attach action '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Attach',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Attach',
             'test-vm1+dev1', b'persistent=yes')] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['test', 'attach', '-p', 'test-vm2', 'test-vm1:dev1'],
@@ -185,7 +185,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_020_detach(self):
         ''' Test detach action '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Detach',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Detach',
             'test-vm1+dev1', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['test', 'detach', 'test-vm2', 'test-vm1:dev1'], app=self.app)
@@ -193,7 +193,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_021_detach_unknown(self):
         ''' Test detach action '''
-        self.app.expected_calls[('test-vm2', 'mgmt.vm.device.test.Detach',
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Detach',
             'test-vm1+dev7', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['test', 'detach', 'test-vm2', 'test-vm1:dev7'], app=self.app)

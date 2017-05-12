@@ -36,10 +36,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         super(TC_00_qvm_run, self).setUp()
     def test_000_run_single(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         ret = qubesadmin.tools.qvm_run.main(['test-vm', 'command'], app=self.app)
         self.assertEqual(ret, 0)
@@ -60,11 +60,11 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_001_run_multiple(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n' \
             b'test-vm2 class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         ret = qubesadmin.tools.qvm_run.main(['test-vm', 'test-vm2', 'command'],
             app=self.app)
@@ -99,10 +99,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_002_passio(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
         with unittest.mock.patch('sys.stdin', echo.stdout):
@@ -125,10 +125,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_002_color_output(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
         echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
@@ -155,10 +155,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_003_no_color_output(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
         echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
@@ -185,10 +185,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_004_no_filter_esc(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
         echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
@@ -215,10 +215,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_005_localcmd(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         # self.app.expected_calls[
-        #     ('test-vm', 'mgmt.vm.List', None, None)] = \
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         ret = qubesadmin.tools.qvm_run.main(
             ['--pass-io', '--localcmd', 'local-command',

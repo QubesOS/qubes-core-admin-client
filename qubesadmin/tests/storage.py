@@ -32,7 +32,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def expect_info(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.Info', 'volname', None)] = \
+            ('test-vm', 'admin.vm.volume.Info', 'volname', None)] = \
             b'0\x00' \
             b'pool=test-pool\n' \
             b'vid=some-id\n' \
@@ -47,7 +47,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def test_000_qubesd_call(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.TestMethod', 'volname', None)] = \
+            ('test-vm', 'admin.vm.volume.TestMethod', 'volname', None)] = \
             b'0\x00method_result'
         self.assertEqual(self.vol._qubesd_call('TestMethod'),
             b'method_result')
@@ -55,7 +55,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def test_001_fetch_info(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.Info', 'volname', None)] = \
+            ('test-vm', 'admin.vm.volume.Info', 'volname', None)] = \
             b'0\x00prop1=val1\nprop2=val2\n'
         self.vol._fetch_info()
         self.assertEqual(self.vol._info, {'prop1': 'val1', 'prop2': 'val2'})
@@ -121,7 +121,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def test_021_revisions(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.ListSnapshots', 'volname', None)] = \
+            ('test-vm', 'admin.vm.volume.ListSnapshots', 'volname', None)] = \
             b'0\x00' \
             b'snapid1\n' \
             b'snapid2\n' \
@@ -132,20 +132,20 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def test_022_revisions_empty(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.ListSnapshots', 'volname', None)] = \
+            ('test-vm', 'admin.vm.volume.ListSnapshots', 'volname', None)] = \
             b'0\x00'
         self.assertEqual(self.vol.revisions, [])
         self.assertAllCalled()
 
     def test_030_resize(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.Resize', 'volname', b'2048')] = b'0\x00'
+            ('test-vm', 'admin.vm.volume.Resize', 'volname', b'2048')] = b'0\x00'
         self.vol.resize(2048)
         self.assertAllCalled()
 
     def test_031_revert(self):
         self.app.expected_calls[
-            ('test-vm', 'mgmt.vm.volume.Revert', 'volname', b'snapid1')] = \
+            ('test-vm', 'admin.vm.volume.Revert', 'volname', b'snapid1')] = \
             b'0\x00'
         self.vol.revert('snapid1')
         self.assertAllCalled()
@@ -159,7 +159,7 @@ class TestPoolVolume(TestVMVolume):
 
     def test_000_qubesd_call(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.TestMethod',
+            ('dom0', 'admin.pool.volume.TestMethod',
             'test-pool', b'some-id')] = \
             b'0\x00method_result'
         self.assertEqual(self.vol._qubesd_call('TestMethod'),
@@ -168,7 +168,7 @@ class TestPoolVolume(TestVMVolume):
 
     def expect_info(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Info', 'test-pool', b'some-id')] = \
+            ('dom0', 'admin.pool.volume.Info', 'test-pool', b'some-id')] = \
             b'0\x00' \
             b'pool=test-pool\n' \
             b'vid=some-id\n' \
@@ -183,7 +183,7 @@ class TestPoolVolume(TestVMVolume):
 
     def test_001_fetch_info(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Info', 'test-pool',
+            ('dom0', 'admin.pool.volume.Info', 'test-pool',
             b'some-id')] = \
             b'0\x00prop1=val1\nprop2=val2\n'
         self.vol._fetch_info()
@@ -202,7 +202,7 @@ class TestPoolVolume(TestVMVolume):
 
     def test_021_revisions(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.ListSnapshots',
+            ('dom0', 'admin.pool.volume.ListSnapshots',
              'test-pool', b'some-id')] = \
             b'0\x00' \
             b'snapid1\n' \
@@ -214,21 +214,21 @@ class TestPoolVolume(TestVMVolume):
 
     def test_022_revisions_empty(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.ListSnapshots',
+            ('dom0', 'admin.pool.volume.ListSnapshots',
             'test-pool', b'some-id')] = b'0\x00'
         self.assertEqual(self.vol.revisions, [])
         self.assertAllCalled()
 
     def test_030_resize(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Resize',
+            ('dom0', 'admin.pool.volume.Resize',
             'test-pool', b'some-id 2048')] = b'0\x00'
         self.vol.resize(2048)
         self.assertAllCalled()
 
     def test_031_revert(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.Revert', 'test-pool',
+            ('dom0', 'admin.pool.volume.Revert', 'test-pool',
             b'some-id snapid1')] = b'0\x00'
         self.vol.revert('snapid1')
         self.assertAllCalled()
@@ -236,7 +236,7 @@ class TestPoolVolume(TestVMVolume):
 
 class TestPool(qubesadmin.tests.QubesTestCase):
     def test_000_list(self):
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00file\nlvm\n'
         seen = set()
         for pool in self.app.pools:
@@ -249,9 +249,9 @@ class TestPool(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_010_config(self):
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00file\nlvm\n'
-        self.app.expected_calls[('dom0', 'mgmt.pool.Info', 'file', None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.Info', 'file', None)] = \
             b'0\x00driver=file\n' \
             b'dir_path=/var/lib/qubes\n' \
             b'name=file\n' \
@@ -266,10 +266,10 @@ class TestPool(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_020_volumes(self):
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00file\nlvm\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.volume.List', 'file', None)] = \
+            ('dom0', 'admin.pool.volume.List', 'file', None)] = \
             b'0\x00vol1\n' \
             b'vol2\n'
         pool = self.app.pools['file']
@@ -286,7 +286,7 @@ class TestPool(qubesadmin.tests.QubesTestCase):
 
     def test_030_pool_drivers(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.ListDrivers', None, None)] = \
+            ('dom0', 'admin.pool.ListDrivers', None, None)] = \
             b'0\x00file dir_path revisions_to_keep\n' \
             b'lvm volume_group thin_pool revisions_to_keep\n'
         self.assertEqual(set(self.app.pool_drivers), set(['file', 'lvm']))
@@ -296,7 +296,7 @@ class TestPool(qubesadmin.tests.QubesTestCase):
 
     def test_040_add(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Add', 'some-driver',
+            ('dom0', 'admin.pool.Add', 'some-driver',
             b'name=test-pool\nparam1=value1\nparam2=123\n')] = b'0\x00'
         self.app.add_pool('test-pool', driver='some-driver',
             param1='value1', param2=123)
@@ -304,6 +304,6 @@ class TestPool(qubesadmin.tests.QubesTestCase):
 
     def test_050_remove(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Remove', 'test-pool', None)] = b'0\x00'
+            ('dom0', 'admin.pool.Remove', 'test-pool', None)] = b'0\x00'
         self.app.remove_pool('test-pool')
         self.assertAllCalled()

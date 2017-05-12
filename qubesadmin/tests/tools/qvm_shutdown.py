@@ -25,10 +25,10 @@ import qubesadmin.tools.qvm_shutdown
 class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
     def test_000_with_vm(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.Shutdown', None, None)] = b'0\x00'
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = b'0\x00'
         qubesadmin.tools.qvm_shutdown.main(['some-vm'], app=self.app)
         self.assertAllCalled()
 
@@ -42,7 +42,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
 
     def test_002_invalid_vm(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:
@@ -53,24 +53,24 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
     def test_003_not_running(self):
         # TODO: some option to ignore this error?
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.Shutdown', None, None)] = \
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
             b'2\x00QubesVMNotStartedError\x00\x00Domain is powered off: ' \
             b'some-vm\x00'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_shutdown.main(['some-vm'], app=self.app)
         self.assertAllCalled()
 
     def test_004_multiple_vms(self):
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.Shutdown', None, None)] = \
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
             b'0\x00'
         self.app.expected_calls[
-            ('other-vm', 'mgmt.vm.Shutdown', None, None)] = \
+            ('other-vm', 'admin.vm.Shutdown', None, None)] = \
             b'0\x00'
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
         qubesadmin.tools.qvm_shutdown.main(['some-vm', 'other-vm'], app=self.app),

@@ -44,7 +44,7 @@ class Label(object):
         if self._color is None:
             try:
                 qubesd_response = self.app.qubesd_call(
-                    'dom0', 'mgmt.label.Get', self._name, None)
+                    'dom0', 'admin.label.Get', self._name, None)
             except qubesadmin.exc.QubesDaemonNoResponseError:
                 raise AttributeError
             self._color = qubesd_response.decode()
@@ -67,7 +67,7 @@ class Label(object):
         if self._index is None:
             try:
                 qubesd_response = self.app.qubesd_call(
-                    'dom0', 'mgmt.label.Index', self._name, None)
+                    'dom0', 'admin.label.Index', self._name, None)
             except qubesadmin.exc.QubesDaemonNoResponseError:
                 raise AttributeError
             self._index = int(qubesd_response.decode())

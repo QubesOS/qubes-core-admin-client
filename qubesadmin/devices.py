@@ -127,7 +127,7 @@ class DeviceCollection(object):
         options_str = ' '.join('{}={}'.format(opt,
             val) for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,
-            'mgmt.vm.device.{}.Attach'.format(self._class),
+            'admin.vm.device.{}.Attach'.format(self._class),
             '{!s}+{!s}'.format(device_assignment.backend_domain,
                 device_assignment.ident),
             options_str.encode('utf-8'))
@@ -145,7 +145,7 @@ class DeviceCollection(object):
                 "Trying to detach DeviceAssignment belonging to other domain"
 
         self._vm.qubesd_call(None,
-            'mgmt.vm.device.{}.Detach'.format(self._class),
+            'admin.vm.device.{}.Detach'.format(self._class),
             '{!s}+{!s}'.format(device_assignment.backend_domain,
                 device_assignment.ident))
 
@@ -162,7 +162,7 @@ class DeviceCollection(object):
         '''
 
         assignments_str = self._vm.qubesd_call(None,
-            'mgmt.vm.device.{}.List'.format(self._class)).decode()
+            'admin.vm.device.{}.List'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
             device, _, options_all = assignment_str.partition(' ')
             backend_domain, ident = device.split('+', 1)
@@ -199,7 +199,7 @@ class DeviceCollection(object):
     def available(self):
         '''List devices exposed by this vm'''
         devices_str = self._vm.qubesd_call(None,
-            'mgmt.vm.device.{}.Available'.format(self._class)).decode()
+            'admin.vm.device.{}.Available'.format(self._class)).decode()
         for dev_str in devices_str.splitlines():
             ident, _, info = dev_str.partition(' ')
             # description is special that it can contain spaces

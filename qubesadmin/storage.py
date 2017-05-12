@@ -54,11 +54,11 @@ class Volume(object):
         :param bytes payload: Payload to send.
         '''
         if self._vm is not None:
-            method = 'mgmt.vm.volume.' + func_name
+            method = 'admin.vm.volume.' + func_name
             dest = self._vm
             arg = self._vm_name
         else:
-            method = 'mgmt.pool.volume.' + func_name
+            method = 'admin.pool.volume.' + func_name
             dest = 'dom0'
             arg = self._pool
             if payload is not None:
@@ -213,7 +213,7 @@ class Pool(object):
         ''' Storage pool config '''
         if self._config is None:
             pool_info_data = self.app.qubesd_call(
-                'dom0', 'mgmt.pool.Info', self.name, None)
+                'dom0', 'admin.pool.Info', self.name, None)
             pool_info_data = pool_info_data.decode('utf-8')
             assert pool_info_data.endswith('\n')
             pool_info_data = pool_info_data[:-1]
@@ -230,7 +230,7 @@ class Pool(object):
     def volumes(self):
         ''' Volumes managed by this pool '''
         volumes_data = self.app.qubesd_call(
-            'dom0', 'mgmt.pool.volume.List', self.name, None)
+            'dom0', 'admin.pool.volume.List', self.name, None)
         assert volumes_data.endswith(b'\n')
         volumes_data = volumes_data[:-1].decode('ascii')
         for vid in volumes_data.splitlines():

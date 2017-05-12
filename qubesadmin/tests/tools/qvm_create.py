@@ -24,11 +24,11 @@ import qubesadmin.tools.qvm_create
 
 class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
     def test_000_just_appvm(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM', None,
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM', None,
             b'name=new-vm label=red')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_create.main(['-l', 'red', 'new-vm'], app=self.app)
         self.assertAllCalled()
@@ -41,24 +41,24 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_002_custom_template(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM',
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             'some-template', b'name=new-vm label=red')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_create.main(['-l', 'red', '-t',
             'some-template', 'new-vm'], app=self.app)
         self.assertAllCalled()
 
     def test_003_properties(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.Create.AppVM',
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             None, b'name=new-vm label=red')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n'
-        self.app.expected_calls[('new-vm', 'mgmt.vm.property.Set',
+        self.app.expected_calls[('new-vm', 'admin.vm.property.Set',
             'netvm', b'sys-whonix')] = b'0\x00'
         qubesadmin.tools.qvm_create.main(['-l', 'red', '--prop',
             'netvm=sys-whonix', 'new-vm'],
@@ -66,11 +66,11 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_004_pool(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.CreateInPool.AppVM',
+        self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             None, b'name=new-vm label=red pool=some-pool')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_create.main(['-l', 'red', '-P', 'some-pool',
             'new-vm'],
@@ -78,12 +78,12 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_005_pools(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.CreateInPool.AppVM',
+        self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             None, b'name=new-vm label=red pool:private=some-pool '
                   b'pool:volatile=other-pool')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.label.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_create.main(['-l', 'red', '--pool',
             'private=some-pool', '--pool', 'volatile=other-pool', 'new-vm'],

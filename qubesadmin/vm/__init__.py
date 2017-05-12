@@ -41,7 +41,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
     firewall = None
 
     def __init__(self, app, name):
-        super(QubesVM, self).__init__(app, 'mgmt.vm.property.', name)
+        super(QubesVM, self).__init__(app, 'admin.vm.property.', name)
         self._volumes = None
         self.log = logging.getLogger(name)
         self.features = qubesadmin.features.Features(self)
@@ -78,7 +78,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         :return:
         '''
-        self.qubesd_call(self._method_dest, 'mgmt.vm.Start')
+        self.qubesd_call(self._method_dest, 'admin.vm.Start')
 
     def shutdown(self, force=False):
         '''
@@ -90,7 +90,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         # TODO: wait parameter (using event?)
         if force:
             raise NotImplementedError
-        self.qubesd_call(self._method_dest, 'mgmt.vm.Shutdown')
+        self.qubesd_call(self._method_dest, 'admin.vm.Shutdown')
 
     def kill(self):
         '''
@@ -98,7 +98,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         :return:
         '''
-        self.qubesd_call(self._method_dest, 'mgmt.vm.Kill')
+        self.qubesd_call(self._method_dest, 'admin.vm.Kill')
 
     def pause(self):
         '''
@@ -108,7 +108,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         :return:
         '''
-        self.qubesd_call(self._method_dest, 'mgmt.vm.Pause')
+        self.qubesd_call(self._method_dest, 'admin.vm.Pause')
 
     def unpause(self):
         '''
@@ -118,7 +118,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         :return:
         '''
-        self.qubesd_call(self._method_dest, 'mgmt.vm.Unpause')
+        self.qubesd_call(self._method_dest, 'admin.vm.Unpause')
 
     def suspend(self):
         '''
@@ -130,7 +130,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         :return:
         '''
         raise NotImplementedError
-        #self.qubesd_call(self._method_dest, 'mgmt.vm.Suspend')
+        #self.qubesd_call(self._method_dest, 'admin.vm.Suspend')
 
     def resume(self):
         '''
@@ -141,7 +141,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         :return:
         '''
         raise NotImplementedError
-        #self.qubesd_call(self._method_dest, 'mgmt.vm.Resume')
+        #self.qubesd_call(self._method_dest, 'admin.vm.Resume')
 
     def get_power_state(self):
         '''Return power state description string.
@@ -174,7 +174,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''
 
         vm_list_info = self.qubesd_call(
-            self._method_dest, 'mgmt.vm.List', None, None).decode('ascii')
+            self._method_dest, 'admin.vm.List', None, None).decode('ascii')
         #  name class=... state=... other=...
         vm_state = vm_list_info.strip().partition('state=')[2].split(' ')[0]
         return vm_state
@@ -213,7 +213,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''VM disk volumes'''
         if self._volumes is None:
             volumes_list = self.qubesd_call(
-                self._method_dest, 'mgmt.vm.volume.List')
+                self._method_dest, 'admin.vm.volume.List')
             self._volumes = {}
             for volname in volumes_list.decode('ascii').splitlines():
                 if not volname:

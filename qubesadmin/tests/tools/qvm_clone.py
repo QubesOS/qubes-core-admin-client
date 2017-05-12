@@ -24,9 +24,9 @@ import qubesadmin.tools.qvm_clone
 
 class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
     def test_000_simple(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.Clone', None,
+        self.app.expected_calls[('test-vm', 'admin.vm.Clone', None,
             b'name=new-vm')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['test-vm', 'new-vm'], app=self.app)
@@ -40,9 +40,9 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_004_pool(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.CloneInPool',
+        self.app.expected_calls[('test-vm', 'admin.vm.CloneInPool',
             None, b'name=new-vm pool=some-pool')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['-P', 'some-pool', 'test-vm', 'new-vm'],
@@ -50,10 +50,10 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_005_pools(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.CloneInPool',
+        self.app.expected_calls[('test-vm', 'admin.vm.CloneInPool',
             None, b'name=new-vm pool:private=some-pool '
                   b'pool:volatile=other-pool')] = b'0\x00'
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['--pool', 'private=some-pool',

@@ -394,7 +394,7 @@ class Firewall(object):
 
     def load_rules(self):
         '''Force (re-)loading firewall rules'''
-        rules_str = self.vm.qubesd_call(None, 'mgmt.vm.firewall.Get')
+        rules_str = self.vm.qubesd_call(None, 'admin.vm.firewall.Get')
         rules = []
         for rule_str in rules_str.decode().splitlines():
             rules.append(Rule(rule_str))
@@ -425,19 +425,19 @@ class Firewall(object):
         '''
         if rules is None:
             rules = self._rules
-        self.vm.qubesd_call(None, 'mgmt.vm.firewall.Set',
+        self.vm.qubesd_call(None, 'admin.vm.firewall.Set',
             payload=(''.join('{}\n'.format(rule.rule)
                 for rule in rules)).encode('ascii'))
 
     @property
     def policy(self):
         '''Default action to take if no rule matches'''
-        policy_str = self.vm.qubesd_call(None, 'mgmt.vm.firewall.GetPolicy')
+        policy_str = self.vm.qubesd_call(None, 'admin.vm.firewall.GetPolicy')
         return Action(policy_str.decode())
 
     @policy.setter
     def policy(self, value):
-        self.vm.qubesd_call(None, 'mgmt.vm.firewall.SetPolicy', payload=str(
+        self.vm.qubesd_call(None, 'admin.vm.firewall.SetPolicy', payload=str(
             value).encode('ascii'))
 
     def reload(self):
@@ -445,4 +445,4 @@ class Firewall(object):
 
         Can be used for example to force again names resolution.
         '''
-        self.vm.qubesd_call(None, 'mgmt.vm.firewall.Reload')
+        self.vm.qubesd_call(None, 'admin.vm.firewall.Reload')

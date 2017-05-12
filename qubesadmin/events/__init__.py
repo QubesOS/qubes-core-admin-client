@@ -77,7 +77,7 @@ class EventsDispatcher(object):
             reader, writer = yield from asyncio.open_unix_connection(
                 qubesadmin.config.QUBESD_SOCKET)
             writer.write(b'dom0\0')  # source
-            writer.write(b'mgmt.Events\0')  # method
+            writer.write(b'admin.Events\0')  # method
             writer.write(dest.encode('ascii') + b'\0')  # dest
             writer.write(b'\0')  # arg
             writer.write_eof()
@@ -87,7 +87,7 @@ class EventsDispatcher(object):
                 writer.close()
         elif self.app.qubesd_connection_type == 'qrexec':
             proc = yield from asyncio.create_subprocess_exec(
-                ['qrexec-client-vm', dest, 'mgmt.Events'],
+                ['qrexec-client-vm', dest, 'admin.Events'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             proc.stdin.write_eof()

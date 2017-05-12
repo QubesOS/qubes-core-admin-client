@@ -25,13 +25,13 @@ import qubesadmin.tools.qvm_pool
 
 class TC_00_qvm_pool(qubesadmin.tests.QubesTestCase):
     def test_000_list(self):
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00pool-file\npool-lvm\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Info', 'pool-file', None)] = \
+            ('dom0', 'admin.pool.Info', 'pool-file', None)] = \
             b'0\x00driver=file\ndir_path=/var/lib/qubes\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Info', 'pool-lvm', None)] = \
+            ('dom0', 'admin.pool.Info', 'pool-lvm', None)] = \
             b'0\x00driver=lvm\nvolume_group=qubes_dom0\nthin_pool=pool00\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
@@ -44,7 +44,7 @@ class TC_00_qvm_pool(qubesadmin.tests.QubesTestCase):
 
     def test_010_list_drivers(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.ListDrivers', None, None)] = \
+            ('dom0', 'admin.pool.ListDrivers', None, None)] = \
             b'0\x00file dir_path revisions_to_keep\n' \
             b'lvm volume_group thin_pool revisions_to_keep\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -59,7 +59,7 @@ class TC_00_qvm_pool(qubesadmin.tests.QubesTestCase):
 
     def test_020_add(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Add', 'file',
+            ('dom0', 'admin.pool.Add', 'file',
             b'name=test-pool\ndir_path=/some/path\n')] = b'0\x00'
         self.assertEqual(0,
             qubesadmin.tools.qvm_pool.main(
@@ -69,17 +69,17 @@ class TC_00_qvm_pool(qubesadmin.tests.QubesTestCase):
 
     def test_030_remove(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Remove', 'test-pool', None)] = b'0\x00'
+            ('dom0', 'admin.pool.Remove', 'test-pool', None)] = b'0\x00'
         self.assertEqual(0,
             qubesadmin.tools.qvm_pool.main(['--remove', 'test-pool'],
                 app=self.app))
         self.assertAllCalled()
 
     def test_040_info(self):
-        self.app.expected_calls[('dom0', 'mgmt.pool.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00pool-file\npool-lvm\n'
         self.app.expected_calls[
-            ('dom0', 'mgmt.pool.Info', 'pool-lvm', None)] = \
+            ('dom0', 'admin.pool.Info', 'pool-lvm', None)] = \
             b'0\x00driver=lvm\nvolume_group=qubes_dom0\nthin_pool=pool00\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,

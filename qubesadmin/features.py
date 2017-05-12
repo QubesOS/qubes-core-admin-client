@@ -39,18 +39,18 @@ class Features(object):
         self.vm = vm
 
     def __delitem__(self, key):
-        self.vm.qubesd_call(self.vm.name, 'mgmt.vm.feature.Remove', key)
+        self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Remove', key)
 
     def __setitem__(self, key, value):
-        self.vm.qubesd_call(self.vm.name, 'mgmt.vm.feature.Set', key, value)
+        self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key, value)
 
     def __getitem__(self, item):
         return self.vm.qubesd_call(
-            self.vm.name, 'mgmt.vm.feature.Get', item).decode('utf-8')
+            self.vm.name, 'admin.vm.feature.Get', item).decode('utf-8')
 
     def __iter__(self):
         qubesd_response = self.vm.qubesd_call(self.vm.name,
-            'mgmt.vm.feature.List')
+            'admin.vm.feature.List')
         return iter(qubesd_response.decode('utf-8').splitlines())
 
     keys = __iter__
@@ -61,7 +61,7 @@ class Features(object):
         ''' Check if the vm's template has the specified feature. '''
         try:
             qubesd_response = self.vm.qubesd_call(
-                self.vm.name, 'mgmt.vm.feature.CheckWithTemplate', feature)
+                self.vm.name, 'admin.vm.feature.CheckWithTemplate', feature)
             return qubesd_response.decode('utf-8')
         except KeyError:
             if default is self._NO_DEFAULT:

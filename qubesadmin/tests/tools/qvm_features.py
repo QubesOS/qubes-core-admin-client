@@ -25,16 +25,16 @@ import qubesadmin.tools.qvm_features
 class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
     def test_000_list(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.feature.List', None, None)] = \
+            ('some-vm', 'admin.vm.feature.List', None, None)] = \
             b'0\x00feature1\nfeature2\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.feature.Get', 'feature1', None)] = \
+            ('some-vm', 'admin.vm.feature.Get', 'feature1', None)] = \
             b'0\x00value1'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.feature.Get', 'feature2', None)] = \
+            ('some-vm', 'admin.vm.feature.Get', 'feature2', None)] = \
             b'0\x00value2 with spaces'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -47,10 +47,10 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_001_set(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.feature.Set',
+            ('some-vm', 'admin.vm.feature.Set',
              'feature3', 'value of feature')] = b'0\x00'
         self.assertEqual(
             qubesadmin.tools.qvm_features.main(['some-vm', 'feature3',
@@ -61,10 +61,10 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_002_get(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.feature.Get', 'feature3', None)] = \
+            ('some-vm', 'admin.vm.feature.Get', 'feature3', None)] = \
             b'0\x00value2 with spaces'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -77,10 +77,10 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_003_del(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.feature.Remove', 'feature4', None)] = \
+            ('some-vm', 'admin.vm.feature.Remove', 'feature4', None)] = \
             b'0\x00'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -94,12 +94,12 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_004_running_verbose(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.List', None, None)] = \
+            ('some-vm', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -112,15 +112,15 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_005_running_multi_verbose(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.List', None, None)] = \
+            ('some-vm', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm2', 'mgmt.vm.List', None, None)] = \
+            ('some-vm2', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm2 class=AppVM state=Running\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -134,18 +134,18 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_006_running_multi_verbose2(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.List', None, None)] = \
+            ('some-vm', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm2', 'mgmt.vm.List', None, None)] = \
+            ('some-vm2', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm2 class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm3', 'mgmt.vm.List', None, None)] = \
+            ('some-vm3', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm3 class=AppVM state=Halted\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -159,12 +159,12 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_007_not_running_verbose(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm3', 'mgmt.vm.List', None, None)] = \
+            ('some-vm3', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm3 class=AppVM state=Halted\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -178,12 +178,12 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_008_paused(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm2', 'mgmt.vm.List', None, None)] = \
+            ('some-vm2', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm2 class=AppVM state=Paused\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -197,15 +197,15 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_009_paused_multi(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm2', 'mgmt.vm.List', None, None)] = \
+            ('some-vm2', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm2 class=AppVM state=Paused\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.List', None, None)] = \
+            ('some-vm', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(
@@ -220,7 +220,7 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_010_template(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=TemplateVM state=Halted\n'
@@ -236,7 +236,7 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
 
     def test_011_template_multi(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=TemplateVM state=Halted\n'

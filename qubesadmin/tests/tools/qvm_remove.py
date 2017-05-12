@@ -26,10 +26,10 @@ import qubesadmin.tools.qvm_remove
 class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):
     def test_000_single(self):
         self.app.expected_calls[
-            ('dom0', 'mgmt.vm.List', None, None)] = \
+            ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'mgmt.vm.Remove', None, None)] = \
+            ('some-vm', 'admin.vm.Remove', None, None)] = \
             b'0\x00\n'
         qubesadmin.tools.qvm_remove.main(['some-vm'], app=self.app)
         self.assertAllCalled()

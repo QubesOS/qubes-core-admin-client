@@ -145,7 +145,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
                 self.read_all, sock2))
             loop.run_until_complete(asyncio.wait([task, reader]))
             self.assertEqual(reader.result(),
-                b'dom0\0mgmt.Events\0dom0\0\0')
+                b'dom0\0admin.Events\0dom0\0\0')
             self.assertIsInstance(task.result()[0], asyncio.StreamReader)
             cleanup_func = task.result()[1]
             cleanup_func()
@@ -171,7 +171,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
                 self.read_all, sock2))
             loop.run_until_complete(asyncio.wait([task, reader]))
             self.assertEqual(reader.result(),
-                b'dom0\0mgmt.Events\0test-vm\0\0')
+                b'dom0\0admin.Events\0test-vm\0\0')
             self.assertIsInstance(task.result()[0], asyncio.StreamReader)
             cleanup_func = task.result()[1]
             cleanup_func()
@@ -198,7 +198,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
             loop.run_until_complete(task)
             self.assertEqual(mock_proc.mock_calls, [
                 unittest.mock.call(['qrexec-client-vm', 'dom0',
-                    'mgmt.Events'], stdin=subprocess.PIPE,
+                    'admin.Events'], stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE),
                 unittest.mock.call().stdin.write_eof()
             ])
@@ -223,7 +223,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
             loop.run_until_complete(task)
             self.assertEqual(mock_proc.mock_calls, [
                 unittest.mock.call(['qrexec-client-vm', 'test-vm',
-                    'mgmt.Events'], stdin=subprocess.PIPE,
+                    'admin.Events'], stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE),
                 unittest.mock.call().stdin.write_eof()
             ])

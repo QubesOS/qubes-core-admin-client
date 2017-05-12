@@ -56,7 +56,7 @@ class VMCollection(object):
             return
         vm_list_data = self.app.qubesd_call(
             'dom0',
-            'mgmt.vm.List'
+            'admin.vm.List'
         )
         new_vm_list = {}
         # FIXME: this will probably change
@@ -95,7 +95,7 @@ class VMCollection(object):
         return item in self._vm_list
 
     def __delitem__(self, key):
-        self.app.qubesd_call(key, 'mgmt.vm.Remove')
+        self.app.qubesd_call(key, 'admin.vm.Remove')
         self.clear_cache()
 
     def __iter__(self):
@@ -124,12 +124,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     log = None
 
     def __init__(self):
-        super(QubesBase, self).__init__(self, 'mgmt.property.', 'dom0')
+        super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')
         self.domains = VMCollection(self)
         self.labels = qubesadmin.base.WrapperObjectsCollection(
-            self, 'mgmt.label.List', qubesadmin.label.Label)
+            self, 'admin.label.List', qubesadmin.label.Label)
         self.pools = qubesadmin.base.WrapperObjectsCollection(
-            self, 'mgmt.pool.List', qubesadmin.storage.Pool)
+            self, 'admin.pool.List', qubesadmin.storage.Pool)
         #: cache for available storage pool drivers and options to create them
         self._pool_drivers = None
         self.log = logging.getLogger('app')
@@ -142,7 +142,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         '''
         if self._pool_drivers is None:
             pool_drivers_data = self.qubesd_call(
-                'dom0', 'mgmt.pool.ListDrivers', None, None)
+                'dom0', 'admin.pool.ListDrivers', None, None)
             assert pool_drivers_data.endswith(b'\n')
             pool_drivers = {}
             for driver_line in pool_drivers_data.decode('ascii').splitlines():
@@ -176,12 +176,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         payload = 'name={}\n'.format(name) + \
                   ''.join('{}={}\n'.format(key, value)
             for key, value in sorted(kwargs.items()))
-        self.qubesd_call('dom0', 'mgmt.pool.Add', driver,
+        self.qubesd_call('dom0', 'admin.pool.Add', driver,
             payload.encode('utf-8'))
 
     def remove_pool(self, name):
         ''' Remove a storage pool '''
-        self.qubesd_call('dom0', 'mgmt.pool.Remove', name, None)
+        self.qubesd_call('dom0', 'admin.pool.Remove', name, None)
 
     def get_label(self, label):
         '''Get label as identified by index or name
@@ -253,15 +253,15 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         if pool and pools:
             raise ValueError('only one of pool= and pools= can be used')
 
-        method_prefix = 'mgmt.vm.Create.'
+        method_prefix = 'admin.vm.Create.'
         payload = 'name={} label={}'.format(name, label)
         if pool:
             payload += ' pool={}'.format(str(pool))
-            method_prefix = 'mgmt.vm.CreateInPool.'
+            method_prefix = 'admin.vm.CreateInPool.'
         if pools:
             payload += ''.join(' pool:{}={}'.format(vol, str(pool))
                 for vol, pool in sorted(pools.items()))
-            method_prefix = 'mgmt.vm.CreateInPool.'
+            method_prefix = 'admin.vm.CreateInPool.'
 
         self.qubesd_call('dom0', method_prefix + cls, template,
             payload.encode('utf-8'))
@@ -295,15 +295,15 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         if not isinstance(src_vm, str):
             src_vm = str(src_vm)
 
-        method = 'mgmt.vm.Clone'
+        method = 'admin.vm.Clone'
         payload = 'name={}'.format(new_name)
         if pool:
             payload += ' pool={}'.format(str(pool))
-            method = 'mgmt.vm.CloneInPool'
+            method = 'admin.vm.CloneInPool'
         if pools:
             payload += ''.join(' pool:{}={}'.format(vol, str(pool))
                 for vol, pool in sorted(pools.items()))
-            method = 'mgmt.vm.CloneInPool'
+            method = 'admin.vm.CloneInPool'
 
         self.qubesd_call(src_vm, method, None, payload.encode('utf-8'))
 
@@ -374,7 +374,7 @@ class QubesLocal(QubesBase):
         if not dest:
             raise ValueError('Empty destination name allowed only from a VM')
         try:
-            self.qubesd_call(dest, 'mgmt.vm.Start')
+            self.qubesd_call(dest, 'admin.vm.Start')
         except qubesadmin.exc.QubesVMNotHaltedError:
             pass
         qrexec_opts = ['-d', dest]

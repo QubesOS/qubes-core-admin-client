@@ -24,14 +24,14 @@ import unittest
 
 class TC_00_Errors(qubesadmin.tests.QubesTestCase):
     def test_000_exception(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'2\x00QubesException\x00\x00An error occurred\x00'
         with self.assertRaises(qubesadmin.exc.QubesException) as context:
             vms = list(self.app.domains)
         self.assertEqual(str(context.exception), 'An error occurred')
 
     def test_001_exception_with_fields(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'2\x00QubesException\x00\x00' \
             b'An error occurred: %s, %s\x00string\x00other\x00'
         with self.assertRaises(qubesadmin.exc.QubesException) as context:
@@ -40,7 +40,7 @@ class TC_00_Errors(qubesadmin.tests.QubesTestCase):
             'An error occurred: string, other')
 
     def test_002_exception_with_numbers(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'2\x00QubesException\x00\x00' \
             b'An error occurred: %d, %d\x001\x002\x00'
         try:
@@ -51,7 +51,7 @@ class TC_00_Errors(qubesadmin.tests.QubesTestCase):
         self.assertEqual(str(context.exception), 'An error occurred: 1, 2')
 
     def test_010_empty(self):
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = b''
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b''
         with self.assertRaises(qubesadmin.exc.QubesDaemonNoResponseError) \
                 as context:
             vms = list(self.app.domains)

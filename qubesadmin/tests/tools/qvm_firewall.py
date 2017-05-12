@@ -70,11 +70,11 @@ class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
 class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super(TC_10_qvm_firewall, self).setUp()
-        self.app.expected_calls[('dom0', 'mgmt.vm.List', None, None)] = \
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=AppVM state=Halted\n'
 
     def test_000_list(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
@@ -91,7 +91,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
                 ])
 
     def test_001_list(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org proto=tcp ' \
             b'dstports=443-443\n' \
@@ -112,7 +112,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
                 ])
 
     def test_002_list_raw(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
@@ -126,11 +126,11 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
                 ])
 
     def test_003_list_raw_reload(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Reload',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Reload',
                 None, None)] = b'0\0'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_firewall.main(
@@ -143,11 +143,11 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
                 ])
 
     def test_010_add_after(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Set', None,
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Set', None,
             b'action=accept dsthost=qubes-os.org\n'
             b'action=drop proto=icmp\n'
             b'action=accept dst4=192.168.0.0/24 comment=Allow LAN\n')] = \
@@ -158,11 +158,11 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
         )
 
     def test_011_add_before(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Set', None,
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Set', None,
             b'action=accept dsthost=qubes-os.org\n'
             b'action=accept dst4=192.168.0.0/24 comment=Allow LAN\n'
             b'action=drop proto=icmp\n')] = b'0\0'
@@ -173,11 +173,11 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
         )
 
     def test_020_del_number(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Set', None,
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Set', None,
             b'action=accept dsthost=qubes-os.org\n')] = b'0\0'
         qubesadmin.tools.qvm_firewall.main(
             ['test-vm', 'del', '--rule-no', '1'],
@@ -185,11 +185,11 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
         )
 
     def test_021_del_rule(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Get',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.Set', None,
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Set', None,
             b'action=accept dsthost=qubes-os.org\n')] = b'0\0'
         qubesadmin.tools.qvm_firewall.main(
             ['test-vm', 'del', 'drop', 'proto=icmp'],
@@ -197,7 +197,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
         )
 
     def test_030_policy_get(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.GetPolicy',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.GetPolicy',
             None, None)] = b'0\0accept'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_firewall.main(
@@ -207,7 +207,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             self.assertEqual(stdout.getvalue(), 'accept\n')
 
     def test_031_policy_set(self):
-        self.app.expected_calls[('test-vm', 'mgmt.vm.firewall.SetPolicy',
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.SetPolicy',
             None, b'accept')] = b'0\0'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_firewall.main(
