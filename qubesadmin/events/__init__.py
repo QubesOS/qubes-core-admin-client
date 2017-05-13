@@ -176,8 +176,13 @@ class EventsDispatcher(object):
     def handle(self, subject, event, **kwargs):
         '''Call handlers for given event'''
         if subject:
+            if event in ['property-set:name']:
+                self.app.domains.clear_cache()
             subject = self.app.domains[subject]
         else:
+            # handle cache refreshing on best-effort basis
+            if event in ['domain-add', 'domain-delete']:
+                self.app.domains.clear_cache()
             subject = None
         for handler in self.handlers.get(event, []):
             handler(subject, event, **kwargs)
