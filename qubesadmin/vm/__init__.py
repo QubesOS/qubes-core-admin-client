@@ -248,9 +248,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         stdouterr = p.communicate(input=input)
 
         if p.returncode:
-            raise qubesadmin.exc.QubesVMError(self,
-                'service {!r} failed with retcode {!r}; '
-                'stdout={!r} stderr={!r}'.format(
+            raise qubesadmin.exc.QubesVMError(
+                'VM {}: service {!r} failed with retcode {!r}; '
+                'stdout={!r} stderr={!r}'.format(self,
                     service, p.returncode, *stdouterr))
 
         return stdouterr
