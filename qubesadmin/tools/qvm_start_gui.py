@@ -34,6 +34,7 @@ import qubesadmin.tools
 import qubesadmin.vm
 have_events = False
 try:
+    # pylint: disable=wrong-import-position
     import qubesadmin.events
     have_events = True
 except ImportError:

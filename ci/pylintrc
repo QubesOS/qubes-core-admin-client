@@ -8,7 +8,8 @@ disable=
   bad-continuation,
   duplicate-code,
   fixme,
-  locally-disabled
+  locally-disabled,
+  locally-enabled
 
 [REPORTS]
 
