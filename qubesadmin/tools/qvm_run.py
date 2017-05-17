@@ -28,7 +28,6 @@ import asyncio
 
 import functools
 import subprocess
-import logging
 
 import qubesadmin.tools
 import qubesadmin.exc
@@ -136,7 +135,10 @@ def main(args=None, app=None):
         run_kwargs['stdout'] = None
         run_kwargs['stderr'] = None
 
-    log = logging.getLogger('qvm_run')
+    verbose = args.verbose - args.quiet
+    if args.passio:
+        verbose -= 1
+
     if args.color_output:
         sys.stdout.write('\033[0;{}m'.format(args.color_output))
         sys.stdout.flush()
@@ -149,7 +151,14 @@ def main(args=None, app=None):
             if not args.autostart and not vm.is_running():
                 continue
             try:
-                log.info('Running \'%s\' on %s', args.cmd, vm.name)
+                if verbose > 0:
+                    if args.color_output:
+                        print('\033[0mRunning \'{}\' on {}\033[0;{}m'.format(
+                            args.cmd, vm.name, args.color_output),
+                            file=sys.stderr)
+                    else:
+                        print('Running \'{}\' on {}'.format(args.cmd, vm.name),
+                            file=sys.stderr)
                 if args.passio and not args.localcmd:
                     loop = asyncio.new_event_loop()
                     loop.add_signal_handler(signal.SIGCHLD, loop.stop)
