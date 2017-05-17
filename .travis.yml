@@ -16,14 +16,17 @@ script:
 env:
  - TESTS_ONLY=1
 
-matrix:
-  include:
-    - env: DIST_DOM0=fc23 USE_QUBES_REPO_VERSION=3.2 USE_QUBES_REPO_TESTING=1
-      python: 2.7
-
 after_success:
-#  - ~/qubes-builder/scripts/travis-deploy
   - codecov  
+
+jobs:
+  include:
+    - env: DIST_DOM0=fc25 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
+      python: '2.7'
+    - stage: deploy
+      python: '3.5'
+      env: DIST_DOM0=fc25 TESTS_ONLY=
+      script: ~/qubes-builder/scripts/travis-deploy
 
 # don't build tags which are meant for code signing only
 branches:
