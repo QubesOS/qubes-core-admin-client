@@ -41,7 +41,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
-        ret = qubesadmin.tools.qvm_run.main(['test-vm', 'command'], app=self.app)
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', 'test-vm', 'command'],
+            app=self.app)
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
@@ -63,7 +65,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
-        ret = qubesadmin.tools.qvm_run.main(['test-vm', 'test-vm2', 'command'],
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', 'test-vm', 'test-vm2', 'command'],
             app=self.app)
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
@@ -96,7 +99,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
         with unittest.mock.patch('sys.stdin', echo.stdout):
             ret = qubesadmin.tools.qvm_run.main(
-                ['--pass-io', 'test-vm', 'command'],
+                ['--no-gui', '--pass-io', 'test-vm', 'command'],
                 app=self.app)
 
         self.assertEqual(ret, 0)
@@ -124,7 +127,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         with unittest.mock.patch('sys.stdin', echo.stdout):
             with unittest.mock.patch('sys.stdout', stdout):
                 ret = qubesadmin.tools.qvm_run.main(
-                    ['--pass-io', 'test-vm', 'command'],
+                    ['--no-gui', '--pass-io', 'test-vm', 'command'],
                     app=self.app)
 
         self.assertEqual(ret, 0)
@@ -154,7 +157,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         with unittest.mock.patch('sys.stdin', echo.stdout):
             with unittest.mock.patch('sys.stdout', stdout):
                 ret = qubesadmin.tools.qvm_run.main(
-                    ['--pass-io', '--no-color-output', 'test-vm', 'command'],
+                    ['--no-gui', '--pass-io', '--no-color-output',
+                        'test-vm', 'command'],
                     app=self.app)
 
         self.assertEqual(ret, 0)
@@ -184,7 +188,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         with unittest.mock.patch('sys.stdin', echo.stdout):
             with unittest.mock.patch('sys.stdout', stdout):
                 ret = qubesadmin.tools.qvm_run.main(
-                    ['--pass-io', '--no-filter-esc', 'test-vm', 'command'],
+                    ['--no-gui', '--pass-io', '--no-filter-esc',
+                        'test-vm', 'command'],
                     app=self.app)
 
         self.assertEqual(ret, 0)
@@ -210,7 +215,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         ret = qubesadmin.tools.qvm_run.main(
-            ['--pass-io', '--localcmd', 'local-command',
+            ['--no-gui', '--pass-io', '--localcmd', 'local-command',
                 'test-vm', 'command'],
             app=self.app)
         self.assertEqual(ret, 0)
@@ -220,6 +225,38 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'localcmd': 'local-command',
                 'stdout': None,
                 'stderr': None,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMShell', b'command\n')
+        ])
+        self.assertAllCalled()
+
+    def test_006_run_single_with_gui(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'default_user', None)] = \
+            b'0\x00default=yes type=str user'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
+        #     b'0\x00test-vm class=AppVM state=Running\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['test-vm', 'command'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        # make sure we have the same instance below
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.WaitForSession', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+            }),
+            ('test-vm', 'qubes.WaitForSession', b'user'),
+            ('test-vm', 'qubes.VMShell', {
+                'filter_esc': True,
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
             ('test-vm', 'qubes.VMShell', b'command\n')
