@@ -43,15 +43,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         #     b'0\x00test-vm class=AppVM state=Running\n'
         ret = qubesadmin.tools.qvm_run.main(['test-vm', 'command'], app=self.app)
         self.assertEqual(ret, 0)
-        # make sure we have the same instance below
-        null = self.app.service_calls[0][2]['stdout']
-        self.assertIsInstance(null, io.BufferedWriter)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
                 'filter_esc': True,
                 'localcmd': None,
-                'stdout': null,
-                'stderr': null,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
             ('test-vm', 'qubes.VMShell', b'command\n')
@@ -69,28 +66,20 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         ret = qubesadmin.tools.qvm_run.main(['test-vm', 'test-vm2', 'command'],
             app=self.app)
         self.assertEqual(ret, 0)
-        for i in range(0, len(self.app.service_calls), 2):
-            self.assertIsInstance(self.app.service_calls[i][2]['stdout'],
-                io.BufferedWriter)
-            self.assertIsInstance(self.app.service_calls[i][2]['stderr'],
-                io.BufferedWriter)
-        # make sure we have the same instance below
-        null = self.app.service_calls[0][2]['stdout']
-        null2 = self.app.service_calls[2][2]['stdout']
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
                 'filter_esc': True,
                 'localcmd': None,
-                'stdout': null,
-                'stderr': null,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
             ('test-vm', 'qubes.VMShell', b'command\n'),
             ('test-vm2', 'qubes.VMShell', {
                 'filter_esc': True,
                 'localcmd': None,
-                'stdout': null2,
-                'stderr': null2,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
             ('test-vm2', 'qubes.VMShell', b'command\n')

@@ -27,7 +27,7 @@ import sys
 import asyncio
 
 import functools
-
+import subprocess
 import logging
 
 import qubesadmin.tools
@@ -129,8 +129,8 @@ def main(args=None, app=None):
     retcode = 0
     run_kwargs = {}
     if not args.passio:
-        run_kwargs['stdout'] = open(os.devnull, 'wb')
-        run_kwargs['stderr'] = run_kwargs['stdout']
+        run_kwargs['stdout'] = subprocess.DEVNULL
+        run_kwargs['stderr'] = subprocess.DEVNULL
     else:
         # connect process output to stdout/err directly if --pass-io is given
         run_kwargs['stdout'] = None
@@ -184,8 +184,6 @@ def main(args=None, app=None):
         if args.color_stderr:
             sys.stderr.write('\033[0m')
             sys.stderr.flush()
-        if run_kwargs['stdout'] is not None:
-            run_kwargs['stdout'].close()
 
     return retcode
 
