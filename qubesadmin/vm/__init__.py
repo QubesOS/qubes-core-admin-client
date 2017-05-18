@@ -72,6 +72,13 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             return self.name < other.name
         return NotImplemented
 
+    def __eq__(self, other):
+        if isinstance(other, QubesVM):
+            return self.name == other.name
+        elif isinstance(other, str):
+            return self.name == other
+        return NotImplemented
+
     def start(self):
         '''
         Start domain.
@@ -288,7 +295,18 @@ class StandaloneVM(QubesVM):
 
 class TemplateVM(QubesVM):
     '''Template for AppVM'''
-    pass
+
+    @property
+    def appvms(self):
+        ''' Returns a generator containing all domains based on the current
+            TemplateVM.
+        '''
+        for vm in self.app.domains:
+            try:
+                if vm.template == self:
+                    yield vm
+            except AttributeError:
+                pass
 
 
 class DispVM(QubesVM):
