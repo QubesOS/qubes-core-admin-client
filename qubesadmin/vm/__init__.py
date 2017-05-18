@@ -268,7 +268,8 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''  # pylint: disable=redefined-builtin
         if input is None:
             input = b''
-        return b''.join((command.rstrip('\n').encode('utf-8'), b'\n', input))
+        return b''.join((command.rstrip('\n').encode('utf-8'),
+            b'; exit\n', input))
 
     def run(self, command, input=None, **kwargs):
         '''Run a shell command inside the domain using qubes.VMShell qrexec.

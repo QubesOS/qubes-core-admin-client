@@ -53,7 +53,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\n')
         ])
         self.assertAllCalled()
 
@@ -77,7 +77,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\n'),
+            ('test-vm', 'qubes.VMShell', b'command; exit\n'),
             ('test-vm2', 'qubes.VMShell', {
                 'filter_esc': True,
                 'localcmd': None,
@@ -85,7 +85,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
-            ('test-vm2', 'qubes.VMShell', b'command\n')
+            ('test-vm2', 'qubes.VMShell', b'command; exit\n')
         ])
         self.assertAllCalled()
 
@@ -111,7 +111,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': None,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\nsome-data\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\nsome-data\n')
         ])
         self.assertAllCalled()
 
@@ -139,7 +139,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': None,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\nsome-data\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\nsome-data\n')
         ])
         self.assertEqual(stdout.getvalue(), '\033[0;31m\033[0m')
         stdout.close()
@@ -170,7 +170,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': None,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\nsome-data\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\nsome-data\n')
         ])
         self.assertEqual(stdout.getvalue(), '')
         stdout.close()
@@ -201,7 +201,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': None,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\nsome-data\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\nsome-data\n')
         ])
         self.assertEqual(stdout.getvalue(), '')
         stdout.close()
@@ -227,7 +227,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': None,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\n')
         ])
         self.assertAllCalled()
 
@@ -259,6 +259,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stderr': subprocess.DEVNULL,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command\n')
+            ('test-vm', 'qubes.VMShell', b'command; exit\n')
         ])
         self.assertAllCalled()
