@@ -159,13 +159,13 @@ def main(args=None, app=None):
                     else:
                         print('Running \'{}\' on {}'.format(args.cmd, vm.name),
                             file=sys.stderr)
-                if args.passio and not args.localcmd:
-                    loop = asyncio.new_event_loop()
-                    loop.add_signal_handler(signal.SIGCHLD, loop.stop)
                 if args.gui:
                     wait_session = vm.run_service('qubes.WaitForSession',
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     wait_session.communicate(vm.default_user.encode())
+                if args.passio and not args.localcmd:
+                    loop = asyncio.new_event_loop()
+                    loop.add_signal_handler(signal.SIGCHLD, loop.stop)
                 proc = vm.run_service('qubes.VMShell',
                     user=args.user,
                     localcmd=args.localcmd,
