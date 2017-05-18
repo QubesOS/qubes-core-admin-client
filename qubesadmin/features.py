@@ -42,7 +42,12 @@ class Features(object):
         self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Remove', key)
 
     def __setitem__(self, key, value):
-        self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key, value)
+        if not value:
+            # False value needs to be serialized as empty string
+            self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key, b'')
+        else:
+            self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key,
+                str(value).encode())
 
     def __getitem__(self, item):
         return self.vm.qubesd_call(

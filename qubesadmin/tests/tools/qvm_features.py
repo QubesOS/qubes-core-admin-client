@@ -51,7 +51,7 @@ class TC_00_qvm_features(qubesadmin.tests.QubesTestCase):
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.feature.Set',
-             'feature3', 'value of feature')] = b'0\x00'
+             'feature3', b'value of feature')] = b'0\x00'
         self.assertEqual(
             qubesadmin.tools.qvm_features.main(['some-vm', 'feature3',
                 'value of feature'],
