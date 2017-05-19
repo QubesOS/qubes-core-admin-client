@@ -135,6 +135,12 @@ def main(args=None, app=None):
         run_kwargs['stdout'] = None
         run_kwargs['stderr'] = None
 
+    if isinstance(args.app, qubesadmin.app.QubesLocal) and \
+            not args.passio and not args.localcmd:
+        # wait=False works only in dom0; but it's still useful, to save on
+        # simultaneous vchan connections
+        run_kwargs['wait'] = False
+
     verbose = args.verbose - args.quiet
     if args.passio:
         verbose -= 1
