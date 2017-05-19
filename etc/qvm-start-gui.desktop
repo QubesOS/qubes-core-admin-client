@@ -2,7 +2,7 @@
 Name=Qubes Guid
 Comment=Starts Dom0 GUI daemon for Qubes VMs
 Icon=qubes
-Exec=qvm-start-gui
+Exec=qvm-start-gui --all --watch
 Terminal=false
 Type=Application
 NotShowIn=X-QUBES
