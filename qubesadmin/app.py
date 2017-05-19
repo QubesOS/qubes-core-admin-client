@@ -310,7 +310,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         return self.domains[new_name]
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-            localcmd=None, **kwargs):
+            localcmd=None, wait=True, **kwargs):
         '''Run qrexec service in a given destination
 
         *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
@@ -358,7 +358,7 @@ class QubesLocal(QubesBase):
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-            localcmd=None, **kwargs):
+            localcmd=None, wait=True, **kwargs):
         '''Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
@@ -368,11 +368,14 @@ class QubesLocal(QubesBase):
             emulator
         :param str user: username to run service as
         :param str localcmd: Command to connect stdin/stdout to
+        :param bool wait: wait for remote process to finish
         :rtype: subprocess.Popen
         '''
 
         if not dest:
             raise ValueError('Empty destination name allowed only from a VM')
+        if not wait and localcmd:
+            raise ValueError('wait=False incompatible with localcmd')
         try:
             self.qubesd_call(dest, 'admin.vm.Start')
         except qubesadmin.exc.QubesVMNotHaltedError:
@@ -384,6 +387,8 @@ class QubesLocal(QubesBase):
             qrexec_opts.extend(['-l', localcmd])
         if user is None:
             user = 'DEFAULT'
+        if not wait:
+            qrexec_opts.extend(['-e'])
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
@@ -418,7 +423,7 @@ class QubesRemote(QubesBase):
         return self._parse_qubesd_response(stdout)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-            localcmd=None, **kwargs):
+            localcmd=None, wait=True, **kwargs):
         '''Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
@@ -428,6 +433,7 @@ class QubesRemote(QubesBase):
             emulator
         :param str user: username to run service as
         :param str localcmd: Command to connect stdin/stdout to
+        :param bool wait: wait for process to finish
         :rtype: subprocess.Popen
         '''
         if filter_esc:
@@ -436,6 +442,18 @@ class QubesRemote(QubesBase):
         if user:
             raise ValueError(
                 'non-default user not possible for calls from VM')
+        if not wait and localcmd:
+            raise ValueError('wait=False incompatible with localcmd')
+        if not wait:
+            # qrexec-client-vm can only request service calls, which are
+            # started using MSG_EXEC_CMDLINE qrexec protocol message; this
+            # message means "start the process, pipe its stdin/out/err,
+            # and when it terminates, send exit code back".
+            # According to the protocol qrexec-client-vm needs to wait for
+            # MSG_DATA_EXIT_CODE, so implementing wait=False would require
+            # some protocol change (or protocol violation).
+            raise NotImplementedError(
+                'wait=False not implemented for calls from VM')
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
