@@ -215,6 +215,19 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         return self.get_power_state() != 'Halted'
 
+    def is_networked(self):
+        '''Check whether this VM can reach network (firewall notwithstanding).
+
+        :returns: :py:obj:`True` if is machine can reach network, \
+            :py:obj:`False` otherwise.
+        :rtype: bool
+        '''
+
+        if self.provides_network:
+            return True
+
+        return self.netvm is not None
+
     @property
     def volumes(self):
         '''VM disk volumes'''
