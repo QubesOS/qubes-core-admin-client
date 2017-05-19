@@ -86,6 +86,10 @@ parser.add_argument('--no-filter-escape-chars',
     help='do not filter terminal escape sequences; DANGEROUS when output is a'
         ' terminal emulator')
 
+parser.add_argument('--service',
+    action='store_true', dest='service',
+    help='run a qrexec service (named by COMMAND) instead of shell command')
+
 parser.add_argument('cmd', metavar='COMMAND',
     help='command to run')
 
@@ -136,7 +140,7 @@ def main(args=None, app=None):
         run_kwargs['stderr'] = None
 
     if isinstance(args.app, qubesadmin.app.QubesLocal) and \
-            not args.passio and not args.localcmd:
+            not args.passio and not args.localcmd and args.service:
         # wait=False works only in dom0; but it's still useful, to save on
         # simultaneous vchan connections
         run_kwargs['wait'] = False
@@ -172,13 +176,20 @@ def main(args=None, app=None):
                 if args.passio and not args.localcmd:
                     loop = asyncio.new_event_loop()
                     loop.add_signal_handler(signal.SIGCHLD, loop.stop)
-                proc = vm.run_service('qubes.VMShell',
-                    user=args.user,
-                    localcmd=args.localcmd,
-                    filter_esc=args.filter_esc,
-                    **run_kwargs)
-                proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
-                proc.stdin.flush()
+                if args.service:
+                    proc = vm.run_service(args.cmd,
+                        user=args.user,
+                        localcmd=args.localcmd,
+                        filter_esc=args.filter_esc,
+                        **run_kwargs)
+                else:
+                    proc = vm.run_service('qubes.VMShell',
+                        user=args.user,
+                        localcmd=args.localcmd,
+                        filter_esc=args.filter_esc,
+                        **run_kwargs)
+                    proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
+                    proc.stdin.flush()
                 if args.passio and not args.localcmd:
                     asyncio.ensure_future(loop.connect_read_pipe(
                         functools.partial(DataCopyProtocol, proc.stdin,

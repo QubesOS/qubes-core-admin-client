@@ -63,6 +63,12 @@ Options
    Run the command without GUI forwarding enabled. Can be switched back with
    :option:`--gui`.
 
+.. option:: --service
+
+   Start RPC service instead of shell command. Specify name of the service in
+   place of *COMMAND* argument. You can also specify service argument, appending
+   it to the service name after `+` character.
+
 .. option:: --colour-output=COLOUR, --color-output=COLOR
 
    Mark the qube output with given ANSI colour (ie. "31" for red). The exact

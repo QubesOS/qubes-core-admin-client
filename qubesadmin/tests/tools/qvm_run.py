@@ -262,3 +262,35 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'qubes.VMShell', b'command; exit\n')
         ])
         self.assertAllCalled()
+
+    def test_007_run_service_with_gui(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'default_user', None)] = \
+            b'0\x00default=yes type=str user'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
+        #     b'0\x00test-vm class=AppVM state=Running\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--service', 'test-vm', 'service.name'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        # make sure we have the same instance below
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.WaitForSession', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+            }),
+            ('test-vm', 'qubes.WaitForSession', b'user'),
+            ('test-vm', 'service.name', {
+                'filter_esc': True,
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'service.name', b''),
+        ])
+        self.assertAllCalled()
