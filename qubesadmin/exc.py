@@ -116,6 +116,11 @@ class QubesDaemonCommunicationError(QubesException, IOError):
     permissions, as well'''
 
 
+class DeviceAlreadyAttached(QubesException, KeyError):
+    '''Trying to attach already attached device'''
+    pass
+
+
 # pylint: disable=too-many-ancestors
 class QubesDaemonNoResponseError(QubesDaemonCommunicationError):
     '''Got empty response from qubesd'''
