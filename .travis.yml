@@ -22,7 +22,15 @@ after_success:
 jobs:
   include:
     - env: DIST_DOM0=fc25 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
-      python: '2.7'
+      python: '3.5'
+    - env: DISTS_VM=fc24 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
+      python: '3.5'
+    - env: DISTS_VM=fc25 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
+      python: '3.5'
+    - env: DISTS_VM=jessie USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
+      python: '3.4'
+    - env: DISTS_VM=stretch USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
+      python: '3.5'
     - stage: deploy
       python: '3.5'
       env: DIST_DOM0=fc25 TESTS_ONLY=

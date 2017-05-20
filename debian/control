@@ -1,0 +1,46 @@
+Source: qubes-core-admin-client
+Section: admin
+Priority: optional
+Maintainer: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+Build-Depends:
+ debhelper (>= 9),
+ dh-python,
+ python-all,
+ python-setuptools,
+ python3-all,
+ python3-setuptools,
+ python3-sphinx,
+ python3-docutils,
+ python3-dbus,
+Standards-Version: 3.9.5
+Homepage: https://www.qubes-os.org/
+#Vcs-Git: git://github.com/QubesOS/qubes-core-admin-client.git
+#Vcs-Browser: https://github.com/QubesOS/qubes-core-admin-client
+X-Python-Version: >= 2.7
+X-Python3-Version: >= 3.4
+
+Package: qubes-core-admin-client
+Architecture: any
+Depends:
+ python3-qubesadmin,
+ ${python:Depends},
+ ${python3:Depends},
+ ${misc:Depends}
+Description: Qubes administrative tools
+ Tools to manage Qubes system using Admin API
+
+Package: python-qubesadmin
+Architecture: any
+Depends:
+ ${python:Depends},
+Provides:
+ ${python:Provides},
+Description: Python 2 bindings for Qubes Admin API
+ Python 2 client side module for Qubes Admin API
+
+Package: python3-qubesadmin
+Architecture: any
+Depends:
+ ${python3:Depends},
+Description: Python 3 bindings for Qubes Admin API
+ Python 3 client side module for Qubes Admin API
