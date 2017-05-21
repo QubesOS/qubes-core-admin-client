@@ -161,6 +161,12 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.List', None, None)] = \
             b'0\0test-vm2+dev1\n' \
             b'test-vm3+dev2\n'
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.test.Available', None, None)] = \
+            b'0\0dev1 description=desc\n'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.device.test.Available', None, None)] = \
+            b'0\0dev2 description=desc\n'
         assigns = list(self.vm.devices['test'].assignments())
         self.assertEqual(len(assigns), 2)
         self.assertIsInstance(assigns[0], qubesadmin.devices.DeviceAssignment)
@@ -170,6 +176,9 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(assigns[0].frontend_domain,
             self.app.domains['test-vm'])
         self.assertEqual(assigns[0].options, {})
+        self.assertEqual(assigns[0].devclass, 'test')
+        self.assertEqual(assigns[0].device,
+            self.app.domains['test-vm2'].devices['test']['dev1'])
 
         self.assertIsInstance(assigns[1], qubesadmin.devices.DeviceAssignment)
         self.assertEqual(assigns[1].backend_domain,
@@ -178,6 +187,9 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(assigns[1].frontend_domain,
             self.app.domains['test-vm'])
         self.assertEqual(assigns[1].options, {})
+        self.assertEqual(assigns[1].devclass, 'test')
+        self.assertEqual(assigns[1].device,
+            self.app.domains['test-vm3'].devices['test']['dev2'])
 
         self.assertAllCalled()
 
@@ -196,6 +208,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.app.domains['test-vm'])
         self.assertEqual(assigns[0].options, {'ro': 'True'})
         self.assertEqual(assigns[0].persistent, False)
+        self.assertEqual(assigns[0].devclass, 'test')
 
         self.assertIsInstance(assigns[1], qubesadmin.devices.DeviceAssignment)
         self.assertEqual(assigns[1].backend_domain,
@@ -205,6 +218,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.app.domains['test-vm'])
         self.assertEqual(assigns[1].options, {'ro': 'False'})
         self.assertEqual(assigns[1].persistent, True)
+        self.assertEqual(assigns[1].devclass, 'test')
 
         self.assertAllCalled()
 
@@ -223,6 +237,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.app.domains['test-vm'])
         self.assertEqual(assigns[0].options, {})
         self.assertEqual(assigns[0].persistent, True)
+        self.assertEqual(assigns[0].devclass, 'test')
         self.assertAllCalled()
 
     def test_042_assignments_non_persistent(self):

@@ -34,10 +34,11 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
     ''' Maps a device to a frontend_domain. '''
 
-    def __init__(self, backend_domain, ident, options=None, persistent=False,
-                 frontend_domain=None):
+    def __init__(self, backend_domain, ident, options=None,
+            persistent=False, frontend_domain=None, devclass=None):
         self.backend_domain = backend_domain
         self.ident = ident
+        self.devclass = devclass
         self.options = options or {}
         self.persistent = persistent
         self.frontend_domain = frontend_domain
@@ -54,6 +55,22 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
 
         return self.backend_domain == other.backend_domain \
             and self.ident == other.ident
+
+    def clone(self):
+        '''Clone object instance'''
+        return self.__class__(
+            self.backend_domain,
+            self.ident,
+            self.options,
+            self.persistent,
+            self.frontend_domain,
+            self.devclass,
+        )
+
+    @property
+    def device(self):
+        '''Get DeviceInfo object corresponding to this DeviceAssignment'''
+        return self.backend_domain.devices[self.devclass][self.ident]
 
 
 class DeviceInfo(object):
@@ -120,6 +137,10 @@ class DeviceCollection(object):
         else:
             assert device_assignment.frontend_domain == self._vm, \
                 "Trying to attach DeviceAssignment belonging to other domain"
+        if device_assignment.devclass is None:
+            device_assignment.devclass = self._class
+        else:
+            assert device_assignment.devclass == self._class
 
         options = device_assignment.options.copy()
         if device_assignment.persistent:
@@ -143,6 +164,10 @@ class DeviceCollection(object):
         else:
             assert device_assignment.frontend_domain == self._vm, \
                 "Trying to detach DeviceAssignment belonging to other domain"
+        if device_assignment.devclass is None:
+            device_assignment.devclass = self._class
+        else:
+            assert device_assignment.devclass == self._class
 
         self._vm.qubesd_call(None,
             'admin.vm.device.{}.Detach'.format(self._class),
@@ -174,13 +199,14 @@ class DeviceCollection(object):
                 continue
             backend_domain = self._vm.app.domains[backend_domain]
             yield DeviceAssignment(backend_domain, ident, options,
-                persistent=dev_persistent, frontend_domain=self._vm)
+                persistent=dev_persistent, frontend_domain=self._vm,
+                devclass=self._class)
 
     def attached(self):
         '''List devices which are (or may be) attached to this vm '''
 
         for assignment in self.assignments():
-            yield self._device(assignment)
+            yield assignment.device
 
     def persistent(self):
         ''' Devices persistently attached and safe to access before libvirt
@@ -188,13 +214,7 @@ class DeviceCollection(object):
         '''
 
         for assignment in self.assignments(True):
-            yield self._device(assignment)
-
-    def _device(self, assignment):
-        ''' Helper method for geting a `qubes.devices.DeviceInfo` object from
-            `qubes.devices.DeviceAssignment`. '''
-
-        return assignment.backend_domain.devices[self._class][assignment.ident]
+            yield assignment.device
 
     def available(self):
         '''List devices exposed by this vm'''
