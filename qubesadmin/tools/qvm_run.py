@@ -112,6 +112,12 @@ class DataCopyProtocol(asyncio.Protocol):
             self.eof_callback()
 
 
+def stop_loop_if_terminated(proc, loop):
+    '''Stop event loop if given process is terminated'''
+    if proc.poll():
+        loop.stop()
+
+
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
     args = parser.parse_args(args, app=app)
@@ -173,9 +179,6 @@ def main(args=None, app=None):
                     wait_session = vm.run_service('qubes.WaitForSession',
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     wait_session.communicate(vm.default_user.encode())
-                if args.passio and not args.localcmd:
-                    loop = asyncio.new_event_loop()
-                    loop.add_signal_handler(signal.SIGCHLD, loop.stop)
                 if args.service:
                     proc = vm.run_service(args.cmd,
                         user=args.user,
@@ -191,10 +194,14 @@ def main(args=None, app=None):
                     proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
                     proc.stdin.flush()
                 if args.passio and not args.localcmd:
+                    loop = asyncio.new_event_loop()
+                    loop.add_signal_handler(signal.SIGCHLD,
+                        functools.partial(stop_loop_if_terminated, proc, loop))
                     asyncio.ensure_future(loop.connect_read_pipe(
                         functools.partial(DataCopyProtocol, proc.stdin,
                             loop.stop),
                         sys.stdin), loop=loop)
+                    stop_loop_if_terminated(proc, loop)
                     loop.run_forever()
                     loop.close()
                 proc.stdin.close()

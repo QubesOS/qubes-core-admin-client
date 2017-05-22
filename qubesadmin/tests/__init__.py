@@ -74,6 +74,10 @@ class TestProcess(object):
         self.stdin_close()
         return 0
 
+    def poll(self):
+        return None
+
+
 class _AssertNotRaisesContext(object):
     """A context manager used to implement TestCase.assertNotRaises methods.
 
