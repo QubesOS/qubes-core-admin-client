@@ -60,6 +60,11 @@ class Features(object):
 
     keys = __iter__
 
+    def items(self):
+        '''Return iterable of pairs (feature, value)'''
+        for key in self:
+            yield key, self[key]
+
     _NO_DEFAULT = object()
 
     def check_with_template(self, feature, default=_NO_DEFAULT):
