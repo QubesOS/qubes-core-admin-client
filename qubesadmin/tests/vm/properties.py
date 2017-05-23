@@ -105,6 +105,16 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
         self.assertEqual(self.vm.property_is_default('prop1'), True)
         self.assertAllCalled()
 
+    def test_012_get_invalid(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'invalid', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b'\'invalid\' on test-vm\x00'
+        with self.assertRaises(qubesadmin.exc.QubesNoSuchPropertyError):
+            self.vm.invalid
+        self.assertFalse(hasattr(self.vm, 'invalid'))
+        self.assertAllCalled()
+
     def test_020_set_str(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Set', 'prop1', b'value')] = \

@@ -91,6 +91,11 @@ class QubesPropertyValueError(QubesValueError):
     '''
 
 
+class QubesNoSuchPropertyError(QubesException, AttributeError):
+    '''Requested property does not exist
+    '''
+
+
 class QubesNotImplementedError(QubesException, NotImplementedError):
     '''Thrown at user when some feature is not implemented'''
 
