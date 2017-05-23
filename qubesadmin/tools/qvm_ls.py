@@ -539,9 +539,6 @@ def main(args=None, app=None):
 
     if args.fields:
         columns = [col.strip() for col in args.fields.split(',')]
-        for col in columns:
-            if col.upper() not in Column.columns:
-                parser.error('no such column: {!r}'.format(col))
     else:
         columns = formats[args.format]
 
