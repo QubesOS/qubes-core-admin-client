@@ -26,6 +26,7 @@ This package include managemt tools, like qvm-*.
 %package -n python2-qubesadmin
 Summary:    Python2 module qubesadmin
 Requires:   python-daemon
+Requires:   python-docutils
 
 %description -n python2-qubesadmin
 Python2 module qubesadmin.
@@ -33,6 +34,7 @@ Python2 module qubesadmin.
 %package -n python3-qubesadmin
 Summary:    Python3 module qubesadmin
 Requires:   python3-daemon
+Requires:   python3-docutils
 
 %description -n python3-qubesadmin
 Python3 module qubesadmin.

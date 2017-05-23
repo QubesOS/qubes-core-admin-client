@@ -32,6 +32,7 @@ Description: Qubes administrative tools
 Package: python-qubesadmin
 Architecture: any
 Depends:
+ python-docutils,
  ${python:Depends},
 Provides:
  ${python:Provides},
@@ -41,6 +42,7 @@ Description: Python 2 bindings for Qubes Admin API
 Package: python3-qubesadmin
 Architecture: any
 Depends:
+ python3-docutils,
  ${python3:Depends},
 Description: Python 3 bindings for Qubes Admin API
  Python 3 client side module for Qubes Admin API
