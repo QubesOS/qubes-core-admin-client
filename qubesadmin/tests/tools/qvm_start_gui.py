@@ -17,7 +17,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import functools
 import os
+import signal
 import tempfile
 import unittest.mock
 
@@ -25,6 +27,7 @@ import asyncio
 
 import qubesadmin.tests
 import qubesadmin.tools.qvm_start_gui
+import qubesadmin.vm
 
 
 class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
@@ -373,3 +376,198 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
         self.assertEqual(qubesadmin.tools.qvm_start_gui.get_monitor_layout(),
             ['2560 1920 0 0 {} {}\n'.format(
                 int(2560/dpi*254/10), int(1920/dpi*254/10))])
+
+    def test_060_send_monitor_layout(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+
+        vm = self.app.domains['test-vm']
+        mock_run_service = unittest.mock.Mock(spec={})
+        patch_run_service = unittest.mock.patch.object(
+            qubesadmin.vm.QubesVM, 'run_service_for_stdio',
+            mock_run_service)
+        patch_run_service.start()
+        self.addCleanup(patch_run_service.stop)
+        monitor_layout = ['1920 1080 0 0\n']
+        loop.run_until_complete(self.launcher.send_monitor_layout(
+            vm, layout=monitor_layout, startup=True))
+        mock_run_service.assert_called_once_with(
+            'qubes.SetMonitorLayout', b'1920 1080 0 0\n')
+        self.assertAllCalled()
+
+    def test_061_send_monitor_layout_exclude(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'0\x00True'
+
+        vm = self.app.domains['test-vm']
+        mock_run_service = unittest.mock.Mock()
+        patch_run_service = unittest.mock.patch.object(
+            qubesadmin.vm.QubesVM, 'run_service_for_stdio',
+            mock_run_service)
+        patch_run_service.start()
+        self.addCleanup(patch_run_service.stop)
+        monitor_layout = ['1920 1080 0 0\n']
+        loop.run_until_complete(self.launcher.send_monitor_layout(
+            vm, layout=monitor_layout, startup=True))
+        self.assertFalse(mock_run_service.called)
+        self.assertAllCalled()
+
+    def test_062_send_monitor_layout_not_running(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+
+        vm = self.app.domains['test-vm']
+        mock_run_service = unittest.mock.Mock()
+        patch_run_service = unittest.mock.patch.object(
+            qubesadmin.vm.QubesVM, 'run_service_for_stdio',
+            mock_run_service)
+        patch_run_service.start()
+        self.addCleanup(patch_run_service.stop)
+        monitor_layout = ['1920 1080 0 0\n']
+        loop.run_until_complete(self.launcher.send_monitor_layout(
+            vm, layout=monitor_layout, startup=True))
+        self.assertFalse(mock_run_service.called)
+        self.assertAllCalled()
+
+    def test_063_send_monitor_layout_signal_existing(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
+            b'0\x00default=False type=int 123'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
+            b'0\x00default=False type=int 124'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+
+        vm = self.app.domains['test-vm']
+        self.addCleanup(unittest.mock.patch.stopall)
+
+        with tempfile.NamedTemporaryFile() as pidfile:
+            pidfile.write(b'1234\n')
+            pidfile.flush()
+
+            patch_guid_pidfile = unittest.mock.patch.object(
+                self.launcher, 'guid_pidfile')
+            mock_guid_pidfile = patch_guid_pidfile.start()
+            mock_guid_pidfile.return_value = pidfile.name
+
+            mock_kill = unittest.mock.patch('os.kill').start()
+
+            monitor_layout = ['1920 1080 0 0\n']
+            loop.run_until_complete(self.launcher.send_monitor_layout(
+                vm, layout=monitor_layout, startup=False))
+            self.assertEqual(mock_guid_pidfile.mock_calls,
+                [unittest.mock.call(123),
+                 unittest.mock.call(124)])
+            self.assertEqual(mock_kill.mock_calls,
+                [unittest.mock.call(1234, signal.SIGHUP),
+                 unittest.mock.call(1234, signal.SIGHUP)])
+        self.assertAllCalled()
+
+    def test_070_send_monitor_layout_all(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'test-vm2 class=AppVM state=Running\n' \
+            b'test-vm3 class=AppVM state=Runnig\n' \
+            b'test-vm4 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm2 class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm3 class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm4', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm4 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'gui', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.feature.CheckWithTemplate',
+            'gui', None)] = \
+            b'0\x00True'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.feature.CheckWithTemplate',
+            'gui', None)] = \
+            b'0\x00'
+
+        vm = self.app.domains['test-vm']
+        vm2 = self.app.domains['test-vm2']
+
+        self.addCleanup(unittest.mock.patch.stopall)
+
+        mock_send_monitor_layout = unittest.mock.Mock()
+        patch_send_monitor_layout = unittest.mock.patch.object(
+            self.launcher, 'send_monitor_layout',
+            functools.partial(self.mock_coroutine, mock_send_monitor_layout))
+        patch_send_monitor_layout.start()
+        monitor_layout = ['1920 1080 0 0\n']
+        mock_get_monior_layout = unittest.mock.patch(
+            'qubesadmin.tools.qvm_start_gui.get_monitor_layout').start()
+        mock_get_monior_layout.return_value = monitor_layout
+
+        self.launcher.send_monitor_layout_all()
+        loop.stop()
+        loop.run_forever()
+
+        # test-vm3 not called b/c feature 'gui' set to false
+        # test-vm4 not called b/c not running
+        self.assertCountEqual(mock_send_monitor_layout.mock_calls,
+            [unittest.mock.call(vm, monitor_layout),
+             unittest.mock.call(vm2, monitor_layout)])
+        mock_get_monior_layout.assert_called_once_with()
+        self.assertAllCalled()
