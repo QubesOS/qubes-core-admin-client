@@ -22,6 +22,7 @@
 '''
 Main Qubes() class and related classes.
 '''
+import os
 import shlex
 import socket
 import subprocess
@@ -335,7 +336,41 @@ class QubesLocal(QubesBase):
 
     qubesd_connection_type = 'socket'
 
-    def qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None,
+            payload_stream=None):
+        '''
+        Execute Admin API method.
+
+        Only one of `payload` and `payload_stream` can be specified.
+
+        :param dest: Destination VM name
+        :param method: Full API method name ('admin...')
+        :param arg: Method argument (if any)
+        :param payload: Payload send to the method
+        :param payload_stream: file-like object to read payload from
+        :return: Data returned by qubesd (string)
+        '''
+        if payload and payload_stream:
+            raise ValueError(
+                'Only one of payload and payload_stream can be used')
+        if payload_stream:
+            # payload_stream can be used for large amount of data,
+            # so optimize for throughput, not latency: spawn actual qrexec
+            # service implementation, which may use some optimization there (
+            # see admin.vm.volume.Import - actual data handling is done with dd)
+            method_path = os.path.join(
+                qubesadmin.config.QREXEC_SERVICES_DIR, method)
+            if not os.path.exists(method_path):
+                raise qubesadmin.exc.QubesDaemonCommunicationError(
+                    '{} not found'.format(method_path))
+            qrexec_call_env = os.environ.copy()
+            qrexec_call_env['QREXEC_REMOTE_DOMAIN'] = 'dom0'
+            qrexec_call_env['QREXEC_REQUESTED_TARGET'] = dest
+            proc = subprocess.Popen([method_path, arg], stdin=payload_stream,
+                stdout=subprocess.PIPE, env=qrexec_call_env)
+            (return_data, _) = proc.communicate()
+            return self._parse_qubesd_response(return_data)
+
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             client_socket.connect(qubesadmin.config.QUBESD_SOCKET)
@@ -406,13 +441,30 @@ class QubesRemote(QubesBase):
 
     qubesd_connection_type = 'qrexec'
 
-    def qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None,
+            payload_stream=None):
+        '''
+        Execute Admin API method.
+
+        Only one of `payload` and `payload_stream` can be specified.
+
+        :param dest: Destination VM name
+        :param method: Full API method name ('admin...')
+        :param arg: Method argument (if any)
+        :param payload: Payload send to the method
+        :param payload_stream: file-like object to read payload from
+        :return: Data returned by qubesd (string)
+        '''
+        if payload and payload_stream:
+            raise ValueError(
+                'Only one of payload and payload_stream can be used')
         service_name = method
         if arg is not None:
             service_name += '+' + arg
         p = subprocess.Popen([qubesadmin.config.QREXEC_CLIENT_VM,
             dest, service_name],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stdin=(payload_stream or subprocess.PIPE),
+            stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:

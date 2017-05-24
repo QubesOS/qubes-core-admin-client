@@ -46,22 +46,27 @@ class PropertyHolder(object):
         self._properties = None
         self._properties_help = None
 
-    def qubesd_call(self, dest, method, arg=None, payload=None):
+    def qubesd_call(self, dest, method, arg=None, payload=None,
+            payload_stream=None):
         '''
         Call into qubesd using appropriate mechanism. This method should be
         defined by a subclass.
+
+        Only one of `payload` and `payload_stream` can be specified.
 
         :param dest: Destination VM name
         :param method: Full API method name ('admin...')
         :param arg: Method argument (if any)
         :param payload: Payload send to the method
+        :param payload_stream: file-like object to read payload from
         :return: Data returned by qubesd (string)
         '''
         if dest is None:
             dest = self._method_dest
         # have the actual implementation at Qubes() instance
         if self.app:
-            return self.app.qubesd_call(dest, method, arg, payload)
+            return self.app.qubesd_call(dest, method, arg, payload,
+                payload_stream)
         raise NotImplementedError
 
     @staticmethod

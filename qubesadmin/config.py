@@ -25,3 +25,4 @@ QUBESD_SOCKET = '/var/run/qubesd.sock'
 QREXEC_CLIENT = '/usr/lib/qubes/qrexec-client'
 QREXEC_CLIENT_VM = '/usr/bin/qrexec-client-vm'
 QUBESD_RECONNECT_DELAY = 1.0
+QREXEC_SERVICES_DIR = '/etc/qubes-rpc'
