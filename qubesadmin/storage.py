@@ -20,6 +20,7 @@
 
 '''Storage subsystem.'''
 
+
 class Volume(object):
     '''Storage volume.'''
     def __init__(self, app, pool=None, vid=None, vm=None, vm_name=None):
@@ -47,17 +48,23 @@ class Volume(object):
         self._vm_name = vm_name
         self._info = None
 
-    def _qubesd_call(self, func_name, payload=None):
+    def _qubesd_call(self, func_name, payload=None, payload_stream=None):
         '''Make a call to qubesd regarding this volume
 
         :param str func_name: API function name, like `Info` or `Resize`
         :param bytes payload: Payload to send.
+        :param file payload_stream: Stream to pipe payload from. Only one of
+        `payload` and `payload_stream` can be used.
         '''
         if self._vm is not None:
             method = 'admin.vm.volume.' + func_name
             dest = self._vm
             arg = self._vm_name
         else:
+            if payload_stream:
+                raise NotImplementedError(
+                    'payload_stream not implemented for '
+                    'admin.pool.volume.* calls')
             method = 'admin.pool.volume.' + func_name
             dest = 'dom0'
             arg = self._pool
@@ -65,7 +72,8 @@ class Volume(object):
                 payload = self._vid.encode('ascii') + b' ' + payload
             else:
                 payload = self._vid.encode('ascii')
-        return self.app.qubesd_call(dest, method, arg, payload)
+        return self.app.qubesd_call(dest, method, arg, payload=payload,
+            payload_stream=payload_stream)
 
     def _fetch_info(self, force=True):
         '''Fetch volume properties
@@ -177,6 +185,15 @@ class Volume(object):
         if not isinstance(revision, str):
             raise TypeError('revision must be a str')
         self._qubesd_call('Revert', revision.encode('ascii'))
+
+    def import_data(self, stream):
+        ''' Import volume data from a given file-like object.
+
+        This function override existing volume content
+
+        :param stream: file-like object, must support fileno()
+        '''
+        self._qubesd_call('Import', payload_stream=stream)
 
 
 class Pool(object):

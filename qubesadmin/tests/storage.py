@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import subprocess
 
 import qubesadmin.tests
 import qubesadmin.storage
@@ -150,6 +151,15 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         self.vol.revert('snapid1')
         self.assertAllCalled()
 
+    def test_040_import_data(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.Import', 'volname', b'some-data')] = \
+            b'0\x00'
+        input_proc = subprocess.Popen(['echo', '-n', 'some-data'],
+            stdout=subprocess.PIPE)
+        self.vol.import_data(input_proc.stdout)
+        self.assertAllCalled()
+
 
 class TestPoolVolume(TestVMVolume):
     def setUp(self):
@@ -232,6 +242,9 @@ class TestPoolVolume(TestVMVolume):
             b'some-id snapid1')] = b'0\x00'
         self.vol.revert('snapid1')
         self.assertAllCalled()
+
+    def test_040_import_data(self):
+        self.skipTest('admin.pool.vm.Import not supported')
 
 
 class TestPool(qubesadmin.tests.QubesTestCase):
