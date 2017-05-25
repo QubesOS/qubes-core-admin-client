@@ -77,6 +77,10 @@ class QubesVMNotHaltedError(QubesVMError):
     '''
 
 
+class QubesVMShutdownTimeout(QubesVMError):
+    ''' Domain shutdown haven't completed in expected timeframe'''
+
+
 class QubesNoTemplateError(QubesVMError):
     '''Cannot start domain, because there is no template'''
 
