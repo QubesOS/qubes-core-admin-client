@@ -65,7 +65,8 @@ class TestProcess(object):
         self.returncode = 0
 
     def communicate(self, input=None):
-        self.stdin.write(input)
+        if input is not None:
+            self.stdin.write(input)
         self.stdin.close()
         self.stdin_close()
         return self.stdout, self.stderr
