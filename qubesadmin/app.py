@@ -101,7 +101,7 @@ class VMCollection(object):
 
     def __iter__(self):
         self.refresh_cache()
-        for vm in self._vm_list:
+        for vm in sorted(self._vm_list):
             yield self[vm]
 
     def keys(self):
