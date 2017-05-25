@@ -267,6 +267,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self.qubesd_call('dom0', method_prefix + cls, template,
             payload.encode('utf-8'))
 
+        self.domains.clear_cache()
         return self.domains[name]
 
     def clone_vm(self, src_vm, new_name, pool=None, pools=None):
