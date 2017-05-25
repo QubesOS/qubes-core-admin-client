@@ -145,7 +145,7 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
 
     def test_024_set_none(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Set', 'prop1', b'None')] = \
+            ('test-vm', 'admin.vm.property.Set', 'prop1', b'')] = \
             b'0\x00'
         self.vm.prop1 = None
         self.assertAllCalled()

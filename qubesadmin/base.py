@@ -211,6 +211,8 @@ class PropertyHolder(object):
         else:
             if isinstance(value, qubesadmin.vm.QubesVM):
                 value = value.name
+            if value is None:
+                value = ''
             try:
                 self.qubesd_call(
                     self._method_dest,
