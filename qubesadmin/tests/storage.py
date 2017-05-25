@@ -158,6 +158,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         input_proc = subprocess.Popen(['echo', '-n', 'some-data'],
             stdout=subprocess.PIPE)
         self.vol.import_data(input_proc.stdout)
+        input_proc.stdout.close()
         self.assertAllCalled()
 
 
