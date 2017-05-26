@@ -350,6 +350,8 @@ class QubesLocal(QubesBase):
         :param payload: Payload send to the method
         :param payload_stream: file-like object to read payload from
         :return: Data returned by qubesd (string)
+
+        .. warning:: *payload_stream* will get closed by this function
         '''
         if payload and payload_stream:
             raise ValueError(
@@ -369,6 +371,7 @@ class QubesLocal(QubesBase):
             qrexec_call_env['QREXEC_REQUESTED_TARGET'] = dest
             proc = subprocess.Popen([method_path, arg], stdin=payload_stream,
                 stdout=subprocess.PIPE, env=qrexec_call_env)
+            payload_stream.close()
             (return_data, _) = proc.communicate()
             return self._parse_qubesd_response(return_data)
 
@@ -455,6 +458,8 @@ class QubesRemote(QubesBase):
         :param payload: Payload send to the method
         :param payload_stream: file-like object to read payload from
         :return: Data returned by qubesd (string)
+
+        .. warning:: *payload_stream* will get closed by this function
         '''
         if payload and payload_stream:
             raise ValueError(
@@ -467,6 +472,8 @@ class QubesRemote(QubesBase):
             stdin=(payload_stream or subprocess.PIPE),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
+        if payload_stream is not None:
+            payload_stream.close()
         (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
             # TODO: use dedicated exception

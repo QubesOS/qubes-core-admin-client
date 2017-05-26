@@ -96,13 +96,12 @@ def import_root_img(vm, source_dir):
         tar = subprocess.Popen(['tar', 'xSOf', '-'],
             stdin=cat.stdout,
             stdout=subprocess.PIPE)
+        cat.stdout.close()
         vm.volumes['root'].import_data(stream=tar.stdout)
         if tar.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
         if cat.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
-        cat.stdout.close()
-        tar.stdout.close()
     elif os.path.exists(root_path):
         if vm.app.qubesd_connection_type == 'socket':
             # check if root.img was already overwritten, i.e. if the source
