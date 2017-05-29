@@ -147,25 +147,32 @@ class EventsDispatcher(object):
             some_event_received = False
             while not reader.at_eof():
                 try:
-                    event_data = yield from reader.readuntil(b'\0\0')
-                    if event_data == b'1\0\0':
-                        # event with non-VM subject contains \0\0 inside of
-                        # event, need to receive rest of the data
-                        event_data += yield from reader.readuntil(b'\0\0')
+                    event_header = yield from reader.readuntil(b'\0')
+                    if event_header != b'1\0':
+                        raise qubesadmin.exc.QubesDaemonCommunicationError(
+                            'Non-event received on events connection: '
+                            + repr(event_header))
+                    subject = (yield from reader.readuntil(b'\0'))[:-1].decode(
+                        'utf-8')
+                    event = (yield from reader.readuntil(b'\0'))[:-1].decode(
+                        'utf-8')
+                    kwargs = {}
+                    while True:
+                        key = (yield from reader.readuntil(b'\0'))[:-1].decode(
+                            'utf-8')
+                        if not key:
+                            break
+                        value = (yield from reader.readuntil(b'\0'))[:-1].\
+                            decode('utf-8')
+                        kwargs[key] = value
                 except asyncio.IncompleteReadError as err:
                     if err.partial == b'':
                         break
                     else:
                         raise
 
-                if not event_data.startswith(b'1\0'):
-                    raise qubesadmin.exc.QubesDaemonCommunicationError(
-                        'Non-event received on events connection: '
-                        + repr(event_data))
-                event_data = event_data.decode('utf-8')
-                _, subject, event, *kwargs = event_data.split('\0')
-                # convert list to dict, remove last empty entry
-                kwargs = dict(zip(kwargs[:-2:2], kwargs[1:-2:2]))
+                if not subject:
+                    subject = None
                 self.handle(subject, event, **kwargs)
 
                 some_event_received = True
