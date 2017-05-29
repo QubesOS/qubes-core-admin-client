@@ -389,6 +389,8 @@ class QubesArgumentParser(argparse.ArgumentParser):
                     argparse._SubParsersAction):  # pylint: disable=no-member
                 assert hasattr(namespace, 'command')
                 command = namespace.command
+                if command is None:
+                    continue
                 subparser = action._name_parser_map[command]
                 for subaction in subparser._actions:
                     if issubclass(subaction.__class__, QubesAction):

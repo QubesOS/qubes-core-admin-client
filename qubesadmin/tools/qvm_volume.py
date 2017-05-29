@@ -192,6 +192,7 @@ def init_extend_parser(sub_parsers):
     extend_parser.add_argument('size', help='New size in bytes')
     extend_parser.set_defaults(func=extend_volumes)
 
+
 def get_parser():
     '''Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-block`.
@@ -207,6 +208,8 @@ def get_parser():
     init_extend_parser(sub_parsers)
     init_list_parser(sub_parsers)
     init_revert_parser(sub_parsers)
+    # default action
+    parser.set_defaults(func=list_volumes)
 
     return parser
 
