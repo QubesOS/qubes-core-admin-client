@@ -211,9 +211,29 @@ def pre_remove(args):
     return 0
 
 
+def is_chroot():
+    '''Detect if running inside chroot'''
+    try:
+        stat_root = os.stat('/')
+        stat_init_root = os.stat('/proc/1/root/.')
+        return (
+            stat_root.st_dev != stat_init_root.st_dev or
+            stat_root.st_ino != stat_init_root.st_ino)
+    except IOError:
+        print('Stat failed, assuming not chroot', file=sys.stderr)
+        return False
+
+
 def main(args=None, app=None):
     '''Main function of qvm-template-postprocess'''
     args = parser.parse_args(args, app=app)
+
+    if is_chroot():
+        print('Running in chroot, ignoring request. Import template with:',
+            file=sys.stderr)
+        print(' '.join(sys.argv), file=sys.stderr)
+        return
+
     if not args.really:
         parser.error('Do not call this tool directly.')
     if args.action == 'post-install':
