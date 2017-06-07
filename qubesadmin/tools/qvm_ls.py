@@ -34,6 +34,7 @@ import sys
 import textwrap
 
 import qubesadmin
+import qubesadmin.spinner
 import qubesadmin.tools
 import qubesadmin.utils
 import qubesadmin.vm
@@ -380,11 +381,11 @@ class Table(object):
     :param qubes.Qubes app: Qubes application object.
     :param list colnames: Names of the columns (need not to be uppercase).
     '''
-    def __init__(self, app, colnames, raw_data=False):
+    def __init__(self, app, colnames, spinner, raw_data=False):
         self.app = app
         self.columns = tuple(Column.columns[col.upper()] for col in colnames)
+        self.spinner = spinner
         self.raw_data = raw_data
-
 
     def get_head(self):
         '''Get table head data (all column heads).'''
@@ -392,7 +393,11 @@ class Table(object):
 
     def get_row(self, vm):
         '''Get single table row data (all columns for one domain).'''
-        return [col.cell(vm) for col in self.columns]
+        ret = []
+        for col in self.columns:
+            ret.append(col.cell(vm))
+            self.spinner.update()
+        return ret
 
     def write_table(self, stream=sys.stdout):
         '''Write whole table to file-like object.
@@ -402,9 +407,12 @@ class Table(object):
 
         table_data = []
         if not self.raw_data:
+            self.spinner.show('please wait...')
             table_data.append(self.get_head())
+            self.spinner.update()
             for vm in sorted(self.app.domains):
                 table_data.append(self.get_row(vm))
+            self.spinner.hide()
             qubesadmin.tools.print_table(table_data, stream=stream)
         else:
             for vm in sorted(self.app.domains):
@@ -515,6 +523,16 @@ def get_parser():
         help='Display specify data of specified VMs. Intended for '
              'bash-parsing.')
 
+    parser.add_argument('--spinner',
+        action='store_true', dest='spinner',
+        help='reenable spinner')
+
+    parser.add_argument('--no-spinner',
+        action='store_false', dest='spinner',
+        help='disable spinner')
+
+    parser.set_defaults(spinner=True)
+
 #   parser.add_argument('--conf', '-c',
 #       action='store', metavar='CFGFILE',
 #       help='Qubes config file')
@@ -547,7 +565,14 @@ def main(args=None, app=None):
         if col.upper() not in Column.columns:
             PropertyColumn(col)
 
-    table = Table(args.app, columns)
+    if args.spinner:
+        # we need Enterprise Edition™, since it's the only one that detects TTY
+        # and uses dots if we are redirected somewhere else
+        spinner = qubesadmin.spinner.QubesSpinnerEnterpriseEdition(sys.stderr)
+    else:
+        spinner = qubesadmin.spinner.DummySpinner(sys.stderr)
+
+    table = Table(args.app, columns, spinner)
     table.write_table(sys.stdout)
 
     return 0
