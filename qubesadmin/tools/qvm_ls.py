@@ -563,7 +563,7 @@ def main(args=None, app=None):
     # assume unknown columns are VM properties
     for col in columns:
         if col.upper() not in Column.columns:
-            PropertyColumn(col)
+            PropertyColumn(col.lower())
 
     if args.spinner:
         # we need Enterprise Edition™, since it's the only one that detects TTY
