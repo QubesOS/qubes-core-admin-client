@@ -191,13 +191,13 @@ def simple_flag(field, letter, attr, doc=None):
     return helper
 
 
-class StatusColumn(Column):
+class FlagsColumn(Column):
     '''Some fancy flags that describe general status of the domain.'''
     # pylint: disable=no-self-use
 
     def __init__(self):
-        super(StatusColumn, self).__init__(
-            head='STATUS',
+        super(FlagsColumn, self).__init__(
+            head='FLAGS',
             doc=self.__class__.__doc__)
 
 
@@ -333,6 +333,15 @@ def calc_used(vm, volume_name):
 
 # todo maxmem
 
+Column('STATE',
+    attr=(lambda vm: vm.get_power_state()),
+    doc='Current power state.')
+
+Column('CLASS',
+    attr=(lambda vm: type(vm).__name__),
+    doc='Class of the qube.')
+
+
 Column('GATEWAY',
     attr='netvm.gateway',
     doc='Network gateway.')
@@ -372,7 +381,7 @@ Column('ROOT-USED',
     doc='Disk utilisation by root image as a percentage of available space.')
 
 
-StatusColumn()
+FlagsColumn()
 
 
 class Table(object):
@@ -421,11 +430,11 @@ class Table(object):
 
 #: Available formats. Feel free to plug your own one.
 formats = {
-    'simple': ('name', 'status', 'label', 'template', 'netvm'),
-    'network': ('name', 'status', 'netvm', 'ip', 'ipback', 'gateway'),
-    'full': ('name', 'status', 'label', 'qid', 'xid', 'uuid'),
-#   'perf': ('name', 'status', 'cpu', 'memory'),
-    'disk': ('name', 'status', 'disk',
+    'simple': ('name', 'state', 'class', 'label', 'template', 'netvm'),
+    'network': ('name', 'state', 'netvm', 'ip', 'ipback', 'gateway'),
+    'full': ('name', 'state', 'class', 'label', 'qid', 'xid', 'uuid'),
+#   'perf': ('name', 'state', 'cpu', 'memory'),
+    'disk': ('name', 'state', 'disk',
         'priv-curr', 'priv-max', 'priv-used',
         'root-curr', 'root-max', 'root-used'),
 }
@@ -563,7 +572,7 @@ def main(args=None, app=None):
     # assume unknown columns are VM properties
     for col in columns:
         if col.upper() not in Column.columns:
-            PropertyColumn(col)
+            PropertyColumn(col.lower())
 
     if args.spinner:
         # we need Enterprise Edition™, since it's the only one that detects TTY

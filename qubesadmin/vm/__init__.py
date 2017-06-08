@@ -180,10 +180,15 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         '''
 
-        vm_list_info = self.qubesd_call(
-            self._method_dest, 'admin.vm.List', None, None).decode('ascii')
+        vm_list_info = [line
+            for line in self.qubesd_call(
+                self._method_dest, 'admin.vm.List', None, None
+            ).decode('ascii').split('\n')
+            if line.startswith(self._method_dest+' ')]
+        assert len(vm_list_info) == 1
         #  name class=... state=... other=...
-        vm_state = vm_list_info.strip().partition('state=')[2].split(' ')[0]
+        # NOTE: when querying dom0, we get whole list
+        vm_state = vm_list_info[0].strip().partition('state=')[2].split(' ')[0]
         return vm_state
 
 
