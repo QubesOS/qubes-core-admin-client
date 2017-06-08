@@ -201,6 +201,10 @@ def get_parser(device_class=None):
     else:
         parser.add_argument('devclass', metavar='DEVICE_CLASS', action='store',
             help="Device class to manage ('pci', 'usb', etc)")
+
+    # default action
+    parser.set_defaults(func=list_devices)
+
     sub_parsers = parser.add_subparsers(
         title='commands',
         description="For more information see qvm-device command -h",

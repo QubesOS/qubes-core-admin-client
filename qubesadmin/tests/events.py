@@ -107,7 +107,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         events = [
             b'1\0\0some-event\0arg1\0value1\0\0',
             b'1\0some-vm\0some-event\0arg1\0value1\0\0',
-            b'1\0some-vm\0some-event\0\0',
+            b'1\0some-vm\0some-event\0arg_without_value\0\0arg2\0value\0\0',
             b'1\0some-vm\0other-event\0\0',
         ]
         asyncio.ensure_future(self.send_events(stream, events))
@@ -117,7 +117,9 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
             unittest.mock.call(None, 'some-event', arg1='value1'),
             unittest.mock.call(
                 self.app.domains['some-vm'], 'some-event', arg1='value1'),
-            unittest.mock.call(self.app.domains['some-vm'], 'some-event'),
+            unittest.mock.call(
+                self.app.domains['some-vm'], 'some-event',
+                arg_without_value='', arg2='value'),
         ])
         cleanup_func.assert_called_once_with()
         loop.close()

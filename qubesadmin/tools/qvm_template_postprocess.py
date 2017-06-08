@@ -96,13 +96,12 @@ def import_root_img(vm, source_dir):
         tar = subprocess.Popen(['tar', 'xSOf', '-'],
             stdin=cat.stdout,
             stdout=subprocess.PIPE)
+        cat.stdout.close()
         vm.volumes['root'].import_data(stream=tar.stdout)
         if tar.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
         if cat.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
-        cat.stdout.close()
-        tar.stdout.close()
     elif os.path.exists(root_path):
         if vm.app.qubesd_connection_type == 'socket':
             # check if root.img was already overwritten, i.e. if the source
@@ -212,9 +211,29 @@ def pre_remove(args):
     return 0
 
 
+def is_chroot():
+    '''Detect if running inside chroot'''
+    try:
+        stat_root = os.stat('/')
+        stat_init_root = os.stat('/proc/1/root/.')
+        return (
+            stat_root.st_dev != stat_init_root.st_dev or
+            stat_root.st_ino != stat_init_root.st_ino)
+    except IOError:
+        print('Stat failed, assuming not chroot', file=sys.stderr)
+        return False
+
+
 def main(args=None, app=None):
     '''Main function of qvm-template-postprocess'''
     args = parser.parse_args(args, app=app)
+
+    if is_chroot():
+        print('Running in chroot, ignoring request. Import template with:',
+            file=sys.stderr)
+        print(' '.join(sys.argv), file=sys.stderr)
+        return
+
     if not args.really:
         parser.error('Do not call this tool directly.')
     if args.action == 'post-install':
