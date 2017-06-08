@@ -82,9 +82,9 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main([], app=app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATUS    LABEL  TEMPLATE  NETVM\n'
-            'dom0     -r------  black  -         -\n'
-            'test-vm  -r------  green  template  sys-net\n')
+            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'dom0     Running  TestVM  black  -         -\n'
+            'test-vm  Running  TestVM  green  template  sys-net\n')
 
 
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
@@ -110,13 +110,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             'label': b'type=label green',
             'template': b'type=vm template1',
             'netvm': b'type=vm sys-net',
-            'updateable': b'type=bool False',
-            'provides_network': b'type=bool False',
-            'hvm': b'type=bool False',
-            'installed_by_rpm': b'type=bool False',
-            'internal': b'type=bool False',
-            'debug': b'type=bool False',
-            'autostart': b'type=bool False',
+#           'hvm': b'type=bool False',
         }
         for key, value in props.items():
             self.app.expected_calls[
@@ -125,7 +119,6 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
 
         # setup template1
         props['label'] = b'type=label black'
-        props['updateable'] = b'type=bool True'
         for key, value in props.items():
             self.app.expected_calls[
                 ('template1', 'admin.vm.property.Get', key, None)] = \
@@ -136,8 +129,6 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
 
         # setup sys-net
         props['label'] = b'type=label red'
-        props['provides_network'] = b'type=bool True'
-        props['updateable'] = b'type=bool False'
         for key, value in props.items():
             self.app.expected_calls[
                 ('sys-net', 'admin.vm.property.Get', key, None)] = \
@@ -146,8 +137,8 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main([], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME       STATUS    LABEL  TEMPLATE   NETVM\n'
-            'sys-net    ar-N----  red    template1  sys-net\n'
-            'template1  t-U-----  black  -          sys-net\n'
-            'vm1        ar------  green  template1  sys-net\n')
+            'NAME       STATE    CLASS       LABEL  TEMPLATE   NETVM\n'
+            'sys-net    Running  AppVM       red    template1  sys-net\n'
+            'template1  Halted   TemplateVM  black  -          sys-net\n'
+            'vm1        Running  AppVM       green  template1  sys-net\n')
         self.assertAllCalled()
