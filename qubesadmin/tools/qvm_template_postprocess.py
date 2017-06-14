@@ -168,29 +168,36 @@ def post_install(args):
     if not args.skip_start:
         # just created, so no need to save previous value - we know what it was
         vm.netvm = None
-        vm.start()
+        # temporarily enable qrexec feature - so vm.start() will wait for it;
+        # if start fails, rollback it
+        vm.features['qrexec'] = True
         try:
-            vm.run_service_for_stdio('qubes.PostInstall')
-        except qubesadmin.exc.QubesVMError:
-            vm.log.error('qubes.PostInstall service failed')
-        vm.shutdown()
-        if have_events:
-            try:
-                # pylint: disable=no-member
-                qubesadmin.events.utils.wait_for_domain_shutdown(vm,
-                    qubesadmin.config.defaults['shutdown_timeout'])
-            except qubesadmin.exc.QubesVMShutdownTimeout:
-                vm.kill()
-            asyncio.get_event_loop().close()
+            vm.start()
+        except qubesadmin.exc.QubesException:
+            del vm.features['qrexec']
         else:
-            timeout = qubesadmin.config.defaults['shutdown_timeout']
-            while timeout >= 0:
-                if vm.is_halted():
-                    break
-                time.sleep(1)
-                timeout -= 1
-            if not vm.is_halted():
-                vm.kill()
+            try:
+                vm.run_service_for_stdio('qubes.PostInstall')
+            except qubesadmin.exc.QubesVMError:
+                vm.log.error('qubes.PostInstall service failed')
+            vm.shutdown()
+            if have_events:
+                try:
+                    # pylint: disable=no-member
+                    qubesadmin.events.utils.wait_for_domain_shutdown(vm,
+                        qubesadmin.config.defaults['shutdown_timeout'])
+                except qubesadmin.exc.QubesVMShutdownTimeout:
+                    vm.kill()
+                asyncio.get_event_loop().close()
+            else:
+                timeout = qubesadmin.config.defaults['shutdown_timeout']
+                while timeout >= 0:
+                    if vm.is_halted():
+                        break
+                    time.sleep(1)
+                    timeout -= 1
+                if not vm.is_halted():
+                    vm.kill()
 
         vm.netvm = qubesadmin.DEFAULT
 
