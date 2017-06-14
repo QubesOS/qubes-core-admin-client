@@ -67,6 +67,15 @@ class Features(object):
 
     _NO_DEFAULT = object()
 
+    def get(self, item, default=_NO_DEFAULT):
+        '''Get a feature, return default value if missing.'''
+        try:
+            return self[item]
+        except KeyError:
+            if default is self._NO_DEFAULT:
+                raise
+            return default
+
     def check_with_template(self, feature, default=_NO_DEFAULT):
         ''' Check if the vm's template has the specified feature. '''
         try:
