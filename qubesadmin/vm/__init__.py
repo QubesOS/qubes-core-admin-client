@@ -27,12 +27,15 @@ import qubesadmin.storage
 import qubesadmin.features
 import qubesadmin.devices
 import qubesadmin.firewall
+import qubesadmin.tags
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
     '''Qubes domain.'''
 
     log = None
+
+    tags = None
 
     features = None
 
@@ -44,6 +47,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         super(QubesVM, self).__init__(app, 'admin.vm.property.', name)
         self._volumes = None
         self.log = logging.getLogger(name)
+        self.tags = qubesadmin.tags.Tags(self)
         self.features = qubesadmin.features.Features(self)
         self.devices = qubesadmin.devices.DeviceManager(self)
         self.firewall = qubesadmin.firewall.Firewall(self)
