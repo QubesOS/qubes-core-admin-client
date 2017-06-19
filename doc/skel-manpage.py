@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 
 import argparse
-import qubesadmin.dochelpers
+import qubesadmin.tools.dochelpers
 
 parser = argparse.ArgumentParser(description='prepare new manpage for command')
 parser.add_argument('command', metavar='COMMAND',
@@ -14,7 +14,7 @@ parser.add_argument('command', metavar='COMMAND',
 
 def main():
     args = parser.parse_args()
-    sys.stdout.write(qubesadmin.dochelpers.prepare_manpage(args.command))
+    sys.stdout.write(qubesadmin.tools.dochelpers.prepare_manpage(args.command))
 
 if __name__ == '__main__':
     main()
