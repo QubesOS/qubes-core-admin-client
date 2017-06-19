@@ -1,7 +1,7 @@
 .. program:: qvm-volume
 
 :program:`qvm-volume` -- Qubes volume and block device managment
-===============================================================
+================================================================
 
 Synopsis
 --------
