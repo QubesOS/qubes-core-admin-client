@@ -154,6 +154,23 @@ class PropertyHolder(object):
         assert isinstance(is_default, bool)
         return is_default
 
+    def clone_properties(self, src, proplist=None):
+        '''Clone properties from other object.
+
+        :param PropertyHolder src: source object
+        :param list proplist: list of properties \
+            (:py:obj:`None` or omit for all properties)
+        '''
+
+        if proplist is None:
+            proplist = self.property_list()
+
+        for prop in proplist:
+            try:
+                setattr(self, prop, getattr(src, prop))
+            except AttributeError:
+                continue
+
     def __getattr__(self, item):
         # pylint: disable=too-many-return-statements
         if item.startswith('_'):
