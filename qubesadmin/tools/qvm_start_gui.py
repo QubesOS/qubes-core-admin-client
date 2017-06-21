@@ -174,10 +174,15 @@ class GUILauncher(object):
         '''Helper function to construct a pidfile path'''
         return '/var/run/qubes/guid-running.{}'.format(xid)
 
-    def start_gui_for_vm(self, vm):
+    @asyncio.coroutine
+    def start_gui_for_vm(self, vm, monitor_layout=None):
         '''Start GUI daemon (qubes-guid) connected directly to a VM
 
         This function is a coroutine.
+
+        :param vm: VM for which start GUI daemon
+        :param monitor_layout: monitor layout to send; if None, fetch it from
+        local X server.
         '''
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.xid)])
@@ -195,13 +200,19 @@ class GUILauncher(object):
                     stubdom_guid_pid = pidfile.read().strip()
                 guid_cmd += ['-K', stubdom_guid_pid]
 
-        return asyncio.create_subprocess_exec(*guid_cmd)
+        vm.log.info('Starting GUI')
+
+        yield from asyncio.create_subprocess_exec(*guid_cmd)
+
+        yield from self.send_monitor_layout(vm, layout=monitor_layout,
+            startup=True)
 
     def start_gui_for_stubdomain(self, vm):
         '''Start GUI daemon (qubes-guid) connected to a stubdomain
 
         This function is a coroutine.
         '''
+        vm.log.info('Starting GUI (stubdomain)')
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.stubdom_xid), '-t', str(vm.xid)])
 
@@ -220,17 +231,13 @@ class GUILauncher(object):
         if not vm.features.check_with_template('gui', True):
             return
 
-        vm.log.info('Starting GUI')
         if vm.hvm:
             if force_stubdom or not os.path.exists(self.guid_pidfile(vm.xid)):
                 if not os.path.exists(self.guid_pidfile(vm.stubdom_xid)):
                     yield from self.start_gui_for_stubdomain(vm)
 
         if not os.path.exists(self.guid_pidfile(vm.xid)):
-            yield from self.start_gui_for_vm(vm)
-
-        yield from self.send_monitor_layout(vm, layout=monitor_layout,
-            startup=True)
+            yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
 
     @asyncio.coroutine
     def send_monitor_layout(self, vm, layout=None, startup=False):
@@ -267,9 +274,12 @@ class GUILauncher(object):
             except FileNotFoundError:
                 pass
 
-        yield from asyncio.get_event_loop().run_in_executor(None,
-            vm.run_service_for_stdio, 'qubes.SetMonitorLayout',
-                ''.join(layout).encode())
+        try:
+            yield from asyncio.get_event_loop().run_in_executor(None,
+                vm.run_service_for_stdio, 'qubes.SetMonitorLayout',
+                    ''.join(layout).encode())
+        except subprocess.CalledProcessError as e:
+            vm.log.warning('Failed to send monitor layout: %s', e.stderr)
 
     def send_monitor_layout_all(self):
         '''Send monitor layout to all (running) VMs'''
@@ -302,12 +312,21 @@ class GUILauncher(object):
         daemon for domains started before this tool. '''
 
         monitor_layout = get_monitor_layout()
+        self.app.domains.clear_cache()
         for vm in self.app.domains:
             if isinstance(vm, qubesadmin.vm.AdminVM):
                 continue
-            if vm.is_running():
+            if not vm.features.check_with_template('gui', True):
+                continue
+            power_state = vm.get_power_state()
+            if power_state == 'Running':
                 asyncio.ensure_future(self.start_gui(vm,
                     monitor_layout=monitor_layout))
+            elif power_state == 'Transient':
+                # it is still starting, we'll get 'domain-start' event when
+                # fully started
+                if vm.hvm:
+                    asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
 
     def register_events(self, events):
         '''Register domain startup events in app.events dispatcher'''
