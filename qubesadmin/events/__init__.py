@@ -118,7 +118,8 @@ class EventsDispatcher(object):
         while True:
             try:
                 yield from self._listen_for_events(vm)
-            except ConnectionRefusedError:
+            except (ConnectionRefusedError, ConnectionResetError,
+                    FileNotFoundError):
                 pass
             if not reconnect:
                 break
