@@ -27,6 +27,13 @@ from __future__ import print_function
 import sys
 import time
 
+import asyncio
+
+try:
+    import qubesadmin.events.utils
+    have_events = True
+except ImportError:
+    have_events = False
 import qubesadmin.tools
 import qubesadmin.exc
 
@@ -52,33 +59,64 @@ parser.add_argument('--timeout',
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
 
-    for vm in args.domains:
-        try:
-            vm.shutdown(force=args.force)
-        except qubesadmin.exc.QubesVMNotStartedError:
-            pass
+    if have_events:
+        loop = asyncio.get_event_loop()
+    remaining_domains = args.domains
+    for _ in range(len(args.domains)):
+        this_round_domains = set(remaining_domains)
+        if not this_round_domains:
+            break
+        remaining_domains = set()
+        for vm in this_round_domains:
+            try:
+                vm.shutdown()
+            except qubesadmin.exc.QubesVMNotRunningError:
+                pass
+            except qubesadmin.exc.QubesException as e:
+                if not args.wait:
+                    vm.log.error('Shutdown error: {}'.format(e))
+                else:
+                    remaining_domains.add(vm)
+        if not args.wait:
+            return len(remaining_domains)
+        this_round_domains.difference_update(remaining_domains)
+        if not this_round_domains:
+            # no VM shutdown request succeed, no sense to try again
+            break
+        if have_events:
+            try:
+                # pylint: disable=no-member
+                loop.run_until_complete(asyncio.wait_for(
+                    qubesadmin.events.utils.wait_for_domain_shutdown(
+                        this_round_domains),
+                    args.timeout))
+            except asyncio.TimeoutError:
+                for vm in this_round_domains:
+                    vm.kill()
+        else:
+            timeout = args.timeout
+            current_vms = list(sorted(this_round_domains))
+            while timeout >= 0:
+                current_vms = [vm for vm in current_vms
+                    if vm.get_power_state() != 'Halted']
+                if not current_vms:
+                    break
+                args.app.log.info('Waiting for shutdown ({}): {}'.format(
+                    timeout, ', '.join([str(vm) for vm in current_vms])))
+                time.sleep(1)
+                timeout -= 1
+            if current_vms:
+                args.app.log.info(
+                    'Killing remaining qubes: {}'
+                    .format(', '.join([str(vm) for vm in current_vms])))
+            for vm in current_vms:
+                vm.kill()
 
-    if not args.wait:
-        return
-
-    timeout = args.timeout
-    current_vms = list(sorted(args.domains))
-    while timeout >= 0:
-        current_vms = [vm for vm in current_vms
-            if vm.get_power_state() != 'Halted']
-        if not current_vms:
-            return 0
-        args.app.log.info('Waiting for shutdown ({}): {}'.format(
-            timeout, ', '.join([str(vm) for vm in current_vms])))
-        time.sleep(1)
-        timeout -= 1
-
-    args.app.log.info(
-        'Killing remaining qubes: {}'
-        .format(', '.join([str(vm) for vm in current_vms])))
-    for vm in current_vms:
-        vm.kill()
-
+    if args.wait:
+        if have_events:
+            loop.close()
+        return len([vm for vm in args.domains
+            if vm.get_power_state() != 'Halted'])
 
 if __name__ == '__main__':
     sys.exit(main())
