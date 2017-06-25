@@ -42,19 +42,20 @@ def interrupt_on_vm_shutdown(vm, subject, event):
         raise Interrupt
 
 
-def wait_for_domain_shutdown(vm, timeout):
+@asyncio.coroutine
+def wait_for_domain_shutdown(vm, timeout, loop=None):
     ''' Helper function to wait for domain shutdown.
 
     This function wait for domain shutdown, but do not initiate the shutdown
     itself.
 
-    Note: you need to close event loop after calling this function.
-
     :param vm: QubesVM object to wait for shutdown on
     :param timeout: Timeout in seconds, use 0 for no timeout
+    :param loop: asyncio event loop
     '''
+    if loop is None:
+        loop = asyncio.get_event_loop()
     events = qubesadmin.events.EventsDispatcher(vm.app)
-    loop = asyncio.get_event_loop()
     events.add_handler('domain-shutdown',
         functools.partial(interrupt_on_vm_shutdown, vm))
     events.add_handler('connection-established',
@@ -65,7 +66,7 @@ def wait_for_domain_shutdown(vm, timeout):
         # pylint: disable=no-member
         loop.call_later(timeout, events_task.cancel)
     try:
-        loop.run_until_complete(events_task)
+        yield from events_task
     except asyncio.CancelledError:
         raise qubesadmin.exc.QubesVMShutdownTimeout(
             'VM %s shutdown timeout expired', vm.name)

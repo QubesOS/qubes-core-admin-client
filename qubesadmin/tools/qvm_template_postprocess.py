@@ -143,6 +143,7 @@ def import_appmenus(vm, source_dir):
         vm.log.warning('Failed to set default application list: %s', e)
 
 
+@asyncio.coroutine
 def post_install(args):
     '''Handle post-installation tasks'''
 
@@ -192,17 +193,16 @@ def post_install(args):
             if have_events:
                 try:
                     # pylint: disable=no-member
-                    qubesadmin.events.utils.wait_for_domain_shutdown(vm,
-                        qubesadmin.config.defaults['shutdown_timeout'])
+                    yield from qubesadmin.events.utils.wait_for_domain_shutdown(
+                        vm, qubesadmin.config.defaults['shutdown_timeout'])
                 except qubesadmin.exc.QubesVMShutdownTimeout:
                     vm.kill()
-                asyncio.get_event_loop().close()
             else:
                 timeout = qubesadmin.config.defaults['shutdown_timeout']
                 while timeout >= 0:
                     if vm.is_halted():
                         break
-                    time.sleep(1)
+                    yield from asyncio.sleep(1)
                     timeout -= 1
                 if not vm.is_halted():
                     vm.kill()
@@ -252,7 +252,13 @@ def main(args=None, app=None):
     if not args.really:
         parser.error('Do not call this tool directly.')
     if args.action == 'post-install':
-        return post_install(args)
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(post_install(args))
+            loop.stop()
+            loop.run_forever()
+        finally:
+            loop.close()
     elif args.action == 'pre-remove':
         pre_remove(args)
     else:

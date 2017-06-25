@@ -255,6 +255,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
                 ('test-vm', 'admin.vm.List', None, None)] = \
                 b'0\0test-vm class=TemplateVM state=Halted\n'
 
+        asyncio.set_event_loop(asyncio.new_event_loop())
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', 'post-install', 'test-vm', self.source_dir.name],
             app=self.app)
@@ -273,6 +274,10 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'qubes.PostInstall', b''),
         ])
         self.assertAllCalled()
+
+    @asyncio.coroutine
+    def wait_for_shutdown(self, vm, timeout):
+        pass
 
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_root_img')
@@ -298,11 +303,13 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
                 'qubesadmin.events.utils.wait_for_domain_shutdown')
             self.addCleanup(patch_domain_shutdown.stop)
             mock_domain_shutdown = patch_domain_shutdown.start()
+            mock_domain_shutdown.side_effect = self.wait_for_shutdown
         else:
             self.app.expected_calls[
                 ('test-vm', 'admin.vm.List', None, None)] = \
                 b'0\0test-vm class=TemplateVM state=Halted\n'
 
+        asyncio.set_event_loop(asyncio.new_event_loop())
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', 'post-install', 'test-vm', self.source_dir.name],
             app=self.app)
@@ -334,7 +341,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
                 'qubesadmin.events.utils.wait_for_domain_shutdown')
             self.addCleanup(patch_domain_shutdown.stop)
             mock_domain_shutdown = patch_domain_shutdown.start()
+            mock_domain_shutdown.side_effect = self.wait_for_shutdown
 
+        asyncio.set_event_loop(asyncio.new_event_loop())
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', '--skip-start', 'post-install', 'test-vm',
             self.source_dir.name],
