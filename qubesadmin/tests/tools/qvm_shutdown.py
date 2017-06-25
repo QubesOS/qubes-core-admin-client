@@ -17,8 +17,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
-
+import asyncio
+import unittest.mock
 import qubesadmin.tests
+import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_shutdown
 
 
@@ -76,6 +78,165 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         qubesadmin.tools.qvm_shutdown.main(['some-vm', 'other-vm'], app=self.app),
         self.assertAllCalled()
 
+    @unittest.skipUnless(qubesadmin.tools.qvm_shutdown.have_events,
+        'Events not present')
     def test_010_wait(self):
         '''test --wait option'''
-        self.skipTest('test not implemented')
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        patch = unittest.mock.patch(
+            'qubesadmin.events.EventsDispatcher._get_events_reader')
+        mock_events = patch.start()
+        self.addCleanup(patch.stop)
+        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
+            b'1\0\0connection-established\0\0',
+            b'1\0some-vm\0domain-shutdown\0\0',
+            ])
+
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            [b'0\x00some-vm class=AppVM state=Running\n'] + \
+            [b'0\x00some-vm class=AppVM state=Halted\n']
+        qubesadmin.tools.qvm_shutdown.main(['--wait', 'some-vm'], app=self.app)
+        self.assertAllCalled()
+
+    @unittest.skipUnless(qubesadmin.tools.qvm_shutdown.have_events,
+        'Events not present')
+    def test_012_wait_all(self):
+        '''test --wait option, with multiple VMs'''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        patch = unittest.mock.patch(
+            'qubesadmin.events.EventsDispatcher._get_events_reader')
+        mock_events = patch.start()
+        self.addCleanup(patch.stop)
+        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
+            b'1\0\0connection-established\0\0',
+            b'1\0sys-net\0domain-shutdown\0\0',
+            b'1\0some-vm\0domain-shutdown\0\0',
+            b'1\0other-vm\0domain-shutdown\0\0',
+            ])
+
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'sys-net class=AppVM state=Running\n' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00other-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.List', None, None)] = \
+            b'0\x00sys-net class=AppVM state=Halted\n'
+        qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
+        self.assertAllCalled()
+
+    @unittest.skipUnless(qubesadmin.tools.qvm_shutdown.have_events,
+        'Events not present')
+    def test_013_wait_all_order(self):
+        '''test --wait option, with some VMs requiring specific shutdown
+        order'''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        patch = unittest.mock.patch(
+            'qubesadmin.events.EventsDispatcher._get_events_reader')
+        mock_events = patch.start()
+        self.addCleanup(patch.stop)
+        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
+            b'1\0\0connection-established\0\0',
+            b'1\0sys-net\0domain-shutdown\0\0',
+            b'1\0some-vm\0domain-shutdown\0\0',
+            b'1\0other-vm\0domain-shutdown\0\0',
+            ])
+
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.Shutdown', None, None)] = [
+            b'2\x00QubesVMError\x00\x00Other Vms connected\x00',
+            b'0\x00',
+            ]
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'sys-net class=AppVM state=Running\n' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00other-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.List', None, None)] = \
+            b'0\x00sys-net class=AppVM state=Halted\n'
+        qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
+        self.assertAllCalled()
+
+    def test_014_wait_all_order_no_events(self):
+        '''test --wait option, with some VMs requiring specific shutdown
+        order'''
+
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.Shutdown', None, None)] = [
+            b'2\x00QubesVMError\x00\x00Other Vms connected\x00',
+            b'0\x00',
+            ]
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'sys-net class=AppVM state=Running\n' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            [b'0\x00some-vm class=AppVM state=Running\n',
+            b'0\x00some-vm class=AppVM state=Halted\n',
+            b'0\x00some-vm class=AppVM state=Halted\n']
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.List', None, None)] = \
+            [b'0\x00other-vm class=AppVM state=Running\n',
+            b'0\x00other-vm class=AppVM state=Halted\n',
+            b'0\x00other-vm class=AppVM state=Halted\n']
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.List', None, None)] = \
+            [b'0\x00sys-net class=AppVM state=Running\n',
+            b'0\x00sys-net class=AppVM state=Halted\n',
+            b'0\x00sys-net class=AppVM state=Halted\n']
+        with unittest.mock.patch('qubesadmin.tools.qvm_shutdown.have_events',
+                False):
+            qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
+        self.assertAllCalled()
