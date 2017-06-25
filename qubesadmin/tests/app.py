@@ -284,7 +284,10 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             (src, 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\nvolatile\nkernel\n'
         self.app.expected_calls[
-            (src, 'admin.vm.volume.Clone', 'private', dst.encode())] = \
+            (src, 'admin.vm.volume.CloneFrom', 'private', None)] = \
+            b'0\x00token-private'
+        self.app.expected_calls[
+            (dst, 'admin.vm.volume.CloneTo', 'private', b'token-private')] = \
             b'0\x00'
 
     def test_030_clone(self):
@@ -364,7 +367,10 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'save_on_stop=True\n' \
             b'snap_on_start=False\n'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.volume.Clone', 'root', b'new-name')] = \
+            ('test-vm', 'admin.vm.volume.CloneFrom', 'root', None)] = \
+            b'0\x00token-root'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.volume.CloneTo', 'root', b'token-root')] = \
             b'0\x00'
         new_vm = self.app.clone_vm('test-vm', 'new-name',
             new_cls='StandaloneVM')
@@ -482,7 +488,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             'test-template', b'name=new-name label=red')] = b'0\x00'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.volume.Clone', 'private', b'new-name')] = \
+            ('new-name', 'admin.vm.volume.CloneTo', 'private',
+            b'token-private')] = \
             b'2\0QubesException\0\0something happened\0'
         self.app.expected_calls[('new-name', 'admin.vm.Remove', None, None)] = \
             b'0\x00'
@@ -504,7 +511,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             'test-template', b'name=new-name label=red')] = b'0\x00'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.volume.Clone', 'private', b'new-name')] = \
+            ('new-name', 'admin.vm.volume.CloneTo', 'private',
+            b'token-private')] = \
             b'2\0QubesException\0\0something happened\0'
         self.app.expected_calls[('new-name', 'admin.vm.Remove', None, None)] = \
             b'0\x00'

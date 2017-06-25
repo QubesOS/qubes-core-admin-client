@@ -221,14 +221,11 @@ class Volume(object):
         '''
 
         # pylint: disable=protected-access
-        if source._vm_name is None or self._vm_name is None:
-            raise NotImplementedError(
-                'Operation implemented only for VM volumes')
-        if source._vm_name != self._vm_name:
-            raise ValueError('Source and target volume must have the same type')
 
-        # this call is to *source* volume, because we extract data from there
-        source._qubesd_call('Clone', payload=str(self._vm).encode())
+        # get a token from source volume
+        token = source._qubesd_call('CloneFrom')
+        # and use it to actually clone volume data
+        self._qubesd_call('CloneTo', payload=token)
 
 
 class Pool(object):

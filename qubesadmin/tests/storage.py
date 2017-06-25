@@ -163,7 +163,10 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def test_050_clone(self):
         self.app.expected_calls[
-            ('source-vm', 'admin.vm.volume.Clone', 'volname', b'test-vm')] = \
+            ('source-vm', 'admin.vm.volume.CloneFrom', 'volname', None)] = \
+            b'0\x00abcdef'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.CloneTo', 'volname', b'abcdef')] = \
             b'0\x00'
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -172,17 +175,6 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
             ('source-vm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00volname\nother\n'
         self.vol.clone(self.app.domains['source-vm'].volumes['volname'])
-        self.assertAllCalled()
-
-    def test_050_clone_wrong_volume(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00source-vm class=AppVM state=Halted\n'
-        self.app.expected_calls[
-            ('source-vm', 'admin.vm.volume.List', None, None)] = \
-            b'0\x00volname\nother\n'
-        with self.assertRaises(ValueError):
-            self.vol.clone(self.app.domains['source-vm'].volumes['other'])
         self.assertAllCalled()
 
 
@@ -273,13 +265,14 @@ class TestPoolVolume(TestVMVolume):
 
     def test_050_clone(self):
         self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00source-vm class=AppVM state=Halted\n'
+            ('dom0', 'admin.pool.volume.CloneFrom', 'test-pool',
+            b'volid')] = b'0\x00abcdef'
         self.app.expected_calls[
-            ('source-vm', 'admin.vm.volume.List', None, None)] = \
-            b'0\x00volname\nother\n'
-        with self.assertRaises(NotImplementedError):
-            self.vol.clone(self.app.domains['source-vm'].volumes['volname'])
+            ('dom0', 'admin.pool.volume.CloneTo', 'test-pool',
+            b'some-id abcdef')] = b'0\x00'
+        source_vol = qubesadmin.storage.Volume(self.app, pool='test-pool',
+            vid='volid')
+        self.vol.clone(source_vol)
         self.assertAllCalled()
 
     def test_050_clone_wrong_volume(self):
