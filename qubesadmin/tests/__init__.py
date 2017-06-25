@@ -135,6 +135,11 @@ class QubesTest(qubesadmin.app.QubesBase):
         if call_key not in self.expected_calls:
             raise AssertionError('Unexpected call {!r}'.format(call_key))
         return_data = self.expected_calls[call_key]
+        if isinstance(return_data, list):
+            try:
+                return_data = return_data.pop(0)
+            except IndexError:
+                raise AssertionError('Extra call {!r}'.format(call_key))
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, **kwargs):
@@ -152,6 +157,9 @@ class QubesTestCase(unittest.TestCase):
         self.assertEqual(
             set(self.app.expected_calls.keys()),
             set(self.app.actual_calls))
+        # and also check if calls expected multiple times were called
+        self.assertFalse(any(x for x in self.app.expected_calls.values() if
+            isinstance(x, list)))
 
     def assertNotRaises(self, excClass, callableObj=None, *args, **kwargs):
         """Fail if an exception of class excClass is raised
