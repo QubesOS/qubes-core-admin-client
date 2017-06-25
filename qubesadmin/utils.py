@@ -23,6 +23,7 @@
 #
 
 '''Various utility functions.'''
+import os
 
 import pkg_resources
 
@@ -122,3 +123,21 @@ def get_entry_point_one(group, name):
                 ', '.join('{}.{}'.format(ep.module_name, '.'.join(ep.attrs))
                     for ep in epoints)))
     return epoints[0].load()
+
+UPDATES_DEFAULT_VM_DISABLE_FLAG = \
+    '/var/lib/qubes/updates/vm-default-disable-updates'
+
+def updates_vms_status(qvm_collection):
+    '''Check whether all VMs have the same check-updates value;
+    if yes, return it; otherwise, return None
+    '''
+    # default value:
+    status = not os.path.exists(UPDATES_DEFAULT_VM_DISABLE_FLAG)
+    # check if all the VMs uses the default value
+    for vm in qvm_collection.domains:
+        if vm.qid == 0:
+            continue
+        if vm.features.get('check-updates', True) != status:
+            # "mixed"
+            return None
+    return status
