@@ -199,8 +199,8 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
             task = asyncio.ensure_future(self.dispatcher._get_events_reader())
             loop.run_until_complete(task)
             self.assertEqual(mock_proc.mock_calls, [
-                unittest.mock.call(['qrexec-client-vm', 'dom0',
-                    'admin.Events'], stdin=subprocess.PIPE,
+                unittest.mock.call('qrexec-client-vm', 'dom0',
+                    'admin.Events', stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE),
                 unittest.mock.call().stdin.write_eof()
             ])
@@ -224,8 +224,8 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
             task = asyncio.ensure_future(self.dispatcher._get_events_reader(vm))
             loop.run_until_complete(task)
             self.assertEqual(mock_proc.mock_calls, [
-                unittest.mock.call(['qrexec-client-vm', 'test-vm',
-                    'admin.Events'], stdin=subprocess.PIPE,
+                unittest.mock.call('qrexec-client-vm', 'test-vm',
+                    'admin.Events', stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE),
                 unittest.mock.call().stdin.write_eof()
             ])

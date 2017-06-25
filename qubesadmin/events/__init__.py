@@ -87,7 +87,7 @@ class EventsDispatcher(object):
                 writer.close()
         elif self.app.qubesd_connection_type == 'qrexec':
             proc = yield from asyncio.create_subprocess_exec(
-                ['qrexec-client-vm', dest, 'admin.Events'],
+                'qrexec-client-vm', dest, 'admin.Events',
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             proc.stdin.write_eof()
