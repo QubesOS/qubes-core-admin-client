@@ -116,6 +116,10 @@ class QubesFeatureNotFoundError(QubesException, KeyError):
     '''Feature not set for a given domain'''
 
 
+class QubesTagNotFoundError(QubesException, KeyError):
+    '''Tag not set for a given domain'''
+
+
 class StoragePoolException(QubesException):
     ''' A general storage exception '''
 

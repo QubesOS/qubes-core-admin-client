@@ -161,6 +161,30 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         input_proc.stdout.close()
         self.assertAllCalled()
 
+    def test_050_clone(self):
+        self.app.expected_calls[
+            ('source-vm', 'admin.vm.volume.Clone', 'volname', b'test-vm')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00source-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('source-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00volname\nother\n'
+        self.vol.clone(self.app.domains['source-vm'].volumes['volname'])
+        self.assertAllCalled()
+
+    def test_050_clone_wrong_volume(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00source-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('source-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00volname\nother\n'
+        with self.assertRaises(ValueError):
+            self.vol.clone(self.app.domains['source-vm'].volumes['other'])
+        self.assertAllCalled()
+
 
 class TestPoolVolume(TestVMVolume):
     def setUp(self):
@@ -245,7 +269,21 @@ class TestPoolVolume(TestVMVolume):
         self.assertAllCalled()
 
     def test_040_import_data(self):
-        self.skipTest('admin.pool.vm.Import not supported')
+        self.skipTest('admin.pool.volume.Import not supported')
+
+    def test_050_clone(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00source-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('source-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00volname\nother\n'
+        with self.assertRaises(NotImplementedError):
+            self.vol.clone(self.app.domains['source-vm'].volumes['volname'])
+        self.assertAllCalled()
+
+    def test_050_clone_wrong_volume(self):
+        self.skipTest('admin.pool.volume.Clone not supported')
 
 
 class TestPool(qubesadmin.tests.QubesTestCase):

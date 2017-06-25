@@ -32,6 +32,7 @@ except ImportError:
 
 import tempfile
 
+import qubesadmin.exc
 import qubesadmin.tests
 
 
@@ -154,47 +155,367 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertEqual(label.name, 'red')
         self.assertAllCalled()
 
+    def clone_setup_common_calls(self, src, dst):
+        # labels
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\ngreen\nblue\n'
+
+        # have each property type with default=no, each special-cased,
+        # and some with default=yes
+        properties = {
+            'label': 'default=False type=label red',
+            'template': 'default=False type=vm test-template',
+            'memory': 'default=False type=int 400',
+            'kernel': 'default=False type=str 4.9.31',
+            'netvm': 'default=False type=vm test-net',
+            'hvm': 'default=False type=bool True',
+            'default_user': 'default=True type=str user',
+        }
+        self.app.expected_calls[
+            (src, 'admin.vm.property.List', None, None)] = \
+            b'0\0qid\nname\n' + \
+            b'\n'.join(prop.encode() for prop in properties.keys()) + \
+            b'\n'
+        for prop, value in properties.items():
+            self.app.expected_calls[
+                (src, 'admin.vm.property.Get', prop, None)] = \
+                b'0\0' + value.encode()
+            # special cases handled by admin.vm.Create call
+            if prop in ('label', 'template'):
+                continue
+            # default properties should not be set
+            if 'default=True' in value:
+                continue
+            self.app.expected_calls[
+                (dst, 'admin.vm.property.Set', prop,
+                value.split()[-1].encode())] = b'0\0'
+
+        # tags
+        self.app.expected_calls[
+            (src, 'admin.vm.tag.List', None, None)] = \
+            b'0\0tag1\ntag2\n'
+        self.app.expected_calls[
+            (dst, 'admin.vm.tag.Set', 'tag1', None)] = b'0\0'
+        self.app.expected_calls[
+            (dst, 'admin.vm.tag.Set', 'tag2', None)] = b'0\0'
+
+        # features
+        self.app.expected_calls[
+            (src, 'admin.vm.feature.List', None, None)] = \
+            b'0\0feat1\nfeat2\n'
+        self.app.expected_calls[
+            (src, 'admin.vm.feature.Get', 'feat1', None)] = \
+            b'0\0feat1-value with spaces'
+        self.app.expected_calls[
+            (src, 'admin.vm.feature.Get', 'feat2', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+            (dst, 'admin.vm.feature.Set', 'feat1',
+            b'feat1-value with spaces')] = b'0\0'
+        self.app.expected_calls[
+            (dst, 'admin.vm.feature.Set', 'feat2', b'1')] = b'0\0'
+
+        # firewall
+        rules = (
+            b'action=drop dst4=192.168.0.0/24\n'
+            b'action=accept\n'
+        )
+        self.app.expected_calls[
+            (src, 'admin.vm.firewall.GetPolicy', None, None)] = \
+            b'0\x00accept'
+        self.app.expected_calls[
+            (src, 'admin.vm.firewall.Get', None, None)] = \
+            b'0\x00' + rules
+        self.app.expected_calls[
+            (dst, 'admin.vm.firewall.SetPolicy', None, b'accept')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            (dst, 'admin.vm.firewall.Set', None, rules)] = \
+            b'0\x00'
+
+        # storage
+        self.app.expected_calls[
+            (dst, 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\nvolatile\nkernel\n'
+        self.app.expected_calls[
+            (dst, 'admin.vm.volume.Info', 'root', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=vm-test-vm/root\n' \
+            b'size=10737418240\n' \
+            b'usage=2147483648\n' \
+            b'rw=False\n' \
+            b'internal=True\n' \
+            b'source=vm-test-template/root\n' \
+            b'save_on_stop=False\n' \
+            b'snap_on_start=True\n'
+        self.app.expected_calls[
+            (dst, 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=vm-test-vm/private\n' \
+            b'size=2147483648\n' \
+            b'usage=214748364\n' \
+            b'rw=True\n' \
+            b'internal=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n'
+        self.app.expected_calls[
+            (dst, 'admin.vm.volume.Info', 'volatile', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=vm-test-vm/volatile\n' \
+            b'size=10737418240\n' \
+            b'usage=0\n' \
+            b'rw=True\n' \
+            b'internal=True\n' \
+            b'source=None\n' \
+            b'save_on_stop=False\n' \
+            b'snap_on_start=False\n'
+        self.app.expected_calls[
+            (dst, 'admin.vm.volume.Info', 'kernel', None)] = \
+            b'0\x00pool=linux-kernel\n' \
+            b'vid=\n' \
+            b'size=0\n' \
+            b'usage=0\n' \
+            b'rw=False\n' \
+            b'internal=True\n' \
+            b'source=None\n' \
+            b'save_on_stop=False\n' \
+            b'snap_on_start=False\n'
+        self.app.expected_calls[
+            (src, 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\nvolatile\nkernel\n'
+        self.app.expected_calls[
+            (src, 'admin.vm.volume.Clone', 'private', dst.encode())] = \
+            b'0\x00'
+
     def test_030_clone(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.Clone', None,
-            b'name=new-name')] = b'0\x00'
+        self.clone_setup_common_calls('test-vm', 'new-name')
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-name class=AppVM state=Halted\n' \
-            b'test-vm class=AppVM state=Halted\n'
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
         new_vm = self.app.clone_vm('test-vm', 'new-name')
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
 
     def test_031_clone_object(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.Clone', None,
-            b'name=new-name')] = b'0\x00'
+        self.clone_setup_common_calls('test-vm', 'new-name')
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-name class=AppVM state=Halted\n' \
-            b'test-vm class=AppVM state=Halted\n'
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
         new_vm = self.app.clone_vm(self.app.domains['test-vm'], 'new-name')
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
 
     def test_032_clone_pool(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CloneInPool', None,
-            b'name=new-name pool=some-pool')] = b'0\x00'
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
+            'test-template',
+            b'name=new-name label=red pool=some-pool')] = b'0\x00'
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-name class=AppVM state=Halted\n' \
-            b'test-vm class=AppVM state=Halted\n'
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
         new_vm = self.app.clone_vm('test-vm', 'new-name', pool='some-pool')
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
 
     def test_033_clone_pools(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CloneInPool', None,
-            b'name=new-name pool:private=some-pool '
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
+            'test-template',
+            b'name=new-name label=red pool:private=some-pool '
             b'pool:volatile=other-pool')] = b'0\x00'
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-name class=AppVM state=Halted\n' \
-            b'test-vm class=AppVM state=Halted\n'
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
         new_vm = self.app.clone_vm('test-vm', 'new-name',
             pools={'private': 'some-pool', 'volatile': 'other-pool'})
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
+
+    def test_034_clone_class_change(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=StandaloneVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.volume.Info', 'root', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=vm-new-name/root\n' \
+            b'size=10737418240\n' \
+            b'usage=2147483648\n' \
+            b'rw=True\n' \
+            b'internal=True\n' \
+            b'source=None\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.Clone', 'root', b'new-name')] = \
+            b'0\x00'
+        new_vm = self.app.clone_vm('test-vm', 'new-name',
+            new_cls='StandaloneVM')
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertEqual(new_vm.__class__.__name__, 'StandaloneVM')
+        self.assertAllCalled()
+
+    def test_035_clone_fail(self):
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\ngreen\nblue\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.List', None, None)] = \
+            b'0\0qid\nname\ntemplate\nlabel\nmemory\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
+            b'0\0default=False type=label red'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'template', None)] = \
+            b'0\0default=False type=vm test-template'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'memory', None)] = \
+            b'0\0default=False type=int 400'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.property.Set', 'memory', b'400')] = \
+            b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[('new-name', 'admin.vm.Remove', None, None)] = \
+            b'0\x00'
+        with self.assertRaises(qubesadmin.exc.QubesException):
+            self.app.clone_vm('test-vm', 'new-name')
+        self.assertAllCalled()
+
+    def test_036_clone_ignore_errors_prop(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.property.Set', 'memory', b'400')] = \
+            b'2\0QubesException\0\0something happened\0'
+        new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_037_clone_ignore_errors_feature(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.feature.Set', 'feat2', b'1')] = \
+            b'2\0QubesException\0\0something happened\0'
+        new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_038_clone_ignore_errors_tag(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.tag.Set', 'tag1', None)] = \
+            b'2\0QubesException\0\0something happened\0'
+        new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_039_clone_ignore_errors_firewall(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.firewall.SetPolicy', None, b'accept')] = \
+            b'2\0QubesException\0\0something happened\0'
+        del self.app.expected_calls[
+            ('test-vm', 'admin.vm.firewall.Get', None, None)]
+        del self.app.expected_calls[
+            ('new-name', 'admin.vm.firewall.Set', None,
+            b'action=drop dst4=192.168.0.0/24\naction=accept\n')]
+        new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
+        self.assertEqual(new_vm.name, 'new-name')
+        self.assertAllCalled()
+
+    def test_040_clone_ignore_errors_storage(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.Clone', 'private', b'new-name')] = \
+            b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[('new-name', 'admin.vm.Remove', None, None)] = \
+            b'0\x00'
+        del self.app.expected_calls[
+            ('new-name', 'admin.vm.volume.Info', 'root', None)]
+        del self.app.expected_calls[
+            ('new-name', 'admin.vm.volume.Info', 'volatile', None)]
+        with self.assertRaises(qubesadmin.exc.QubesException):
+            self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
+        self.assertAllCalled()
+
+    def test_041_clone_fail_storage(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.Clone', 'private', b'new-name')] = \
+            b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[('new-name', 'admin.vm.Remove', None, None)] = \
+            b'0\x00'
+        del self.app.expected_calls[
+            ('new-name', 'admin.vm.volume.Info', 'root', None)]
+        del self.app.expected_calls[
+            ('new-name', 'admin.vm.volume.Info', 'volatile', None)]
+        with self.assertRaises(qubesadmin.exc.QubesException):
+            self.app.clone_vm('test-vm', 'new-name')
+        self.assertAllCalled()
+
 
 
 class TC_20_QubesLocal(unittest.TestCase):

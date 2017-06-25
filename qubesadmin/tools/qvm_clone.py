@@ -32,6 +32,10 @@ parser.add_argument('new_name',
                     action='store',
                     help='name of the domain to create')
 
+parser.add_argument('--class', '-C', dest='cls',
+    default=None,
+    help='specify the class of the new domain (default: same as source)')
+
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-P',
                     metavar='POOL',
@@ -66,7 +70,7 @@ def main(args=None, app=None):
                 parser.error(
                     'Pool argument must be of form: -P volume_name=pool_name')
 
-    app.clone_vm(src_vm, new_name, pool=pool, pools=pools)
+    app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools)
 
 if __name__ == '__main__':
     sys.exit(main())

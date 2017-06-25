@@ -270,7 +270,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self.domains.clear_cache()
         return self.domains[name]
 
-    def clone_vm(self, src_vm, new_name, pool=None, pools=None):
+    def clone_vm(self, src_vm, new_name, new_cls=None,
+            pool=None, pools=None, ignore_errors=False):
         '''Clone Virtual Machine
 
         Example usage with custom storage pools:
@@ -281,35 +282,110 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         >>> vm = app.clone_vm(src_vm, 'my-new-vm', pools=pools)
         >>> vm.label = app.labels['green']
 
-        :param str cls: name of VM class (`AppVM`, `TemplateVM` etc)
-        :param str name: name of VM
-        :param str label: label color for new VM
-        :param str template: template to use (if apply for given VM class),
-        can be also VM object; use None for default value
+        :param QubesVM or str src_vm: source VM
+        :param str new_name: name of new VM
+        :param str new_cls: name of VM class (`AppVM`, `TemplateVM` etc) - use
+        None to copy it from *src_vm*
         :param str pool: storage pool to use instead of default one
         :param dict pools: storage pool for specific volumes
+        :param bool ignore_errors: should errors on meta-data setting be only
+        logged, or abort the whole operation?
         :return new VM object
         '''
 
         if pool and pools:
             raise ValueError('only one of pool= and pools= can be used')
 
-        if not isinstance(src_vm, str):
-            src_vm = str(src_vm)
+        if isinstance(src_vm, str):
+            src_vm = self.domains[src_vm]
 
-        method = 'admin.vm.Clone'
-        payload = 'name={}'.format(new_name)
+        if new_cls is None:
+            new_cls = src_vm.__class__.__name__
+
+        template = getattr(src_vm, 'template', None)
+        if template is not None:
+            template = str(template)
+
+        label = src_vm.label
+
+        method_prefix = 'admin.vm.Create.'
+        payload = 'name={} label={}'.format(new_name, label)
         if pool:
             payload += ' pool={}'.format(str(pool))
-            method = 'admin.vm.CloneInPool'
+            method_prefix = 'admin.vm.CreateInPool.'
         if pools:
             payload += ''.join(' pool:{}={}'.format(vol, str(pool))
                 for vol, pool in sorted(pools.items()))
-            method = 'admin.vm.CloneInPool'
+            method_prefix = 'admin.vm.CreateInPool.'
 
-        self.qubesd_call(src_vm, method, None, payload.encode('utf-8'))
+        self.qubesd_call('dom0', method_prefix + new_cls, template,
+            payload.encode('utf-8'))
 
-        return self.domains[new_name]
+        self.domains.clear_cache()
+        dst_vm = self.domains[new_name]
+        try:
+            assert isinstance(dst_vm, qubesadmin.vm.QubesVM)
+            for prop in src_vm.property_list():
+                # handled by admin.vm.Create call
+                if prop in ('name', 'qid', 'template', 'label'):
+                    continue
+                if src_vm.property_is_default(prop):
+                    continue
+                try:
+                    setattr(dst_vm, prop, getattr(src_vm, prop))
+                except AttributeError:
+                    pass
+                except qubesadmin.exc.QubesException as e:
+                    dst_vm.log.error(
+                        'Failed to set {!s} property: {!s}'.format(prop, e))
+                    if not ignore_errors:
+                        raise
+
+            for tag in src_vm.tags:
+                try:
+                    dst_vm.tags.add(tag)
+                except qubesadmin.exc.QubesException as e:
+                    dst_vm.log.error(
+                        'Failed to add {!s} tag: {!s}'.format(tag, e))
+                    if not ignore_errors:
+                        raise
+
+            for feature, value in src_vm.features.items():
+                try:
+                    dst_vm.features[feature] = value
+                except qubesadmin.exc.QubesException as e:
+                    dst_vm.log.error(
+                        'Failed to set {!s} feature: {!s}'.format(feature, e))
+                    if not ignore_errors:
+                        raise
+
+            try:
+                dst_vm.firewall.policy = src_vm.firewall.policy
+                dst_vm.firewall.save_rules(src_vm.firewall.rules)
+            except qubesadmin.exc.QubesException as e:
+                self.log.error('Failed to set firewall: %s', e)
+                if not ignore_errors:
+                    raise
+
+        except qubesadmin.exc.QubesException:
+            if not ignore_errors:
+                del self.domains[dst_vm.name]
+                raise
+
+        try:
+            for dst_volume in sorted(dst_vm.volumes.values()):
+                if not dst_volume.save_on_stop:
+                    # clone only persistent volumes
+                    continue
+                src_volume = src_vm.volumes[dst_volume.name]
+                dst_vm.log.info('Cloning {} volume'.format(dst_volume.name))
+                dst_volume.clone(src_volume)
+
+        except qubesadmin.exc.QubesException:
+            del self.domains[dst_vm.name]
+            raise
+
+        return dst_vm
 
     def run_service(self, dest, service, filter_esc=False, user=None,
             localcmd=None, wait=True, **kwargs):

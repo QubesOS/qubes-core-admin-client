@@ -14,7 +14,7 @@
 
 Synopsis
 --------
-:command:`qvm-clone` [-h] [--verbose] [--quiet] [-p *POOL:VOLUME* | -P POOL] *VMNAME* *NEWVM*
+:command:`qvm-clone` [*options*] *VMNAME* *NEWVM*
 
 Options
 -------
@@ -22,6 +22,12 @@ Options
 .. option:: --help, -h
 
     Show this help message and exit
+
+.. option:: --class=CLASS, -C CLASS
+
+    Create VM of different class than source VM. The tool will try to copy as
+    much as possible data/metadata from source VM, but some information may be
+    impossible to preserve (for example target VM have no matching properties).
 
 .. option:: -P POOL
 

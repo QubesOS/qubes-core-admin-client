@@ -20,43 +20,61 @@
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_clone
+from unittest import mock
 
 
 class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
     def test_000_simple(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.Clone', None,
-            b'name=new-vm')] = b'0\x00'
+        self.app.clone_vm = mock.Mock()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['test-vm', 'new-vm'], app=self.app)
+        self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
+            'new-vm', new_cls=None, pool=None, pools={})
         self.assertAllCalled()
 
     def test_001_missing_vm(self):
+        self.app.clone_vm = mock.Mock()
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:
                 qubesadmin.tools.qvm_clone.main(['test-vm'], app=self.app)
         self.assertIn('NAME', stderr.getvalue())
+        self.assertFalse(self.app.clone_vm.called)
         self.assertAllCalled()
 
     def test_004_pool(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CloneInPool',
-            None, b'name=new-vm pool=some-pool')] = b'0\x00'
+        self.app.clone_vm = mock.Mock()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['-P', 'some-pool', 'test-vm', 'new-vm'],
             app=self.app)
+        self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
+            'new-vm', new_cls=None, pool='some-pool', pools={})
         self.assertAllCalled()
 
     def test_005_pools(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CloneInPool',
-            None, b'name=new-vm pool:private=some-pool '
-                  b'pool:volatile=other-pool')] = b'0\x00'
+        self.app.clone_vm = mock.Mock()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['--pool', 'private=some-pool',
             '--pool', 'volatile=other-pool', 'test-vm', 'new-vm'],
             app=self.app)
+        self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
+            'new-vm', new_cls=None, pool=None, pools={'private': 'some-pool',
+                'volatile': 'other-pool'})
+        self.assertAllCalled()
+
+    def test_006_new_cls(self):
+        self.app.clone_vm = mock.Mock()
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n'
+        qubesadmin.tools.qvm_clone.main(['--class', 'StandaloneVM',
+            'test-vm', 'new-vm'],
+            app=self.app)
+        self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
+            'new-vm', new_cls='StandaloneVM', pool=None, pools={})
         self.assertAllCalled()

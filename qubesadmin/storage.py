@@ -93,6 +93,21 @@ class Volume(object):
             return self.pool == other.pool and self.vid == other.vid
         return NotImplemented
 
+    def __lt__(self, other):
+        # pylint: disable=protected-access
+        if isinstance(other, Volume):
+            if self._vm and other._vm:
+                return (self._vm, self._vm_name) < (other._vm, other._vm_name)
+            elif self._vid and other._vid:
+                return (self._pool, self._vid) < (other._pool, other._vid)
+        return NotImplemented
+
+
+    @property
+    def name(self):
+        '''per-VM volume name, if available'''
+        return self._vm_name
+
     @property
     def pool(self):
         '''Storage volume pool name.'''
@@ -194,6 +209,26 @@ class Volume(object):
         :param stream: file-like object, must support fileno()
         '''
         self._qubesd_call('Import', payload_stream=stream)
+
+    def clone(self, source):
+        ''' Clone data from sane volume of another VM.
+
+        This function override existing volume content.
+        This operation is implemented for VM volumes - those in vm.volumes
+        collection (not pool.volumes).
+
+        :param source: source volume object
+        '''
+
+        # pylint: disable=protected-access
+        if source._vm_name is None or self._vm_name is None:
+            raise NotImplementedError(
+                'Operation implemented only for VM volumes')
+        if source._vm_name != self._vm_name:
+            raise ValueError('Source and target volume must have the same type')
+
+        # this call is to *source* volume, because we extract data from there
+        source._qubesd_call('Clone', payload=str(self._vm).encode())
 
 
 class Pool(object):

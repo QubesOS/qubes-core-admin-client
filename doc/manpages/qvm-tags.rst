@@ -15,7 +15,10 @@
 Synopsis
 --------
 
-:command:`qvm-tags` [-h] [--verbose] [--quiet] [--query | --set | --unset] *VMNAME* [*TAG*]
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* {list,ls,l} [*TAG*]
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* {add,a,set} *TAG* ...
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* {del,d,unset,u} *TAG* ...
+
 
 Options
 -------
@@ -32,22 +35,37 @@ Options
 
    Decrease verbosity.
 
-.. option:: --query
+Commands
+--------
 
-   Query for the tag. Exit with zero (true) if the qube in question has the tag
-   and with non-zero (false) if it does not. If no tag specified, list all the
-   tags.
+list
+^^^^
 
-   This is the default mode.
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* list [*TAG*]
 
-.. option:: --set, -s
+List tags. If tag name is given, check if this tag is set for the VM and signal
+this with exit code (0 - tag is set, 1 - it is not).
 
-   Set the tag. The tag argument is mandatory. If tag is already set, do
-   nothing.
+aliases: ls, l
 
-.. option:: --delete, --unset, -D
+add
+^^^
 
-   Unset the tag. The tag argument is mandatory. If tag is not set, do nothing.
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* add *TAG* [*TAG* ...]
+
+Add tag(s) to a VM. If tag is already set for given VM, do nothing.
+
+aliases: a, set
+
+del
+^^^
+
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* del *TAG* [*TAG* ...]
+
+Delete tag(s) from a VM. If tag is not set for given VM, do nothing.
+
+aliases: d, unset, u
+
 
 Authors
 -------

@@ -49,7 +49,7 @@ aliases: ls, l
 attach
 ^^^^^^
 
-| :command:`qvm-volume attach` [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+| :command:`qvm-device` *DEVICE_CLASS* attach [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
 
 Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
@@ -67,7 +67,7 @@ aliases: a, at
 detach
 ^^^^^^
 
-| :command:`qvm-volume detach` [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+| :command:`qvm-device` *DEVICE_CLASS* detach [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
 
 Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*
 
