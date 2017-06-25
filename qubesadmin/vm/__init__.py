@@ -21,6 +21,9 @@
 '''Qubes VM objects.'''
 
 import logging
+
+import subprocess
+
 import qubesadmin.base
 import qubesadmin.exc
 import qubesadmin.storage
@@ -277,10 +280,10 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         stdouterr = p.communicate(input=input)
 
         if p.returncode:
-            raise qubesadmin.exc.QubesVMError(
-                'VM {}: service {!r} failed with retcode {!r}; '
-                'stdout={!r} stderr={!r}'.format(self,
-                    service, p.returncode, *stdouterr))
+            exc = subprocess.CalledProcessError(p.returncode, service)
+            # Python < 3.5 didn't have those
+            exc.output, exc.stderr = stdouterr
+            raise exc
 
         return stdouterr
 
@@ -297,8 +300,13 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''Run a shell command inside the domain using qubes.VMShell qrexec.
 
         '''  # pylint: disable=redefined-builtin
-        return self.run_service_for_stdio('qubes.VMShell',
-            input=self.prepare_input_for_vmshell(command, input), **kwargs)
+        try:
+            return self.run_service_for_stdio('qubes.VMShell',
+                input=self.prepare_input_for_vmshell(command, input), **kwargs)
+        except subprocess.CalledProcessError as e:
+            e.cmd = command
+            raise e
+
 
 # pylint: disable=abstract-method
 class AdminVM(QubesVM):

@@ -142,8 +142,15 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
     @unittest.mock.patch('asyncio.create_subprocess_exec')
     def test_020_start_gui_for_vm(self, proc_mock):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
@@ -151,9 +158,14 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
                 b'0\x00default=False type=bool False'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         with unittest.mock.patch.object(self.launcher,
                 'common_guid_args', lambda vm: []):
-            self.launcher.start_gui_for_vm(self.app.domains['test-vm'])
+            loop.run_until_complete(self.launcher.start_gui_for_vm(
+                self.app.domains['test-vm']))
             # common arguments dropped for simplicity
             proc_mock.assert_called_once_with('-d', '3000')
 
@@ -161,8 +173,15 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
     @unittest.mock.patch('asyncio.create_subprocess_exec')
     def test_021_start_gui_for_vm_hvm(self, proc_mock):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
@@ -180,17 +199,29 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'rpc-clipboard',
             None)] = \
                 b'0\x00True'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         with unittest.mock.patch.object(self.launcher,
                 'common_guid_args', lambda vm: []):
-            self.launcher.start_gui_for_vm(self.app.domains['test-vm'])
+            loop.run_until_complete(self.launcher.start_gui_for_vm(
+                self.app.domains['test-vm']))
             # common arguments dropped for simplicity
             proc_mock.assert_called_once_with('-d', '3000', '-n', '-Q')
 
         self.assertAllCalled()
 
     def test_022_start_gui_for_vm_hvm_stubdom(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
@@ -208,6 +239,10 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'rpc-clipboard',
             None)] = \
                 b'0\x00True'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         pidfile = tempfile.NamedTemporaryFile()
         pidfile.write(b'1234\n')
         pidfile.flush()
@@ -222,7 +257,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             mock_proc = patch_proc.start()
             patch_args.start()
             patch_pidfile.start()
-            self.launcher.start_gui_for_vm(self.app.domains['test-vm'])
+            loop.run_until_complete(self.launcher.start_gui_for_vm(
+                self.app.domains['test-vm']))
             # common arguments dropped for simplicity
             mock_proc.assert_called_once_with(
                 '-d', '3000', '-n', '-Q', '-K', '1234')
@@ -252,8 +288,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     @asyncio.coroutine
-    def mock_coroutine(self, mock, *args):
-        mock(*args)
+    def mock_coroutine(self, mock, *args, **kwargs):
+        mock(*args, **kwargs)
 
     def test_040_start_gui(self):
         loop = asyncio.new_event_loop()
@@ -287,8 +323,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         mock_start_vm = unittest.mock.Mock()
         mock_start_stubdomain = unittest.mock.Mock()
         patch_start_vm = unittest.mock.patch.object(
-            self.launcher, 'start_gui_for_vm', lambda vm_:
-            self.mock_coroutine(mock_start_vm, vm_))
+            self.launcher, 'start_gui_for_vm', functools.partial(
+                self.mock_coroutine, mock_start_vm))
         patch_start_stubdomain = unittest.mock.patch.object(
             self.launcher, 'start_gui_for_stubdomain', lambda vm_:
             self.mock_coroutine(mock_start_stubdomain, vm_))
@@ -296,7 +332,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             patch_start_vm.start()
             patch_start_stubdomain.start()
             loop.run_until_complete(self.launcher.start_gui(vm))
-            mock_start_vm.assert_called_once_with(vm)
+            mock_start_vm.assert_called_once_with(vm, monitor_layout=None)
             mock_start_stubdomain.assert_called_once_with(vm)
         finally:
             unittest.mock.patch.stopall()
