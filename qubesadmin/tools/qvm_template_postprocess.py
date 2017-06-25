@@ -132,12 +132,15 @@ def import_appmenus(vm, source_dir):
 
     # TODO: change this to qrexec calls to GUI VM, when GUI VM will be
     # implemented
-    subprocess.check_call(cmd_prefix + ['qvm-appmenus',
-        '--set-default-whitelist={}'.format(os.path.join(source_dir,
-            'vm-whitelisted-appmenus.list')), vm.name])
-    subprocess.check_call(cmd_prefix + ['qvm-appmenus',
-        '--set-whitelist={}'.format(os.path.join(source_dir,
-            'whitelisted-appmenus.list')), vm.name])
+    try:
+        subprocess.check_call(cmd_prefix + ['qvm-appmenus',
+            '--set-default-whitelist={}'.format(os.path.join(source_dir,
+                'vm-whitelisted-appmenus.list')), vm.name])
+        subprocess.check_call(cmd_prefix + ['qvm-appmenus',
+            '--set-whitelist={}'.format(os.path.join(source_dir,
+                'whitelisted-appmenus.list')), vm.name])
+    except subprocess.CalledProcessError as e:
+        vm.log.warning('Failed to set default application list: %s', e)
 
 
 def post_install(args):
@@ -162,7 +165,12 @@ def post_install(args):
             label=qubesadmin.config.defaults['template_label'])
 
     vm.log.info('Importing data')
-    import_root_img(vm, args.dir)
+    try:
+        import_root_img(vm, args.dir)
+    except:
+        # if data import fails, remove half-created VM
+        del app.domains[vm.name]
+        raise
     import_appmenus(vm, args.dir)
 
     if not args.skip_start:
@@ -178,7 +186,7 @@ def post_install(args):
         else:
             try:
                 vm.run_service_for_stdio('qubes.PostInstall')
-            except qubesadmin.exc.QubesVMError:
+            except subprocess.CalledProcessError:
                 vm.log.error('qubes.PostInstall service failed')
             vm.shutdown()
             if have_events:
@@ -198,8 +206,8 @@ def post_install(args):
                     timeout -= 1
                 if not vm.is_halted():
                     vm.kill()
-
-        vm.netvm = qubesadmin.DEFAULT
+        finally:
+            vm.netvm = qubesadmin.DEFAULT
 
     return 0
 
