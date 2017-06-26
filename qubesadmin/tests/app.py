@@ -221,14 +221,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'action=accept\n'
         )
         self.app.expected_calls[
-            (src, 'admin.vm.firewall.GetPolicy', None, None)] = \
-            b'0\x00accept'
-        self.app.expected_calls[
             (src, 'admin.vm.firewall.Get', None, None)] = \
             b'0\x00' + rules
-        self.app.expected_calls[
-            (dst, 'admin.vm.firewall.SetPolicy', None, b'accept')] = \
-            b'0\x00'
         self.app.expected_calls[
             (dst, 'admin.vm.firewall.Set', None, rules)] = \
             b'0\x00'
@@ -467,13 +461,9 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             'test-template', b'name=new-name label=red')] = b'0\x00'
         self.app.expected_calls[
-            ('new-name', 'admin.vm.firewall.SetPolicy', None, b'accept')] = \
-            b'2\0QubesException\0\0something happened\0'
-        del self.app.expected_calls[
-            ('test-vm', 'admin.vm.firewall.Get', None, None)]
-        del self.app.expected_calls[
             ('new-name', 'admin.vm.firewall.Set', None,
-            b'action=drop dst4=192.168.0.0/24\naction=accept\n')]
+            b'action=drop dst4=192.168.0.0/24\naction=accept\n')] = \
+            b'2\0QubesException\0\0something happened\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()

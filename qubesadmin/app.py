@@ -360,7 +360,6 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                         raise
 
             try:
-                dst_vm.firewall.policy = src_vm.firewall.policy
                 dst_vm.firewall.save_rules(src_vm.firewall.rules)
             except qubesadmin.exc.QubesException as e:
                 self.log.error('Failed to set firewall: %s', e)

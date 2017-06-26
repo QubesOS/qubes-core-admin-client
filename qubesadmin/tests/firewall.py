@@ -409,26 +409,6 @@ class TC_11_Firewall(qubesadmin.tests.QubesTestCase):
             b'0\0test-vm class=AppVM state=Halted\n'
         self.vm = self.app.domains['test-vm']
 
-    def test_000_policy_get(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.firewall.GetPolicy',
-            None, None)] = b'0\0accept'
-        policy = self.vm.firewall.policy
-        self.assertEqual(policy, 'accept')
-        self.assertEqual(policy, qubesadmin.firewall.Action('accept'))
-        self.assertAllCalled()
-
-    def test_001_policy_set(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.firewall.SetPolicy',
-            None, b'drop')] = b'0\0'
-        self.vm.firewall.policy = 'drop'
-        self.assertAllCalled()
-
-    def test_002_policy_set2(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.firewall.SetPolicy',
-            None, b'drop')] = b'0\0'
-        self.vm.firewall.policy = qubesadmin.firewall.Action('drop')
-        self.assertAllCalled()
-
     def test_010_load_rules(self):
         self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \

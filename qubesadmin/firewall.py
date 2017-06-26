@@ -432,13 +432,7 @@ class Firewall(object):
     @property
     def policy(self):
         '''Default action to take if no rule matches'''
-        policy_str = self.vm.qubesd_call(None, 'admin.vm.firewall.GetPolicy')
-        return Action(policy_str.decode())
-
-    @policy.setter
-    def policy(self, value):
-        self.vm.qubesd_call(None, 'admin.vm.firewall.SetPolicy', payload=str(
-            value).encode('ascii'))
+        return Action('drop')
 
     def reload(self):
         '''Force reload the same firewall rules.
