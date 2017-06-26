@@ -31,8 +31,6 @@ import sys
 
 import grp
 
-import time
-
 import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
@@ -142,6 +140,46 @@ def import_appmenus(vm, source_dir):
     except subprocess.CalledProcessError as e:
         vm.log.warning('Failed to set default application list: %s', e)
 
+@asyncio.coroutine
+def call_postinstall_service(vm):
+    '''Call qubes.PostInstall service
+
+    And adjust related settings (netvm, features).
+    '''
+    # just created, so no need to save previous value - we know what it was
+    vm.netvm = None
+    # temporarily enable qrexec feature - so vm.start() will wait for it;
+    # if start fails, rollback it
+    vm.features['qrexec'] = True
+    try:
+        vm.start()
+    except qubesadmin.exc.QubesException:
+        del vm.features['qrexec']
+    else:
+        try:
+            vm.run_service_for_stdio('qubes.PostInstall')
+        except subprocess.CalledProcessError:
+            vm.log.error('qubes.PostInstall service failed')
+        vm.shutdown()
+        if have_events:
+            try:
+                # pylint: disable=no-member
+                yield from qubesadmin.events.utils.wait_for_domain_shutdown(
+                    vm, qubesadmin.config.defaults['shutdown_timeout'])
+            except qubesadmin.exc.QubesVMShutdownTimeout:
+                vm.kill()
+        else:
+            timeout = qubesadmin.config.defaults['shutdown_timeout']
+            while timeout >= 0:
+                if vm.is_halted():
+                    break
+                yield from asyncio.sleep(1)
+                timeout -= 1
+            if not vm.is_halted():
+                vm.kill()
+    finally:
+        vm.netvm = qubesadmin.DEFAULT
+
 
 @asyncio.coroutine
 def post_install(args):
@@ -175,39 +213,7 @@ def post_install(args):
     import_appmenus(vm, args.dir)
 
     if not args.skip_start:
-        # just created, so no need to save previous value - we know what it was
-        vm.netvm = None
-        # temporarily enable qrexec feature - so vm.start() will wait for it;
-        # if start fails, rollback it
-        vm.features['qrexec'] = True
-        try:
-            vm.start()
-        except qubesadmin.exc.QubesException:
-            del vm.features['qrexec']
-        else:
-            try:
-                vm.run_service_for_stdio('qubes.PostInstall')
-            except subprocess.CalledProcessError:
-                vm.log.error('qubes.PostInstall service failed')
-            vm.shutdown()
-            if have_events:
-                try:
-                    # pylint: disable=no-member
-                    yield from qubesadmin.events.utils.wait_for_domain_shutdown(
-                        vm, qubesadmin.config.defaults['shutdown_timeout'])
-                except qubesadmin.exc.QubesVMShutdownTimeout:
-                    vm.kill()
-            else:
-                timeout = qubesadmin.config.defaults['shutdown_timeout']
-                while timeout >= 0:
-                    if vm.is_halted():
-                        break
-                    yield from asyncio.sleep(1)
-                    timeout -= 1
-                if not vm.is_halted():
-                    vm.kill()
-        finally:
-            vm.netvm = qubesadmin.DEFAULT
+        yield from call_postinstall_service(vm)
 
     return 0
 
