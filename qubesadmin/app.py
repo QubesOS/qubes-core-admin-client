@@ -327,7 +327,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             assert isinstance(dst_vm, qubesadmin.vm.QubesVM)
             for prop in src_vm.property_list():
                 # handled by admin.vm.Create call
-                if prop in ('name', 'qid', 'template', 'label'):
+                if prop in ('name', 'qid', 'template', 'label', 'uuid'):
                     continue
                 if src_vm.property_is_default(prop):
                     continue
