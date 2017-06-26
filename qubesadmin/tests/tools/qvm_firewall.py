@@ -2,7 +2,7 @@
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
-# Copyright (C) 2016 Marek Marczykowski-Górecki 
+# Copyright (C) 2016 Marek Marczykowski-Górecki
 #                               <marmarek@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -195,24 +195,3 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             ['test-vm', 'del', 'drop', 'proto=icmp'],
             app=self.app
         )
-
-    def test_030_policy_get(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.firewall.GetPolicy',
-            None, None)] = b'0\0accept'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_firewall.main(
-                ['test-vm', 'policy'],
-                app=self.app
-            )
-            self.assertEqual(stdout.getvalue(), 'accept\n')
-
-    def test_031_policy_set(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.firewall.SetPolicy',
-            None, b'accept')] = b'0\0'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_firewall.main(
-                ['test-vm', 'policy', 'accept'],
-                app=self.app
-            )
-            self.assertEqual(stdout.getvalue(), '')
-

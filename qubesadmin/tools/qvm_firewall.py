@@ -86,11 +86,6 @@ action_del.add_argument('rule', nargs='*', action=RuleAction,
 
 action_list = action.add_parser('list', help='list rules')
 
-action_policy = action.add_parser('policy',
-    help='get/set policy - default action')
-action_policy.add_argument('policy', choices=['accept', 'drop'],
-    help='policy value', default=None, nargs='?')
-
 parser.add_argument('--reload', '-r', action='store_true',
     help='force reloading rules even when unchanged')
 
@@ -150,14 +145,6 @@ def rules_del(vm, args):
     vm.firewall.save_rules()
 
 
-def policy(vm, args):
-    '''Get/Set default action (policy)'''
-    if args.policy is not None:
-        vm.firewall.policy = args.policy
-    else:
-        print(vm.firewall.policy)
-
-
 def main(args=None, app=None):
     '''Main routine of :program:`qvm-firewall`.'''
     try:
@@ -167,8 +154,6 @@ def main(args=None, app=None):
             rules_add(vm, args)
         elif args.command == 'del':
             rules_del(vm, args)
-        elif args.command == 'policy':
-            policy(vm, args)
         elif args.command == 'list':
             if args.raw:
                 rules_list_raw(vm)
