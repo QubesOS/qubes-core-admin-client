@@ -32,43 +32,37 @@ class Interrupt(Exception):
     '''Interrupt events processing'''
 
 
-def interrupt_on_vm_shutdown(vm, subject, event):
+def interrupt_on_vm_shutdown(vms, subject, event):
     '''Interrupt events processing when given VM was shutdown'''
     # pylint: disable=unused-argument
     if event == 'connection-established':
-        if vm.is_halted():
+        if all(vm.is_halted() for vm in vms):
             raise Interrupt
-    elif event == 'domain-shutdown' and vm == subject:
-        raise Interrupt
+    elif event == 'domain-shutdown' and subject in vms:
+        vms.remove(subject)
+        if not vms:
+            raise Interrupt
 
 
 @asyncio.coroutine
-def wait_for_domain_shutdown(vm, timeout, loop=None):
+def wait_for_domain_shutdown(vms):
     ''' Helper function to wait for domain shutdown.
 
     This function wait for domain shutdown, but do not initiate the shutdown
     itself.
 
-    :param vm: QubesVM object to wait for shutdown on
-    :param timeout: Timeout in seconds, use 0 for no timeout
-    :param loop: asyncio event loop
+    :param vms: QubesVM object collection to wait for shutdown on
     '''
-    if loop is None:
-        loop = asyncio.get_event_loop()
-    events = qubesadmin.events.EventsDispatcher(vm.app)
+    if not vms:
+        return
+    app = list(vms)[0].app
+    vms = set(vms)
+    events = qubesadmin.events.EventsDispatcher(app)
     events.add_handler('domain-shutdown',
-        functools.partial(interrupt_on_vm_shutdown, vm))
+        functools.partial(interrupt_on_vm_shutdown, vms))
     events.add_handler('connection-established',
-        functools.partial(interrupt_on_vm_shutdown, vm))
-    events_task = asyncio.ensure_future(events.listen_for_events(),
-        loop=loop)
-    if timeout:
-        # pylint: disable=no-member
-        loop.call_later(timeout, events_task.cancel)
+        functools.partial(interrupt_on_vm_shutdown, vms))
     try:
-        yield from events_task
-    except asyncio.CancelledError:
-        raise qubesadmin.exc.QubesVMShutdownTimeout(
-            'VM %s shutdown timeout expired', vm.name)
+        yield from events.listen_for_events()
     except Interrupt:
         pass

@@ -164,9 +164,10 @@ def call_postinstall_service(vm):
         if have_events:
             try:
                 # pylint: disable=no-member
-                yield from qubesadmin.events.utils.wait_for_domain_shutdown(
-                    vm, qubesadmin.config.defaults['shutdown_timeout'])
-            except qubesadmin.exc.QubesVMShutdownTimeout:
+                yield from asyncio.wait_for(
+                    qubesadmin.events.utils.wait_for_domain_shutdown([vm]),
+                    qubesadmin.config.defaults['shutdown_timeout'])
+            except asyncio.TimeoutError:
                 vm.kill()
         else:
             timeout = qubesadmin.config.defaults['shutdown_timeout']

@@ -226,6 +226,10 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.domains.clear_cache()
         return self.app.domains['test-vm']
 
+    @asyncio.coroutine
+    def wait_for_shutdown(self, vm):
+        pass
+
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_root_img')
     def test_020_post_install(self, mock_import_root_img,
@@ -250,6 +254,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
                 'qubesadmin.events.utils.wait_for_domain_shutdown')
             self.addCleanup(patch_domain_shutdown.stop)
             mock_domain_shutdown = patch_domain_shutdown.start()
+            mock_domain_shutdown.side_effect = self.wait_for_shutdown
         else:
             self.app.expected_calls[
                 ('test-vm', 'admin.vm.List', None, None)] = \
@@ -267,17 +272,13 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
         if qubesadmin.tools.qvm_template_postprocess.have_events:
-            mock_domain_shutdown.assert_called_once_with(self.app.domains[
-                'test-vm'], 60)
+            mock_domain_shutdown.assert_called_once_with([self.app.domains[
+                'test-vm']])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.PostInstall', {}),
             ('test-vm', 'qubes.PostInstall', b''),
         ])
         self.assertAllCalled()
-
-    @asyncio.coroutine
-    def wait_for_shutdown(self, vm, timeout):
-        pass
 
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_root_img')
@@ -320,8 +321,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
         if qubesadmin.tools.qvm_template_postprocess.have_events:
-            mock_domain_shutdown.assert_called_once_with(self.app.domains[
-                'test-vm'], 60)
+            mock_domain_shutdown.assert_called_once_with([self.app.domains[
+                'test-vm']])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.PostInstall', {}),
             ('test-vm', 'qubes.PostInstall', b''),
