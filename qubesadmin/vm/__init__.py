@@ -86,6 +86,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             return self.name == other
         return NotImplemented
 
+    def __hash__(self):
+        return hash(self.name)
+
     def start(self):
         '''
         Start domain.
