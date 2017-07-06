@@ -148,6 +148,17 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertEqual(vm.__class__.__name__, 'AppVM')
         self.assertAllCalled()
 
+    def test_016_new_template_based_default(self):
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            None, b'name=new-vm label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Running\n'
+        vm = self.app.add_new_vm('AppVM', 'new-vm', 'red',
+            template=qubesadmin.DEFAULT)
+        self.assertEqual(vm.name, 'new-vm')
+        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertAllCalled()
+
     def test_020_get_label(self):
         self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'

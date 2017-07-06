@@ -248,7 +248,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         if not isinstance(cls, str):
             cls = cls.__name__
 
-        if template is not None:
+        if template is qubesadmin.DEFAULT:
+            template = None
+        elif template is not None:
             template = str(template)
 
         if pool and pools:
