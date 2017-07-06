@@ -158,8 +158,10 @@ class QubesTestCase(unittest.TestCase):
             set(self.app.expected_calls.keys()),
             set(self.app.actual_calls))
         # and also check if calls expected multiple times were called
-        self.assertFalse(any(x for x in self.app.expected_calls.values() if
-            isinstance(x, list)))
+        self.assertFalse([(call, ret)
+            for call, ret in self.app.expected_calls.items() if
+            isinstance(ret, list) and ret],
+            'Some calls not called expected number of times')
 
     def assertNotRaises(self, excClass, callableObj=None, *args, **kwargs):
         """Fail if an exception of class excClass is raised
