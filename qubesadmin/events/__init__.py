@@ -95,7 +95,10 @@ class EventsDispatcher(object):
 
             def cleanup_func():
                 '''Close connection to qubesd'''
-                proc.kill()
+                try:
+                    proc.kill()
+                except ProcessLookupError:
+                    pass
         else:
             raise NotImplementedError('Unsupported qubesd connection type: '
                                       + self.app.qubesd_connection_type)
