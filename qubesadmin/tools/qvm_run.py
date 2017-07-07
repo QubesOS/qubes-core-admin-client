@@ -21,12 +21,8 @@
 ''' qvm-run tool'''
 
 import os
-import signal
 import sys
 
-import asyncio
-
-import functools
 import subprocess
 
 import qubesadmin.tools
@@ -93,31 +89,6 @@ parser.add_argument('--service',
 parser.add_argument('cmd', metavar='COMMAND',
     help='command to run')
 
-
-class DataCopyProtocol(asyncio.Protocol):
-    '''Simple protocol to copy received data into another stream'''
-
-    def __init__(self, target_stream, eof_callback=None):
-        self.target_stream = target_stream
-        self.eof_callback = eof_callback
-
-    def data_received(self, data):
-        '''Handle received data'''
-        self.target_stream.write(data)
-        self.target_stream.flush()
-
-    def eof_received(self):
-        '''Handle received EOF'''
-        if self.eof_callback:
-            self.eof_callback()
-
-
-def stop_loop_if_terminated(proc, loop):
-    '''Stop event loop if given process is terminated'''
-    if proc.poll():
-        loop.stop()
-
-
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
     args = parser.parse_args(args, app=app)
@@ -161,6 +132,7 @@ def main(args=None, app=None):
     if args.color_stderr:
         sys.stderr.write('\033[0;{}m'.format(args.color_stderr))
         sys.stderr.flush()
+    copy_proc = None
     try:
         procs = []
         for vm in args.domains:
@@ -194,16 +166,9 @@ def main(args=None, app=None):
                     proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
                     proc.stdin.flush()
                 if args.passio and not args.localcmd:
-                    loop = asyncio.new_event_loop()
-                    loop.add_signal_handler(signal.SIGCHLD,
-                        functools.partial(stop_loop_if_terminated, proc, loop))
-                    asyncio.ensure_future(loop.connect_read_pipe(
-                        functools.partial(DataCopyProtocol, proc.stdin,
-                            loop.stop),
-                        sys.stdin), loop=loop)
-                    stop_loop_if_terminated(proc, loop)
-                    loop.run_forever()
-                    loop.close()
+                    copy_proc = subprocess.Popen(['cat'], stdin=sys.stdin,
+                        stdout=proc.stdin)
+                    # keep the copying process running
                 proc.stdin.close()
                 procs.append(proc)
             except qubesadmin.exc.QubesException as e:
@@ -221,6 +186,8 @@ def main(args=None, app=None):
         if args.color_stderr:
             sys.stderr.write('\033[0m')
             sys.stderr.flush()
+        if copy_proc is not None:
+            copy_proc.terminate()
 
     return retcode
 
