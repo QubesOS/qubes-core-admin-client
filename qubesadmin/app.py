@@ -344,6 +344,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                         raise
 
             for tag in src_vm.tags:
+                if tag.startswith('created-by-'):
+                    continue
                 try:
                     dst_vm.tags.add(tag)
                 except qubesadmin.exc.QubesException as e:
