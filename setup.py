@@ -7,6 +7,7 @@ import sys
 exclude=[]
 if sys.version_info[0:2] < (3, 4):
     exclude += ['qubesadmin.tools', 'qubesadmin.tests.tools']
+    exclude += ['qubesadmin.backup', 'qubesadmin.tests.backup']
 if sys.version_info[0:2] < (3, 5):
     exclude += ['qubesadmin.events']
 
