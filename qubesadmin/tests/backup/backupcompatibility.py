@@ -315,7 +315,7 @@ parsed_qubes_xml_r2 = {
             'template': None,
             'backup_path': 'appvms/test-testhvm',
             'included_in_backup': True,
-            'root_size': 209715712,
+            'root_size': 2097664,
         },
         'test-work': {
             'klass': 'AppVM',
@@ -360,7 +360,7 @@ parsed_qubes_xml_r2 = {
             'template': None,
             'backup_path': 'appvms/test-standalonevm',
             'included_in_backup': True,
-            'root_size': 209715712,
+            'root_size': 2097664,
         },
         'test-net': {
             'klass': 'AppVM',
@@ -512,11 +512,11 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
     def create_private_img(self, filename):
         signature = '/'.join(os.path.splitext(filename)[0].split('/')[-2:])
-        self.create_sparse(filename, 2*2**30, signature=signature.encode())
+        self.create_sparse(filename, 2*2**20, signature=signature.encode())
         #subprocess.check_call(["/usr/sbin/mkfs.ext4", "-q", "-F", filename])
 
     def create_volatile_img(self, filename):
-        self.create_sparse(filename, 11.5*2**30)
+        self.create_sparse(filename, 11.5*2**20)
         # here used to be sfdisk call with "0,1024,S\n,10240,L\n" input,
         # but since sfdisk folks like to change command arguments in
         # incompatible way, have an partition table verbatim here
@@ -566,7 +566,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.create_sparse(
             self.fullpath("appvms/test-standalonevm/root.img"), 10*2**30)
         self.fill_image(self.fullpath("appvms/test-standalonevm/root.img"),
-            100*1024*1024, True,
+            1024*1024, True,
             signature=b'test-standalonevm/root')
         os.mkdir(self.fullpath("appvms/test-standalonevm/apps.templates"))
         self.create_appmenus(self.fullpath("appvms/test-standalonevm/apps"
@@ -576,7 +576,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         os.mkdir(self.fullpath("appvms/test-standalonevm/kernels"))
         for k_file in ["initramfs", "vmlinuz", "modules.img"]:
             self.fill_image(self.fullpath("appvms/test-standalonevm/kernels/"
-            + k_file), 10*1024*1024)
+            + k_file), 1024*1024)
 
         # VM based on custom template
         subprocess.check_call(
@@ -595,7 +595,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             self.create_private_img(
                 self.fullpath("appvms/test-testhvm/private.img"))
             self.fill_image(self.fullpath("appvms/test-testhvm/root.img"),
-                100*1024*1024, True,
+                1024*1024, True,
                 signature=b'test-testhvm/root')
 
         # ProxyVM
@@ -617,11 +617,11 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.create_private_img(
             self.fullpath("vm-templates/test-template-clone/private.img"))
         self.create_sparse(self.fullpath(
-            "vm-templates/test-template-clone/root-cow.img"), 10*2**30)
+            "vm-templates/test-template-clone/root-cow.img"), 10*2**20)
         self.create_sparse(self.fullpath(
-            "vm-templates/test-template-clone/root.img"), 10*2**30)
+            "vm-templates/test-template-clone/root.img"), 10*2**20)
         self.fill_image(self.fullpath(
-            "vm-templates/test-template-clone/root.img"), 1*2**30, True,
+            "vm-templates/test-template-clone/root.img"), 1*2**20, True,
             signature=b'test-template-clone/root')
         self.create_volatile_img(self.fullpath(
             "vm-templates/test-template-clone/volatile.img"))
@@ -827,7 +827,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                         b'revisions_to_keep=3\n'
                     self.app.expected_calls[
                         (name, 'admin.vm.volume.Resize', 'root',
-                        str(vm.get('root_size', 2147484160)).encode())] = \
+                        str(vm.get('root_size', 2097664)).encode())] = \
                         b'0\0'
                     self.app.expected_calls[
                         (name, 'admin.vm.volume.Import', 'root',
@@ -846,7 +846,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     b'save_on_stop=True\n' \
                     b'revisions_to_keep=3\n'
                 self.app.expected_calls[
-                    (name, 'admin.vm.volume.Resize', 'private', b'2147483648')] = \
+                    (name, 'admin.vm.volume.Resize', 'private', b'2097152')] = \
                     b'0\0'
                 self.app.expected_calls[
                     (name, 'admin.vm.volume.Import', 'private',
