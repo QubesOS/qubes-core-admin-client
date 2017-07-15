@@ -144,7 +144,7 @@ class DeviceCollection(object):
 
         options = device_assignment.options.copy()
         if device_assignment.persistent:
-            options['persistent'] = 'yes'
+            options['persistent'] = 'True'
         options_str = ' '.join('{}={}'.format(opt,
             val) for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,

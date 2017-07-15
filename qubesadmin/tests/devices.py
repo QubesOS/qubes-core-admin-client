@@ -129,7 +129,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
     def test_022_attach_persistent(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1',
-            b'persistent=yes')] = b'0\0'
+            b'persistent=True')] = b'0\0'
         assign = qubesadmin.devices.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1')
         assign.persistent = True
@@ -139,7 +139,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
     def test_023_attach_persistent_options(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1',
-            b'persistent=yes ro=True')] = b'0\0'
+            b'persistent=True ro=True')] = b'0\0'
         assign = qubesadmin.devices.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1')
         assign.persistent = True
