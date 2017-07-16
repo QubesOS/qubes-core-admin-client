@@ -33,6 +33,9 @@ if __name__ == '__main__':
         license='LGPL2.1+',
         url='https://www.qubes-os.org/',
         packages=setuptools.find_packages(exclude=exclude),
+        package_data={
+            'qubesadmin.tests.backup': ['*.xml'],
+        },
         entry_points={
             'console_scripts': list(get_console_scripts()),
             'qubesadmin.vm': [

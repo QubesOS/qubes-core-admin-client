@@ -20,10 +20,14 @@
 #
 import functools
 import tempfile
+import unittest
+from distutils import spawn
 from multiprocessing import Queue
 
 import os
 import subprocess
+
+import logging
 
 try:
     import unittest.mock as mock
@@ -32,54 +36,15 @@ except ImportError:
 import re
 
 import multiprocessing
-
+import pkg_resources
 import sys
 
 import qubesadmin.backup.core2
+import qubesadmin.backup.core3
 import qubesadmin.storage
 import qubesadmin.tests
 import qubesadmin.tests.backup
 
-QUBESXML_R2B2 = '''
-<QubesVmCollection updatevm="3" default_kernel="3.7.6-2" default_netvm="3" default_fw_netvm="2" default_template="1" clockvm="2">
-  <QubesTemplateVm installed_by_rpm="True" kernel="3.7.6-2" uses_default_kernelopts="True" qid="1" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="fedora-18-x64.conf" label="black" template_qid="none" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="fedora-18-x64" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/vm-templates/fedora-18-x64"/>
-  <QubesNetVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="2" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="netvm.conf" label="red" template_qid="1" kernelopts="iommu=soft swiotlb=4096" memory="200" default_user="user" volatile_img="volatile.img" services="{'ntpd': False, 'meminfo-writer': False}" maxmem="1535" pcidevs="['02:00.0', '03:00.0']" name="netvm" netid="1" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/netvm"/>
-  <QubesProxyVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="3" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="firewallvm.conf" label="green" template_qid="1" kernelopts="" memory="200" default_user="user" netvm_qid="2" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="firewallvm" netid="2" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/firewallvm"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="4" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="True" conf_file="fedora-18-x64-dvm.conf" label="gray" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="fedora-18-x64-dvm" private_img="private.img" vcpus="1" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/fedora-18-x64-dvm"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="5" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-work.conf" label="green" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-work" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/test-work"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="6" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="banking.conf" label="green" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="banking" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/banking"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="7" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="personal.conf" label="yellow" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="personal" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/personal"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="8" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="untrusted.conf" label="red" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="12" uses_default_netvm="False" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="untrusted" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/untrusted"/>
-  <QubesTemplateVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="9" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-template-clone.conf" label="green" template_qid="none" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-template-clone" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/vm-templates/test-template-clone"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="10" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-custom-template-appvm.conf" label="yellow" template_qid="9" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-custom-template-appvm" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/test-custom-template-appvm"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="11" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-standalonevm.conf" label="blue" template_qid="none" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-standalonevm" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/test-standalonevm"/>
-  <QubesProxyVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="12" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-testproxy.conf" label="red" template_qid="1" kernelopts="" memory="200" default_user="user" netvm_qid="3" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-testproxy" netid="3" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/test-testproxy"/>
-  <QubesProxyVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="13" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="testproxy2.conf" label="red" template_qid="9" kernelopts="" memory="200" default_user="user" netvm_qid="2" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="testproxy2" netid="4" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/testproxy2"/>
-  <QubesHVm installed_by_rpm="False" netvm_qid="none" qid="14" include_in_backups="True" timezone="localtime" qrexec_timeout="60" conf_file="test-testhvm.conf" label="purple" template_qid="none" internal="False" memory="512" uses_default_netvm="True" services="{'meminfo-writer': False}" default_user="user" pcidevs="[]" name="test-testhvm" qrexec_installed="False" private_img="private.img" drive="None" vcpus="2" root_img="root.img" guiagent_installed="False" debug="False" dir_path="/var/lib/qubes/appvms/test-testhvm"/>
-  <QubesDisposableVm dispid="50" firewall_conf="firewall.xml" label="red" name="disp50" netvm_qid="2" qid="15" template_qid="1"/>
-</QubesVmCollection>
-'''
-
-QUBESXML_R2 = '''
-<QubesVmCollection updatevm="3" default_kernel="3.7.6-2" default_netvm="3" default_fw_netvm="2" default_template="1" clockvm="2">
-  <QubesTemplateVm installed_by_rpm="True" kernel="3.7.6-2" uses_default_kernelopts="True" qid="1" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="fedora-20-x64.conf" label="black" template_qid="none" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{ 'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="fedora-20-x64" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/vm-templates/fedora-20-x64"/>
-  <QubesNetVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="2" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="netvm.conf" label="red" template_qid="1" kernelopts="iommu=soft swiotlb=4096" memory="200" default_user="user" volatile_img="volatile.img" services="{'ntpd': False, 'meminfo-writer': False}" maxmem="1535" pcidevs="['02:00.0', '03:00.0']" name="netvm" netid="1" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/netvm"/>
-  <QubesProxyVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="3" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="firewallvm.conf" label="green" template_qid="1" kernelopts="" memory="200" default_user="user" netvm_qid="2" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="firewallvm" netid="2" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/firewallvm"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="4" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="True" conf_file="fedora-20-x64-dvm.conf" label="gray" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{ 'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="fedora-20-x64-dvm" private_img="private.img" vcpus="1" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/fedora-20-x64-dvm"/>
-  <QubesAppVm backup_content="True" backup_path="appvms/test-work" installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="5" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-work.conf" label="green" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-work" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/test-work"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="6" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="banking.conf" label="green" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="banking" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/banking"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="7" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="personal.conf" label="yellow" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="personal" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/personal"/>
-  <QubesAppVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="8" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="untrusted.conf" label="red" template_qid="1" kernelopts="" memory="400" default_user="user" netvm_qid="12" uses_default_netvm="False" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="untrusted" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/untrusted"/>
-  <QubesTemplateVm backup_size="104857600" backup_content="True" backup_path="vm-templates/test-template-clone" installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="9" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-template-clone.conf" label="green" template_qid="none" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-template-clone" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/vm-templates/test-template-clone"/>
-  <QubesAppVm backup_size="104857600" backup_content="True" backup_path="appvms/test-custom-template-appvm" installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="10" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-custom-template-appvm.conf" label="yellow" template_qid="9" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-custom-template-appvm" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/test-custom-template-appvm"/>
-  <QubesAppVm backup_size="104857600" backup_content="True" backup_path="appvms/test-standalonevm" installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="11" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-standalonevm.conf" label="blue" template_qid="none" kernelopts="" memory="400" default_user="user" netvm_qid="3" uses_default_netvm="True" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-standalonevm" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/appvms/test-standalonevm"/>
-  <QubesProxyVm backup_size="104857600" backup_content="True" backup_path="servicevms/test-testproxy" installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="12" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-testproxy.conf" label="red" template_qid="1" kernelopts="" memory="200" default_user="user" netvm_qid="3" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="test-testproxy" netid="3" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/test-testproxy"/>
-  <QubesProxyVm installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="13" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="testproxy2.conf" label="red" template_qid="9" kernelopts="" memory="200" default_user="user" netvm_qid="2" volatile_img="volatile.img" services="{'meminfo-writer': True}" maxmem="1535" pcidevs="[]" name="testproxy2" netid="4" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/testproxy2"/>
-  <QubesHVm backup_size="104857600" backup_content="True" backup_path="appvms/test-testhvm" installed_by_rpm="False" netvm_qid="none" qid="14" include_in_backups="True" timezone="localtime" qrexec_timeout="60" conf_file="test-testhvm.conf" label="purple" template_qid="none" internal="False" memory="512" uses_default_netvm="True" services="{'meminfo-writer': False}" default_user="user" pcidevs="[]" name="test-testhvm" qrexec_installed="False" private_img="private.img" drive="None" vcpus="2" root_img="root.img" guiagent_installed="False" debug="False" dir_path="/var/lib/qubes/appvms/test-testhvm"/>
-  <QubesDisposableVm dispid="50" firewall_conf="firewall.xml" label="red" name="disp50" netvm_qid="2" qid="15" template_qid="1"/>
-  <QubesNetVm backup_size="104857600" backup_content="True" backup_path="servicevms/test-net" installed_by_rpm="False" kernel="3.7.6-2" uses_default_kernelopts="True" qid="16" include_in_backups="True" uses_default_kernel="True" qrexec_timeout="60" internal="False" conf_file="test-net.conf" label="red" template_qid="1" kernelopts="iommu=soft swiotlb=4096" memory="200" default_user="user" volatile_img="volatile.img" services="{'ntpd': False, 'meminfo-writer': False}" maxmem="1535" pcidevs="['02:00.0', '03:00.0']" name="test-net" netid="2" private_img="private.img" vcpus="2" root_img="root.img" debug="False" dir_path="/var/lib/qubes/servicevms/test-net"/>
-</QubesVmCollection>
-'''
 
 MANGLED_SUBDIRS_R2 = {
     "test-work": "vm5",
@@ -89,6 +54,16 @@ MANGLED_SUBDIRS_R2 = {
     "test-testproxy": "vm12",
     "test-testhvm": "vm14",
     "test-net": "vm16",
+}
+MANGLED_SUBDIRS_R4 = {
+    "test-work": "vm3",
+    "test-fedora-25-clone": "vm7",
+    "test-custom-template-appvm": "vm31",
+    "test-standalonevm": "vm4",
+    "test-proxy": "vm30",
+    "test-hvm": "vm9",
+    "test-net": "vm6",
+    "test-d8test": "vm20",
 }
 
 APPTEMPLATE_R2B2 = '''
@@ -151,6 +126,14 @@ crypto-algorithm=aes-256-cbc
 encrypted={encrypted}
 compressed={compressed}
 compression-filter=gzip
+'''
+
+BACKUP_HEADER_R4 = '''version=4
+hmac-algorithm=scrypt
+encrypted=True
+compressed={compressed}
+compression-filter=gzip
+backup-id=20161020T123455-1234
 '''
 
 parsed_qubes_xml_r2 = {
@@ -424,13 +407,314 @@ parsed_qubes_xml_r2 = {
     },
 }
 
+parsed_qubes_xml_v4 = {
+    'domains': {
+        'dom0': {
+            'klass': 'AdminVM',
+            'label': 'black',
+            'properties': {},
+            'devices': {},
+            'tags': set(),
+            'features': {},
+            'template': None,
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'fedora-25': {
+            'klass': 'TemplateVM',
+            'label': 'black',
+            'properties': {},
+            'devices': {},
+            'tags': {'created-by-test-work'},
+            'features': {
+                'gui': '1',
+                'qrexec': 'True',
+                'updates-available': False
+            },
+            'template': None,
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'fedora-25-lvm': {
+            'klass': 'TemplateVM',
+            'label': 'black',
+            'properties': {
+                'maxmem': '4000',
+            },
+            'devices': {},
+            'tags': set(),
+            'features': {},
+            'template': None,
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'debian-8': {
+            'klass': 'TemplateVM',
+            'label': 'black',
+            'properties': {},
+            'devices': {},
+            'tags': {'created-by-dom0'},
+            'features': {
+                'gui': '1',
+                'qrexec': 'True',
+                'updates-available': False},
+            'template': None,
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'sys-net': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {
+                'hvm': 'False',
+                'kernelopts': 'nopat i8042.nokbd i8042.noaux',
+                'maxmem': '300',
+                'memory': '300',
+                'netvm': None,
+                'default_user': 'user',
+                'provides_network': 'True'},
+            'devices': {
+                'pci': {
+                    ('dom0', '02_00.0'): {},
+                }
+            },
+            'tags': set(),
+            'features': {
+                'service.clocksync': '1',
+                'service.meminfo-writer': False
+            },
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'sys-firewall': {
+            'klass': 'AppVM',
+            'label': 'green',
+            'properties': {
+                'autostart': 'True',
+                'memory': '500',
+                'provides_network': 'True'
+            },
+            'devices': {},
+            'tags': set(),
+            'features': {},
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'test-d8test': {
+            'klass': 'AppVM',
+            'label': 'gray',
+            'properties': {'debug': 'True', 'kernel': None},
+            'devices': {},
+            'tags': {'created-by-dom0'},
+            'features': {},
+            'template': 'debian-8',
+            'backup_path': 'appvms/test-d8test',
+            'included_in_backup': True,
+        },
+        'fedora-25-dvm': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {
+                'dispvm_allowed': 'True',
+                'vcpus': '1',
+            },
+            'devices': {},
+            'tags': set(),
+            'features': {
+                'internal': '1', 'service.meminfo-writer': '1'},
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'fedora-25-clone-dvm': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {
+                'vcpus': '1',
+                'dispvm_allowed': 'True',
+            },
+            'devices': {},
+            'tags': set(),
+            'features': {
+                'internal': '1', 'service.meminfo-writer': '1'},
+            'template': 'test-fedora-25-clone',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'vault': {
+            'klass': 'AppVM',
+            'label': 'black',
+            'properties': {'hvm': 'False', 'maxmem': '1536', 'netvm': None},
+            'devices': {},
+            'tags': set(),
+            'features': {},
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'personal': {
+            'klass': 'AppVM',
+            'label': 'yellow',
+            'properties': {'netvm': 'sys-firewall'},
+            'devices': {},
+            'tags': set(),
+            'features': {
+                'feat1': '1',
+                'feat2': False,
+                'feat32': '1',
+                'featdis': False,
+                'xxx': '1'
+            },
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'untrusted': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {
+                'netvm': None,
+                'backup_timestamp': '1474318497',
+                'default_dispvm': 'fedora-25-clone-dvm',
+            },
+            'devices': {},
+            'tags': set(),
+            'features': {'service.meminfo-writer': '1'},
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'sys-usb': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {
+                'hvm': 'False',
+                'autostart': 'True',
+                'maxmem': '400',
+                'provides_network': 'True',
+            },
+            'devices': {},
+            'tags': set(),
+            'features': {
+                'service.meminfo-writer': False,
+                'service.network-manager': False,
+            },
+            'template': 'fedora-25',
+            'backup_path': None,
+            'included_in_backup': False,
+        },
+        'test-proxy': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {'netvm': 'sys-net', 'provides_network': 'True'},
+            'devices': {},
+            'tags': {'created-by-dom0'},
+            'features': {},
+            'template': 'debian-8',
+            'backup_path': 'appvms/test-proxy',
+            'included_in_backup': True,
+        },
+        'test-hvm': {
+            'klass': 'StandaloneVM',
+            'label': 'purple',
+            'properties': {'hvm': 'True', 'maxmem': '4000'},
+            'devices': {},
+            'tags': set(),
+            'features': {'service.meminfo-writer': False},
+            'template': None,
+            'backup_path': 'appvms/test-hvm',
+            'included_in_backup': True,
+            'root_size': 2097664,
+        },
+        'test-work': {
+            'klass': 'AppVM',
+            'label': 'green',
+            'properties': {
+                'ip': '192.168.0.1',
+                'maxmem': '4000',
+                'memory': '400'},
+            'devices': {},
+            'tags': {'tag1', 'tag2'},
+            'features': {'service.meminfo-writer': '1'},
+            'template': 'fedora-25',
+            'backup_path': 'appvms/test-work',
+            'included_in_backup': True,
+        },
+        'test-fedora-25-clone': {
+            'klass': 'TemplateVM',
+            'label': 'black',
+            'properties': {'maxmem': '4000'},
+            'devices': {},
+            'tags': set(),
+            'features': {'service.meminfo-writer': '1'},
+            'template': None,
+            'backup_path': 'vm-templates/test-fedora-25-clone',
+            'included_in_backup': True,
+        },
+        'test-custom-template-appvm': {
+            'klass': 'AppVM',
+            'label': 'yellow',
+            'properties': {'debug': 'True', 'kernel': None},
+            'devices': {},
+            'tags': {'created-by-dom0'},
+            'features': {},
+            'template': 'test-fedora-25-clone',
+            'backup_path': 'appvms/test-custom-template-appvm',
+            'included_in_backup': True,
+        },
+        'test-standalonevm': {
+            'klass': 'StandaloneVM',
+            'label': 'blue',
+            'properties': {'maxmem': '4000'},
+            'devices': {},
+            'tags': set(),
+            'features': {},
+            'template': None,
+            'backup_path': 'appvms/test-standalonevm',
+            'included_in_backup': True,
+            'root_size': 2097664,
+        },
+        'test-net': {
+            'klass': 'AppVM',
+            'label': 'red',
+            'properties': {
+                'maxmem': '300',
+                'memory': '300',
+                'netvm': None,
+                'provides_network': 'True'
+            },
+            'devices': {
+                'pci': {
+                    ('dom0', '03_00.0'): {},
+                }
+            },
+            'tags': set(),
+            'features': {
+                'service.ntpd': False,
+                'service.meminfo-writer': False
+            },
+            'template': 'fedora-25',
+            'backup_path': 'appvms/test-net',
+            'included_in_backup': True,
+        },
+    },
+    'globals': {
+        'default_template': 'fedora-25',
+        'default_kernel': '4.9.31-17',
+        'default_netvm': 'sys-firewall',
+        'default_dispvm': 'fedora-25-dvm',
+        #'default_fw_netvm': 'sys-net',
+        'clockvm': 'sys-net',
+        'updatevm': 'sys-firewall'
+    },
+}
+
 
 class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
 
-    def assertCorrectlyConverted(self, xml_data, expected_data):
-        with tempfile.NamedTemporaryFile() as qubes_xml:
-            qubes_xml.file.write(xml_data.encode())
-            backup_app = qubesadmin.backup.core2.Core2Qubes(qubes_xml.name)
+    def assertCorrectlyConverted(self, backup_app, expected_data):
         self.assertCountEqual(backup_app.domains.keys(),
             expected_data['domains'].keys())
         for vm in expected_data['domains']:
@@ -458,7 +742,19 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
         self.assertEqual(backup_app.globals, expected_data['globals'])
 
     def test_000_qubes_xml_r2(self):
-        self.assertCorrectlyConverted(QUBESXML_R2, parsed_qubes_xml_r2)
+        xml_data = pkg_resources.resource_string(__name__, 'v3-qubes.xml')
+        with tempfile.NamedTemporaryFile() as qubes_xml:
+            qubes_xml.file.write(xml_data)
+            backup_app = qubesadmin.backup.core2.Core2Qubes(qubes_xml.name)
+        self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_r2)
+
+    def test_010_qubes_xml_r4(self):
+        self.maxDiff = None
+        xml_data = pkg_resources.resource_string(__name__, 'v4-qubes.xml')
+        with tempfile.NamedTemporaryFile() as qubes_xml:
+            qubes_xml.file.write(xml_data)
+            backup_app = qubesadmin.backup.core3.Core3Qubes(qubes_xml.name)
+        self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_v4)
 
 # backup code use multiprocessing, synchronize with main process
 class AppProxy(object):
@@ -655,6 +951,91 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 "vm-templates/test-template-clone")),
             appmenus_list)
 
+    def create_v4_files(self):
+        appmenus_list = [
+            "firefox", "gnome-terminal", "evince", "evolution",
+            "mozilla-thunderbird", "libreoffice-startcenter", "nautilus",
+            "gedit", "gpk-update-viewer", "gpk-application"
+        ]
+
+        os.mkdir(self.fullpath("appvms"))
+        os.mkdir(self.fullpath("vm-templates"))
+
+        # normal AppVMs
+        for vm in ('test-work', 'test-d8test', 'test-proxy',
+                'test-custom-template-appvm', 'test-net'):
+            os.mkdir(self.fullpath('appvms/{}'.format(vm)))
+            self.create_whitelisted_appmenus(self.fullpath(
+                'appvms/{}/whitelisted-appmenus.list'.format(vm)))
+            self.create_private_img(self.fullpath('appvms/{}/private.img'.format(
+                vm)))
+
+        # StandaloneVMs
+        for vm in ('test-standalonevm', 'test-hvm'):
+            os.mkdir(self.fullpath('appvms/{}'.format(vm)))
+            self.create_whitelisted_appmenus(self.fullpath(
+                'appvms/{}/whitelisted-appmenus.list'.format(vm)))
+            self.create_private_img(self.fullpath(
+                'appvms/{}/private.img'.format(vm)))
+            self.create_sparse(
+                self.fullpath('appvms/{}/root.img'.format(vm)), 10*2**30)
+            self.fill_image(self.fullpath('appvms/{}/root.img'.format(vm)),
+                1024*1024, True,
+                signature='{}/root'.format(vm).encode())
+
+        # only for Linux one
+        os.mkdir(self.fullpath('appvms/test-standalonevm/apps.templates'))
+        self.create_appmenus(
+            self.fullpath('appvms/test-standalonevm/apps.templates'),
+            APPTEMPLATE_R2B2,
+            appmenus_list)
+
+        # Custom template
+        os.mkdir(self.fullpath("vm-templates/test-fedora-25-clone"))
+        self.create_private_img(
+            self.fullpath("vm-templates/test-fedora-25-clone/private.img"))
+        self.create_sparse(self.fullpath(
+            "vm-templates/test-fedora-25-clone/root.img"), 10*2**20)
+        self.fill_image(self.fullpath(
+            "vm-templates/test-fedora-25-clone/root.img"), 1*2**20, True,
+            signature=b'test-fedora-25-clone/root')
+        self.create_volatile_img(self.fullpath(
+            "vm-templates/test-fedora-25-clone/volatile.img"))
+        self.create_whitelisted_appmenus(self.fullpath(
+            "vm-templates/test-fedora-25-clone/whitelisted-appmenus.list"))
+        self.create_whitelisted_appmenus(self.fullpath(
+            "vm-templates/test-fedora-25-clone/vm-whitelisted-appmenus.list"))
+        os.mkdir(
+            self.fullpath("vm-templates/test-fedora-25-clone/apps.templates"))
+        self.create_appmenus(
+            self.fullpath("vm-templates/test-fedora-25-clone/apps.templates"),
+            APPTEMPLATE_R2B2,
+            appmenus_list)
+        os.mkdir(self.fullpath("vm-templates/test-fedora-25-clone/apps"))
+        self.create_appmenus(
+            self.fullpath("vm-templates/test-fedora-25-clone/apps"),
+            APPTEMPLATE_R2B2.replace("%VMNAME%", "test-fedora-25-clone")
+            .replace("%VMDIR%", self.fullpath(
+                "vm-templates/test-fedora-25-clone")),
+            appmenus_list)
+
+    def scrypt_encrypt(self, f_name, output_name=None, password='qubes',
+            basedir=None):
+        if basedir is None:
+            basedir = self.backupdir
+        if output_name is None:
+            output_name = f_name + '.enc'
+        if f_name == 'backup-header':
+            scrypt_pass = 'backup-header!' + password
+        else:
+            scrypt_pass = '20161020T123455-1234!{}!{}'.format(f_name, password)
+        p = subprocess.Popen(['scrypt', 'enc', '-P', '-t', '0.1',
+            os.path.join(basedir, f_name), os.path.join(basedir, output_name)],
+            stdin=subprocess.PIPE)
+        p.communicate(scrypt_pass.encode())
+        assert p.wait() == 0
+        return output_name
+
     def calculate_hmac(self, f_name, algorithm="sha512", password="qubes"):
         with open(self.fullpath(f_name), "r") as f_data:
             with open(self.fullpath(f_name+".hmac"), "w") as f_hmac:
@@ -715,6 +1096,42 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             self.append_backup_stream(part_with_dir+".hmac", stream,
                                       basedir=self.fullpath("stage1"))
 
+    def handle_v4_file(self, f_name, subdir, stream, compressed=True):
+        # create inner archive
+        tar_cmdline = ["tar", "-Pc", '--sparse',
+               '-C', self.fullpath(os.path.dirname(f_name)),
+               '--xform', 's:^%s:%s\\0:' % (
+                   os.path.basename(f_name),
+                   subdir),
+               os.path.basename(f_name)
+               ]
+        if compressed:
+            tar_cmdline.insert(-1, "--use-compress-program=%s" % "gzip")
+        tar = subprocess.Popen(tar_cmdline, stdout=subprocess.PIPE)
+        data = tar.stdout
+
+        stage1_dir = self.fullpath(os.path.join("stage1", subdir))
+        if not os.path.exists(stage1_dir):
+            os.makedirs(stage1_dir)
+        subprocess.check_call(["split", "--numeric-suffixes",
+                               "--suffix-length=3",
+                               "--bytes="+str(100*1024*1024), "-",
+                               os.path.join(stage1_dir,
+                                            os.path.basename(f_name+"."))],
+                              stdin=data)
+        data.close()
+
+        for part in sorted(os.listdir(stage1_dir)):
+            if not re.match(
+                    r"^{}.[0-9][0-9][0-9]$".format(os.path.basename(f_name)),
+                    part):
+                continue
+            part_with_dir = os.path.join(subdir, part)
+            f_name = self.scrypt_encrypt(part_with_dir,
+                basedir=self.fullpath('stage1'))
+            self.append_backup_stream(f_name, stream,
+                                      basedir=self.fullpath("stage1"))
+
     def create_v3_backup(self, encrypted=True, compressed=True):
         """
         Create "backup format 3" backup - used in R2 and R3.0
@@ -732,15 +1149,15 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.calculate_hmac("backup-header")
         self.append_backup_stream("backup-header", output)
         self.append_backup_stream("backup-header.hmac", output)
-        with open(self.fullpath("qubes.xml"), "w") as f:
+        with open(self.fullpath("qubes.xml"), "wb") as f:
+            qubesxml = pkg_resources.resource_string(__name__, 'v3-qubes.xml')
             if encrypted:
-                qubesxml = QUBESXML_R2
                 for vmname, subdir in MANGLED_SUBDIRS_R2.items():
-                    qubesxml = re.sub(r"[a-z-]*/{}".format(vmname),
-                                      subdir, qubesxml)
+                    qubesxml = re.sub(r"[a-z-]*/{}".format(vmname).encode(),
+                                      subdir.encode(), qubesxml)
                 f.write(qubesxml)
             else:
-                f.write(QUBESXML_R2)
+                f.write(qubesxml)
 
         self.handle_v3_file("qubes.xml", "", output, encrypted=encrypted,
                             compressed=compressed)
@@ -767,6 +1184,44 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             self.handle_v3_file(
                 os.path.join(vm_dir, "."),
                 subdir+'/', output, encrypted=encrypted)
+
+        output.close()
+
+    def create_v4_backup(self, compressed=True):
+        """
+        Create "backup format 4" backup - used in R4.0
+
+        :param compressed: Should the backup be compressed
+        :return:
+        """
+        output = open(self.fullpath("backup.bin"), "w")
+        with open(self.fullpath("backup-header"), "w") as f:
+            f.write(BACKUP_HEADER_R4.format(
+                compressed=str(compressed)
+            ))
+        self.scrypt_encrypt("backup-header", output_name='backup-header.hmac')
+        self.append_backup_stream("backup-header", output)
+        self.append_backup_stream("backup-header.hmac", output)
+        with open(self.fullpath("qubes.xml"), "wb") as f:
+            qubesxml = pkg_resources.resource_string(__name__, 'v4-qubes.xml')
+            for vmname, subdir in MANGLED_SUBDIRS_R4.items():
+                qubesxml = re.sub(
+                    r'backup-path">[a-z-]*/{}'.format(vmname).encode(),
+                    ('backup-path">' + subdir).encode(),
+                    qubesxml)
+            f.write(qubesxml)
+
+        self.handle_v4_file("qubes.xml", "", output, compressed=compressed)
+
+        self.create_v4_files()
+        for vm_type in ["appvms", "vm-templates"]:
+            for vm_name in os.listdir(self.fullpath(vm_type)):
+                vm_dir = os.path.join(vm_type, vm_name)
+                for f_name in os.listdir(self.fullpath(vm_dir)):
+                    subdir = MANGLED_SUBDIRS_R4[vm_name]
+                    self.handle_v4_file(
+                        os.path.join(vm_dir, f_name),
+                        subdir+'/', output, compressed=compressed)
 
         output.close()
 
@@ -887,6 +1342,10 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     (name, 'admin.vm.feature.Set', feature,
                     str(value).encode())] = b'0\0'
 
+            for tag in vm['tags']:
+                self.app.expected_calls[
+                    (name, 'admin.vm.tag.Set', tag, None)] = b'0\0'
+
         orig_admin_vm_list = self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)]
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
@@ -938,6 +1397,81 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             b'0\0default=no type=vm fedora-25'
         self.setup_expected_calls(parsed_qubes_xml_r2, templates_map={
             'fedora-20-x64': 'fedora-25'
+        })
+
+        qubesd_calls_queue = multiprocessing.Queue()
+
+        with mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue)):
+            self.restore_backup(self.fullpath("backup.bin"), options={
+                'use-default-template': True,
+                'use-default-netvm': True,
+            })
+
+        # retrieve calls from other multiprocess.Process instances
+        while not qubesd_calls_queue.empty():
+            call_args = qubesd_calls_queue.get()
+            self.app.qubesd_call(*call_args)
+        qubesd_calls_queue.close()
+
+        self.assertAllCalled()
+
+    @unittest.skipUnless(spawn.find_executable('scrypt'),
+        "scrypt not installed")
+    def test_230_r4(self):
+        self.create_v4_backup(False)
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\0dom0 class=AdminVM state=Running\n'
+            b'fedora-25 class=TemplateVM state=Halted\n'
+            b'testvm class=AppVM state=Running\n'
+            b'sys-net class=AppVM state=Running\n'
+        )
+        self.app.expected_calls[
+            ('dom0', 'admin.property.Get', 'default_template', None)] = \
+            b'0\0default=no type=vm fedora-25'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.Get', 'provides_network', None)] = \
+            b'0\0default=no type=bool True'
+        self.setup_expected_calls(parsed_qubes_xml_v4, templates_map={
+            'debian-8': 'fedora-25'
+        })
+
+        qubesd_calls_queue = multiprocessing.Queue()
+
+        with mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue)):
+            self.restore_backup(self.fullpath("backup.bin"), options={
+                'use-default-template': True,
+                'use-default-netvm': True,
+            })
+
+        # retrieve calls from other multiprocess.Process instances
+        while not qubesd_calls_queue.empty():
+            call_args = qubesd_calls_queue.get()
+            self.app.qubesd_call(*call_args)
+        qubesd_calls_queue.close()
+
+        self.assertAllCalled()
+
+    @unittest.skipUnless(spawn.find_executable('scrypt'),
+        "scrypt not installed")
+    def test_230_r4_compressed(self):
+        self.create_v4_backup(True)
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\0dom0 class=AdminVM state=Running\n'
+            b'fedora-25 class=TemplateVM state=Halted\n'
+            b'testvm class=AppVM state=Running\n'
+            b'sys-net class=AppVM state=Running\n'
+        )
+        self.app.expected_calls[
+            ('dom0', 'admin.property.Get', 'default_template', None)] = \
+            b'0\0default=no type=vm fedora-25'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.Get', 'provides_network', None)] = \
+            b'0\0default=no type=bool True'
+        self.setup_expected_calls(parsed_qubes_xml_v4, templates_map={
+            'debian-8': 'fedora-25'
         })
 
         qubesd_calls_queue = multiprocessing.Queue()
