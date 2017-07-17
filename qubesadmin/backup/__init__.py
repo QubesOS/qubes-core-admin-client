@@ -1731,7 +1731,7 @@ class BackupRestore(object):
                 ['qvm-appmenus', '--set-whitelist=-', vm.name],
                 stdin=stream)
         except subprocess.CalledProcessError:
-            self.log.exception('Failed to set application list for %s', vm.name)
+            self.log.error('Failed to set application list for %s', vm.name)
 
     def restore_do(self, restore_info):
         '''
@@ -1845,8 +1845,9 @@ class BackupRestore(object):
                     label=vm.label,
                     pool=self.options.override_pool,
                     **kwargs)
-            except Exception:  # pylint: disable=broad-except
-                self.log.exception('Error restoring VM %s, skipping', vm.name)
+            except Exception as err:  # pylint: disable=broad-except
+                self.log.error('Error restoring VM %s, skipping: %s',
+                    vm.name, err)
                 if new_vm:
                     del self.app.domains[new_vm.name]
                 continue
@@ -1869,23 +1870,23 @@ class BackupRestore(object):
                     continue
                 try:
                     setattr(new_vm, prop, value)
-                except Exception:  # pylint: disable=broad-except
-                    self.log.exception('Error setting %s.%s to %s',
-                        vm.name, prop, value)
+                except Exception as err:  # pylint: disable=broad-except
+                    self.log.error('Error setting %s.%s to %s: %s',
+                        vm.name, prop, value, err)
 
             for feature, value in vm.features.items():
                 try:
                     new_vm.features[feature] = value
-                except Exception:  # pylint: disable=broad-except
-                    self.log.exception('Error setting %s.features[%s] to %s',
-                        vm.name, feature, value)
+                except Exception as err:  # pylint: disable=broad-except
+                    self.log.error('Error setting %s.features[%s] to %s: %s',
+                        vm.name, feature, value, err)
 
             for tag in vm.tags:
                 try:
                     new_vm.tags.add(tag)
-                except Exception:  # pylint: disable=broad-except
-                    self.log.exception('Error adding tag %s to %s',
-                        tag, vm.name)
+                except Exception as err:  # pylint: disable=broad-except
+                    self.log.error('Error adding tag %s to %s: %s',
+                        tag, vm.name, err)
 
             for bus in vm.devices:
                 for backend_domain, ident in vm.devices[bus]:
@@ -1897,9 +1898,9 @@ class BackupRestore(object):
                         persistent=True)
                     try:
                         new_vm.devices[bus].attach(assignment)
-                    except Exception:  # pylint: disable=broad-except
-                        self.log.exception('Error attaching device %s:%s to %s',
-                            bus, ident, vm.name)
+                    except Exception as err:  # pylint: disable=broad-except
+                        self.log.error('Error attaching device %s:%s to %s: %s',
+                            bus, ident, vm.name, err)
 
         # Set VM dependencies - only non-default setting
         for vm in vms.values():
@@ -1919,9 +1920,9 @@ class BackupRestore(object):
 
                 try:
                     host_vm.netvm = value
-                except Exception:  # pylint: disable=broad-except
-                    self.log.exception('Error setting %s.%s to %s',
-                        vm.name, 'netvm', value)
+                except Exception as err:  # pylint: disable=broad-except
+                    self.log.error('Error setting %s.%s to %s: %s',
+                        vm.name, 'netvm', value, err)
 
             if 'default_dispvm' in vm.properties:
                 if vm.properties['default_dispvm'] in restore_info:
@@ -1932,6 +1933,6 @@ class BackupRestore(object):
 
                 try:
                     host_vm.default_dispvm = value
-                except Exception:  # pylint: disable=broad-except
-                    self.log.exception('Error setting %s.%s to %s',
-                        vm.name, 'default_dispvm', value)
+                except Exception as err:  # pylint: disable=broad-except
+                    self.log.error('Error setting %s.%s to %s: %s',
+                        vm.name, 'default_dispvm', value, err)
