@@ -289,7 +289,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             if value_is_default and value_is_default.lower() != \
                     "true":
                 vm.properties[attr] = value
-        vm.properties['hvm'] = "HVm" in vm_class_name
+        vm.properties['virt_mode'] = 'hvm' if "HVm" in vm_class_name else 'pv'
         if vm_class_name in ('QubesNetVm', 'QubesProxyVm'):
             vm.properties['provides_network'] = True
         if vm_class_name == 'QubesNetVm':
