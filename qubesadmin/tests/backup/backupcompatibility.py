@@ -41,6 +41,7 @@ import sys
 
 import qubesadmin.backup.core2
 import qubesadmin.backup.core3
+import qubesadmin.firewall
 import qubesadmin.storage
 import qubesadmin.tests
 import qubesadmin.tests.backup
@@ -779,6 +780,11 @@ class MockVolume(qubesadmin.storage.Volume):
         super(MockVolume, self).__init__(*args, **kwargs)
         self.app = AppProxy(self.app, import_data_queue)
 
+class MockFirewall(qubesadmin.firewall.Firewall):
+    def __init__(self, import_data_queue, *args, **kwargs):
+        super(MockFirewall, self).__init__(*args, **kwargs)
+        self.vm.app = AppProxy(self.vm.app, import_data_queue)
+
 
 class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
@@ -843,13 +849,17 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         os.mkdir(self.fullpath("servicevms"))
         os.mkdir(self.fullpath("vm-templates"))
 
-        # normal AppVM
+        # normal AppVM, with firewall
         os.mkdir(self.fullpath("appvms/test-work"))
         self.create_whitelisted_appmenus(self.fullpath(
             "appvms/test-work/whitelisted-appmenus.list"))
         os.symlink("/usr/share/qubes/icons/green.png",
                    self.fullpath("appvms/test-work/icon.png"))
         self.create_private_img(self.fullpath("appvms/test-work/private.img"))
+        with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
+                f_firewall:
+            f_firewall.write(
+                pkg_resources.resource_string(__name__, 'v3-firewall.xml'))
 
         # StandaloneVM
         os.mkdir(self.fullpath("appvms/test-standalonevm"))
@@ -969,6 +979,12 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 'appvms/{}/whitelisted-appmenus.list'.format(vm)))
             self.create_private_img(self.fullpath('appvms/{}/private.img'.format(
                 vm)))
+
+        # setup firewall only on one VM
+        with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
+                f_firewall:
+            f_firewall.write(
+                pkg_resources.resource_string(__name__, 'v4-firewall.xml'))
 
         # StandaloneVMs
         for vm in ('test-standalonevm', 'test-hvm'):
@@ -1346,12 +1362,26 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 self.app.expected_calls[
                     (name, 'admin.vm.tag.Set', tag, None)] = b'0\0'
 
+            if vm['backup_path']:
+                appmenus = (
+                    b'gnome-terminal.desktop\n'
+                    b'nautilus.desktop\n'
+                    b'firefox.desktop\n'
+                    b'mozilla-thunderbird.desktop\n'
+                    b'libreoffice-startcenter.desktop\n'
+                )
+                self.app.expected_calls[
+                    (name, 'appmenus', None, appmenus)] = b'0\0'
+
         orig_admin_vm_list = self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)]
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             [orig_admin_vm_list] + \
             [orig_admin_vm_list + b''.join(extra_vm_list_lines)] * \
             len(extra_vm_list_lines)
+
+    def mock_appmenus(self, queue, vm, stream):
+        queue.put((vm.name, 'appmenus', None, stream.read()))
 
     def test_210_r2(self):
         self.create_v3_backup(False)
@@ -1366,15 +1396,44 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.setup_expected_calls(parsed_qubes_xml_r2, templates_map={
             'fedora-20-x64': 'fedora-25'
         })
-
+        firewall_data = (
+            'action=accept specialtarget=dns\n'
+            'action=accept proto=icmp\n'
+            'action=accept proto=tcp dstports=22-22\n'
+            'action=accept proto=tcp dstports=9418-9418\n'
+            'action=accept proto=tcp dst4=192.168.0.1/32 dstports=1234-1234\n'
+            'action=accept proto=tcp dsthost=fedorahosted.org dstports=443-443\n'
+            'action=accept proto=tcp dsthost=xenbits.xen.org dstports=80-80\n'
+            'action=drop\n'
+        )
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-custom-template-appvm', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
         qubesd_calls_queue = multiprocessing.Queue()
 
-        with mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)):
+        patches = [
+            mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.firewall.Firewall',
+                functools.partial(MockFirewall, qubesd_calls_queue)),
+        ]
+        for patch in patches:
+            patch.start()
+        try:
             self.restore_backup(self.fullpath("backup.bin"), options={
                 'use-default-template': True,
                 'use-default-netvm': True,
             })
+        finally:
+            for patch in patches:
+                patch.stop()
 
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
@@ -1398,15 +1457,45 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.setup_expected_calls(parsed_qubes_xml_r2, templates_map={
             'fedora-20-x64': 'fedora-25'
         })
+        firewall_data = (
+            'action=accept specialtarget=dns\n'
+            'action=accept proto=icmp\n'
+            'action=accept proto=tcp dstports=22-22\n'
+            'action=accept proto=tcp dstports=9418-9418\n'
+            'action=accept proto=tcp dst4=192.168.0.1/32 dstports=1234-1234\n'
+            'action=accept proto=tcp dsthost=fedorahosted.org dstports=443-443\n'
+            'action=accept proto=tcp dsthost=xenbits.xen.org dstports=80-80\n'
+            'action=drop\n'
+        )
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-custom-template-appvm', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
-        with mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)):
+        patches = [
+            mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.firewall.Firewall',
+                functools.partial(MockFirewall, qubesd_calls_queue)),
+        ]
+        for patch in patches:
+            patch.start()
+        try:
             self.restore_backup(self.fullpath("backup.bin"), options={
                 'use-default-template': True,
                 'use-default-netvm': True,
             })
+        finally:
+            for patch in patches:
+                patch.stop()
 
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
@@ -1435,15 +1524,41 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.setup_expected_calls(parsed_qubes_xml_v4, templates_map={
             'debian-8': 'fedora-25'
         })
+        firewall_data = (
+            'action=accept specialtarget=dns\n'
+            'action=accept proto=icmp\n'
+            'action=accept proto=tcp dstports=22-22\n'
+            'action=accept proto=tcp dsthost=www.qubes-os.org '
+            'dstports=443-443\n'
+            'action=accept proto=tcp dst4=192.168.0.0/24\n'
+            'action=drop\n'
+        )
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
-        with mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)):
+        patches = [
+            mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.firewall.Firewall',
+                functools.partial(MockFirewall, qubesd_calls_queue)),
+        ]
+        for patch in patches:
+            patch.start()
+        try:
             self.restore_backup(self.fullpath("backup.bin"), options={
                 'use-default-template': True,
                 'use-default-netvm': True,
             })
+        finally:
+            for patch in patches:
+                patch.stop()
 
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
@@ -1473,15 +1588,41 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.setup_expected_calls(parsed_qubes_xml_v4, templates_map={
             'debian-8': 'fedora-25'
         })
+        firewall_data = (
+            'action=accept specialtarget=dns\n'
+            'action=accept proto=icmp\n'
+            'action=accept proto=tcp dstports=22-22\n'
+            'action=accept proto=tcp dsthost=www.qubes-os.org '
+            'dstports=443-443\n'
+            'action=accept proto=tcp dst4=192.168.0.0/24\n'
+            'action=drop\n'
+        )
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
-        with mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)):
+        patches = [
+            mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.firewall.Firewall',
+                functools.partial(MockFirewall, qubesd_calls_queue)),
+        ]
+        for patch in patches:
+            patch.start()
+        try:
             self.restore_backup(self.fullpath("backup.bin"), options={
                 'use-default-template': True,
                 'use-default-netvm': True,
             })
+        finally:
+            for patch in patches:
+                patch.stop()
 
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():

@@ -1,0 +1,7 @@
+<QubesFirewallRules dns="allow" icmp="allow" policy="deny" yumProxy="allow">
+  <rule address="0.0.0.0" proto="tcp" netmask="0" port="22"/>
+  <rule address="0.0.0.0" proto="tcp" netmask="0" port="9418"/>
+  <rule address="192.168.0.1" proto="tcp" port="1234"/>
+  <rule address="fedorahosted.org" proto="tcp" port="443"/>
+  <rule address="xenbits.xen.org" proto="tcp" port="80"/>
+</QubesFirewallRules>
