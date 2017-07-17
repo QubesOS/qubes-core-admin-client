@@ -1733,6 +1733,22 @@ class BackupRestore(object):
         except subprocess.CalledProcessError:
             self.log.error('Failed to set application list for %s', vm.name)
 
+    def _handle_volume_data(self, vm, volume, stream):
+        '''Wrap volume data import with logging'''
+        try:
+            volume.import_data(stream)
+        except Exception as err:  # pylint: disable=broad-except
+            self.log.error('Failed to restore volume %s of VM %s: %s',
+                volume.name, vm.name, err)
+
+    def _handle_volume_size(self, vm, volume, size):
+        '''Wrap volume resize with logging'''
+        try:
+            volume.resize(size)
+        except Exception as err:  # pylint: disable=broad-except
+            self.log.error('Failed to resize volume %s of VM %s: %s',
+                volume.name, vm.name, err)
+
     def restore_do(self, restore_info):
         '''
 
@@ -1765,8 +1781,10 @@ class BackupRestore(object):
                 for name, volume in vm.volumes.items():
                     if not volume.save_on_stop:
                         continue
-                    data_func = volume.import_data
-                    size_func = volume.resize
+                    data_func = functools.partial(
+                        self._handle_volume_data, vm, volume)
+                    size_func = functools.partial(
+                        self._handle_volume_size, vm, volume)
                     handlers[os.path.join(vm_info.subdir, name + '.img')] = \
                         (data_func, size_func)
                 handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = (
