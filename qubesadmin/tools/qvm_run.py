@@ -92,6 +92,7 @@ parser.add_argument('cmd', metavar='COMMAND',
     help='command to run')
 
 def copy_stdin(stream):
+    '''Copy stdin to *stream*'''
     # multiprocessing.Process have sys.stdin connected to /dev/null
     stdin = open(0)
     for data in iter(lambda: stdin.buffer.read(4096), b''):
