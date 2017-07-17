@@ -28,7 +28,7 @@ import qubesadmin.app
 
 DEFAULT = qubesadmin.base.DEFAULT
 
-if os.path.exists(qubesadmin.config.QUBESD_SOCKET):
+if os.path.exists('/etc/qubes-release'):
     Qubes = qubesadmin.app.QubesLocal
 else:
     Qubes = qubesadmin.app.QubesRemote
