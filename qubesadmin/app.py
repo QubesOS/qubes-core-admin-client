@@ -445,11 +445,12 @@ class QubesLocal(QubesBase):
             if not os.path.exists(method_path):
                 raise qubesadmin.exc.QubesDaemonCommunicationError(
                     '{} not found'.format(method_path))
-            qrexec_call_env = os.environ.copy()
-            qrexec_call_env['QREXEC_REMOTE_DOMAIN'] = 'dom0'
-            qrexec_call_env['QREXEC_REQUESTED_TARGET'] = dest
-            proc = subprocess.Popen([method_path, arg], stdin=payload_stream,
-                stdout=subprocess.PIPE, env=qrexec_call_env)
+            command = ['env', 'QREXEC_REMOTE_DOMAIN=dom0',
+                'QREXEC_REQUESTED_TARGET=' + dest, method_path, arg]
+            if os.getuid() != 0:
+                command.insert(0, 'sudo')
+            proc = subprocess.Popen(command, stdin=payload_stream,
+                stdout=subprocess.PIPE)
             payload_stream.close()
             (return_data, _) = proc.communicate()
             return self._parse_qubesd_response(return_data)
