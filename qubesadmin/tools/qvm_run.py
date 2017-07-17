@@ -95,6 +95,8 @@ def copy_stdin(stream):
     # multiprocessing.Process have sys.stdin connected to /dev/null
     stdin = open(0)
     for data in iter(lambda: stdin.buffer.read(4096), b''):
+        if data is None:
+            break
         stream.write(data)
     stream.close()
 
