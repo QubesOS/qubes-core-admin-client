@@ -442,6 +442,9 @@ class ExtractWorker3(Process):
         for fname, (data_func, size_func) in self.handlers.items():
             if not fname.startswith(dirname + '/'):
                 continue
+            if not os.path.exists(fname):
+                # for example firewall.xml
+                continue
             if size_func is not None:
                 size_func(os.path.getsize(fname))
             with open(fname, 'rb') as input_file:
@@ -740,6 +743,10 @@ class BackupVM(object):
     def included_in_backup(self):
         '''Report whether a VM is included in the backup'''
         return False
+
+    def handle_firewall_xml(self, vm, stream):
+        '''Import appropriate format of firewall.xml'''
+        raise NotImplementedError
 
 class BackupRestoreOptions(object):
     '''Options for restore operation'''
@@ -1717,6 +1724,15 @@ class BackupRestore(object):
         if retcode != 0:
             self.log.error("*** Error while setting home directory owner")
 
+    def _handle_appmenus_list(self, vm, stream):
+        '''Handle whitelisted-appmenus.list file'''
+        try:
+            subprocess.check_call(
+                ['qvm-appmenus', '--set-whitelist=-', vm.name],
+                stdin=stream)
+        except subprocess.CalledProcessError:
+            self.log.exception('Failed to set application list for %s', vm.name)
+
     def restore_do(self, restore_info):
         '''
 
@@ -1753,8 +1769,11 @@ class BackupRestore(object):
                     size_func = volume.resize
                     handlers[os.path.join(vm_info.subdir, name + '.img')] = \
                         (data_func, size_func)
-                # TODO applications whitelist
-                # TODO firewall
+                handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = (
+                    functools.partial(vm_info.vm.handle_firewall_xml, vm), None)
+                handlers[os.path.join(vm_info.subdir,
+                    'whitelisted-appmenus.list')] = (
+                    functools.partial(self._handle_appmenus_list, vm), None)
 
         if 'dom0' in restore_info.keys() and \
                 restore_info['dom0'].good_to_go:

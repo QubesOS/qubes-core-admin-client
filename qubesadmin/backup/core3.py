@@ -25,6 +25,7 @@ import logging
 import lxml.etree
 
 import qubesadmin.backup
+import qubesadmin.firewall
 
 class Core3VM(qubesadmin.backup.BackupVM):
     '''VM object'''
@@ -32,6 +33,22 @@ class Core3VM(qubesadmin.backup.BackupVM):
     @property
     def included_in_backup(self):
         return self.backup_path is not None
+
+    def handle_firewall_xml(self, vm, stream):
+        '''Load new (Qubes >= 4.0) firewall XML format'''
+        try:
+            tree = lxml.etree.parse(stream)  # pylint: disable=no-member
+            xml_root = tree.getroot()
+            rules = []
+            for rule_node in xml_root.findall('./rules/rule'):
+                rule_opts = {}
+                for rule_opt in rule_node.findall('./properties/property'):
+                    rule_opts[rule_opt.get('name')] = rule_opt.text
+                rules.append(qubesadmin.firewall.Rule(None, **rule_opts))
+
+            vm.firewall.rules = rules
+        except:  # pylint: disable=bare-except
+            vm.log.exception('Failed to set firewall')
 
 class Core3Qubes(qubesadmin.backup.BackupApp):
     '''Parsed qubes.xml'''

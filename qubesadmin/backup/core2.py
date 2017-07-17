@@ -25,6 +25,7 @@ import xml.parsers
 import logging
 import lxml.etree
 
+from qubesadmin.firewall import Rule, Action, Proto, DstHost, SpecialTarget
 import qubesadmin.backup
 
 service_to_feature = {
@@ -43,6 +44,102 @@ class Core2VM(qubesadmin.backup.BackupVM):
     @property
     def included_in_backup(self):
         return self.backup_content
+
+    @staticmethod
+    def rule_from_xml_v1(node, action):
+        '''Parse single rule in old XML format (pre Qubes 4.0)
+
+        :param node: XML node for the rule
+        :param action: action to apply (in old format it wasn't part of the
+        rule itself)
+        '''
+        netmask = node.get('netmask')
+        if netmask is None:
+            netmask = 32
+        else:
+            netmask = int(netmask)
+        address = node.get('address')
+        if address:
+            dsthost = DstHost(address, netmask)
+        else:
+            dsthost = None
+
+        proto = node.get('proto')
+
+        port = node.get('port')
+        toport = node.get('toport')
+        if port and toport:
+            dstports = port + '-' + toport
+        elif port:
+            dstports = port
+        else:
+            dstports = None
+
+        # backward compatibility: protocol defaults to TCP if port is specified
+        if dstports and not proto:
+            proto = 'tcp'
+
+        if proto == 'any':
+            proto = None
+
+        expire = node.get('expire')
+
+        kwargs = {
+            'action': action,
+        }
+        if dsthost:
+            kwargs['dsthost'] = dsthost
+        if dstports:
+            kwargs['dstports'] = dstports
+        if proto:
+            kwargs['proto'] = proto
+        if expire:
+            kwargs['expire'] = expire
+
+        return Rule(None, **kwargs)
+
+
+    def handle_firewall_xml(self, vm, stream):
+        '''Load old (Qubes < 4.0) firewall XML format'''
+        try:
+            tree = lxml.etree.parse(stream)  # pylint: disable=no-member
+            xml_root = tree.getroot()
+            policy_v1 = xml_root.get('policy')
+            assert policy_v1 in ('allow', 'deny')
+            default_policy_is_accept = (policy_v1 == 'allow')
+            rules = []
+
+            def _translate_action(key):
+                '''Translate action name'''
+                if xml_root.get(key, policy_v1) == 'allow':
+                    return Action.accept
+                return Action.drop
+
+            rules.append(Rule(None,
+                action=_translate_action('dns'),
+                specialtarget=SpecialTarget('dns')))
+
+            rules.append(Rule(None,
+                action=_translate_action('icmp'),
+                proto=Proto.icmp))
+
+            if default_policy_is_accept:
+                rule_action = Action.drop
+            else:
+                rule_action = Action.accept
+
+            for element in xml_root:
+                rule = self.rule_from_xml_v1(element, rule_action)
+                rules.append(rule)
+            if default_policy_is_accept:
+                rules.append(Rule(None, action='accept'))
+            else:
+                rules.append(Rule(None, action='drop'))
+
+            vm.firewall.rules = rules
+        except:  # pylint: disable=bare-except
+            vm.log.exception('Failed to set firewall')
+
 
 class Core2Qubes(qubesadmin.backup.BackupApp):
     '''Parsed qubes.xml'''
