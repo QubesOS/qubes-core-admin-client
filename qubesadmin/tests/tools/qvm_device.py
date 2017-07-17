@@ -87,7 +87,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             None, None)] = b'0\0'
         self.app.expected_calls[('test-vm3', 'admin.vm.device.test.List',
             None, None)] = \
-            b'0\0test-vm1+dev1 persistent=yes\n'
+            b'0\0test-vm1+dev1 persistent=True\n'
 
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
             qubesadmin.tools.qvm_device.main(
@@ -144,7 +144,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
     def test_011_attach_persistent(self):
         ''' Test attach action '''
         self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Attach',
-            'test-vm1+dev1', b'persistent=yes')] = b'0\0'
+            'test-vm1+dev1', b'persistent=True')] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['test', 'attach', '-p', 'test-vm2', 'test-vm1:dev1'],
             app=self.app)

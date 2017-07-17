@@ -1,0 +1,526 @@
+<qubes>
+  <labels>
+    <label color="0xcc0000" id="label-1">red</label>
+    <label color="0xf57900" id="label-2">orange</label>
+    <label color="0xedd400" id="label-3">yellow</label>
+    <label color="0x73d216" id="label-4">green</label>
+    <label color="0x555753" id="label-5">gray</label>
+    <label color="0x3465a4" id="label-6">blue</label>
+    <label color="0x75507b" id="label-7">purple</label>
+    <label color="0x000000" id="label-8">black</label>
+  </labels>
+  <pools>
+    <pool driver="lvm_thin" name="lvm" thin_pool="pool3" volume_group="core3"/>
+    <pool dir_path="/var/lib/qubes/vm-kernels" driver="linux-kernel" name="linux-kernel"/>
+    <pool dir_path="/var/lib/qubes" driver="file" name="default" revisions_to_keep="1"/>
+  </pools>
+  <properties>
+    <property name="clockvm">sys-net</property>
+    <property name="default_dispvm">fedora-25-dvm</property>
+    <property name="default_kernel">4.9.31-17</property>
+    <property name="default_netvm">sys-firewall</property>
+    <property name="default_template">fedora-25</property>
+    <property name="updatevm">sys-firewall</property>
+  </properties>
+  <domains>
+    <domain id="domain-20" class="AppVM">
+      <properties>
+        <property name="debug">True</property>
+        <property name="kernel"></property>
+        <property name="label">label-5</property>
+        <property name="name">test-d8test</property>
+        <property name="qid">20</property>
+        <property name="uuid">9204481c-7e37-42a6-8a66-b4cc63d65f11</property>
+        <property name="template">debian-8</property>
+      </properties>
+      <features>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-d8test</feature>
+        <feature name="backup-size">20971520</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags>
+        <tag name="created-by-dom0"/>
+      </tags>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid=""/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/debian-8/root" vid="appvms/test-d8test/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/test-d8test/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/test-d8test/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-30" class="AppVM">
+      <properties>
+        <property name="label">label-1</property>
+        <property name="name">test-proxy</property>
+        <property name="qid">30</property>
+        <property name="uuid">367c64e6-ab8c-42df-91b6-c9d4c7d015f2</property>
+        <property name="template">debian-8</property>
+        <property name="provides_network">True</property>
+        <property name="netvm">sys-net</property>
+      </properties>
+      <features>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-proxy</feature>
+        <feature name="backup-size">209715200</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags>
+        <tag name="created-by-dom0"/>
+      </tags>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/debian-8/root" vid="appvms/d8test2/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/d8test2/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/d8test2/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-16" class="TemplateVM">
+      <properties>
+        <property name="label">label-8</property>
+        <property name="name">debian-8</property>
+        <property name="qid">16</property>
+        <property name="uuid">0e2fa953-016f-4486-9e36-c9b386fc2bac</property>
+      </properties>
+      <features>
+        <feature name="qrexec">True</feature>
+        <feature name="updates-available"></feature>
+        <feature name="gui">1</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags>
+        <tag name="created-by-dom0"/>
+      </tags>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="10737418240" vid="vm-templates/debian-8/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="vm-templates/debian-8/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="0" rw="True" save_on_stop="True" size="2147483648" vid="vm-templates/debian-8/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-0" class="AdminVM">
+      <properties>
+        <property name="label">label-8</property>
+      </properties>
+      <features/>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <devices class="usb"/>
+      <tags/>
+    </domain>
+    <domain id="domain-31" class="AppVM">
+      <properties>
+        <property name="debug">True</property>
+        <property name="kernel"></property>
+        <property name="label">label-3</property>
+        <property name="name">test-custom-template-appvm</property>
+        <property name="qid">31</property>
+        <property name="uuid">1bdb7b32-8a4b-4bb7-8da0-6b06494f642c</property>
+        <property name="template">test-fedora-25-clone</property>
+      </properties>
+      <features>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-custom-template-appvm</feature>
+        <feature name="backup-size">20971520</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <devices class="usb"/>
+      <tags>
+        <tag name="created-by-dom0"/>
+      </tags>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid=""/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/test-f25test2/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/test-f25test2/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/test-f25test2/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-7" class="TemplateVM">
+      <properties>
+        <property name="label">label-8</property>
+        <property name="maxmem">4000</property>
+        <property name="name">test-fedora-25-clone</property>
+        <property name="qid">7</property>
+        <property name="uuid">e3b8d458-8c4c-4ccb-b00d-b7ae454cb08f</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer">1</feature>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">vm-templates/test-fedora-25-clone</feature>
+        <feature name="backup-size">2097152000</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="10737418240" vid="vm-templates/test-fedora-25-clone/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="vm-templates/test-fedora-25-clone/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="0" rw="True" save_on_stop="True" size="2147483648" vid="vm-templates/test-fedora-25-clone/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-12" class="AppVM">
+      <properties>
+        <property name="dispvm_allowed">True</property>
+        <property name="label">label-1</property>
+        <property name="name">fedora-25-clone-dvm</property>
+        <property name="qid">10</property>
+        <property name="uuid">30daa6b5-693b-460a-9da7-99078a2d9d14</property>
+        <property name="template">test-fedora-25-clone</property>
+        <property name="vcpus">1</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer">1</feature>
+        <feature name="internal">1</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/test-fedora-25-clone/root" vid="appvms/fedora-25-clone-dvm/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0"
+                rw="True" size="10737418240" vid="appvms/fedora-25-clone-dvm/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/fedora-25-clone-dvm/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-10" class="AppVM">
+      <properties>
+        <property name="dispvm_allowed">True</property>
+        <property name="label">label-1</property>
+        <property name="name">fedora-25-dvm</property>
+        <property name="qid">10</property>
+        <property name="uuid">30daa6b5-693b-460a-9da7-99078a2d9d14</property>
+        <property name="template">fedora-25</property>
+        <property name="vcpus">1</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer">1</feature>
+        <feature name="internal">1</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/fedora-25-dvm/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/fedora-25-dvm/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/fedora-25-dvm/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-14" class="TemplateVM">
+      <properties>
+        <property name="label">label-8</property>
+        <property name="maxmem">4000</property>
+        <property name="name">fedora-25-lvm</property>
+        <property name="qid">14</property>
+        <property name="uuid">20785bf4-42fa-4035-ab95-c1bf054c153a</property>
+      </properties>
+      <features/>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="lvm" revisions_to_keep="1" rw="True" save_on_stop="True" size="10737418240" vid="core3/fedora-25-lvm-root"/>
+        <volume name="volatile" pool="lvm" revisions_to_keep="1" rw="True" size="10737418240" vid="core3/fedora-25-lvm-volatile"/>
+        <volume name="private" pool="lvm" revisions_to_keep="0" rw="True" save_on_stop="True" size="2147483648" vid="core3/fedora-25-lvm-private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-8" class="TemplateVM">
+      <properties>
+        <property name="label">label-8</property>
+        <property name="name">fedora-25</property>
+        <property name="qid">8</property>
+        <property name="uuid">51870d8e-2e71-41d2-9582-30661f611004</property>
+      </properties>
+      <features>
+        <feature name="qrexec">True</feature>
+        <feature name="updates-available"></feature>
+        <feature name="gui">1</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags>
+        <tag name="created-by-test-work"/>
+      </tags>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="10737418240" vid="vm-templates/fedora-25/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="vm-templates/fedora-25/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="0" rw="True" save_on_stop="True" size="2147483648" vid="vm-templates/fedora-25/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-9" class="StandaloneVM">
+      <properties>
+        <property name="hvm">True</property>
+        <property name="label">label-7</property>
+        <property name="maxmem">4000</property>
+        <property name="name">test-hvm</property>
+        <property name="qid">9</property>
+        <property name="uuid">9909066b-0f03-4725-ad9e-fa3561d5566e</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer"></feature>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-hvm</feature>
+        <feature name="backup-size">2097152000</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" vid="appvms/test-hvm/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/test-hvm/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/test-hvm/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-11" class="AppVM">
+      <properties>
+        <property name="backup_timestamp">1474318497</property>
+        <property name="label">label-1</property>
+        <property name="name">untrusted</property>
+        <property name="qid">11</property>
+        <property name="uuid">359b8e38-9e50-46a3-a42c-8d3bb15d3890</property>
+        <property name="default_dispvm">fedora-25-clone-dvm</property>
+        <property name="netvm"></property>
+        <property name="template">fedora-25</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer">1</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/untrusted/root"/>
+        <volume name="volatile" pool="lvm" revisions_to_keep="1" rw="True" size="10737418240" vid="core3/untrusted-volatile"/>
+        <volume name="private" pool="lvm" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="core3/untrusted-private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-22" class="AppVM">
+      <properties>
+        <property name="label">label-3</property>
+        <property name="name">personal</property>
+        <property name="qid">22</property>
+        <property name="uuid">efa8ddc4-6661-4231-9bfd-ef34907da358</property>
+        <property name="netvm">sys-firewall</property>
+        <property name="template">fedora-25</property>
+      </properties>
+      <features>
+        <feature name="xxx">1</feature>
+        <feature name="feat1">1</feature>
+        <feature name="featdis"></feature>
+        <feature name="feat2"></feature>
+        <feature name="feat32">1</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/personal/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/personal/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/personal/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-21" class="AppVM">
+      <properties>
+        <property name="autostart">True</property>
+        <property name="label">label-4</property>
+        <property name="memory">500</property>
+        <property name="name">sys-firewall</property>
+        <property name="provides_network">True</property>
+        <property name="qid">21</property>
+        <property name="uuid">40f0775a-c259-44bc-be57-6148c67c42c7</property>
+        <property name="template">fedora-25</property>
+      </properties>
+      <features/>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <devices class="usb"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/sys-firewall/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/sys-firewall/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/sys-firewall/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-2" class="AppVM">
+      <properties>
+        <property name="default_user">user</property>
+        <property name="hvm">False</property>
+        <property name="label">label-1</property>
+        <property name="maxmem">300</property>
+        <property name="memory">300</property>
+        <property name="name">sys-net</property>
+        <property name="netvm"></property>
+        <property name="provides_network">True</property>
+        <property name="kernelopts">nopat i8042.nokbd i8042.noaux</property>
+        <property name="qid">2</property>
+        <property name="uuid">eb8b1680-d4fa-449b-8baa-b5146d9b62b7</property>
+        <property name="template">fedora-25</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer"></feature>
+        <feature name="service.clocksync">1</feature>
+      </features>
+      <devices class="pci">
+        <device backend-domain="dom0" id="02_00.0"/>
+      </devices>
+      <devices class="block"/>
+      <devices class="usb"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/sys-net/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/sys-net/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/sys-net/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-6" class="AppVM">
+      <properties>
+        <property name="label">label-1</property>
+        <property name="maxmem">300</property>
+        <property name="name">test-net</property>
+        <property name="netvm"></property>
+        <property name="memory">300</property>
+        <property name="provides_network">True</property>
+        <property name="qid">6</property>
+        <property name="uuid">d5e9a792-9247-4f6f-a936-b7c65a1adfac</property>
+        <property name="template">fedora-25</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer"></feature>
+        <feature name="service.ntpd"></feature>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-net</feature>
+        <feature name="backup-size">209715200</feature>
+      </features>
+      <devices class="pci">
+        <device backend-domain="dom0" id="03_00.0"/>
+      </devices>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/test-net/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/test-net/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/test-net/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-5" class="AppVM">
+      <properties>
+        <property name="autostart">True</property>
+        <property name="label">label-1</property>
+        <property name="hvm">False</property>
+        <property name="maxmem">400</property>
+        <property name="name">sys-usb</property>
+        <property name="qid">5</property>
+        <property name="uuid">0da5616e-f2db-4c17-9c0d-cdef2e728344</property>
+        <property name="template">fedora-25</property>
+        <property name="provides_network">True</property>
+      </properties>
+      <features>
+        <feature name="service.network-manager"></feature>
+        <feature name="service.meminfo-writer"></feature>
+      </features>
+      <devices class="pci">
+        <device backend-domain="dom0" id="00_14.0">
+          <option name="no-strict-reset">True</option>
+        </device>
+        <device backend-domain="dom0" id="00_1d.0">
+          <option name="no-strict-reset">True</option>
+        </device>
+      </devices>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/sys-usb/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/sys-usb/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/sys-usb/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-13" class="AppVM">
+      <properties>
+        <property name="label">label-8</property>
+        <property name="name">vault</property>
+        <property name="netvm"></property>
+        <property name="qid">13</property>
+        <property name="uuid">d5284828-988d-46e2-8388-a09c495475e3</property>
+        <property name="template">fedora-25</property>
+        <property name="hvm">False</property>
+        <property name="maxmem">1536</property>
+      </properties>
+      <features/>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags/>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/vault/root"/>
+        <volume name="volatile" pool="lvm" revisions_to_keep="1" rw="True" size="10737418240" vid="core3/vault-volatile"/>
+        <volume name="private" pool="lvm" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="core3/vault-private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-3" class="AppVM">
+      <properties>
+        <property name="ip">192.168.0.1</property>
+        <property name="label">label-4</property>
+        <property name="maxmem">4000</property>
+        <property name="memory">400</property>
+        <property name="name">test-work</property>
+        <property name="qid">3</property>
+        <property name="uuid">07c17d1e-0982-417d-b19e-a81d51bed423</property>
+        <property name="template">fedora-25</property>
+      </properties>
+      <features>
+        <feature name="service.meminfo-writer">1</feature>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-work</feature>
+        <feature name="backup-size">2097152000</feature>
+      </features>
+      <devices class="pci"/>
+      <devices class="block"/>
+      <tags>
+        <tag name="tag1"/>
+        <tag name="tag2"/>
+      </tags>
+      <volume-config>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="4.9.31-17"/>
+        <volume name="root" pool="default" revisions_to_keep="0" size="10737418240" snap_on_start="True" source="vm-templates/fedora-25/root" vid="appvms/test-work/root"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/test-work/volatile"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/test-work/private"/>
+      </volume-config>
+    </domain>
+    <domain id="domain-4" class="StandaloneVM">
+      <properties>
+        <property name="label">label-6</property>
+        <property name="maxmem">4000</property>
+        <property name="name">test-standalonevm</property>
+        <property name="qid">4</property>
+        <property name="uuid">e8034b8a-29b3-4f02-b8cb-05cd74a4bb68</property>
+      </properties>
+      <features>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">appvms/test-standalonevm</feature>
+        <feature name="backup-size">2097152000</feature>
+      </features>
+      <tags/>
+      <volume-config>
+        <volume name="root" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="10737418240" vid="appvms/test-standalonevm/root"/>
+        <volume name="private" pool="default" revisions_to_keep="1" rw="True" save_on_stop="True" size="2147483648" vid="appvms/test-standalonevm/private"/>
+        <volume name="volatile" pool="default" revisions_to_keep="0" rw="True" size="10737418240" vid="appvms/test-standalonevm/volatile"/>
+        <volume name="kernel" pool="linux-kernel" revisions_to_keep="0" vid="None"/>
+      </volume-config>
+    </domain>
+  </domains>
+</qubes>

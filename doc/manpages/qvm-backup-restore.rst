@@ -53,10 +53,6 @@ Options
 
    Restore VMs that are already present on the host under different names
 
-.. option:: --force-root
-
-    Force to run, even with root privileges
-
 .. option:: --replace-template=REPLACE_TEMPLATE
 
     Restore VMs using another template, syntax:

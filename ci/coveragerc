@@ -1,3 +1,5 @@
 [run]
 source = qubesadmin
 omit = qubesadmin/tests/*
+# breaks backup tests for unknown reason
+# concurrency=multiprocessing

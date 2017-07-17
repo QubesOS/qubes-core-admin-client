@@ -5,3 +5,5 @@ pylint
 sphinx
 codecov
 python-daemon
+mock
+lxml

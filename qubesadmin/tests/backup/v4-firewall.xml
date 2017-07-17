@@ -1,0 +1,43 @@
+<firewall version="2">
+  <rules>
+    <rule>
+      <properties>
+        <property name="action">accept</property>
+        <property name="specialtarget">dns</property>
+      </properties>
+    </rule>
+    <rule>
+      <properties>
+        <property name="action">accept</property>
+        <property name="proto">icmp</property>
+      </properties>
+    </rule>
+    <rule>
+      <properties>
+        <property name="action">accept</property>
+        <property name="proto">tcp</property>
+        <property name="dstports">22</property>
+      </properties>
+    </rule>
+    <rule>
+      <properties>
+        <property name="action">accept</property>
+        <property name="dsthost">www.qubes-os.org</property>
+        <property name="proto">tcp</property>
+        <property name="dstports">443</property>
+      </properties>
+    </rule>
+    <rule>
+      <properties>
+        <property name="action">accept</property>
+        <property name="dsthost">192.168.0.0/24</property>
+        <property name="proto">tcp</property>
+      </properties>
+    </rule>
+    <rule>
+      <properties>
+        <property name="action">drop</property>
+      </properties>
+    </rule>
+  </rules>
+</firewall>
