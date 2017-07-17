@@ -94,6 +94,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         ])
         self.assertAllCalled()
 
+    @unittest.expectedFailure
     def test_002_passio(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -120,6 +121,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         ])
         self.assertAllCalled()
 
+    @unittest.expectedFailure
     def test_002_color_output(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -151,6 +153,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         stdout.close()
         self.assertAllCalled()
 
+    @unittest.expectedFailure
     def test_003_no_color_output(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -182,6 +185,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         stdout.close()
         self.assertAllCalled()
 
+    @unittest.expectedFailure
     def test_004_no_filter_esc(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
