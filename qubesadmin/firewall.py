@@ -88,7 +88,10 @@ class DstHost(RuleOption):
             # add prefix length to bare IP addresses
             try:
                 socket.inet_pton(socket.AF_INET6, value)
-                self.prefixlen = prefixlen or 128
+                if prefixlen is not None:
+                    self.prefixlen = prefixlen
+                else:
+                    self.prefixlen = 128
                 if self.prefixlen < 0 or self.prefixlen > 128:
                     raise ValueError(
                         'netmask for IPv6 must be between 0 and 128')
@@ -100,7 +103,10 @@ class DstHost(RuleOption):
                     if value.count('.') != 3:
                         raise ValueError(
                             'Invalid number of dots in IPv4 address')
-                    self.prefixlen = prefixlen or 32
+                    if prefixlen is not None:
+                        self.prefixlen = prefixlen
+                    else:
+                        self.prefixlen = 32
                     if self.prefixlen < 0 or self.prefixlen > 32:
                         raise ValueError(
                             'netmask for IPv4 must be between 0 and 32')
@@ -137,6 +143,10 @@ class DstHost(RuleOption):
     @property
     def rule(self):
         '''API representation of this rule element'''
+        if self.prefixlen == 0 and self.type != 'dsthost':
+            # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
+            # so skip it
+            return None
         return self.type + '=' + str(self)
 
 
