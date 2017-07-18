@@ -1,3 +1,46 @@
+qubes-core-admin-client (4.0.2-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * vm: make QubesVM objects hashable
+  * events: simplify wait_for_domain_shutdown coroutine
+  * tools: handle shutdown order in qvm-shutdown
+  * tests/tools: add MockEventsReader
+  * tests: qvm-shutdown --wait tests
+  * Fix VM creation with default template
+  * events: fix cleanup function in qrexec case
+  * tests: improve test failure message
+
+  [ Marta Marczykowska-Górecka ]
+  * added helper function updates_vms_status
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-run: fix handling copying stdin to the process
+  * tests: mark qvm-run tests with "expected failure"
+  * tools/qvm-run: fix handling EOF
+  * Make pylint happy
+  * Don't try to set 'created-by-' tag when cloning VM
+  * backup: initial support for backup restore over Admin API
+  * tests/backup: tests for backup-restore code
+  * Exclude 'qubesadmin.backup' module from python2 install
+  * devices,features: fix bool values handling
+  * tests/backup: use smaller images
+  * tests: add v4 (Qubes 4.0) backup format tests, move qubes.xml
+  * backup: add firewall and appmenus list handling
+  * firewall: fix handling DstHost.prefixlen=0
+  * tests: backup: add firewall.xml and appmenus checking
+  * tools: add qvm-backup-restore
+  * app: call admin.vm.volume.Import as root
+  * backup: do not show full stacktrace to the user
+  * backup: change 'hvm' property to 'virt_mode'
+  * backup: use 'cat' instead of read-write loop in python
+  * backup: improve error logging
+  * tools/qvm-backup-restore: handle VMs selection, not only exclusion
+  * Choose QubesLocal or QubesRemote based on /etc/qubes-release
+    presence
+  * Change 'hvm' property to 'virt_mode'
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 18 Jul 2017 05:37:29 +0200
+
 qubes-core-admin-client (4.0.1-1) unstable; urgency=medium
 
   * 
