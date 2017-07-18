@@ -187,7 +187,7 @@ class GUILauncher(object):
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.xid)])
 
-        if vm.hvm:
+        if vm.virt_mode == 'hvm':
             guid_cmd.extend(['-n'])
 
             if vm.features.check_with_template('rpc-clipboard', False):
@@ -231,7 +231,7 @@ class GUILauncher(object):
         if not vm.features.check_with_template('gui', True):
             return
 
-        if vm.hvm:
+        if vm.virt_mode == 'hvm':
             if force_stubdom or not os.path.exists(self.guid_pidfile(vm.xid)):
                 if not os.path.exists(self.guid_pidfile(vm.stubdom_xid)):
                     yield from self.start_gui_for_stubdomain(vm)
@@ -297,7 +297,7 @@ class GUILauncher(object):
         '''Handler of 'domain-spawn' event, starts GUI daemon for stubdomain'''
         if not vm.features.check_with_template('gui', True):
             return
-        if vm.hvm and kwargs.get('start_guid', 'True') == 'True':
+        if vm.virt_mode == 'hvm' and kwargs.get('start_guid', 'True') == 'True':
             asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
 
     def on_domain_start(self, vm, _event, **kwargs):
@@ -325,7 +325,7 @@ class GUILauncher(object):
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start' event when
                 # fully started
-                if vm.hvm:
+                if vm.virt_mode == 'hvm':
                     asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
 
     def register_events(self, events):

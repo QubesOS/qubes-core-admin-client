@@ -156,8 +156,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
-                b'0\x00default=False type=bool False'
+            ('test-vm', 'admin.vm.property.Get', 'virt_mode', None)] = \
+                b'0\x00default=False type=str pv'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
             'no-monitor-layout', None)] = \
@@ -190,8 +190,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
-                b'0\x00default=False type=bool True'
+            ('test-vm', 'admin.vm.property.Get', 'virt_mode', None)] = \
+                b'0\x00default=False type=str hvm'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
@@ -230,8 +230,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
-                b'0\x00default=False type=bool True'
+            ('test-vm', 'admin.vm.property.Get', 'virt_mode', None)] = \
+                b'0\x00default=False type=str hvm'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
@@ -310,8 +310,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'hvm', None)] = \
-                b'0\x00default=False type=bool True'
+            ('test-vm', 'admin.vm.property.Get', 'virt_mode', None)] = \
+                b'0\x00default=False type=str hvm'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
                 b'0\x00default=False type=int 3000'

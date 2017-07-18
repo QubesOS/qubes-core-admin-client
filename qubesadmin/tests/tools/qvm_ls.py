@@ -110,7 +110,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             'label': b'type=label green',
             'template': b'type=vm template1',
             'netvm': b'type=vm sys-net',
-#           'hvm': b'type=bool False',
+#           'virt_mode': b'type=str pv',
         }
         for key, value in props.items():
             self.app.expected_calls[

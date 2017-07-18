@@ -119,7 +119,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         testvm2 = self.app.add_new_vm('StandaloneVM',
                                       name=vmname,
                                       label='red')
-        testvm2.hvm = True
+        testvm2.virt_mode = 'hvm'
         testvm2.create_on_disk(pool=pool)
         self.fill_image(testvm2.storage.export('root'), 1024 * 1024 * 1024, \
             True)

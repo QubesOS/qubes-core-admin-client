@@ -229,7 +229,7 @@ class FlagsColumn(Column):
             ret = 'd'
 
         if ret is not None:
-            if getattr(vm, 'hvm', False):
+            if getattr(vm, 'virt_mode', 'pv') == 'hvm':
                 return ret.upper()
             return ret
 

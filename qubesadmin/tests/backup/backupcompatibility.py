@@ -467,7 +467,7 @@ parsed_qubes_xml_v4 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'hvm': 'False',
+                'virt_mode': 'hvm',
                 'kernelopts': 'nopat i8042.nokbd i8042.noaux',
                 'maxmem': '300',
                 'memory': '300',
@@ -547,7 +547,7 @@ parsed_qubes_xml_v4 = {
         'vault': {
             'klass': 'AppVM',
             'label': 'black',
-            'properties': {'hvm': 'False', 'maxmem': '1536', 'netvm': None},
+            'properties': {'virt_mode': 'pv', 'maxmem': '1536', 'netvm': None},
             'devices': {},
             'tags': set(),
             'features': {},
@@ -591,7 +591,7 @@ parsed_qubes_xml_v4 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'hvm': 'False',
+                'virt_mode': 'pv',
                 'autostart': 'True',
                 'maxmem': '400',
                 'provides_network': 'True',
@@ -620,7 +620,7 @@ parsed_qubes_xml_v4 = {
         'test-hvm': {
             'klass': 'StandaloneVM',
             'label': 'purple',
-            'properties': {'hvm': 'True', 'maxmem': '4000'},
+            'properties': {'virt_mode': 'hvm', 'maxmem': '4000'},
             'devices': {},
             'tags': set(),
             'features': {'service.meminfo-writer': False},

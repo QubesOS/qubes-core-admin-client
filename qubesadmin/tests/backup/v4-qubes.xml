@@ -257,7 +257,7 @@
     </domain>
     <domain id="domain-9" class="StandaloneVM">
       <properties>
-        <property name="hvm">True</property>
+        <property name="virt_mode">hvm</property>
         <property name="label">label-7</property>
         <property name="maxmem">4000</property>
         <property name="name">test-hvm</property>
@@ -356,7 +356,7 @@
     <domain id="domain-2" class="AppVM">
       <properties>
         <property name="default_user">user</property>
-        <property name="hvm">False</property>
+        <property name="virt_mode">hvm</property>
         <property name="label">label-1</property>
         <property name="maxmem">300</property>
         <property name="memory">300</property>
@@ -420,7 +420,7 @@
       <properties>
         <property name="autostart">True</property>
         <property name="label">label-1</property>
-        <property name="hvm">False</property>
+        <property name="virt_mode">pv</property>
         <property name="maxmem">400</property>
         <property name="name">sys-usb</property>
         <property name="qid">5</property>
@@ -457,7 +457,7 @@
         <property name="qid">13</property>
         <property name="uuid">d5284828-988d-46e2-8388-a09c495475e3</property>
         <property name="template">fedora-25</property>
-        <property name="hvm">False</property>
+        <property name="virt_mode">pv</property>
         <property name="maxmem">1536</property>
       </properties>
       <features/>

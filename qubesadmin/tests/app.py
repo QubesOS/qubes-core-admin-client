@@ -179,7 +179,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             'memory': 'default=False type=int 400',
             'kernel': 'default=False type=str 4.9.31',
             'netvm': 'default=False type=vm test-net',
-            'hvm': 'default=False type=bool True',
+            'virt_mode': 'default=False type=str hvm',
             'default_user': 'default=True type=str user',
         }
         self.app.expected_calls[
