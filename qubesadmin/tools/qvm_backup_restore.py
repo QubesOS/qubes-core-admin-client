@@ -84,7 +84,7 @@ parser.add_argument("-p", "--passphrase-file", action="store",
 parser.add_argument('backup_location', action='store',
     help="Backup directory name, or command to pipe from")
 
-parser.add_argument('vms', nargs='*', action='store', default='[]',
+parser.add_argument('vms', nargs='*', action='store', default=[],
     help='Restore only those VMs')
 
 
