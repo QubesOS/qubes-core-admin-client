@@ -241,8 +241,8 @@ def main(args=None, app=None):
         parser.error_runtime(str(e))
 
     if args.vms:
-        backup.options.exclude += [vm for vm in restore_info
-            if vm not in args.vms]
+        backup.options.exclude += [vm.name for vm in restore_info.values()
+            if vm.name not in args.vms]
         restore_info = backup.restore_info_verify(restore_info)
 
     print(backup.get_restore_summary(restore_info))
