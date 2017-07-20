@@ -145,7 +145,8 @@ def handle_broken(app, args, restore_info):
                             "missing TemplateVMs will NOT be restored.")
         elif args.ignore_missing:
             app.log.warning("Ignoring missing entries: VMs that depend "
-                            "on missing TemplateVMs will NOT be restored.")
+                "on missing TemplateVMs will have default value "\
+                "assigned.")
         else:
             raise qubesadmin.exc.QubesException(
                 "INTERNAL ERROR! Please report this to the Qubes OS team!")
@@ -162,7 +163,7 @@ def handle_broken(app, args, restore_info):
                             "missing NetVMs will NOT be restored.")
         elif args.ignore_missing:
             app.log.warning("Ignoring missing entries: VMs that depend "
-                            "on missing NetVMs will NOT be restored.")
+                "on missing NetVMs will have default value assigned.")
         else:
             raise qubesadmin.exc.QubesException(
                 "INTERNAL ERROR! Please report this to the Qubes OS team!")
@@ -186,10 +187,10 @@ def handle_broken(app, args, restore_info):
             "the existing files will be moved to this new "
             "directory.")
 
-def main(args=None):
+def main(args=None, app=None):
     '''Main function of qvm-backup-restore'''
     # pylint: disable=too-many-return-statements
-    args = parser.parse_args(args)
+    args = parser.parse_args(args, app=app)
 
     appvm = None
     if args.appvm:
