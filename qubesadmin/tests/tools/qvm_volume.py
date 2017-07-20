@@ -132,6 +132,21 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             )
         self.assertAllCalled()
 
+    def test_005_list_default_action(self):
+        self.setup_expected_calls_for_list()
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main([], app=self.app))
+        self.assertEqual(stdout.getvalue(),
+            'POOL:VOLUME                 VMNAME   VOLUME_NAME  '
+            'REVERT_POSSIBLE\n'
+            'other-pool:sys-net-private  sys-net  private      Yes\n'
+            'other-pool:vm1-private      vm1      private      Yes\n'
+            'pool-file:sys-net-root      sys-net  root         No\n'
+            'pool-file:vm1-root          vm1      root         No\n'
+            )
+        self.assertAllCalled()
+
     def test_010_extend(self):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00testvm class=AppVM state=Running\n'

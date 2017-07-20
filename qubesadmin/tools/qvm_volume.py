@@ -95,7 +95,7 @@ def list_volumes(args):
         domains = app.domains
     volumes = [v for vm in domains for v in vm.volumes.values()]
 
-    if args.pools:
+    if getattr(args, 'pools', None):
         # only specified pools
         volumes = [v for v in volumes if v.pool in args.pools]
 
@@ -126,7 +126,9 @@ def list_volumes(args):
                   if x.domains]
     else:
         result = [x for p in vd_dict.values() for x in p.values()]
-    qubesadmin.tools.print_table(prepare_table(result, full=args.full))
+
+    qubesadmin.tools.print_table(
+        prepare_table(result, full=getattr(args, 'full', False)))
 
 
 def revert_volume(args):
