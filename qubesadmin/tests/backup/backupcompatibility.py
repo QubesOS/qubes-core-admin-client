@@ -786,17 +786,13 @@ class MockFirewall(qubesadmin.firewall.Firewall):
         self.vm.app = AppProxy(self.vm.app, import_data_queue)
 
 
+@unittest.skipUnless(os.environ.get('ENABLE_SLOW_TESTS', False),
+    'Set ENABLE_SLOW_TESTS=1 environment variable')
 class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
     storage_pool = None
 
     def tearDown(self):
-        try:
-            for vm in self.app.domains:
-                if vm.name.startswith('test-'):
-                    del self.app.domains[vm.name]
-        except:
-            pass
         super(TC_10_BackupCompatibility, self).tearDown()
 
     def create_whitelisted_appmenus(self, filename):
