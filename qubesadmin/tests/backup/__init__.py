@@ -25,7 +25,7 @@ import os
 
 import shutil
 
-import qubesadmin.backup
+import qubesadmin.backup.restore
 import qubesadmin.exc
 import qubesadmin.tests
 
@@ -177,7 +177,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
             backupfile = source
 
         with self.assertNotRaises(qubesadmin.exc.QubesException):
-            restore_op = qubesadmin.backup.BackupRestore(
+            restore_op = qubesadmin.backup.restore.BackupRestore(
                 self.app, backupfile, appvm, passphrase)
             if options:
                 for key, value in options.items():

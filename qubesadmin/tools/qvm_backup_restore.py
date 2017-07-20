@@ -23,7 +23,7 @@
 import getpass
 import sys
 
-import qubesadmin.backup
+from qubesadmin.backup.restore import BackupRestore
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.utils
@@ -96,20 +96,20 @@ def handle_broken(app, args, restore_info):
     dom0_username_mismatch = False
 
     for vm_info in restore_info.values():
-        assert isinstance(vm_info, qubesadmin.backup.BackupRestore.VMToRestore)
-        if qubesadmin.backup.BackupRestore.VMToRestore.EXCLUDED in \
+        assert isinstance(vm_info, BackupRestore.VMToRestore)
+        if BackupRestore.VMToRestore.EXCLUDED in \
                 vm_info.problems:
             continue
-        if qubesadmin.backup.BackupRestore.VMToRestore.MISSING_TEMPLATE in \
+        if BackupRestore.VMToRestore.MISSING_TEMPLATE in \
                 vm_info.problems:
             there_are_missing_templates = True
-        if qubesadmin.backup.BackupRestore.VMToRestore.MISSING_NETVM in \
+        if BackupRestore.VMToRestore.MISSING_NETVM in \
                 vm_info.problems:
             there_are_missing_netvms = True
-        if qubesadmin.backup.BackupRestore.VMToRestore.ALREADY_EXISTS in \
+        if BackupRestore.VMToRestore.ALREADY_EXISTS in \
                 vm_info.problems:
             there_are_conflicting_vms = True
-        if qubesadmin.backup.BackupRestore.Dom0ToRestore.USERNAME_MISMATCH in \
+        if BackupRestore.Dom0ToRestore.USERNAME_MISMATCH in \
                 vm_info.problems:
             dom0_username_mismatch = True
 
@@ -145,7 +145,7 @@ def handle_broken(app, args, restore_info):
                             "missing TemplateVMs will NOT be restored.")
         elif args.ignore_missing:
             app.log.warning("Ignoring missing entries: VMs that depend "
-                "on missing TemplateVMs will have default value "\
+                "on missing TemplateVMs will have default value "
                 "assigned.")
         else:
             raise qubesadmin.exc.QubesException(
@@ -211,7 +211,7 @@ def main(args=None, app=None):
     args.app.log.info("Checking backup content...")
 
     try:
-        backup = qubesadmin.backup.BackupRestore(args.app, args.backup_location,
+        backup = BackupRestore(args.app, args.backup_location,
             appvm, passphrase)
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(str(e))

@@ -8,7 +8,6 @@ disable=
   bad-continuation,
   duplicate-code,
   fixme,
-  cyclic-import,
   locally-disabled,
   locally-enabled
 

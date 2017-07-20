@@ -21,7 +21,8 @@ import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_backup_restore
 from unittest import mock
-from qubesadmin.backup import BackupRestore, BackupVM
+from qubesadmin.backup import BackupVM
+from qubesadmin.backup.restore import BackupRestore
 
 
 class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
@@ -33,7 +34,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
 
     @mock.patch('qubesadmin.tools.qvm_backup_restore.input', create=True)
     @mock.patch('getpass.getpass')
-    @mock.patch('qubesadmin.backup.BackupRestore')
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.BackupRestore')
     def test_000_simple(self, mock_backup, mock_getpass, mock_input):
         mock_getpass.return_value = 'testpass'
         mock_input.return_value = 'Y'
@@ -62,7 +63,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
 
     @mock.patch('qubesadmin.tools.qvm_backup_restore.input', create=True)
     @mock.patch('getpass.getpass')
-    @mock.patch('qubesadmin.backup.BackupRestore')
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.BackupRestore')
     def test_001_selected_vms(self, mock_backup, mock_getpass, mock_input):
         mock_getpass.return_value = 'testpass'
         mock_input.return_value = 'Y'

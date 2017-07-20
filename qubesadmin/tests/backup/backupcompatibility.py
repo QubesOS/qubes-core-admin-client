@@ -1414,7 +1414,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             mock.patch('qubesadmin.storage.Volume',
                 functools.partial(MockVolume, qubesd_calls_queue)),
             mock.patch(
-                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
@@ -1476,7 +1476,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             mock.patch('qubesadmin.storage.Volume',
                 functools.partial(MockVolume, qubesd_calls_queue)),
             mock.patch(
-                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
@@ -1539,7 +1539,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             mock.patch('qubesadmin.storage.Volume',
                 functools.partial(MockVolume, qubesd_calls_queue)),
             mock.patch(
-                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
@@ -1603,7 +1603,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             mock.patch('qubesadmin.storage.Volume',
                 functools.partial(MockVolume, qubesd_calls_queue)),
             mock.patch(
-                'qubesadmin.backup.BackupRestore._handle_appmenus_list',
+                'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
