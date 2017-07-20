@@ -99,9 +99,6 @@ def list_volumes(args):
         # only specified pools
         volumes = [v for v in volumes if v.pool in args.pools]
 
-    if not args.internal:  # hide internal volumes
-        volumes = [v for v in volumes if not v.internal]
-
     vd_dict = {}
     for volume in volumes:
         volume_data = VolumeData(volume)
@@ -160,8 +157,6 @@ def init_list_parser(sub_parsers):
                                          help='list storage volumes')
     list_parser.add_argument('-p', '--pool', dest='pools',
                              action=qubesadmin.tools.PoolsAction)
-    list_parser.add_argument('-i', '--internal', action='store_true',
-                             help='Show internal volumes')
     list_parser.add_argument(
         '--full', action='store_true',
         help='print full line for each POOL_NAME:VOLUME_ID & vm combination')

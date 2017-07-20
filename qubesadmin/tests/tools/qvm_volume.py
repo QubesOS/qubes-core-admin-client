@@ -38,7 +38,6 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
                     (b'pool=pool-file\n' if vol == 'root' else
                         b'pool=other-pool\n') + \
                     b'vid=' + vm.encode() + b'-' + vol.encode() + b'\n' \
-                    b'internal=True\n' \
                     b'size=10737418240\n'
                 self.app.expected_calls[
                     (vm, 'admin.vm.volume.ListSnapshots', vol, None)] = \
@@ -51,7 +50,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         self.setup_expected_calls_for_list()
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
-                qubesadmin.tools.qvm_volume.main(['ls', '-i'], app=self.app))
+                qubesadmin.tools.qvm_volume.main(['ls'], app=self.app))
         self.assertEqual(stdout.getvalue(),
             'POOL:VOLUME                 VMNAME   VOLUME_NAME  '
             'REVERT_POSSIBLE\n'
@@ -66,7 +65,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         self.setup_expected_calls_for_list(vms=('vm1',))
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
-                qubesadmin.tools.qvm_volume.main(['ls', '-i', 'vm1'],
+                qubesadmin.tools.qvm_volume.main(['ls', 'vm1'],
                     app=self.app))
         self.assertEqual(stdout.getvalue(),
             'POOL:VOLUME             VMNAME  VOLUME_NAME  REVERT_POSSIBLE\n'
@@ -84,7 +83,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
                 qubesadmin.tools.qvm_volume.main(
-                    ['ls', '-i', '-p', 'pool-file', 'vm1'],
+                    ['ls', '-p', 'pool-file', 'vm1'],
                     app=self.app))
         self.assertEqual(stdout.getvalue(),
             'POOL:VOLUME         VMNAME  VOLUME_NAME  REVERT_POSSIBLE\n'
@@ -104,7 +103,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
                 qubesadmin.tools.qvm_volume.main(
-                    ['ls', '-i', '-p', 'pool-file'],
+                    ['ls', '-p', 'pool-file'],
                     app=self.app))
         self.assertEqual(stdout.getvalue(),
             'POOL:VOLUME             VMNAME   VOLUME_NAME  REVERT_POSSIBLE\n'
@@ -123,7 +122,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
                 qubesadmin.tools.qvm_volume.main(
-                    ['ls', '-i', 'vm1', 'vm2'], app=self.app))
+                    ['ls', 'vm1', 'vm2'], app=self.app))
         self.assertEqual(stdout.getvalue(),
             'POOL:VOLUME             VMNAME  VOLUME_NAME  REVERT_POSSIBLE\n'
             'other-pool:vm1-private  vm1     private      Yes\n'

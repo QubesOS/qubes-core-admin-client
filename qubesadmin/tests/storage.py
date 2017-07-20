@@ -43,7 +43,6 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
             b'snap_on_start=True\n' \
             b'save_on_stop=True\n' \
             b'source=\n' \
-            b'internal=True\n' \
             b'revisions_to_keep=3\n'
 
     def test_000_qubesd_call(self):
@@ -108,11 +107,6 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[call_key] = self.app.expected_calls[
             call_key].replace(b'source=\n', b'source=test-pool:other-id\n')
         self.assertEqual(self.vol.source, 'test-pool:other-id')
-        self.assertAllCalled()
-
-    def test_019_internal(self):
-        self.expect_info()
-        self.assertEqual(self.vol.internal, True)
         self.assertAllCalled()
 
     def test_020_revisions_to_keep(self):
@@ -205,7 +199,6 @@ class TestPoolVolume(TestVMVolume):
             b'snap_on_start=True\n' \
             b'save_on_stop=True\n' \
             b'source=\n' \
-            b'internal=True\n' \
             b'revisions_to_keep=3\n'
 
     def test_001_fetch_info(self):

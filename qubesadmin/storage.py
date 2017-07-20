@@ -166,12 +166,6 @@ class Volume(object):
         return None
 
     @property
-    def internal(self):
-        '''If `True` volume is hidden when qvm-block is used'''
-        self._fetch_info()
-        return self._info['internal'] == 'True'
-
-    @property
     def revisions_to_keep(self):
         '''Number of revisions to keep around'''
         self._fetch_info()

@@ -34,7 +34,7 @@ Commands
 list
 ^^^^
 
-| :command:`qvm-volume list` [-h] [--verbose] [--quiet] [-p *POOL_NAME*] [-i] [*VMNAME* [*VMNAME* ...]]
+| :command:`qvm-volume list` [-h] [--verbose] [--quiet] [-p *POOL_NAME*] [*VMNAME* [*VMNAME* ...]]
 
 List block devices. By default the internal devices are hidden. When the
 stdout is connected to a TTY `qvm-volume list` will print a pretty table by
@@ -44,10 +44,6 @@ passed or stdout is redirected to a pipe or file.
 .. option:: -p, --pool
 
    list volumes from specified pool
-
-.. option:: -i, --internal
-
-   list internal devices
 
 .. option:: --full
 
