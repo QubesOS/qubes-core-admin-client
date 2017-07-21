@@ -12,6 +12,7 @@ Build-Depends:
  python3-sphinx,
  python3-docutils,
  python3-dbus,
+ python3-lxml,
 Standards-Version: 3.9.5
 Homepage: https://www.qubes-os.org/
 #Vcs-Git: git://github.com/QubesOS/qubes-core-admin-client.git
