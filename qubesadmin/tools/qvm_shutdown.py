@@ -48,7 +48,7 @@ parser.add_argument('--timeout',
     action='store', type=float,
     default=60,
     help='timeout after which domains are killed when using --wait'
-        ' (default: %d)')
+        ' (default: %(default)d)')
 
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
