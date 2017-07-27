@@ -347,6 +347,9 @@ parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
     help='Keep watching for further domains startups, must be used with --all')
+parser.add_argument('--force-stubdomain', action='store_true',
+    help='Start GUI to stubdomain-emulated VGA, even if gui-agent is running '
+         'in the VM')
 parser.add_argument('--pidfile', action='store', default=pidfile_path,
     help='Pidfile path to create in --watch mode')
 parser.add_argument('--notify-monitor-layout', action='store_true',
@@ -400,7 +403,8 @@ def main(args=None):
         tasks = []
         for vm in args.domains:
             if vm.is_running():
-                tasks.append(asyncio.ensure_future(launcher.start_gui(vm)))
+                tasks.append(asyncio.ensure_future(launcher.start_gui(
+                    vm, force_stubdom=args.force_stubdomain)))
         if tasks:
             loop.run_until_complete(asyncio.wait(tasks))
         loop.stop()
