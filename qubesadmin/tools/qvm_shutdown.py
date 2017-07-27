@@ -40,11 +40,6 @@ import qubesadmin.exc
 parser = qubesadmin.tools.QubesArgumentParser(
     description=__doc__, vmname_nargs='+')
 
-parser.add_argument('--force',
-    action='store_true', default=False,
-    help='force operation, even if may damage other VMs (eg. shutdown of'
-        ' network provider)')
-
 parser.add_argument('--wait',
     action='store_true', default=False,
     help='wait for the VMs to shut down')

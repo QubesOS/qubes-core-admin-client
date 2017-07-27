@@ -15,7 +15,7 @@
 Synopsis
 --------
 
-:command:`qvm-shutdown` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--force] [--wait] [--timeout *TIMEOUT*] [*VMNAME*]
+:command:`qvm-shutdown` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--wait] [--timeout *TIMEOUT*] [*VMNAME*]
 
 Options
 -------
@@ -39,11 +39,6 @@ Options
 .. option:: --exclude=EXCLUDE
 
    exclude the qube from :option:`--all`
-
-.. option:: --force
-
-   force operation, even if may damage other VMs (eg. shutdown of network
-   provider)
 
 .. option:: --wait
 
