@@ -59,6 +59,10 @@ Options
 
    Specify a non-default compression filter program (default: gzip)
 
+.. option:: --yes, -y
+
+   Do not ask for confirmation
+
 Arguments
 ---------
 
