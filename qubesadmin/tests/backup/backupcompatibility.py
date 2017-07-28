@@ -1354,6 +1354,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             for feature, value in vm['features'].items():
                 if value is False:
                     value = ''
+                elif value is True:
+                    value = '1'
                 self.app.expected_calls[
                     (name, 'admin.vm.feature.Set', feature,
                     str(value).encode())] = b'0\0'

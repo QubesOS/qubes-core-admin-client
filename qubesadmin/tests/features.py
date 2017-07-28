@@ -78,7 +78,7 @@ class TC_00_Features(qubesadmin.tests.QubesTestCase):
 
     def test_021_set_bool(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.feature.Set', 'feature1', b'True')] = \
+            ('test-vm', 'admin.vm.feature.Set', 'feature1', b'1')] = \
             b'0\0'
         self.vm.features['feature1'] = True
         self.assertAllCalled()
