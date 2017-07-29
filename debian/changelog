@@ -1,3 +1,29 @@
+qubes-core-admin-client (4.0.3-1) unstable; urgency=medium
+
+  * tools/qvm-backup-restore: fix default list of VMs to restore
+  * storage: drop 'internal' volume property
+  * tools/qvm-volume: fix default action handling
+  * tests: qvm-backup-restore tool tests
+  * tools/qvm-backup-restore: fix restoring only specific VMs
+  * tests: disable slow tests unless ENABLE_SLOW_TESTS=1 is set
+  * backup: move BackupRestore class and helpers to 'restore' submodule
+  * tools: add qvm-backup tool
+  * debian: update build depends
+  * doc: update qvm-backup man page
+  * backup/restore: improve error reporting
+  * backup/restore: add option to ignore size limit
+  * events: add variable Admin API method name
+  * tools/qvm-shutdown: drop --force option, it isn't supported anymore
+  * tools/qvm-shutdown: fix help message
+  * tools/qvm-start-gui: add --force-stubdomain options
+  * features: serialize True as '1'
+  * tests: too much copy&paste
+  * tools: qvm-service tool
+  * doc: update manpage of qvm-service
+  * qvm-ls: fix total VM size reporting
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 29 Jul 2017 06:16:06 +0200
+
 qubes-core-admin-client (4.0.2-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
