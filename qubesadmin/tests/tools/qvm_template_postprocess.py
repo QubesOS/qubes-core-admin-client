@@ -243,7 +243,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Reset', 'netvm', None)] = b'0\0'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'True')] = b'0\0'
+            ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'1')] = b'0\0'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Start', None, None)] = b'0\0'
         self.app.expected_calls[
@@ -293,7 +293,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Reset', 'netvm', None)] = b'0\0'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'True')] = b'0\0'
+            ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'1')] = b'0\0'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Start', None, None)] = b'0\0'
         self.app.expected_calls[

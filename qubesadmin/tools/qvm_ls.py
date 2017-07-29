@@ -351,7 +351,7 @@ Column('MEMORY',
     doc='Memory currently used by VM')
 
 Column('DISK',
-    attr=(lambda vm: vm.storage.get_disk_utilization() / 1024 / 1024),
+    attr=(lambda vm: vm.get_disk_utilization() // 1024 // 1024),
     doc='Total disk utilisation.')
 
 

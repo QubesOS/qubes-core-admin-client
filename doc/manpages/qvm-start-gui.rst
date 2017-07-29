@@ -15,7 +15,7 @@
 Synopsis
 --------
 
-:command:`qvm-start-gui` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--watch] [--pidfile *PIDFILE*] [--notify-monitory-layout] [*VMNAME* [*VMNAME* ...]]
+:command:`qvm-start-gui` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--watch] [--force-stubdomain] [--pidfile *PIDFILE*] [--notify-monitory-layout] [*VMNAME* [*VMNAME* ...]]
 
 Options
 -------
@@ -43,6 +43,10 @@ Options
 .. option:: --watch
 
    Keep watching for further domains startups, must be used with --all
+
+.. option:: --force-stubdomain
+
+   Start GUI to stubdomain-emulated VGA, even if gui-agent is running in the VM
 
 .. option:: --pidfile
 

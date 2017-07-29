@@ -8,6 +8,7 @@ Synopsis
 ========
 | :command:`qvm-service` [-l] <*vmname*>
 | :command:`qvm-service` [-e|-d|-D] <*vmname*> <*service*>
+| :command:`qvm-service` <*vmname*> <*service*> [on|off]
 
 Options
 =======
@@ -27,10 +28,18 @@ Options
 
     Disable service
 
-.. option:: --default, -D
+.. option:: --default, -D, --delete, --unset
 
     Reset service to its default state (remove from the list). Default state
     means "lets VM choose" and can depend on VM type (NetVM, AppVM etc).
+
+.. option:: --verbose, -v
+
+   increase verbosity
+
+.. option:: --quiet, -q
+
+   decrease verbosity
 
 Supported services
 ==================
@@ -50,11 +59,6 @@ meminfo-writer
         remove it (reset to default state), will be recreated with the rule: enabled
         if VM have no PCI devices assigned, otherwise disabled.
 
-qubes-dvm
-    Default: disabled
-
-    Used internally when creating DispVM savefile.
-
 qubes-firewall
     Default: enabled only in ProxyVM
 
@@ -71,14 +75,6 @@ qubes-network
 
     Expose network for other VMs. This includes enabling network forwarding,
     MASQUERADE, DNS redirection and basic firewall.
-
-qubes-netwatcher
-    Default: enabled only in ProxyVM
-
-    Monitor IP change notification from NetVM. When received, reload
-    qubes-firewall service (to force DNS resolution).
-
-    This service makes sense only with qubes-firewall enabled.
 
 qubes-update-check
     Default: enabled
@@ -103,12 +99,12 @@ network-manager
     Enable NetworkManager. Only VM with direct access to network device needs
     this service, but can be useful in ProxyVM to ease VPN setup.
 
-ntpd
+clocksync
     Default: disabled
 
-    Enable NTPD service. By default Qubes calls ntpdate every 6 minutes in
-    selected VM (aka ClockVM), then propagate the result using qrexec calls.
-    Enabling ntpd *do not* disable this behaviour.
+    Enable NTPD (or equivalent) service. If disabled, VM will sync clock with
+    selected VM (aka ClockVM) instead. ClockVM for particular VM can be set in
+    policy of qubes.GetDate service, using target= parameter.
 
 qubes-yum-proxy
     Deprecated name for qubes-updates-proxy.
@@ -130,9 +126,8 @@ updates-proxy-setup
 
     .. note::
 
-       this service is automatically enabled when you allow VM to access yum
-       proxy (in firewall settings) and disabled when you deny access to yum
-       proxy.
+       this service is automatically enabled when you allow VM to access updates
+       proxy and disabled when you deny access to updates proxy.
 
 disable-default-route
     Default: disabled

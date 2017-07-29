@@ -257,6 +257,10 @@ class QubesVM(qubesadmin.base.PropertyHolder):
                     vm=self.name, vm_name=volname)
         return self._volumes
 
+    def get_disk_utilization(self):
+        '''Get total disk usage of the VM'''
+        return sum(vol.usage for vol in self.volumes.values())
+
     def run_service(self, service, **kwargs):
         '''Run service on this VM
 
