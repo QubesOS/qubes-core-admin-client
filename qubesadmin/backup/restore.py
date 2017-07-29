@@ -731,6 +731,8 @@ class BackupRestoreOptions(object):
         self.exclude = []
         #: restore VMs into selected storage pool
         self.override_pool = None
+        #: ignore size limit calculated from backup metadata
+        self.ignore_size_limit = False
 
 class BackupRestore(object):
     """Usage:
@@ -859,6 +861,7 @@ class BackupRestore(object):
             self.processes_to_kill_on_cancel.append(vmproc)
 
             backup_stdin = vmproc.stdout
+            # FIXME use /usr/lib/qubes/qfile-unpacker in non-dom0
             tar1_command = ['/usr/libexec/qubes/qfile-dom0-unpacker',
                             str(os.getuid()), self.tmpdir, '-v']
         else:
@@ -1252,6 +1255,9 @@ class BackupRestore(object):
         limit_count = str(2 * (10 * len(vms_dirs) +
                                int(vms_size / (100 * 1024 * 1024))))
 
+        if self.options.ignore_size_limit:
+            limit_count = '0'
+            vms_size = 0
         self.log.debug("Working in temporary dir: %s", self.tmpdir)
         self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
 
@@ -1352,10 +1358,16 @@ class BackupRestore(object):
                                           tmpdir=self.tmpdir)
 
             if retrieve_proc.wait() != 0:
-                raise QubesException(
-                    "unable to read the qubes backup file {0}: {1}"
-                    .format(self.backup_location, error_pipe.read(
-                        MAX_STDERR_BYTES)))
+                if retrieve_proc.returncode == errno.EDQUOT:
+                    raise QubesException(
+                        'retrieved backup size exceed expected size, if you '
+                        'believe this is ok, use --ignore-size-limit option')
+                else:
+                    raise QubesException(
+                        "unable to read the qubes backup file {} ({}): {}"
+                        .format(self.backup_location,
+                            retrieve_proc.returncode, error_pipe.read(
+                            MAX_STDERR_BYTES)))
             # wait for other processes (if any)
             for proc in self.processes_to_kill_on_cancel:
                 proc.wait()

@@ -70,6 +70,13 @@ Options
 
     Ignore dom0 username mismatch while restoring homedir
 
+.. option:: --ignore-size-limit
+
+    Backup metadata contains expected size of each VM. By default if backup
+    contains more data than expected, it is rejected. Use this option to ignore
+    this limit and restore such (broken, or potentially malicious) backup
+    anyway.
+
 .. option:: --dest-vm=APPVM, -d APPVM
 
     Restore from a backup located in a specific AppVM

@@ -74,6 +74,10 @@ parser.add_argument("--ignore-username-mismatch", action="store_true",
     help="Ignore dom0 username mismatch when restoring home "
          "directory")
 
+parser.add_argument("--ignore-size-limit", action="store_true",
+    dest="ignore_size_limit", default=False,
+    help="Ignore size limit calculated from backup metadata")
+
 parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
     help="Specify VM containing the backup to be restored")
 
@@ -229,6 +233,8 @@ def main(args=None, app=None):
         backup.options.dom0_home = False
     if args.ignore_username_mismatch:
         backup.options.ignore_username_mismatch = True
+    if args.ignore_size_limit:
+        backup.options.ignore_size_limit = True
     if args.exclude:
         backup.options.exclude = args.exclude
     if args.verify_only:
