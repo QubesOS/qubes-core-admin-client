@@ -971,10 +971,12 @@ class BackupRestore(object):
                 "ERROR: verify file {0}: {1}".format(filename, hmac_stderr))
         else:
             self.log.debug("Loading hmac for file %s", filename)
-            with open(os.path.join(self.tmpdir, hmacfile), 'r',
-                    encoding='ascii') as f_hmac:
-                hmac = load_hmac(f_hmac.read())
-
+            try:
+                with open(os.path.join(self.tmpdir, hmacfile), 'r',
+                        encoding='ascii') as f_hmac:
+                    hmac = load_hmac(f_hmac.read())
+            except UnicodeDecodeError as err:
+                raise QubesException('Cannot load hmac file: ' + str(err))
             if hmac and load_hmac(hmac_stdout.decode('ascii')) == hmac:
                 os.unlink(os.path.join(self.tmpdir, hmacfile))
                 self.log.debug(
@@ -1753,14 +1755,13 @@ class BackupRestore(object):
         try:
             self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
                 handlers=handlers)
-        except QubesException:
+        except QubesException as err:
             if self.options.verify_only:
                 raise
             else:
+                self.log.error('Error extracting data: ' + str(err))
                 self.log.warning(
-                    "Some errors occurred during data extraction, "
-                    "continuing anyway to restore at least some "
-                    "VMs")
+                    "Continuing anyway to restore at least some VMs")
 
         if self.options.verify_only:
             shutil.rmtree(self.tmpdir)
