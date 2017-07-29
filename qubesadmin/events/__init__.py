@@ -30,10 +30,12 @@ import qubesadmin.exc
 class EventsDispatcher(object):
     ''' Events dispatcher, responsible for receiving events and calling
     appropriate handlers'''
-    def __init__(self, app):
+    def __init__(self, app, api_method='admin.Events'):
         '''Initialize EventsDispatcher'''
         #: Qubes() object
         self.app = app
+
+        self._api_method = api_method
 
         #: event handlers - dict of event -> handlers
         self.handlers = {}
@@ -77,7 +79,7 @@ class EventsDispatcher(object):
             reader, writer = yield from asyncio.open_unix_connection(
                 qubesadmin.config.QUBESD_SOCKET)
             writer.write(b'dom0\0')  # source
-            writer.write(b'admin.Events\0')  # method
+            writer.write(self._api_method.encode() + b'\0')  # method
             writer.write(dest.encode('ascii') + b'\0')  # dest
             writer.write(b'\0')  # arg
             writer.write_eof()
@@ -87,7 +89,7 @@ class EventsDispatcher(object):
                 writer.close()
         elif self.app.qubesd_connection_type == 'qrexec':
             proc = yield from asyncio.create_subprocess_exec(
-                'qrexec-client-vm', dest, 'admin.Events',
+                'qrexec-client-vm', dest, self._api_method,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
             proc.stdin.write_eof()
