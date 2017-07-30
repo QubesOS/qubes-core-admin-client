@@ -1,3 +1,10 @@
+qubes-core-admin-client (4.0.4-1) unstable; urgency=medium
+
+  * tools/qvm-start-gui: do not start stubdomain GUI for VMs with gui-
+    agent
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 30 Jul 2017 19:20:07 +0200
+
 qubes-core-admin-client (4.0.3-1) unstable; urgency=medium
 
   * tools/qvm-backup-restore: fix default list of VMs to restore
