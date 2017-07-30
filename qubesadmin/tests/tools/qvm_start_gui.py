@@ -268,6 +268,10 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_030_start_gui_for_stubdomain(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
@@ -277,11 +281,16 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
-        with unittest.mock.patch('asyncio.create_subprocess_exec') as proc_mock:
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        proc_mock = unittest.mock.Mock()
+        with unittest.mock.patch('asyncio.create_subprocess_exec',
+                lambda *args: self.mock_coroutine(proc_mock, *args)):
             with unittest.mock.patch.object(self.launcher,
                     'common_guid_args', lambda vm: []):
-                self.launcher.start_gui_for_stubdomain(
-                    self.app.domains['test-vm'])
+                loop.run_until_complete(self.launcher.start_gui_for_stubdomain(
+                    self.app.domains['test-vm']))
                 # common arguments dropped for simplicity
                 proc_mock.assert_called_once_with('-d', '3001', '-t', '3000')
 
@@ -326,7 +335,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             self.launcher, 'start_gui_for_vm', functools.partial(
                 self.mock_coroutine, mock_start_vm))
         patch_start_stubdomain = unittest.mock.patch.object(
-            self.launcher, 'start_gui_for_stubdomain', lambda vm_:
+            self.launcher, 'start_gui_for_stubdomain', lambda vm_, force:
             self.mock_coroutine(mock_start_stubdomain, vm_))
         try:
             patch_start_vm.start()

@@ -207,16 +207,28 @@ class GUILauncher(object):
         yield from self.send_monitor_layout(vm, layout=monitor_layout,
             startup=True)
 
-    def start_gui_for_stubdomain(self, vm):
+    @asyncio.coroutine
+    def start_gui_for_stubdomain(self, vm, force=False):
         '''Start GUI daemon (qubes-guid) connected to a stubdomain
 
         This function is a coroutine.
         '''
+        want_stubdom = force
+        # if no 'gui' feature set at all, assume no gui agent installed
+        if not want_stubdom and \
+                vm.features.check_with_template('gui', None) is None:
+            want_stubdom = True
+        if not want_stubdom and vm.debug:
+            want_stubdom = True
+        if not want_stubdom:
+            return
+        if os.path.exists(self.guid_pidfile(vm.stubdom_xid)):
+            return
         vm.log.info('Starting GUI (stubdomain)')
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.stubdom_xid), '-t', str(vm.xid)])
 
-        return asyncio.create_subprocess_exec(*guid_cmd)
+        yield from asyncio.create_subprocess_exec(*guid_cmd)
 
     @asyncio.coroutine
     def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
@@ -232,9 +244,8 @@ class GUILauncher(object):
             return
 
         if vm.virt_mode == 'hvm':
-            if force_stubdom or not os.path.exists(self.guid_pidfile(vm.xid)):
-                if not os.path.exists(self.guid_pidfile(vm.stubdom_xid)):
-                    yield from self.start_gui_for_stubdomain(vm)
+            yield from self.start_gui_for_stubdomain(vm,
+                force=force_stubdom)
 
         if not os.path.exists(self.guid_pidfile(vm.xid)):
             yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
