@@ -94,11 +94,12 @@ parser.add_argument('cmd', metavar='COMMAND',
 def copy_stdin(stream):
     '''Copy stdin to *stream*'''
     # multiprocessing.Process have sys.stdin connected to /dev/null
-    stdin = open(0)
-    for data in iter(lambda: stdin.buffer.read(4096), b''):
+    os.set_blocking(0, True)
+    for data in iter(lambda: os.read(0, 65536), b''):
         if data is None:
             break
         stream.write(data)
+        stream.flush()
     stream.close()
 
 def main(args=None, app=None):
