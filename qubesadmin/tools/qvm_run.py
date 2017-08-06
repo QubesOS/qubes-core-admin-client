@@ -30,7 +30,7 @@ import multiprocessing
 import qubesadmin.tools
 import qubesadmin.exc
 
-parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs='+')
+parser = qubesadmin.tools.QubesArgumentParser()
 
 parser.add_argument('--user', '-u', metavar='USER',
     help='run command in a qube as USER (available only from dom0)')
@@ -88,6 +88,24 @@ parser.add_argument('--service',
     action='store_true', dest='service',
     help='run a qrexec service (named by COMMAND) instead of shell command')
 
+target_parser = parser.add_mutually_exclusive_group()
+
+target_parser.add_argument('--dispvm', action='store', nargs='?',
+    const=True, metavar='BASE_APPVM',
+    help='start a service in new Disposable VM; '
+         'optionally specify base AppVM for DispVM')
+target_parser.add_argument('VMNAME',
+    nargs='?',
+    action=qubesadmin.tools.VmNameAction)
+
+# add those manually instead of vmname_args, because of mutually exclusive
+# group with --dispvm; parsing is still handled by QubesArgumentParser
+target_parser.add_argument('--all', action='store_true', dest='all_domains',
+    help='run command on all running qubes')
+
+parser.add_argument('--exclude', action='append', default=[],
+    help='exclude the qube from --all')
+
 parser.add_argument('cmd', metavar='COMMAND',
     help='command to run')
 
@@ -130,7 +148,10 @@ def main(args=None, app=None):
         run_kwargs['stderr'] = None
 
     if isinstance(args.app, qubesadmin.app.QubesLocal) and \
-            not args.passio and not args.localcmd and args.service:
+            not args.passio and \
+            not args.localcmd and \
+            args.service and \
+            not args.dispvm:
         # wait=False works only in dom0; but it's still useful, to save on
         # simultaneous vchan connections
         run_kwargs['wait'] = False
@@ -139,6 +160,18 @@ def main(args=None, app=None):
     if args.passio:
         verbose -= 1
 
+    # --all and --exclude are handled by QubesArgumentParser
+    domains = args.domains
+    dispvm = None
+    if args.dispvm:
+        if args.exclude:
+            parser.error('Cannot use --exclude with --dispvm')
+        dispvm = qubesadmin.vm.DispVM.from_appvm(args.app,
+            None if args.dispvm is True else args.dispvm)
+        domains = [dispvm]
+    elif args.all_domains:
+        # --all consider only running VMs
+        domains = [vm for vm in domains if vm.is_running()]
     if args.color_output:
         sys.stdout.write('\033[0;{}m'.format(args.color_output))
         sys.stdout.flush()
@@ -148,7 +181,7 @@ def main(args=None, app=None):
     copy_proc = None
     try:
         procs = []
-        for vm in args.domains:
+        for vm in domains:
             if not args.autostart and not vm.is_running():
                 continue
             try:
@@ -160,7 +193,7 @@ def main(args=None, app=None):
                     else:
                         print('Running \'{}\' on {}'.format(args.cmd, vm.name),
                             file=sys.stderr)
-                if args.gui:
+                if args.gui and not args.dispvm:
                     wait_session = vm.run_service('qubes.WaitForSession',
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     wait_session.communicate(vm.default_user.encode())
@@ -194,6 +227,8 @@ def main(args=None, app=None):
         for proc in procs:
             retcode = max(retcode, proc.wait())
     finally:
+        if dispvm:
+            dispvm.cleanup()
         if args.color_output:
             sys.stdout.write('\033[0m')
             sys.stdout.flush()

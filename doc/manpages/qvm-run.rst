@@ -6,7 +6,9 @@
 Synopsis
 --------
 
-:command:`qvm-run` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--user *USER*] [--autostart] [--pass-io] [--localcmd *COMMAND*] [--gui] [--no-gui] [--colour-output *COLOR*] [--no-color-output] [--filter-escape-chars] [--no-filter-escape-chars] [*VMNAME*] *COMMAND*
+:command:`qvm-run` [options] *VMNAME* *COMMAND*
+:command:`qvm-run` [options] --all [--exclude *EXCLUDE*]  *COMMAND*
+:command:`qvm-run` [options] --dispvm [*BASE_APPVM*] *COMMAND*
 
 Options
 -------
@@ -31,6 +33,11 @@ Options
 .. option:: --exclude
 
    Exclude the qube from :option:`--all`.
+
+.. option:: --dispvm [BASE_APPVM]
+
+   Run the command fresh DisposableVM created out of *BASE_APPVM*. This option
+   is mutually exclusive with *VMNAME*, --all and --exclude.
 
 .. option:: --user=USER, -u USER
 

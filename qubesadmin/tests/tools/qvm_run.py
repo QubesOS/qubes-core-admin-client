@@ -66,12 +66,19 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n' \
-            b'test-vm2 class=AppVM state=Running\n'
-        # self.app.expected_calls[
-        #     ('test-vm', 'admin.vm.List', None, None)] = \
-        #     b'0\x00test-vm class=AppVM state=Running\n'
+            b'test-vm2 class=AppVM state=Running\n' \
+            b'test-vm3 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm2 class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm3 class=AppVM state=Halted\n'
         ret = qubesadmin.tools.qvm_run.main(
-            ['--no-gui', 'test-vm', 'test-vm2', 'command'],
+            ['--no-gui', '--all', 'command'],
             app=self.app)
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
@@ -302,5 +309,109 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'user': None,
             }),
             ('test-vm', 'service.name', b''),
+        ])
+        self.assertAllCalled()
+
+    def test_008_dispvm_remote(self):
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--dispvm', '--service', 'test.service'], app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm', 'test.service', {
+                'filter_esc': self.default_filter_esc(),
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm', 'test.service', b''),
+        ])
+        self.assertAllCalled()
+
+    def test_009_dispvm_remote_specific(self):
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--dispvm=test-vm', '--service', 'test.service'], app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm:test-vm', 'test.service', {
+                'filter_esc': self.default_filter_esc(),
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm:test-vm', 'test.service', b''),
+        ])
+        self.assertAllCalled()
+
+    def test_010_dispvm_local(self):
+        self.app.qubesd_connection_type = 'socket'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.CreateDisposable', None, None)] = \
+            b'0\0disp123'
+        self.app.expected_calls[('disp123', 'admin.vm.Kill', None, None)] = \
+            b'0\0'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--dispvm', '--service', 'test.service'], app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('disp123', 'test.service', {
+                'filter_esc': self.default_filter_esc(),
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('disp123', 'test.service', b''),
+        ])
+        self.assertAllCalled()
+
+    def test_011_dispvm_local_specific(self):
+        self.app.qubesd_connection_type = 'socket'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CreateDisposable', None, None)] = \
+            b'0\0disp123'
+        self.app.expected_calls[('disp123', 'admin.vm.Kill', None, None)] = \
+            b'0\0'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--dispvm=test-vm', '--service', 'test.service'], app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('disp123', 'test.service', {
+                'filter_esc': self.default_filter_esc(),
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('disp123', 'test.service', b''),
+        ])
+        self.assertAllCalled()
+
+    def test_012_exclude(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'test-vm2 class=AppVM state=Running\n' \
+            b'test-vm3 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm3 class=AppVM state=Halted\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--all', '--exclude', 'test-vm2', 'command'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {
+                'filter_esc': self.default_filter_esc(),
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMShell', b'command; exit\n'),
         ])
         self.assertAllCalled()
