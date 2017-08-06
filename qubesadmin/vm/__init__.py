@@ -346,7 +346,50 @@ class TemplateVM(QubesVM):
             except AttributeError:
                 pass
 
+class DispVMWrapper(QubesVM):
+    '''Wrapper class for new DispVM, supporting only service call
+
+    Note that when running in dom0, one need to manually kill the DispVM after
+    service call ends.
+    '''
+
+    def run_service(self, service, **kwargs):
+        if self.app.qubesd_connection_type == 'socket':
+            # create dispvm at service call
+            if self._method_dest.startswith('$dispvm'):
+                if self._method_dest.startswith('$dispvm:'):
+                    method_dest = self._method_dest[len('$dispvm:'):]
+                else:
+                    method_dest = 'dom0'
+                dispvm = self.app.qubesd_call(method_dest,
+                    'admin.vm.CreateDisposable')
+                dispvm = dispvm.decode('ascii')
+                self._method_dest = dispvm
+        return super(DispVMWrapper, self).run_service(service, **kwargs)
+
+    def cleanup(self):
+        '''Cleanup after DispVM usage'''
+        # in 'remote' case nothing is needed, as DispVM is cleaned up
+        # automatically
+        if self.app.qubesd_connection_type == 'socket':
+            try:
+                self.kill()
+            except qubesadmin.exc.QubesVMNotRunningError:
+                pass
+
 
 class DispVM(QubesVM):
     '''Disposable VM'''
-    pass
+
+    @classmethod
+    def from_appvm(cls, app, appvm):
+        '''Returns a wrapper for calling service in a new DispVM based on given
+        AppVM. If *appvm* is none, use default DispVM template'''
+
+        if appvm:
+            method_dest = '$dispvm:' + str(appvm)
+        else:
+            method_dest = '$dispvm'
+
+        wrapper = DispVMWrapper(app, method_dest)
+        return wrapper
