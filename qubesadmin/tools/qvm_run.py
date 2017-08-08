@@ -21,11 +21,12 @@
 ''' qvm-run tool'''
 
 import os
+import subprocess
 import sys
 
-import subprocess
-
 import multiprocessing
+
+import fcntl
 
 import qubesadmin.tools
 import qubesadmin.exc
@@ -111,8 +112,11 @@ parser.add_argument('cmd', metavar='COMMAND',
 
 def copy_stdin(stream):
     '''Copy stdin to *stream*'''
-    # multiprocessing.Process have sys.stdin connected to /dev/null
-    os.set_blocking(0, True)
+    # multiprocessing.Process have sys.stdin connected to /dev/null, use fd 0
+    #  directly
+    flags = fcntl.fcntl(0, fcntl.F_GETFL)
+    flags &= ~os.O_NONBLOCK
+    fcntl.fcntl(0, fcntl.F_SETFL, flags)
     for data in iter(lambda: os.read(0, 65536), b''):
         if data is None:
             break
