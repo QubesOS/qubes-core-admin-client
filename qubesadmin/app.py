@@ -109,6 +109,11 @@ class VMCollection(object):
         self.refresh_cache()
         return self._vm_list.keys()
 
+    def values(self):
+        '''Get list of VM objects.'''
+        self.refresh_cache()
+        return [self[name] for name in self._vm_list]
+
 
 class QubesBase(qubesadmin.base.PropertyHolder):
     '''Main Qubes application'''

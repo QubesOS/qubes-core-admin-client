@@ -80,6 +80,26 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
         del self.app.domains['test-vm']
         self.assertAllCalled()
 
+    def test_005_keys(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'test-vm2 class=AppVM state=Running\n'
+        self.assertEqual(set(self.app.domains.keys()),
+            set(['test-vm', 'test-vm2']))
+        self.assertAllCalled()
+
+    def test_006_values(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'test-vm2 class=AppVM state=Running\n'
+        values = self.app.domains.values()
+        for obj in values:
+            self.assertIsInstance(obj, qubesadmin.vm.AppVM)
+        self.assertEqual(set([vm.name for vm in values]),
+            set(['test-vm', 'test-vm2']))
+        self.assertAllCalled()
+
+
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
     def test_010_new_simple(self):
