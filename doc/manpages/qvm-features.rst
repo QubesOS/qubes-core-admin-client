@@ -45,7 +45,96 @@ have some specific capability.
 Some extensions interpret the values as boolean. In this case, the empty string
 means :py:obj:`False` and non-empty string (commonly ``'1'``) means
 :py:obj:`True`. An absence of the feature means "default", which is
-extension-dependent.
+extension-dependent. In most cases the default value for feature is retrieved
+from a qube template.
+
+List of known features
+----------------------
+
+.. warning::
+
+   This list of features may be incomplete, because extensions are free to use any
+   values, without registering them anywhere.
+
+gui
+^^^
+
+Qube provide any kind of GUI. Setting this feature to :py:obj:`False` disable
+GUI for given qubes - both gui-agent based and emulated VGA based one. Setting
+this feature to :py:obj:`True` enable gui-agent based GUI (i.e. with support of
+tools installed inside of qube). Not setting this feature at all, enable showing
+VGA emulated output.
+
+qrexec
+^^^^^^
+
+Qube has qrexec agent installed - i.e. it is possible to request staring a
+command/service in there.
+
+rpc-clipboard
+^^^^^^^^^^^^^
+
+Use `qubes.ClipboardCopy` and `qubes.ClipboardPaste` qubes RPC services to
+fetch/send clipboard content from/to this qube, instead of using GUI protocol.
+This is supported (and required) by Qubes Windows Tools.
+
+no-monitor-layout
+^^^^^^^^^^^^^^^^^
+
+When set to :py:pbj:`True`, monitor layout is not sent to this qube. That is
+avoid calling `qubes.SetMonitorLayout` in this qube.
+
+internal
+^^^^^^^^
+
+Internal qubes (with this feature set to :py:obj:`True`) are not included in the
+menu.
+
+appmenus-legacy
+^^^^^^^^^^^^^^^
+
+Generate legacy menu entries, using `qubes-desktop-run` command inside a VM,
+instead of `qubes.StartApp` qrexec service. This is used for qubes imported from
+previous Qubes version.
+
+appmenus-dispvm
+^^^^^^^^^^^^^^^
+
+Generate menu entries for starting applications in Disposable VM based on given
+AppVM, instead of this AppVM directly.
+
+qubes-firewall
+^^^^^^^^^^^^^^
+
+Setting this to :py:obj:`True` means that qube support enforcing firewall rules
+set with `qvm-firewall` command.
+
+net.fake-ip
+^^^^^^^^^^^
+
+Hide the real IP of the qube from it, and configure it with value set to this
+feature. Note that you can assign the same `net.fake-ip` address to multiple
+qubes and it shouldn't cause any troubles (unless you want to two such qubes
+communicate with each other). This feature does not affect address used in
+firewall rules, routing tables etc.
+
+net.fake-gateway
+^^^^^^^^^^^^^^^^
+
+Hide the real gateway of the qube from it, and configure it with value set to
+this feature.
+
+net.fake-netmask
+^^^^^^^^^^^^^^^^
+
+Hide the real netmask of the qube from it, and configure it with value set to
+this feature.
+
+updates-available
+^^^^^^^^^^^^^^^^^
+
+There are updates available.
+
 
 Authors
 -------
