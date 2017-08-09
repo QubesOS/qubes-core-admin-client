@@ -99,9 +99,15 @@ def list_devices(args):
             if domain == dev.backend_domain:
                 continue
 
-            if dev in domain.devices[args.devclass].assignments():
-                result[dev].frontends.append(str(domain))
-
+            for assignment in domain.devices[args.devclass].assignments():
+                if dev != assignment:
+                    continue
+                if assignment.options:
+                    result[dev].frontends.append('{!s} ({})'.format(
+                        domain, ', '.join('{}={}'.format(key, value)
+                            for key, value in assignment.options.items())))
+                else:
+                    result[dev].frontends.append(str(domain))
 
     qubesadmin.tools.print_table(prepare_table(result.values()))
 
