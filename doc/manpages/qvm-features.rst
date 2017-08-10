@@ -65,11 +65,16 @@ this feature to :py:obj:`True` enable gui-agent based GUI (i.e. with support of
 tools installed inside of qube). Not setting this feature at all, enable showing
 VGA emulated output.
 
+Default: show emulated VGA output only
+
 qrexec
 ^^^^^^
 
 Qube has qrexec agent installed - i.e. it is possible to request staring a
 command/service in there.
+
+Default: assume qrexec not installed (do not wait for it while starting the
+qube)
 
 rpc-clipboard
 ^^^^^^^^^^^^^
@@ -78,17 +83,23 @@ Use `qubes.ClipboardCopy` and `qubes.ClipboardPaste` qubes RPC services to
 fetch/send clipboard content from/to this qube, instead of using GUI protocol.
 This is supported (and required) by Qubes Windows Tools.
 
+Default: use GUI protocol for clipboard operations
+
 no-monitor-layout
 ^^^^^^^^^^^^^^^^^
 
 When set to :py:pbj:`True`, monitor layout is not sent to this qube. That is
 avoid calling `qubes.SetMonitorLayout` in this qube.
 
+Default: send monitor layout
+
 internal
 ^^^^^^^^
 
 Internal qubes (with this feature set to :py:obj:`True`) are not included in the
 menu.
+
+Default: not internal VM
 
 appmenus-legacy
 ^^^^^^^^^^^^^^^
@@ -97,17 +108,23 @@ Generate legacy menu entries, using `qubes-desktop-run` command inside a VM,
 instead of `qubes.StartApp` qrexec service. This is used for qubes imported from
 previous Qubes version.
 
+Default: new style menu entries, using `qubes.StartApp` service
+
 appmenus-dispvm
 ^^^^^^^^^^^^^^^
 
 Generate menu entries for starting applications in Disposable VM based on given
 AppVM, instead of this AppVM directly.
 
+Default: create menu entries for AppVM itself
+
 qubes-firewall
 ^^^^^^^^^^^^^^
 
 Setting this to :py:obj:`True` means that qube support enforcing firewall rules
 set with `qvm-firewall` command.
+
+Default: assume qubes-firewall not enforced
 
 net.fake-ip
 ^^^^^^^^^^^
@@ -118,11 +135,15 @@ qubes and it shouldn't cause any troubles (unless you want to two such qubes
 communicate with each other). This feature does not affect address used in
 firewall rules, routing tables etc.
 
+Default: do not hide IP (qube's `ip` property) from the qube
+
 net.fake-gateway
 ^^^^^^^^^^^^^^^^
 
 Hide the real gateway of the qube from it, and configure it with value set to
 this feature.
+
+Default: do not hide geteway (qube's `gateway` property) from the qube
 
 net.fake-netmask
 ^^^^^^^^^^^^^^^^
@@ -130,11 +151,14 @@ net.fake-netmask
 Hide the real netmask of the qube from it, and configure it with value set to
 this feature.
 
+Default: do not hide netmask (qube's `netmask` property) from the qube
+
 updates-available
 ^^^^^^^^^^^^^^^^^
 
 There are updates available.
 
+Default: no updates available
 
 Authors
 -------
