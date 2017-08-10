@@ -1,3 +1,16 @@
+qubes-core-admin-client (4.0.5-1) unstable; urgency=medium
+
+  * tools/qvm-run: fix handling small data blocks
+  * vm: add DispVMWrapper for calling a single service in new DispVM
+  * tools: add qvm-run --dispvm option
+  * doc: list known features in qvm-features manual page
+  * app: add VMCollection.values()
+  * tools/qvm-run: do not use os.set_blocking
+  * tools/qvm-device: list attach options
+  * doc: add default values to qvm-features man page
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 10 Aug 2017 16:10:40 +0200
+
 qubes-core-admin-client (4.0.4-1) unstable; urgency=medium
 
   * tools/qvm-start-gui: do not start stubdomain GUI for VMs with gui-
