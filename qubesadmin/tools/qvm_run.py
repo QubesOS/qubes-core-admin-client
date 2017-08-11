@@ -150,6 +150,8 @@ def main(args=None, app=None):
         # connect process output to stdout/err directly if --pass-io is given
         run_kwargs['stdout'] = None
         run_kwargs['stderr'] = None
+        if not args.localcmd and args.filter_esc:
+            run_kwargs['filter_esc'] = True
 
     if isinstance(args.app, qubesadmin.app.QubesLocal) and \
             not args.passio and \
@@ -205,13 +207,11 @@ def main(args=None, app=None):
                     proc = vm.run_service(args.cmd,
                         user=args.user,
                         localcmd=args.localcmd,
-                        filter_esc=args.filter_esc,
                         **run_kwargs)
                 else:
                     proc = vm.run_service('qubes.VMShell',
                         user=args.user,
                         localcmd=args.localcmd,
-                        filter_esc=args.filter_esc,
                         **run_kwargs)
                     proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
                     proc.stdin.flush()

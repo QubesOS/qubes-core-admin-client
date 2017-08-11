@@ -52,7 +52,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -83,7 +82,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -91,7 +89,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             }),
             ('test-vm', 'qubes.VMShell', b'command; exit\n'),
             ('test-vm2', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -238,7 +235,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': 'local-command',
                 'stdout': None,
                 'stderr': None,
@@ -270,7 +266,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             }),
             ('test-vm', 'qubes.WaitForSession', b'user'),
             ('test-vm', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -302,7 +297,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             }),
             ('test-vm', 'qubes.WaitForSession', b'user'),
             ('test-vm', 'service.name', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -318,7 +312,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('$dispvm', 'test.service', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -334,7 +327,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('$dispvm:test-vm', 'test.service', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -356,7 +348,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('disp123', 'test.service', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -378,7 +369,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('disp123', 'test.service', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
@@ -406,7 +396,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
                 'localcmd': None,
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
