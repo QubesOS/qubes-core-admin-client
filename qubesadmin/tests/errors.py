@@ -56,4 +56,5 @@ class TC_00_Errors(qubesadmin.tests.QubesTestCase):
                 as context:
             vms = list(self.app.domains)
         self.assertEqual(str(context.exception),
-            'Got empty response from qubesd')
+            'Got empty response from qubesd. '
+            'See journalctl in dom0 for details.')

@@ -79,7 +79,8 @@ class PropertyHolder(object):
 
         if response_data == b'':
             raise qubesadmin.exc.QubesDaemonNoResponseError(
-                'Got empty response from qubesd')
+                'Got empty response from qubesd. See journalctl in dom0 for '
+                'details.')
 
         if response_data[0:2] == b'\x30\x00':
             return response_data[2:]

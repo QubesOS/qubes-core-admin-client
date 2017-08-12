@@ -126,7 +126,7 @@ class StoragePoolException(QubesException):
 
 class QubesDaemonCommunicationError(QubesException, IOError):
     '''Error while communicating with qubesd, may mean insufficient
-    permissions, as well'''
+    permissions as well'''
 
 
 class DeviceAlreadyAttached(QubesException, KeyError):
