@@ -371,7 +371,8 @@ class DispVMWrapper(QubesVM):
         '''Cleanup after DispVM usage'''
         # in 'remote' case nothing is needed, as DispVM is cleaned up
         # automatically
-        if self.app.qubesd_connection_type == 'socket':
+        if self.app.qubesd_connection_type == 'socket' and \
+                not self._method_dest.startswith('$dispvm'):
             try:
                 self.kill()
             except qubesadmin.exc.QubesVMNotRunningError:
