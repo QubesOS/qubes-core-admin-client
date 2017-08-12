@@ -46,17 +46,45 @@ Common properties
 This list is non-exhaustive. For authoritative listing, see
 :option:`--help-properties` and documentation of the source code.
 
-.. warning::
+clockvm
 
-   This list is from the core2. It is wrong in many cases, some of them obvious,
-   some of them not.
+    Qube used as a time source for dom0
 
-- clock VM
-- update VM
-- default template
-- default firewallVM
-- default kernel
-- default netVM
+default_template
+
+    Default template for newly created qubes
+
+default_fw_netvm
+
+    Default netvm for qubes providing network (with `provides_network` property
+    set to `True`).
+
+default_netvm
+
+    Default netvm for qubes not providing network
+
+default_kernel
+
+    Default value for `kernel` property, see :manpage:`qvm-prefs(1)` for
+    details.
+
+default_pool
+
+    Default storage pool for new qubes.
+
+default_pool_kernel, default_pool_private, default_pool_root, default_pool_volatile
+
+    Default storage pool for particular volume for new qubes. Defaults to value
+    of `default_pool`.
+
+stats_interval
+
+    Interval (in seconds) at which VM statistics are sent. This is for example
+    used by domains widget - this often memory usage will be refreshed.
+
+updatevm
+
+    Qube used to download dom0 updates
 
 Authors
 -------
