@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-prefs` qvm-prefs [-h] [--verbose] [--quiet] [--force-root] [--help-properties] *VMNAME* [*PROPERTY* [*VALUE* \| --delete \| --default ]]
+:command:`qvm-prefs` qvm-prefs [-h] [--verbose] [--quiet] [--force-root] [--help-properties] *VMNAME* [*PROPERTY* [*VALUE* \| --default ]]
 
 Options
 -------
@@ -27,9 +27,9 @@ Options
 
    Decrease verbosity.
 
-.. option:: --unset, --default, --delete, -D
+.. option:: --default, -D
 
-   Unset the property. If is has default value, it will be used instead.
+   Reset property to its default value.
 
 .. option:: --get, -g
 

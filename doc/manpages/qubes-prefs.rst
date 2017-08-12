@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qubes-prefs` [-h] [--verbose] [--quiet] [--force-root] [--help-properties] [*PROPERTY* [*VALUE*\|--delete]]
+:command:`qubes-prefs` [-h] [--verbose] [--quiet] [--force-root] [--help-properties] [*PROPERTY* [*VALUE*\|--default]]
 
 Options
 -------
@@ -27,9 +27,9 @@ Options
 
    Decrease verbosity.
 
-.. option:: --unset, --default, --delete, -D
+.. option:: --default, -D
 
-   Unset the property. If is has default value, it will be used instead.
+   Reset propety to default value.
 
 .. option:: --get, -g
 

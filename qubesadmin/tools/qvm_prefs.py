@@ -59,11 +59,10 @@ def get_parser(vmname_nargs=1):
         nargs='?',
         help='new value of the property')
 
-    parser.add_argument('--unset', '--default', '--delete', '-D',
+    parser.add_argument('--default', '-D',
         dest='delete',
         action='store_true',
-        help='unset the property; '
-             'if property has default value, it will be used instead')
+        help='reset property to its default value')
 
     return parser
 
