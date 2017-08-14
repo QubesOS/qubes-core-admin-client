@@ -156,3 +156,13 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
                 '--root-copy-from=/invalid', 'new-vm'],
                 app=self.app)
         self.assertAllCalled()
+
+    def test_009_help_classes(self):
+        self.app.expected_calls[('dom0', 'admin.vmclass.List',
+            None, None)] = b'0\x00StandaloneVM\nAppVM\nTemplateVM\nDispVM\n'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_create.main(['--help-classes'],
+                app=self.app)
+            self.assertEqual(stdout.getvalue(),
+                'AppVM\nDispVM\nStandaloneVM\nTemplateVM\n')
+        self.assertAllCalled()

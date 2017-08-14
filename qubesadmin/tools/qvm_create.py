@@ -67,6 +67,10 @@ parser.add_argument('--label', '-l',
     help='specify the label to use for the new domain'
         ' (e.g. red, yellow, green, ...)')
 
+parser.add_argument('--help-classes',
+    action='store_true',
+    help='List available classes and exit')
+
 parser_root = parser.add_mutually_exclusive_group()
 parser_root.add_argument('--root-copy-from', '-r', metavar='FILENAME',
     help='use provided root.img instead of default/empty one'
@@ -89,6 +93,12 @@ parser.add_argument('name', metavar='VMNAME',
 def main(args=None, app=None):
     '''Main function of qvm-create tool'''
     args = parser.parse_args(args, app=app)
+
+    if args.help_classes:
+        vm_classes = args.app.qubesd_call('dom0', 'admin.vmclass.List').decode()
+        vm_classes = vm_classes.splitlines()
+        print('\n'.join(sorted(vm_classes)))
+        return 0
 
     pools = {}
     pool = None
