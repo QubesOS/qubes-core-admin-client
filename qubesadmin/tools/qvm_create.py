@@ -30,6 +30,7 @@
 from __future__ import print_function
 
 import argparse
+import os
 import sys
 
 import qubesadmin
@@ -108,9 +109,10 @@ def main(args=None, app=None):
     if 'name' not in args.properties:
         parser.error('VMNAME is mandatory')
 
-    if args.root_copy_from or args.root_move_from:
+    root_source_path = args.root_copy_from or args.root_move_from
+    if root_source_path and not os.path.exists(root_source_path):
         parser.error(
-            '--root-copy-from and --root-move-from not implemented yet')
+            'File pointed by --root-copy-from/--root-move-from does not exist')
 
     try:
         args.app.get_label(args.properties['label'])
@@ -144,6 +146,18 @@ def main(args=None, app=None):
                 'Error setting property {} (but VM created): {!s}'.
                 format(prop, e))
             retcode = 2
+
+    if root_source_path:
+        try:
+            with open(root_source_path, 'rb') as root_file:
+                vm.volumes['root'].import_data(root_file)
+            if args.root_move_from:
+                os.unlink(root_source_path)
+        except qubesadmin.exc.QubesException as e:
+            args.app.log.error(
+                'Error importing root volume (but VM created): {}'.
+                format(e))
+            retcode = 3
 
     return retcode
 

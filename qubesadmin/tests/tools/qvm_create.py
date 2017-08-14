@@ -17,6 +17,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import os
+import tempfile
+
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_create
@@ -88,4 +91,68 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         qubesadmin.tools.qvm_create.main(['-l', 'red', '--pool',
             'private=some-pool', '--pool', 'volatile=other-pool', 'new-vm'],
             app=self.app)
+        self.assertAllCalled()
+
+    def test_005_root_copy_from(self):
+        with tempfile.NamedTemporaryFile() as root_file:
+            root_file.file.write(b'root data')
+            root_file.file.flush()
+            self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+                None, b'name=new-vm label=red')] = b'0\x00'
+            self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+                b'0\x00red\nblue\n'
+            self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+                b'0\x00new-vm class=AppVM state=Halted\n'
+            self.app.expected_calls[
+                ('new-vm', 'admin.vm.volume.List', None, None)] = \
+                b'0\x00root\nprivate\nvolatile\nkernel\n'
+            self.app.expected_calls[
+                ('new-vm', 'admin.vm.volume.Import', 'root', b'root data')] = \
+                b'0\0'
+            qubesadmin.tools.qvm_create.main(['-l', 'red',
+                '--root-copy-from=' + root_file.name, 'new-vm'],
+                app=self.app)
+            self.assertAllCalled()
+            self.assertTrue(os.path.exists(root_file.name))
+
+    def test_006_root_move_from(self):
+        with tempfile.NamedTemporaryFile(delete=False) as root_file:
+            root_file.file.write(b'root data')
+            root_file.file.flush()
+            self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+                None, b'name=new-vm label=red')] = b'0\x00'
+            self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+                b'0\x00red\nblue\n'
+            self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+                b'0\x00new-vm class=AppVM state=Halted\n'
+            self.app.expected_calls[
+                ('new-vm', 'admin.vm.volume.List', None, None)] = \
+                b'0\x00root\nprivate\nvolatile\nkernel\n'
+            self.app.expected_calls[
+                ('new-vm', 'admin.vm.volume.Import', 'root', b'root data')] = \
+                b'0\0'
+            qubesadmin.tools.qvm_create.main(['-l', 'red',
+                '--root-move-from=' + root_file.name, 'new-vm'],
+                app=self.app)
+            self.assertAllCalled()
+            self.assertFalse(os.path.exists(root_file.name))
+
+    def test_007_root_move_copy_both(self):
+        with tempfile.NamedTemporaryFile() as root_file:
+            root_file.file.write(b'root data')
+            root_file.file.flush()
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_create.main(['-l', 'red',
+                    '--root-copy-from=' + root_file.name,
+                    '--root-move-from=' + root_file.name,
+                    'new-vm'],
+                    app=self.app)
+            self.assertAllCalled()
+            self.assertTrue(os.path.exists(root_file.name))
+
+    def test_008_root_invalid_path(self):
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_create.main(['-l', 'red',
+                '--root-copy-from=/invalid', 'new-vm'],
+                app=self.app)
         self.assertAllCalled()
