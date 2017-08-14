@@ -62,16 +62,37 @@ Options
 
     Specify the pool to use for the specific volume
 
-Options for internal use
-------------------------
+Qube classes
+------------
 
-Do not use if you don't know, what you are doing.
+Qube class (or type) specify basic features of it, mostly what data persists
+across reboots and what properties qube have.
 
-.. option:: --no-root
+AppVM
+^^^^^
 
-   Do not create :file:`root.img`. This option is mutually exclusive with
-   :option:`--root-copy-from` and :option:`--root-move-from`.
+Default qube class, for template-based qubes. In this type, root volume is used
+from its template and changes made to it are discarded at qube restart. Changes
+in qube's private volume are persistent.
 
+StandaloneVM
+^^^^^^^^^^^^
+
+This qube class have both root and private volumes persistent. This qube type
+does not have template property.
+
+TemplateVM
+^^^^^^^^^^
+
+A qube that can be used as a template for `AppVM`. Otherwise very similar to
+`StandaloneVM`.
+
+DispVM
+^^^^^^
+
+A disposable qube - no data persists across qube restarts. It must have template
+set to an `AppVM` instance that have `dispvm_allowed` property set to true (see
+:manpage:`qvm-prefs(1)`).
 
 Authors
 -------
