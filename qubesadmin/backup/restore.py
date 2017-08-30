@@ -869,6 +869,7 @@ class BackupRestore(object):
 
             tar1_command = ['tar',
                             '-ixv',
+                            '--occurrence=1',
                             '-C', self.tmpdir] + filelist
 
         tar1_env = os.environ.copy()
