@@ -1697,7 +1697,7 @@ class BackupRestore(object):
             subprocess.check_call(
                 ['qvm-appmenus', '--set-whitelist=-', vm.name],
                 stdin=stream)
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             self.log.error('Failed to set application list for %s', vm.name)
 
     def _handle_volume_data(self, vm, volume, stream):
