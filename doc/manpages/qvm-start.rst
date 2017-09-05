@@ -15,7 +15,7 @@
 Synopsis
 --------
 
-:command:`qvm-start` [-h] [--verbose] [--quiet] *VMNAME*
+:command:`qvm-start` [-h] [options] *VMNAME*
 
 Options
 -------
@@ -43,6 +43,34 @@ Options
 .. option:: --exclude
 
    exclude the qube from --all
+
+
+.. option:: --drive=DRIVE
+
+   Temporarily attach specified drive as CD/DVD or hard disk (can be specified with prefix "hd:" or "cdrom:", default is cdrom).
+   The syntax for the device itself is "qube_name:device_name", meaning *device_name* served by *qube_name*.
+   See `qvm-block` output for a list of available devices.
+
+   Additionally, "qube_name:path" syntax can be used. This
+   will setup loop device inside *qube_name*, pointing at *path*, and will use
+   it as device. You need to clean up that loop device yourself, but it will
+   also cleanup itself at next qube restart. This syntax is available only when
+   calling this tool from dom0.
+
+.. option:: --hddisk=DRIVE
+
+   Temporarily attach specified drive as hard disk. This is equivalent with
+   `--drive=hd:DRIVE`.
+
+.. option:: --cdrom=DRIVE
+
+   Temporarily attach specified drive as CD/DVD. This is equivalent with
+   `--drive=cdrom:DRIVE`.
+
+.. option:: --install-windows-tools
+
+   Temporarily attach Windows tools CDROM to the domain. This is equivalent with
+   `--cdrom=dom0:/usr/lib/qubes/qubes-windows-tools.iso`.
 
 
 Authors
