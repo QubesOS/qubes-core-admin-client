@@ -229,6 +229,19 @@ class DeviceCollection(object):
             yield DeviceInfo(self._vm, ident, description=description,
                 options=None, **info_dict)
 
+    def update_persistent(self, device, persistent):
+        '''Update `persistent` flag of already attached device.
+
+        :param DeviceInfo device: device for which change persistent flag
+        :param bool persistent: new persistent flag
+        '''
+
+        self._vm.qubesd_call(None,
+            'admin.vm.device.{}.Set.persistent'.format(self._class),
+            '{!s}+{!s}'.format(device.backend_domain,
+                device.ident),
+            str(persistent).encode('utf-8'))
+
     __iter__ = available
 
     def clear_cache(self):

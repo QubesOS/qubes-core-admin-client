@@ -293,3 +293,20 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(devs[1].ident, 'dev2')
         self.assertAllCalled()
 
+    def test_070_update_persistent(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Set.persistent', 'test-vm2+dev1',
+                b'True')] = b'0\0'
+        dev = qubesadmin.devices.DeviceInfo(
+            self.app.domains['test-vm2'], 'dev1')
+        self.vm.devices['test'].update_persistent(dev, True)
+        self.assertAllCalled()
+
+    def test_071_update_persistent_false(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Set.persistent', 'test-vm2+dev1',
+                b'False')] = b'0\0'
+        dev = qubesadmin.devices.DeviceInfo(
+            self.app.domains['test-vm2'], 'dev1')
+        self.vm.devices['test'].update_persistent(dev, False)
+        self.assertAllCalled()
