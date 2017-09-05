@@ -216,6 +216,9 @@ def post_install(args):
     if not args.skip_start:
         yield from call_postinstall_service(vm)
 
+    if not args.keep_source:
+        shutil.rmtree(args.dir)
+
     return 0
 
 
