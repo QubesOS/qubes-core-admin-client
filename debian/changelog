@@ -1,3 +1,31 @@
+qubes-core-admin-client (4.0.6-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-run: ignore --filter-esc/--no-filter-esc unless --pass-io
+    is given
+  * vm/dispvm: fix dispvm.cleanup() when no service was called
+  * tests: add DispVM tests
+  * Improve QubesDaemonNoResponseError error message
+  * tools: drop --delete and --unset aliases for --default option
+  * doc: update list of properties in qvm-prefs/qubes-prefs man pages
+  * doc: add short description of VM classes to qvm-create man page
+  * tools: implement qvm-create --root-move-from/--root-copy-from
+  * tools: add qvm-create --help-classes
+  * backup/restore: make backup header extraction faster
+  * backup/restore: do not fail the whole restore when qvm-appmenus is
+    missing
+
+  [ blackpit ]
+  * Fixed https://github.com/QubesOS/qubes-issues/issues/2983
+
+  [ Marek Marczykowski-Górecki ]
+  * tools: fix too long lines
+  * tools: cleanup temporary files after qvm-template-postprocess
+  * devices: client stub for DeviceCollection.update_persistent
+  * tools: restore qvm-start --cdrom and similar options
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 14 Sep 2017 02:47:48 +0200
+
 qubes-core-admin-client (4.0.5-1) unstable; urgency=medium
 
   * tools/qvm-run: fix handling small data blocks
