@@ -108,7 +108,7 @@ parser.add_argument('--exclude', action='append', default=[],
     help='exclude the qube from --all')
 
 parser.add_argument('cmd', metavar='COMMAND',
-    help='command to run')
+    help='command or service to run')
 
 def copy_stdin(stream):
     '''Copy stdin to *stream*'''
