@@ -191,7 +191,10 @@ class EventsDispatcher(object):
         if subject:
             if event in ['property-set:name']:
                 self.app.domains.clear_cache()
-            subject = self.app.domains[subject]
+            try:
+                subject = self.app.domains[subject]
+            except KeyError:
+                return
         else:
             # handle cache refreshing on best-effort basis
             if event in ['domain-add', 'domain-delete']:
