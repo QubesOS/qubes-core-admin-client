@@ -292,7 +292,7 @@ class WrapperObjectsCollection(object):
                 del self._objects[name]
 
     def __getitem__(self, item):
-        if item not in self:
+        if not self.app.blind_mode and item not in self:
             raise KeyError(item)
         if item not in self._objects:
             self._objects[item] = self._object_class(self.app, item)

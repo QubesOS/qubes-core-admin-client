@@ -83,11 +83,14 @@ class VMCollection(object):
                 del self._vm_objects[name]
 
     def __getitem__(self, item):
-        if item not in self:
+        if not self.app.blind_mode and item not in self:
             raise KeyError(item)
         if item not in self._vm_objects:
-            cls = qubesadmin.utils.get_entry_point_one(VM_ENTRY_POINT,
-                self._vm_list[item]['class'])
+            if self.app.blind_mode:
+                cls = qubesadmin.vm.QubesVM
+            else:
+                cls = qubesadmin.utils.get_entry_point_one(VM_ENTRY_POINT,
+                    self._vm_list[item]['class'])
             self._vm_objects[item] = cls(self.app, item)
         return self._vm_objects[item]
 
@@ -128,6 +131,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     qubesd_connection_type = None
     #: logger
     log = None
+    #: do not check for object (VM, label etc) existence before really needed
+    blind_mode = False
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')

@@ -99,6 +99,28 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
             set(['test-vm', 'test-vm2']))
         self.assertAllCalled()
 
+    def test_007_getitem_blind_mode(self):
+        self.app.blind_mode = True
+        try:
+            vm = self.app.domains['test-vm']
+            self.assertEqual(vm.name, 'test-vm')
+        except KeyError:
+            self.fail('VM not found in collection')
+        self.assertAllCalled()
+
+        with self.assertNotRaises(KeyError):
+            vm = self.app.domains['test-non-existent']
+        self.assertAllCalled()
+
+    def test_008_in_blind_mode(self):
+        self.app.blind_mode = True
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.assertIn('test-vm', self.app.domains)
+        self.assertAllCalled()
+
+        self.assertNotIn('test-non-existent', self.app.domains)
+        self.assertAllCalled()
 
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
