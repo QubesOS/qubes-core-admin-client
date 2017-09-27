@@ -147,6 +147,10 @@ def main(args=None, app=None):
     for domain in args.domains:
         if args.skip_if_running and domain.is_running():
             continue
+        elif domain.is_running():
+            exit_code = 1
+            parser.print_error("domain is already running")
+            return exit_code
         drive_assignment = None
         try:
             if args.drive:
