@@ -38,7 +38,6 @@ import qubesadmin.vm
 import qubesadmin.config
 
 BUF_SIZE = 4096
-VM_ENTRY_POINT = 'qubesadmin.vm'
 
 class VMCollection(object):
     '''Collection of VMs objects'''
@@ -220,20 +219,13 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     def get_vm_class(clsname):
         '''Find the class for a domain.
 
-        Classes are registered as setuptools' entry points in ``qubes.vm``
-        group. Any package may supply their own classes.
+        Compatibility function, client tools use str to identify domain classes.
 
         :param str clsname: name of the class
-        :return type: class
+        :return str: class
         '''
 
-        try:
-            return qubesadmin.utils.get_entry_point_one(
-                VM_ENTRY_POINT, clsname)
-        except KeyError:
-            raise qubesadmin.exc.QubesException(
-                'no such VM class: {!r}'.format(clsname))
-            # don't catch TypeError
+        return clsname
 
     def add_new_vm(self, cls, name, label, template=None, pool=None,
             pools=None):

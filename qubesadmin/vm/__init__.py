@@ -339,27 +339,6 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             self._klass = super(QubesVM, self).klass
         return self._klass
 
-# pylint: disable=abstract-method
-class AdminVM(QubesVM):
-    '''Dom0'''
-    pass
-
-
-class AppVM(QubesVM):
-    '''Application VM'''
-    pass
-
-
-class StandaloneVM(QubesVM):
-    '''Standalone Application VM'''
-    pass
-
-
-class TemplateVM(QubesVM):
-    '''Template for AppVM'''
-    pass
-
-
 class DispVMWrapper(QubesVM):
     '''Wrapper class for new DispVM, supporting only service call
 

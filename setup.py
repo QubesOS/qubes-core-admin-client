@@ -38,13 +38,6 @@ if __name__ == '__main__':
         },
         entry_points={
             'console_scripts': list(get_console_scripts()),
-            'qubesadmin.vm': [
-                'AppVM = qubesadmin.vm:AppVM',
-                'TemplateVM = qubesadmin.vm:TemplateVM',
-                'StandaloneVM = qubesadmin.vm:StandaloneVM',
-                'AdminVM = qubesadmin.vm:AdminVM',
-                'DispVM = qubesadmin.vm:DispVM',
-            ],
         },
 
         )
