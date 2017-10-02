@@ -316,6 +316,21 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             raise e
 
     @property
+    def appvms(self):
+        ''' Returns a generator containing all domains based on the current
+            TemplateVM.
+
+            Do not check vm type of self, core (including its extentions) have
+            ultimate control what can be a template of what.
+        '''
+        for vm in self.app.domains:
+            try:
+                if vm.template == self:
+                    yield vm
+            except AttributeError:
+                pass
+
+    @property
     def klass(self):
         ''' Qube class '''
         # use cached value if available
@@ -342,18 +357,8 @@ class StandaloneVM(QubesVM):
 
 class TemplateVM(QubesVM):
     '''Template for AppVM'''
+    pass
 
-    @property
-    def appvms(self):
-        ''' Returns a generator containing all domains based on the current
-            TemplateVM.
-        '''
-        for vm in self.app.domains:
-            try:
-                if vm.template == self:
-                    yield vm
-            except AttributeError:
-                pass
 
 class DispVMWrapper(QubesVM):
     '''Wrapper class for new DispVM, supporting only service call
