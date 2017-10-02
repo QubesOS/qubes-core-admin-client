@@ -29,6 +29,7 @@ import qubesadmin.app
 class TestVM(object):
     def __init__(self, name, **kwargs):
         self.name = name
+        self.klass = 'TestVM'
         for key, value in kwargs.items():
             setattr(self, key, value)
 

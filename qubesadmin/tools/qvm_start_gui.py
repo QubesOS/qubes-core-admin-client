@@ -296,7 +296,7 @@ class GUILauncher(object):
         '''Send monitor layout to all (running) VMs'''
         monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
-            if isinstance(vm, qubesadmin.vm.AdminVM):
+            if vm.klass == 'AdminVM':
                 continue
             if vm.is_running():
                 if not vm.features.check_with_template('gui', True):
@@ -325,7 +325,7 @@ class GUILauncher(object):
         monitor_layout = get_monitor_layout()
         self.app.domains.clear_cache()
         for vm in self.app.domains:
-            if isinstance(vm, qubesadmin.vm.AdminVM):
+            if vm.klass == 'AdminVM':
                 continue
             if not vm.features.check_with_template('gui', True):
                 continue

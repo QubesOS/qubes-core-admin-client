@@ -64,8 +64,7 @@ def main(args=None, app=None):
             print_msg(paused, "is paused", "are paused")
         return 0 if paused else 1
     elif args.template:
-        template = [vm for vm in domains if isinstance(vm,
-            qubesadmin.vm.TemplateVM)]
+        template = [vm for vm in domains if vm.klass == 'TemplateVM']
         if args.verbose:
             print_msg(template, "is a template", "are templates")
         return 0 if template else 1

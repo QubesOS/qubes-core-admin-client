@@ -109,7 +109,7 @@ def get_drive_assignment(app, drive_str):
                 'Existing block device identifier needed when running from '
                 'outside of dom0 (see qvm-block)')
         try:
-            if isinstance(backend_domain, qubesadmin.vm.AdminVM):
+            if backend_domain.klass == 'AdminVM':
                 loop_name = subprocess.check_output(
                     ['sudo', 'losetup', '-f', '--show', ident])
             else:

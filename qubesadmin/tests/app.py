@@ -94,7 +94,7 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
             b'test-vm2 class=AppVM state=Running\n'
         values = self.app.domains.values()
         for obj in values:
-            self.assertIsInstance(obj, qubesadmin.vm.AppVM)
+            self.assertIsInstance(obj, qubesadmin.vm.QubesVM)
         self.assertEqual(set([vm.name for vm in values]),
             set(['test-vm', 'test-vm2']))
         self.assertAllCalled()
@@ -122,6 +122,17 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
         self.assertNotIn('test-non-existent', self.app.domains)
         self.assertAllCalled()
 
+    def test_009_getitem_cache_class(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        try:
+            vm = self.app.domains['test-vm']
+            self.assertEqual(vm.name, 'test-vm')
+            self.assertEqual(vm.klass, 'AppVM')
+        except KeyError:
+            self.fail('VM not found in collection')
+        self.assertAllCalled()
+
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
     def test_010_new_simple(self):
@@ -131,7 +142,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'0\x00new-vm class=AppVM state=Running\n'
         vm = self.app.add_new_vm('AppVM', 'new-vm', 'red')
         self.assertEqual(vm.name, 'new-vm')
-        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertEqual(vm.klass, 'AppVM')
         self.assertAllCalled()
 
     def test_011_new_template(self):
@@ -141,7 +152,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'0\x00new-template class=TemplateVM state=Running\n'
         vm = self.app.add_new_vm('TemplateVM', 'new-template', 'red')
         self.assertEqual(vm.name, 'new-template')
-        self.assertEqual(vm.__class__.__name__, 'TemplateVM')
+        self.assertEqual(vm.klass, 'TemplateVM')
         self.assertAllCalled()
 
     def test_012_new_template_based(self):
@@ -151,7 +162,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'0\x00new-vm class=AppVM state=Running\n'
         vm = self.app.add_new_vm('AppVM', 'new-vm', 'red', 'some-template')
         self.assertEqual(vm.name, 'new-vm')
-        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertEqual(vm.klass, 'AppVM')
         self.assertAllCalled()
 
     def test_013_new_objects_params(self):
@@ -165,7 +176,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         vm = self.app.add_new_vm(self.app.get_vm_class('AppVM'), 'new-vm',
             self.app.get_label('red'), self.app.domains['some-template'])
         self.assertEqual(vm.name, 'new-vm')
-        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertEqual(vm.klass, 'AppVM')
         self.assertAllCalled()
 
     def test_014_new_pool(self):
@@ -175,7 +186,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'0\x00new-vm class=AppVM state=Running\n'
         vm = self.app.add_new_vm('AppVM', 'new-vm', 'red', pool='some-pool')
         self.assertEqual(vm.name, 'new-vm')
-        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertEqual(vm.klass, 'AppVM')
         self.assertAllCalled()
 
     def test_015_new_pools(self):
@@ -187,7 +198,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         vm = self.app.add_new_vm('AppVM', 'new-vm', 'red',
             pools={'private': 'some-pool', 'volatile': 'other-pool'})
         self.assertEqual(vm.name, 'new-vm')
-        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertEqual(vm.klass, 'AppVM')
         self.assertAllCalled()
 
     def test_016_new_template_based_default(self):
@@ -198,7 +209,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         vm = self.app.add_new_vm('AppVM', 'new-vm', 'red',
             template=qubesadmin.DEFAULT)
         self.assertEqual(vm.name, 'new-vm')
-        self.assertEqual(vm.__class__.__name__, 'AppVM')
+        self.assertEqual(vm.klass, 'AppVM')
         self.assertAllCalled()
 
     def test_020_get_label(self):
@@ -422,7 +433,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         new_vm = self.app.clone_vm('test-vm', 'new-name',
             new_cls='StandaloneVM')
         self.assertEqual(new_vm.name, 'new-name')
-        self.assertEqual(new_vm.__class__.__name__, 'StandaloneVM')
+        self.assertEqual(new_vm.klass, 'StandaloneVM')
         self.assertAllCalled()
 
     def test_035_clone_fail(self):

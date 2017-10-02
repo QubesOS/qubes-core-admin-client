@@ -1456,7 +1456,7 @@ class BackupRestore(object):
                 except KeyError:
                     host_template = None
                 present_on_host = (host_template and
-                    isinstance(host_template, qubesadmin.vm.TemplateVM))
+                    host_template.klass == 'TemplateVM')
                 present_in_backup = (template_name in restore_info.keys() and
                     restore_info[template_name].good_to_go and
                     restore_info[template_name].vm.klass ==

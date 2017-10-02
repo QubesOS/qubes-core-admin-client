@@ -46,9 +46,10 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     firewall = None
 
-    def __init__(self, app, name):
+    def __init__(self, app, name, klass=None):
         super(QubesVM, self).__init__(app, 'admin.vm.property.', name)
         self._volumes = None
+        self._klass = klass
         self.log = logging.getLogger(name)
         self.tags = qubesadmin.tags.Tags(self)
         self.features = qubesadmin.features.Features(self)
@@ -314,6 +315,14 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             e.cmd = command
             raise e
 
+    @property
+    def klass(self):
+        ''' Qube class '''
+        # use cached value if available
+        if self._klass is None:
+            # pylint: disable=no-member
+            self._klass = super(QubesVM, self).klass
+        return self._klass
 
 # pylint: disable=abstract-method
 class AdminVM(QubesVM):

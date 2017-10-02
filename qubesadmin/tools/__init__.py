@@ -156,7 +156,7 @@ class VmNameAction(QubesAction):
             namespace.domains = [
                 vm
                 for vm in app.domains
-                if not isinstance(vm, qubesadmin.vm.AdminVM) and
+                if not vm.klass == 'AdminVM' and
                    vm.name not in namespace.exclude
             ]
         else:

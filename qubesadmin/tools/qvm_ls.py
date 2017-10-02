@@ -214,19 +214,16 @@ class FlagsColumn(Column):
         When it is HVM (optimised VM), the letter is capital.
         '''
 
-        if isinstance(vm, qubesadmin.vm.AdminVM):
-            return '0'
-
-        ret = None
-        # TODO right order, depending on inheritance
-        if isinstance(vm, qubesadmin.vm.TemplateVM):
-            ret = 't'
-        if isinstance(vm, qubesadmin.vm.AppVM):
-            ret = 'a'
-        if isinstance(vm, qubesadmin.vm.StandaloneVM):
-            ret = 's'
-        if isinstance(vm, qubesadmin.vm.DispVM):
-            ret = 'd'
+        type_codes = {
+            'AdminVM': '0',
+            'TemplateVM': 't',
+            'AppVM': 'a',
+            'StandaloneVM': 's',
+            'DispVM': 'd',
+        }
+        ret = type_codes.get(vm.klass, None)
+        if ret == '0':
+            return ret
 
         if ret is not None:
             if getattr(vm, 'virt_mode', 'pv') == 'hvm':
@@ -338,7 +335,7 @@ Column('STATE',
     doc='Current power state.')
 
 Column('CLASS',
-    attr=(lambda vm: type(vm).__name__),
+    attr=(lambda vm: vm.klass),
     doc='Class of the qube.')
 
 

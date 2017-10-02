@@ -86,12 +86,14 @@ class VMCollection(object):
         if not self.app.blind_mode and item not in self:
             raise KeyError(item)
         if item not in self._vm_objects:
-            if self.app.blind_mode:
-                cls = qubesadmin.vm.QubesVM
-            else:
-                cls = qubesadmin.utils.get_entry_point_one(VM_ENTRY_POINT,
-                    self._vm_list[item]['class'])
-            self._vm_objects[item] = cls(self.app, item)
+            cls = qubesadmin.vm.QubesVM
+            # provide class name to constructor, if already cached (which can be
+            # done by 'item not in self' check above, unless blind_mode is
+            # enabled
+            klass = None
+            if self._vm_list and item in self._vm_list:
+                klass = self._vm_list[item]['class']
+            self._vm_objects[item] = cls(self.app, item, klass=klass)
         return self._vm_objects[item]
 
     def __contains__(self, item):
@@ -312,7 +314,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             src_vm = self.domains[src_vm]
 
         if new_cls is None:
-            new_cls = src_vm.__class__.__name__
+            new_cls = src_vm.klass
 
         template = getattr(src_vm, 'template', None)
         if template is not None:
