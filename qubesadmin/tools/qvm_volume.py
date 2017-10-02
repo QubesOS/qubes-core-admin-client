@@ -134,13 +134,16 @@ def list_volumes(args):
 def revert_volume(args):
     ''' Revert volume to previous state '''
     volume = args.volume
-    app = args.app
-    try:
-        pool = app.pools[volume.pool]
-        pool.revert(volume)
-    except qubesadmin.exc.StoragePoolException as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
+    if args.revision:
+        revision = args.revision
+    else:
+        revisions = volume.revisions
+        if not revisions:
+            raise qubesadmin.exc.StoragePoolException(
+                'No snapshots available')
+        revision = volume.revisions[-1]
+
+    volume.revert(revision)
 
 
 def extend_volumes(args):
@@ -177,6 +180,10 @@ def init_revert_parser(sub_parsers):
         help='revert volume to previous revision')
     revert_parser.add_argument(metavar='VM:VOLUME', dest='volume',
                                action=qubesadmin.tools.VMVolumeAction)
+    revert_parser.add_argument(metavar='REVISION', dest='revision',
+        help='Optional revision to revert to;'
+             'if not specified, latest one is assumed',
+        action='store', nargs='?')
     revert_parser.set_defaults(func=revert_volume)
 
 

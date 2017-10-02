@@ -179,3 +179,74 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
                     app=self.app))
         self.assertIn('shrink not allowed', stderr.getvalue())
         self.assertAllCalled()
+
+    def test_020_revert(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
+            b'0\x00200101010000\n200201010000\n200301010000\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Revert', 'private', b'200301010000')] = \
+            b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['revert', 'testvm:private'],
+                app=self.app))
+        self.assertAllCalled()
+
+    def test_021_revert_error(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
+            b'0\x00200101010000\n200201010000\n200301010000\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Revert', 'private', b'200301010000')] = \
+            b'2\x00StoragePoolException\x00\x00Failed to revert volume: ' \
+            b'some error\x00'
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            self.assertEqual(1,
+                qubesadmin.tools.qvm_volume.main(
+                    ['revert', 'testvm:private'],
+                    app=self.app))
+        self.assertIn('some error', stderr.getvalue())
+        self.assertAllCalled()
+
+    def test_022_revert_no_snapshots(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
+            b'0\x00'
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            self.assertEqual(1,
+                qubesadmin.tools.qvm_volume.main(
+                    ['revert', 'testvm:private'],
+                    app=self.app))
+        self.assertIn('No snapshots', stderr.getvalue())
+        self.assertAllCalled()
+
+    def test_023_revert_specific(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Revert', 'private', b'20050101')] = \
+            b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['revert', 'testvm:private', '20050101'],
+                app=self.app))
+        self.assertAllCalled()
