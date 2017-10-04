@@ -138,29 +138,6 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''
         self.qubesd_call(self._method_dest, 'admin.vm.Unpause')
 
-    def suspend(self):
-        '''
-        Suspend domain.
-
-        Give domain a chance to prepare for suspend - for example suspend
-        used PCI devices.
-
-        :return:
-        '''
-        raise NotImplementedError
-        #self.qubesd_call(self._method_dest, 'admin.vm.Suspend')
-
-    def resume(self):
-        '''
-        Resume domain.
-
-        Opposite to :py:meth:`suspend`.
-
-        :return:
-        '''
-        raise NotImplementedError
-        #self.qubesd_call(self._method_dest, 'admin.vm.Resume')
-
     def get_power_state(self):
         '''Return power state description string.
 
