@@ -118,13 +118,15 @@ def get_drive_assignment(app, drive_str):
         except subprocess.CalledProcessError:
             raise qubesadmin.exc.QubesException(
                 'Failed to setup loop device for %s', ident)
+        loop_name = loop_name.strip()
         assert loop_name.startswith(b'/dev/loop')
         ident = loop_name.decode().split('/')[2]
         # FIXME: synchronize with udev + exposing device in qubesdb
 
-    options = {}
-    if devtype:
-        options['devtype'] = devtype
+    options = {
+        'devtype': devtype,
+        'read-only': devtype == 'cdrom'
+    }
     assignment = qubesadmin.devices.DeviceAssignment(
         backend_domain,
         ident,
