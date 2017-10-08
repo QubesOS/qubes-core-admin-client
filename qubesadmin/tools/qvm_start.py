@@ -147,11 +147,12 @@ def main(args=None, app=None):
 
     exit_code = 0
     for domain in args.domains:
-        if args.skip_if_running and domain.is_running():
-            continue
-        elif domain.is_running():
+        if domain.is_running():
+            if args.skip_if_running:
+                continue
             exit_code = 1
-            parser.print_error("domain is already running")
+            parser.print_error(
+                    'domain {} is already running'.format(domain.name))
             return exit_code
         drive_assignment = None
         try:

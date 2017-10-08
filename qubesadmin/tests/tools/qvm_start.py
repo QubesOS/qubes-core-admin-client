@@ -33,6 +33,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['some-vm'], app=self.app)
         self.assertAllCalled()
@@ -56,14 +59,12 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_003_already_running(self):
-        # TODO: some option to ignore this error?
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.Start', None, None)] = \
-            b'2\x00QubesVMNotHaltedError\x00\x00Domain is running: ' \
-            b'some-vm\x00'
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Runnin\n'
         self.assertEqual(
             qubesadmin.tools.qvm_start.main(['some-vm'], app=self.app),
             1)
@@ -74,6 +75,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
         self.app.expected_calls[
             ('dom0', 'admin.vm.device.block.Available', None, None)] = \
             b'0\x00sr0\n'
@@ -95,6 +99,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'0\x00dom0 class=AdminVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
             ('dom0', 'admin.vm.device.block.Available', None, None)] = \
             b'0\x00sdb1\n'
         self.app.expected_calls[
@@ -114,6 +121,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
         self.app.expected_calls[
             ('dom0', 'admin.vm.device.block.Available', None, None)] = \
             b'0\x00sdb1\n'
@@ -135,6 +145,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00dom0 class=AdminVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
         self.app.expected_calls[
             ('dom0', 'admin.vm.device.block.Available', None, None)] = \
             b'0\x00loop12\n'
@@ -161,6 +174,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'0\x00dom0 class=AdminVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
         self.app.expected_calls[
             ('other-vm', 'admin.vm.device.block.Available', None, None)] = \
             b'0\x00loop7\n'
@@ -192,6 +208,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'other-vm class=AppVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'other-vm+loop7',
                 b'devtype=cdrom persistent=True read-only=True')] = b'0\x00'
         self.app.expected_calls[
@@ -212,6 +231,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'0\x00dom0 class=AdminVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Halted\n'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'other-vm+loop7',
                 b'devtype=cdrom persistent=True read-only=True')] = \
