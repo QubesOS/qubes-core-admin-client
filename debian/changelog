@@ -1,3 +1,25 @@
+qubes-core-admin-client (4.0.7-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Implement "blind mode" to avoid listing objects
+  * events: ignore events from non-existing domains
+  * tools: fix qvm-run --help
+  * Always use QubesVM objects, instead of AppVM/TemplateVM etc
+  * Move vm.appvms to QubesVM
+  * Drop individual VM classes as python types completely
+  * tools: finish 'qvm-volume revert' implementation, add tests
+  * tools/qvm-start: fix starting a VM with cdrom image
+  * vm: drop suspend and resume methods - not part of the Admin API
+  * rpm: add conflict with too-old qubes-manager
+
+  [ Mindy Preston ]
+  * qvm-start: exit if domain running and no --skip-if-running
+
+  [ Marek Marczykowski-Górecki ]
+  * tools: adjust qvm-start message and logic, update tests
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 08 Oct 2017 18:42:41 +0200
+
 qubes-core-admin-client (4.0.6-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
