@@ -35,6 +35,7 @@ Python2 module qubesadmin.
 Summary:    Python3 module qubesadmin
 Requires:   python3-daemon
 Requires:   python3-docutils
+Conflicts:  qubes-manager < 4.0.6
 
 %description -n python3-qubesadmin
 Python3 module qubesadmin.
