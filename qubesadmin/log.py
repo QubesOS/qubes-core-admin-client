@@ -27,8 +27,6 @@ See also: :py:attr:`qubes.vm.qubesvm.QubesVM.log`
 import logging
 import sys
 
-import dbus
-
 FORMAT_CONSOLE = '%(name)s: %(message)s'
 FORMAT_LOG = '%(asctime)s %(message)s'
 FORMAT_DEBUG = '%(asctime)s ' \
@@ -37,43 +35,6 @@ FORMAT_DEBUG = '%(asctime)s ' \
 formatter_console = logging.Formatter(FORMAT_CONSOLE)
 formatter_log = logging.Formatter(FORMAT_LOG)
 formatter_debug = logging.Formatter(FORMAT_DEBUG)
-
-
-class DBusHandler(logging.Handler):
-    '''Handler which displays records as DBus notifications'''
-
-    #: mapping of loglevels to icons
-    app_icons = {
-        logging.ERROR:      'dialog-error',
-        logging.WARNING:    'dialog-warning',
-        logging.NOTSET:     'dialog-information',
-    }
-
-    def __init__(self, *args, **kwargs):
-        super(DBusHandler, self).__init__(*args, **kwargs)
-
-        self._notify_object = dbus.SessionBus().get_object(
-            'org.freedesktop.Notifications', '/org/freedesktop/Notifications')
-
-
-    def emit(self, record):
-        app_icon = self.app_icons[
-            max(level for level in self.app_icons if level <= record.levelno)]
-
-        try:
-            # https://developer.gnome.org/notification-spec/#command-notify
-            self._notify_object.Notify(
-                'Qubes',    # STRING app_name
-                0,          # UINT32 replaces_id
-                app_icon,   # STRING app_icon
-                record.msg, # STRING summary
-                '',         # STRING body
-                (),         # ARRAY actions
-                {},         # DICT hints
-                0,          # INT32 timeout
-                dbus_interface='org.freedesktop.Notifications')
-        except dbus.DBusException:
-            pass
 
 
 def enable():
