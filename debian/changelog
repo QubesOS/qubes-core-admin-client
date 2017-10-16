@@ -1,3 +1,15 @@
+qubes-core-admin-client (4.0.8-1) unstable; urgency=medium
+
+  * backup: fix restoring template VMs
+  * tools: clarify that qvm-backup needs absolute path
+  * backup: fix name of meminfo-writer feature
+  * backup: update DispVM template property: template_for_dispvms
+  * backup: improve restoring HVMs from Qubes 3.2
+  * backup: do not try to read tar's stderr past EOF
+  * tests: multi-part volume in backup tests
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 16 Oct 2017 04:44:26 +0200
+
 qubes-core-admin-client (4.0.7-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
