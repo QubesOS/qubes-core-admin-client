@@ -289,7 +289,15 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             if value_is_default and value_is_default.lower() != \
                     "true":
                 vm.properties[attr] = value
-        vm.properties['virt_mode'] = 'hvm' if "HVm" in vm_class_name else 'pv'
+        if "HVm" in vm_class_name:
+            vm.properties['virt_mode'] = 'hvm'
+            vm.properties['kernel'] = ''
+            # Qubes 3.2 used MiniOS stubdomain (with qemu-traditional); keep
+            # it this way, otherwise some OSes (Windows) will crash because
+            # of substantial hardware change
+            vm.features['linux-stubdom'] = False
+        else:
+            vm.properties['virt_mode'] = 'pv'
         if vm_class_name in ('QubesNetVm', 'QubesProxyVm'):
             vm.properties['provides_network'] = True
         if vm_class_name == 'QubesNetVm':

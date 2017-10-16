@@ -262,6 +262,7 @@
         <property name="maxmem">4000</property>
         <property name="name">test-hvm</property>
         <property name="qid">9</property>
+        <property name="kernel"></property>
         <property name="uuid">9909066b-0f03-4725-ad9e-fa3561d5566e</property>
       </properties>
       <features>

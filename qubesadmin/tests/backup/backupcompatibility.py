@@ -292,10 +292,12 @@ parsed_qubes_xml_r2 = {
         'test-testhvm': {
             'klass': 'StandaloneVM',
             'label': 'purple',
-            'properties': {'virt_mode': 'hvm', 'memory': '512'},
+            'properties': {'kernel': '', 'virt_mode': 'hvm', 'memory': '512'},
             'devices': {},
             'tags': set(),
-            'features': {'service.meminfo-writer': False},
+            'features': {
+                'service.meminfo-writer': False,
+                'linux-stubdom': False},
             'template': None,
             'backup_path': 'appvms/test-testhvm',
             'included_in_backup': True,
@@ -620,7 +622,10 @@ parsed_qubes_xml_v4 = {
         'test-hvm': {
             'klass': 'StandaloneVM',
             'label': 'purple',
-            'properties': {'virt_mode': 'hvm', 'maxmem': '4000'},
+            'properties': {
+                'kernel': None,
+                'virt_mode': 'hvm',
+                'maxmem': '4000'},
             'devices': {},
             'tags': set(),
             'features': {'service.meminfo-writer': False},
