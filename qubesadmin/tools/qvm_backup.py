@@ -77,7 +77,8 @@ no_profile.add_argument('--save-profile', action='store',
 
 no_profile.add_argument("backup_location", action="store", default=None,
     nargs='?',
-    help="Backup location (directory path, or command to pipe backup to)")
+    help="Backup location (absolute directory path, "
+         "or command to pipe backup to)")
 
 no_profile.add_argument("vms", nargs="*", action=qubesadmin.tools.VmNameAction,
     help="Backup only those VMs")

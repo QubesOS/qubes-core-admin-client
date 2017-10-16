@@ -66,9 +66,9 @@ Options
 Arguments
 ---------
 
-The first positional parameter is the backup location (directory path, or
-command to pipe backup to). After that you may specify the qubes you'd like to
-backup. If not specified, all qubes are included.
+The first positional parameter is the backup location (absolute directory path,
+or command to pipe backup to). After that you may specify the qubes you'd
+like to backup. If not specified, all qubes are included.
 
 Authors
 -------
