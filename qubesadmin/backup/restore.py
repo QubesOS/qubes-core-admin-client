@@ -630,8 +630,9 @@ class ExtractWorker3(Process):
                 os.remove(filename)
                 continue
             else:
-                (basename, ext) = os.path.splitext(self.tar2_current_file)
-                previous_chunk_number = int(ext[1:])
+                # os.path.splitext fails to handle 'something/..000'
+                (basename, ext) = self.tar2_current_file.rsplit('.', 1)
+                previous_chunk_number = int(ext)
                 expected_filename = basename + '.%03d' % (
                     previous_chunk_number+1)
                 if expected_filename != filename:
