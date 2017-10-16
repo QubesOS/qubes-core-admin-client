@@ -466,6 +466,9 @@ class ExtractWorker3(Process):
             # yet, so it will hang on write() when the output pipe fill up).
             while True:
                 line = tar2_process.stderr.readline()
+                if not line:
+                    self.log.warning('EOF from tar before got file size info')
+                    break
                 line = line.decode()
                 if _tar_msg_re.match(line):
                     self.log.debug('tar2_stderr: %s', line)
