@@ -165,7 +165,7 @@
     </domain>
     <domain id="domain-12" class="AppVM">
       <properties>
-        <property name="dispvm_allowed">True</property>
+        <property name="template_for_dispvms">True</property>
         <property name="label">label-1</property>
         <property name="name">fedora-25-clone-dvm</property>
         <property name="qid">10</property>
@@ -190,7 +190,7 @@
     </domain>
     <domain id="domain-10" class="AppVM">
       <properties>
-        <property name="dispvm_allowed">True</property>
+        <property name="template_for_dispvms">True</property>
         <property name="label">label-1</property>
         <property name="name">fedora-25-dvm</property>
         <property name="qid">10</property>

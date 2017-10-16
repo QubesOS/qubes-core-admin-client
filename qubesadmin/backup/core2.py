@@ -234,7 +234,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
                 vm.name = dispvm_tpl_name
                 vm.label = 'red'
                 vm.properties['netvm'] = dispvm_netvm
-                vm.properties['dispvm_allowed'] = True
+                vm.properties['template_for_dispvms'] = True
                 vm.backup_content = True
                 vm.backup_path = None
                 self.domains[vm.name] = vm

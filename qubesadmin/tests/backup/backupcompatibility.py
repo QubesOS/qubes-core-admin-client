@@ -375,7 +375,7 @@ parsed_qubes_xml_r2 = {
             'label': 'red',
             'properties': {
                 'netvm': None,
-                'dispvm_allowed': True,
+                'template_for_dispvms': True,
             },
             'devices': {},
             'features': {},
@@ -389,7 +389,7 @@ parsed_qubes_xml_r2 = {
             'label': 'red',
             'properties': {
                 'netvm': 'test-testproxy',
-                'dispvm_allowed': True,
+                'template_for_dispvms': True,
             },
             'devices': {},
             'features': {},
@@ -518,7 +518,7 @@ parsed_qubes_xml_v4 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'dispvm_allowed': 'True',
+                'template_for_dispvms': 'True',
                 'vcpus': '1',
             },
             'devices': {},
@@ -534,7 +534,7 @@ parsed_qubes_xml_v4 = {
             'label': 'red',
             'properties': {
                 'vcpus': '1',
-                'dispvm_allowed': 'True',
+                'template_for_dispvms': 'True',
             },
             'devices': {},
             'tags': set(),
