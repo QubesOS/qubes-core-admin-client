@@ -31,7 +31,7 @@ import qubesadmin.backup
 service_to_feature = {
     'ntpd': 'service.ntpd',
     'qubes-update-check': 'check-updates',
-    'meminfo-writer': 'services.meminfo-writer',
+    'meminfo-writer': 'service.meminfo-writer',
 }
 
 class Core2VM(qubesadmin.backup.BackupVM):
