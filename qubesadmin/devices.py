@@ -91,10 +91,13 @@ class DeviceInfo(object):
         return hash((str(self.backend_domain), self.ident))
 
     def __eq__(self, other):
-        return (
-            self.backend_domain == other.backend_domain and
-            self.ident == other.ident
-        )
+        try:
+            return (
+                self.backend_domain == other.backend_domain and
+                self.ident == other.ident
+            )
+        except AttributeError:
+            return False
 
     def __str__(self):
         return '{!s}:{!s}'.format(self.backend_domain, self.ident)
