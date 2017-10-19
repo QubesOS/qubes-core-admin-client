@@ -404,3 +404,19 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'qubes.VMShell', b'command; exit\n'),
         ])
         self.assertAllCalled()
+
+    def test_013_no_autostart(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'test-vm2 class=AppVM state=Running\n' \
+            b'test-vm3 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm3 class=AppVM state=Halted\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--no-autostart', 'test-vm3', 'command'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [])
+        self.assertAllCalled()
