@@ -1,3 +1,18 @@
+qubes-core-admin-client (4.0.9-1) unstable; urgency=medium
+
+  [ Frédéric Pierret ]
+  * Add CentOS support and fix python3 dependencies for CentOS (except
+    python3-sphinx and python3-daemon which has no python34 package)
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix DeviceInfo objects comparing
+  * vm: fix handling policy deny on admin.vm.List
+  * Drop log.DBusHandler
+  * backup: improve migrating templates from Qubes 3.x
+  * tools: fix handling qvm-run --no-autostart
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 21 Oct 2017 04:11:20 +0200
+
 qubes-core-admin-client (4.0.8-1) unstable; urgency=medium
 
   * backup: fix restoring template VMs
