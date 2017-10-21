@@ -41,7 +41,7 @@ parser.add_argument('--autostart', '--auto', '-a',
     help='option ignored, this is default')
 
 parser.add_argument('--no-autostart', '--no-auto', '-n',
-    action='store_false',
+    action='store_false', dest='autostart',
     help='do not autostart qube')
 
 parser.add_argument('--pass-io', '-p',

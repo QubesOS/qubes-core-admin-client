@@ -302,6 +302,11 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             vm.properties['provides_network'] = True
         if vm_class_name == 'QubesNetVm':
             vm.properties['netvm'] = None
+        if vm_class_name == 'QubesTemplateVm' or \
+                (vm_class_name == 'QubesAppVm' and vm.template is None):
+            # PV VMs in Qubes 3.x assumed gui-agent and qrexec-agent installed
+            vm.features['qrexec'] = True
+            vm.features['gui'] = True
         if element.get('internal', False) == 'True':
             vm.features['internal'] = True
 
