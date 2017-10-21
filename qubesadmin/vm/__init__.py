@@ -168,11 +168,14 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         '''
 
-        vm_list_info = [line
-            for line in self.qubesd_call(
-                self._method_dest, 'admin.vm.List', None, None
-            ).decode('ascii').split('\n')
-            if line.startswith(self._method_dest+' ')]
+        try:
+            vm_list_info = [line
+                for line in self.qubesd_call(
+                    self._method_dest, 'admin.vm.List', None, None
+                ).decode('ascii').split('\n')
+                if line.startswith(self._method_dest+' ')]
+        except qubesadmin.exc.QubesDaemonNoResponseError:
+            return 'NA'
         assert len(vm_list_info) == 1
         #  name class=... state=... other=...
         # NOTE: when querying dom0, we get whole list
@@ -206,7 +209,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         :rtype: bool
         '''
 
-        return self.get_power_state() != 'Halted'
+        return self.get_power_state() not in ('Halted', 'NA')
 
     def is_networked(self):
         '''Check whether this VM can reach network (firewall notwithstanding).
