@@ -56,7 +56,8 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 .. option:: --option, -o
 
    Specify device-class specific option, use `name=value` format. You can
-   specify this option multiple times.
+   specify this option multiple times. See below for options specific to
+   different device classes.
 
 .. option:: --persistent, -p
 
@@ -77,9 +78,27 @@ aliases: d, dt
 Device classes
 ==============
 
-* block - block devices
-* usb - USB devices
-* pci - PCI devices
+block
+^^^^^
+
+Block device. Available options:
+
+* `frontend-dev` - device node in target domain, by default first available, starting from `xvdi`
+* `read-only` - attach device in read-only mode; default depends on device, if possible - attach read-write; if device itself is read-only, only read-only attach is allowed
+* `devtype` - type of device - either `disk` or `cdrom`; default: `disk`
+
+usb
+^^^
+
+USB device. This type of device does not support options.
+
+pci
+^^^
+
+PCI device. Only dom0 expose such devices. One should be very careful when attaching this type of devices, because some of them are strictly required to stay in dom0 (for example host bridge). Available options:
+
+* `no-strict-reset` - allow to attach device even if it does not support any reliable reset operation; switching such device to another domain (without full host restart) can be a security risk; default: `False`, accepted values: `True`, `False` (option absent)
+
 
 Authors
 =======

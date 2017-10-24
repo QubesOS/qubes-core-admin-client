@@ -235,7 +235,7 @@ def get_parser(device_class=None):
 
     attach_parser.add_argument('--option', '-o', action='append',
         help="Set option for the device in opt=value form (can be specified "
-             "multiple times)")
+             "multiple times), see man qvm-device for details")
     attach_parser.add_argument('--persistent', '-p', action='store_true',
         default=False,
         help="Attach device persistently (so it will be automatically "
