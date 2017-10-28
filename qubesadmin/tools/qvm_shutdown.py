@@ -87,7 +87,11 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     args.timeout))
             except asyncio.TimeoutError:
                 for vm in this_round_domains:
-                    vm.kill()
+                    try:
+                        vm.kill()
+                    except qubesadmin.exc.QubesVMNotStartedError:
+                        # already shut down
+                        pass
         else:
             timeout = args.timeout
             current_vms = list(sorted(this_round_domains))
@@ -105,7 +109,11 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     'Killing remaining qubes: {}'
                     .format(', '.join([str(vm) for vm in current_vms])))
             for vm in current_vms:
-                vm.kill()
+                try:
+                    vm.kill()
+                except qubesadmin.exc.QubesVMNotStartedError:
+                    # already shut down
+                    pass
 
     if args.wait:
         if have_events:
