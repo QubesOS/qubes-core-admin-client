@@ -77,6 +77,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
             ident = node.get('id')
             assert ident is not None
             self.labels[ident] = node.text
+            self.labels[node.text] = node.text
 
 
     def load_globals(self, globals_element):
