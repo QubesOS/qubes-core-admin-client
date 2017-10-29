@@ -386,6 +386,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                     continue
                 src_volume = src_vm.volumes[dst_volume.name]
                 dst_vm.log.info('Cloning {} volume'.format(dst_volume.name))
+                if dst_volume.size != src_volume.size:
+                    dst_vm.log.info(
+                        'Resizing destination {} volume from {} to {} bytes'
+                        .format(dst_volume.name, dst_volume.size, src_volume.size))
+                    dst_volume.resize(src_volume.size)
                 dst_volume.clone(src_volume)
 
         except qubesadmin.exc.QubesException:
