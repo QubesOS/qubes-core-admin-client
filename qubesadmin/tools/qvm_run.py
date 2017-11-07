@@ -26,7 +26,7 @@ import sys
 
 import multiprocessing
 
-import fcntl
+import select
 
 import qubesadmin.tools
 import qubesadmin.exc
@@ -114,11 +114,11 @@ def copy_stdin(stream):
     '''Copy stdin to *stream*'''
     # multiprocessing.Process have sys.stdin connected to /dev/null, use fd 0
     #  directly
-    flags = fcntl.fcntl(0, fcntl.F_GETFL)
-    flags &= ~os.O_NONBLOCK
-    fcntl.fcntl(0, fcntl.F_SETFL, flags)
-    for data in iter(lambda: os.read(0, 65536), b''):
-        if data is None:
+    while True:
+        # select so this code works even if fd 0 is non-blocking
+        select.select([0], [], [])
+        data = os.read(0, 65536)
+        if data is None or data == b'':
             break
         stream.write(data)
         stream.flush()
