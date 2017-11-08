@@ -20,11 +20,34 @@
 
 '''Base classes for managed objects'''
 
+import sys
+import traceback
+import re
+
 import ast
 import qubesadmin.exc
 
 DEFAULT = object()
 
+ESCAPE_RE = re.compile("\\\\(.)")
+
+def unescape(escaped_string):
+    '''Unescape Admin API string'''
+    def replacement(match):
+        '''Replace escape sequence'''
+        esc = match.group(1)
+        if esc == "n":
+            return "\n"
+        if esc == "r":
+            return "\r"
+        if esc == "t":
+            return "\t"
+        if esc == "0":
+            return "\0"
+        return esc
+    return ESCAPE_RE.sub(replacement, escaped_string)
+
+CONFLICTING_KEYS = frozenset(["name", "klass"])
 
 class PropertyHolder(object):
     '''A base class for object having properties retrievable using mgmt API.
@@ -45,6 +68,12 @@ class PropertyHolder(object):
         self._method_dest = method_dest
         self._properties = None
         self._properties_help = None
+        self._values = dict()
+        self._explicit = dict()
+        self._update_needed = dict()
+        self._exhaustive = False
+        self._use_cache = True
+        self._get_all = True
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
@@ -134,6 +163,31 @@ class PropertyHolder(object):
             None)
         return help_text.decode('ascii')
 
+    def _lookup(self, item):
+        '''Ensure that item is in the cache, updating it if required'''
+        if not self._use_cache:
+            self._update_one(item)
+            return
+
+        if item in self._values:
+            return
+
+        if item in self._update_needed:
+            self._update_one(item)
+            return
+
+        if self._exhaustive:
+            raise qubesadmin.exc.QubesPropertyAccessError(item)
+
+        if self._get_all and not self._update_all():
+            self._get_all = False
+
+        if not self._get_all:
+            self._update_one(item)
+
+        if item not in self._values:
+            raise qubesadmin.exc.QubesPropertyAccessError(item)
+
     def property_is_default(self, item):
         '''
         Check if given property have default value
@@ -143,17 +197,8 @@ class PropertyHolder(object):
         '''
         if item.startswith('_'):
             raise AttributeError(item)
-        property_str = self.qubesd_call(
-            self._method_dest,
-            self._method_prefix + 'Get',
-            item,
-            None)
-        (default, _value) = property_str.split(b' ', 1)
-        assert default.startswith(b'default=')
-        is_default_str = default.split(b'=')[1]
-        is_default = ast.literal_eval(is_default_str.decode('ascii'))
-        assert isinstance(is_default, bool)
-        return is_default
+        self._lookup(item)
+        return item not in self._explicit
 
     def clone_properties(self, src, proplist=None):
         '''Clone properties from other object.
@@ -176,6 +221,69 @@ class PropertyHolder(object):
         # pylint: disable=too-many-return-statements
         if item.startswith('_'):
             raise AttributeError(item)
+        self._lookup(item)
+        return self._values[item]
+
+    def clear_cache(self):
+        '''Clear the cache'''
+        self._get_all = True
+        self._clear_properties()
+
+    def _clear_properties(self):
+        '''Clear cached properties'''
+        for key in self._values:
+            if key not in CONFLICTING_KEYS:
+                object.__delattr__(self, key)
+
+        self._values.clear()
+        self._explicit.clear()
+        self._update_needed.clear()
+        self._exhaustive = False
+
+    def enable_cache(self, enabled):
+        '''Enable or disable using data in the cache without updating it'''
+        self._use_cache = enabled
+        if not enabled:
+            for key in self._values:
+                if key not in CONFLICTING_KEYS:
+                    object.__delattr__(self, key)
+        else:
+            for key in self._values:
+                if key not in CONFLICTING_KEYS:
+                    object.__setattr__(self, key, self._values[key])
+
+    def _decode_value(self, value, prop_type):
+        '''Decode value from qubesd'''
+        value = value.decode()
+        if prop_type == 'str':
+            value = value
+        elif prop_type == 'bool':
+            if value == '':
+                raise AttributeError
+            value = ast.literal_eval(value)
+        elif prop_type == 'int':
+            if value == '':
+                value = None # hack for stubdom_mem
+                #raise AttributeError
+            else:
+                value = ast.literal_eval(value)
+        elif prop_type == 'vm':
+            if value == '':
+                value = None
+            else:
+                value = self.app.domains[value]
+        elif prop_type == 'label':
+            if value == '':
+                value = None
+            else:
+                value = self.app.labels[value]
+        else:
+            raise qubesadmin.exc.QubesDaemonCommunicationError(
+                'Received invalid value type: {}'.format(prop_type))
+        return value
+
+    def _update_one(self, item):
+        '''Call Get to update one property, raise on failure'''
         try:
             property_str = self.qubesd_call(
                 self._method_dest,
@@ -184,35 +292,62 @@ class PropertyHolder(object):
                 None)
         except qubesadmin.exc.QubesDaemonNoResponseError:
             raise qubesadmin.exc.QubesPropertyAccessError(item)
-        (_default, prop_type, value) = property_str.split(b' ', 2)
+        (default, prop_type, value) = property_str.split(b' ', 2)
+
+        assert default.startswith(b'default=')
+        is_default_str = default.split(b'=')[1]
+        is_default = ast.literal_eval(is_default_str.decode('ascii'))
+        assert isinstance(is_default, bool)
+
         prop_type = prop_type.decode('ascii')
         if not prop_type.startswith('type='):
             raise qubesadmin.exc.QubesDaemonCommunicationError(
                 'Invalid type prefix received: {}'.format(prop_type))
         (_, prop_type) = prop_type.split('=', 1)
-        value = value.decode()
-        if prop_type == 'str':
-            return str(value)
-        elif prop_type == 'bool':
-            if value == '':
-                raise AttributeError
-            return ast.literal_eval(value)
-        elif prop_type == 'int':
-            if value == '':
-                raise AttributeError
-            return ast.literal_eval(value)
-        elif prop_type == 'vm':
-            if value == '':
-                return None
-            return self.app.domains[value]
-        elif prop_type == 'label':
-            if value == '':
-                return None
-            # TODO
-            return self.app.labels[value]
-        else:
-            raise qubesadmin.exc.QubesDaemonCommunicationError(
-                'Received invalid value type: {}'.format(prop_type))
+
+        value = self._decode_value(value, prop_type)
+
+        self._set_item(item, value, is_default)
+
+    def _update_all(self):
+        '''Call GetAll to update all properties, return False on failure'''
+        if not self.app.use_get_all:
+            return False
+
+        try:
+            response = self.qubesd_call(
+                self._method_dest,
+                self._method_prefix + 'GetAll',
+                None,
+                None)
+        except qubesadmin.exc.QubesDaemonNoResponseError:
+            return False
+
+        self.process_response(response.splitlines())
+        return True
+
+    # also called by get_all_data()
+    def process_response(self, lines):
+        '''Process data from the response to GetAll or GetAllData'''
+        self._clear_properties()
+        successful = True
+        for line in lines:
+            try:
+                (name, is_default, prop_type, value) = line.split(b'\t', 3)
+                name = name.decode('ascii')
+                prop_type = prop_type.decode('ascii')
+                is_default = is_default == b'D'
+
+                value = self._decode_value(value, prop_type)
+                if prop_type == 'str' and value is not None:
+                    value = unescape(value)
+
+                self._set_item(name, value, is_default)
+            except: # pylint: disable=bare-except
+                successful = False
+                traceback.print_exc(file=sys.stderr)
+
+        self._exhaustive = successful
 
     @classmethod
     def _local_properties(cls):
@@ -233,27 +368,23 @@ class PropertyHolder(object):
         if key.startswith('_') or key in self._local_properties():
             return super(PropertyHolder, self).__setattr__(key, value)
         if value is qubesadmin.DEFAULT:
-            try:
-                self.qubesd_call(
-                    self._method_dest,
-                    self._method_prefix + 'Reset',
-                    key,
-                    None)
-            except qubesadmin.exc.QubesDaemonNoResponseError:
-                raise qubesadmin.exc.QubesPropertyAccessError(key)
+            self.__delattr__(key)
         else:
-            if isinstance(value, qubesadmin.vm.QubesVM):
-                value = value.name
-            if value is None:
-                value = ''
+            send_value = value
+            if isinstance(send_value, qubesadmin.vm.QubesVM):
+                send_value = value.name
+            if send_value is None:
+                send_value = ''
             try:
                 self.qubesd_call(
                     self._method_dest,
                     self._method_prefix + 'Set',
                     key,
-                    str(value).encode('utf-8'))
+                    str(send_value).encode('utf-8'))
             except qubesadmin.exc.QubesDaemonNoResponseError:
                 raise qubesadmin.exc.QubesPropertyAccessError(key)
+
+            self._set_item(key, value, False)
 
     def __delattr__(self, name):
         if name.startswith('_') or name in self._local_properties():
@@ -267,6 +398,32 @@ class PropertyHolder(object):
         except qubesadmin.exc.QubesDaemonNoResponseError:
             raise qubesadmin.exc.QubesPropertyAccessError(name)
 
+        # unfortunately, this has to trigger an API call on the next read
+        # since we don't know the default value
+        self._clear_item(name)
+
+    def _set_item(self, key, value, is_default):
+        '''Set the cached value of a property'''
+        self._values[key] = value
+        if self._use_cache and key not in CONFLICTING_KEYS:
+            object.__setattr__(self, key, value)
+        if not is_default:
+            self._explicit[key] = value
+        elif key in self._explicit:
+            del self._explicit[key]
+        if key in self._update_needed:
+            del self._update_needed[key]
+
+    def _clear_item(self, key):
+        '''Clear the cached value of a property'''
+        if key in self._values:
+            del self._values[key]
+            if self._use_cache and key not in CONFLICTING_KEYS:
+                object.__delattr__(self, key)
+        if key in self._explicit:
+            del self._explicit[key]
+        if self._exhaustive:
+            self._update_needed[key] = True
 
 class WrapperObjectsCollection(object):
     '''Collection of simple named objects'''

@@ -39,16 +39,26 @@ import qubesadmin.config
 
 BUF_SIZE = 4096
 
+def _decode_vm_line(vm_line):
+    '''Decode line from admin.vm.List'''
+    name, props = vm_line.decode('ascii').split(' ', 1)
+    name = str(name)
+    props = props.split(' ')
+    props = dict([prop.split('=', 1) for prop in props])
+    return name, props
+
 class VMCollection(object):
     '''Collection of VMs objects'''
     def __init__(self, app):
         self.app = app
         self._vm_list = None
         self._vm_objects = {}
+        self._get_all_data_result = None
 
     def clear_cache(self):
         '''Clear cached list of VMs'''
         self._vm_list = None
+        self._get_all_data_result = None
 
     def refresh_cache(self, force=False):
         '''Refresh cached list of VMs'''
@@ -58,16 +68,62 @@ class VMCollection(object):
             'dom0',
             'admin.vm.List'
         )
-        new_vm_list = {}
-        # FIXME: this will probably change
-        for vm_data in vm_list_data.splitlines():
-            vm_name, props = vm_data.decode('ascii').split(' ', 1)
-            vm_name = str(vm_name)
-            props = props.split(' ')
-            new_vm_list[vm_name] = dict(
-                [vm_prop.split('=', 1) for vm_prop in props])
 
+        new_vm_list = {}
+        for vm_line in vm_list_data.splitlines():
+            name, props = _decode_vm_line(vm_line)
+            new_vm_list[name] = props
+
+        self._set_vm_list(new_vm_list)
+
+    def _get_all_data(self):
+        '''Call GetAllData, update the VM list and the data in VMs'''
+        if not self.app.use_get_all_data:
+            return False
+
+        try:
+            data = self.app.qubesd_call(
+                'dom0',
+                'admin.vm.GetAllData'
+            )
+        except qubesadmin.exc.QubesDaemonNoResponseError:
+            return False
+
+        new_vm_list = {}
+        vm_props = {}
+        vm_name = None
+        for line in data.splitlines():
+            if not line.startswith(b"\t"):
+                name, props = _decode_vm_line(line)
+                new_vm_list[name] = props
+
+                vm_name = name
+                vm_props[vm_name] = []
+            elif vm_name:
+                kind, data = line[1:].split(b"\t", 1)
+                if kind == b"P":
+                    vm_props[vm_name].append(data)
+
+        self._set_vm_list(new_vm_list)
+
+        # we must delay processing of lines because setting VM-valued
+        # properties requires to know about other VMs and their classes
+        for vm_name in vm_props:
+            self[vm_name].process_response(vm_props[vm_name])
+
+        return True
+
+    def get_all_data(self, force=False):
+        '''Load data for all VMs at once'''
+        if force or self._get_all_data_result is None:
+            self._get_all_data_result = self._get_all_data()
+
+        return self._get_all_data_result
+
+    def _set_vm_list(self, new_vm_list):
+        '''Apply a new VM list from qubesd'''
         self._vm_list = new_vm_list
+
         for name, vm in list(self._vm_objects.items()):
             if vm.name not in self._vm_list:
                 # VM no longer exists
@@ -134,6 +190,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     log = None
     #: do not check for object (VM, label etc) existence before really needed
     blind_mode = False
+    #: use GetAll
+    use_get_all = None
+    #: use GetAllData
+    use_get_all_data = None
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')
@@ -145,6 +205,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         #: cache for available storage pool drivers and options to create them
         self._pool_drivers = None
         self.log = logging.getLogger('app')
+        self.use_get_all = True
+        self.use_get_all_data = True
 
     def _refresh_pool_drivers(self):
         '''

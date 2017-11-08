@@ -126,6 +126,8 @@ class QubesTest(qubesadmin.app.QubesBase):
         self.actual_calls = []
         #: rpc service calls
         self.service_calls = []
+        self.use_get_all_data = False
+        self.use_get_all = False
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
