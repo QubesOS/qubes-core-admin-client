@@ -24,7 +24,6 @@ import sys
 import traceback
 import re
 
-import ast
 import qubesadmin.exc
 
 DEFAULT = object()
@@ -260,13 +259,13 @@ class PropertyHolder(object):
         elif prop_type == 'bool':
             if value == '':
                 raise AttributeError
-            value = ast.literal_eval(value)
+            value = value == "True"
         elif prop_type == 'int':
             if value == '':
                 value = None # hack for stubdom_mem
                 #raise AttributeError
             else:
-                value = ast.literal_eval(value)
+                value = int(value)
         elif prop_type == 'vm':
             if value == '':
                 value = None
@@ -296,7 +295,7 @@ class PropertyHolder(object):
 
         assert default.startswith(b'default=')
         is_default_str = default.split(b'=')[1]
-        is_default = ast.literal_eval(is_default_str.decode('ascii'))
+        is_default = is_default_str.decode('ascii') == "True"
         assert isinstance(is_default, bool)
 
         prop_type = prop_type.decode('ascii')
