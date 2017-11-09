@@ -1,3 +1,15 @@
+qubes-core-admin-client (4.0.10-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Document device attach options in man page
+  * tools/qvm-shutdown: fix handling shutdown timeout for multiple VMs
+  * backup: fix handling labels in Qubes 4.0 backups
+
+  [ qubesuser ]
+  * make qvm-run work for non-blocking stdin
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 09 Nov 2017 11:56:18 +0100
+
 qubes-core-admin-client (4.0.9-1) unstable; urgency=medium
 
   [ Frédéric Pierret ]
