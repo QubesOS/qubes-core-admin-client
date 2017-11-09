@@ -214,8 +214,23 @@ class PropertyHolder(object):
             raise qubesadmin.exc.QubesDaemonCommunicationError(
                 'Received invalid value type: {}'.format(prop_type))
 
+    @classmethod
+    def _local_properties(cls):
+        '''
+        Get set of property names that are properties on the Python object,
+        and must not be set on the remote object
+        '''
+        if "_local_properties_set" not in cls.__dict__:
+            props = set()
+            for class_ in cls.__mro__:
+                for key in class_.__dict__:
+                    props.add(key)
+            cls._local_properties_set = props
+
+        return cls._local_properties_set
+
     def __setattr__(self, key, value):
-        if key.startswith('_') or key in dir(self):
+        if key.startswith('_') or key in self._local_properties():
             return super(PropertyHolder, self).__setattr__(key, value)
         if value is qubesadmin.DEFAULT:
             try:
@@ -241,7 +256,7 @@ class PropertyHolder(object):
                 raise qubesadmin.exc.QubesPropertyAccessError(key)
 
     def __delattr__(self, name):
-        if name.startswith('_') or name in dir(self):
+        if name.startswith('_') or name in self._local_properties():
             return super(PropertyHolder, self).__delattr__(name)
         try:
             self.qubesd_call(
