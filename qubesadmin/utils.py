@@ -25,8 +25,6 @@
 '''Various utility functions.'''
 import os
 
-import pkg_resources
-
 import qubesadmin.exc
 
 
@@ -89,6 +87,7 @@ def get_entry_point_one(group, name):
     '''Get a single entry point of given type,
     raise TypeError when there are multiple.
     '''
+    import pkg_resources
     epoints = tuple(pkg_resources.iter_entry_points(group, name))
     if not epoints:
         raise KeyError(name)
