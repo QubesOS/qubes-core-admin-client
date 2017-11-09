@@ -578,6 +578,7 @@ def main(args=None, app=None):
     else:
         spinner = qubesadmin.spinner.DummySpinner(sys.stderr)
 
+    args.app.domains.get_all_data()
     table = Table(args.app, columns, spinner)
     table.write_table(sys.stdout)
 
