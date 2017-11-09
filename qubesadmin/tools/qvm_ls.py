@@ -58,7 +58,7 @@ class Column(object):
 
     def __init__(self, head, attr=None, doc=None):
         self.ls_head = head
-        self.__doc__ = doc if doc is None else qubesadmin.utils.format_doc(doc)
+        self.__doc__ = doc
 
         # intentionally not always do set self._attr,
         # to cause AttributeError in self.format()

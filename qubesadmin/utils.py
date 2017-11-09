@@ -27,32 +27,7 @@ import os
 
 import pkg_resources
 
-import docutils
-import docutils.core
-import docutils.io
 import qubesadmin.exc
-
-
-def format_doc(docstring):
-    '''Return parsed documentation string, stripping RST markup.
-    '''
-
-    if not docstring:
-        return ''
-
-    # pylint: disable=unused-variable
-    output, pub = docutils.core.publish_programmatically(
-        source_class=docutils.io.StringInput,
-        source=' '.join(docstring.strip().split()),
-        source_path=None,
-        destination_class=docutils.io.NullOutput, destination=None,
-        destination_path=None,
-        reader=None, reader_name='standalone',
-        parser=None, parser_name='restructuredtext',
-        writer=None, writer_name='null',
-        settings=None, settings_spec=None, settings_overrides=None,
-        config_section=None, enable_exit_status=None)
-    return pub.writer.document.astext()
 
 
 def parse_size(size):
