@@ -276,7 +276,7 @@ class PropertyHolder(object):
             if value == '':
                 value = None
             else:
-                value = self.app.labels[value]
+                value = self.app.labels.get_blind(value)
         else:
             raise qubesadmin.exc.QubesDaemonCommunicationError(
                 'Received invalid value type: {}'.format(prop_type))
@@ -466,6 +466,13 @@ class WrapperObjectsCollection(object):
     def __getitem__(self, item):
         if not self.app.blind_mode and item not in self:
             raise KeyError(item)
+        return self.get_blind(item)
+
+    def get_blind(self, item):
+        '''
+        Get a property without downloading the list
+        and checking if it's present
+        '''
         if item not in self._objects:
             self._objects[item] = self._object_class(self.app, item)
         return self._objects[item]
