@@ -20,7 +20,6 @@
 
 '''Base classes for managed objects'''
 
-import ast
 import qubesadmin.exc
 
 DEFAULT = object()
@@ -151,7 +150,7 @@ class PropertyHolder(object):
         (default, _value) = property_str.split(b' ', 1)
         assert default.startswith(b'default=')
         is_default_str = default.split(b'=')[1]
-        is_default = ast.literal_eval(is_default_str.decode('ascii'))
+        is_default = is_default_str.decode('ascii') == "True"
         assert isinstance(is_default, bool)
         return is_default
 
@@ -196,11 +195,11 @@ class PropertyHolder(object):
         elif prop_type == 'bool':
             if value == '':
                 raise AttributeError
-            return ast.literal_eval(value)
+            return value == "True"
         elif prop_type == 'int':
             if value == '':
                 raise AttributeError
-            return ast.literal_eval(value)
+            return int(value)
         elif prop_type == 'vm':
             if value == '':
                 return None
