@@ -146,9 +146,12 @@ class VMCollection(object):
             # done by 'item not in self' check above, unless blind_mode is
             # enabled
             klass = None
+            state = None
             if self._vm_list and item in self._vm_list:
                 klass = self._vm_list[item]['class']
-            self._vm_objects[item] = cls(self.app, item, klass=klass)
+                state = self._vm_list[item]['state']
+            self._vm_objects[item] = cls(self.app, item,
+		klass=klass, state=state)
         return self._vm_objects[item]
 
     def __contains__(self, item):
