@@ -130,7 +130,7 @@ def main(args=None, app=None):
     if args.color_output is None and args.filter_esc:
         args.color_output = '31'
 
-    if args.color_output is None and os.isatty(sys.stderr.fileno()):
+    if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
         args.color_stderr = 31
 
     if len(args.domains) > 1 and args.passio and not args.localcmd:
@@ -194,7 +194,7 @@ def main(args=None, app=None):
                 if verbose > 0:
                     if args.color_output:
                         print('\033[0mRunning \'{}\' on {}\033[0;{}m'.format(
-                            args.cmd, vm.name, args.color_output),
+                            args.cmd, vm.name, args.color_stderr),
                             file=sys.stderr)
                     else:
                         print('Running \'{}\' on {}'.format(args.cmd, vm.name),
