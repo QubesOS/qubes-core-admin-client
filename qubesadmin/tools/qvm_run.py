@@ -194,7 +194,7 @@ def main(args=None, app=None):
                 if verbose > 0:
                     if args.color_output:
                         print('\033[0mRunning \'{}\' on {}\033[0;{}m'.format(
-                            args.cmd, vm.name, args.color_output),
+                            args.cmd, vm.name, args.color_stderr),
                             file=sys.stderr)
                     else:
                         print('Running \'{}\' on {}'.format(args.cmd, vm.name),
