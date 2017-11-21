@@ -1,3 +1,17 @@
+qubes-core-admin-client (4.0.11-1) unstable; urgency=medium
+
+  [ qubesuser ]
+  * remove format_doc and docutils import
+  * don't import pkg_resources in the top of qubesadmin/utils.py
+  * replace console entry points with just importing the module
+  * replace key in dir(self) with faster and better code
+
+  [ Jean-Philippe Ouellet ]
+  * Fix setting stderr default coloring policy
+  * Restore correct colors in verbose mode
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 21 Nov 2017 04:52:46 +0100
+
 qubes-core-admin-client (4.0.10-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
