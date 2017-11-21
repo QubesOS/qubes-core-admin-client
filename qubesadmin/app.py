@@ -26,6 +26,7 @@ import os
 import shlex
 import socket
 import subprocess
+import sys
 
 import logging
 
@@ -505,7 +506,9 @@ class QubesLocal(QubesBase):
             pass
         qrexec_opts = ['-d', dest]
         if filter_esc:
-            qrexec_opts.extend(['-t', '-T'])
+            qrexec_opts.extend(['-t'])
+        if filter_esc or os.isatty(sys.stderr.fileno()):
+            qrexec_opts.extend(['-T'])
         if localcmd:
             qrexec_opts.extend(['-l', localcmd])
         if user is None:
