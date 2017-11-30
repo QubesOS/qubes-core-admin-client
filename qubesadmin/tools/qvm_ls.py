@@ -578,7 +578,7 @@ def main(args=None, app=None):
     else:
         spinner = qubesadmin.spinner.DummySpinner(sys.stderr)
 
-    table = Table(args.app, columns, spinner)
+    table = Table(args.app, columns, spinner, args.raw_data)
     table.write_table(sys.stdout)
 
     return 0
