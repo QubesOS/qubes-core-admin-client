@@ -571,7 +571,7 @@ def main(args=None, app=None):
         if col.upper() not in Column.columns:
             PropertyColumn(col.lower())
 
-    if args.spinner:
+    if args.spinner and not args.raw_data:
         # we need Enterprise Edition™, since it's the only one that detects TTY
         # and uses dots if we are redirected somewhere else
         spinner = qubesadmin.spinner.QubesSpinnerEnterpriseEdition(sys.stderr)
