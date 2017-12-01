@@ -70,6 +70,7 @@ _re_alphanum = re.compile(r'^[A-Za-z0-9-]*$')
 _tar_msg_re = re.compile(r".*#[0-9].*restore_pipe")
 _tar_file_size_re = re.compile(r"^[^ ]+ [^ ]+/[^ ]+ *([0-9]+) .*")
 
+
 class BackupCanceledError(QubesException):
     '''Exception raised when backup/restore was cancelled'''
     def __init__(self, msg, tmpdir=None):
@@ -1356,7 +1357,9 @@ class BackupRestore(object):
                     # This all means that if the file was correctly verified
                     # + decrypted, we will surely access the right file
                     filename = self._verify_and_decrypt(filename)
-                to_extract.put(os.path.join(self.tmpdir, filename))
+
+                if not self.options.verify_only:
+                    to_extract.put(os.path.join(self.tmpdir, filename))
 
             if self.canceled:
                 raise BackupCanceledError("Restore canceled",
@@ -1749,6 +1752,9 @@ class BackupRestore(object):
             if vm and vm_info.subdir:
                 vms_size += int(vm_info.size)
                 vms_dirs.append(vm_info.subdir)
+
+                if self.options.verify_only:
+                    continue
                 for name, volume in vm.volumes.items():
                     if not volume.save_on_stop:
                         continue
@@ -1824,21 +1830,24 @@ class BackupRestore(object):
             new_vm = None
             vm_name = restore_info[vm.name].name
 
-            try:
-                # first only create VMs, later setting may require other VMs
-                # be already created
-                new_vm = self.app.add_new_vm(
-                    vm.klass,
-                    name=vm_name,
-                    label=vm.label,
-                    pool=self.options.override_pool,
-                    **kwargs)
-            except Exception as err:  # pylint: disable=broad-except
-                self.log.error('Error restoring VM %s, skipping: %s',
-                    vm.name, err)
-                if new_vm:
-                    del self.app.domains[new_vm.name]
-                continue
+            if self.options.verify_only:
+                new_vm = self.backup_app.domains[vm_name]
+            else:
+                try:
+                    # first only create VMs, later setting may require other VMs
+                    # be already created
+                    new_vm = self.app.add_new_vm(
+                        vm.klass,
+                        name=vm_name,
+                        label=vm.label,
+                        pool=self.options.override_pool,
+                        **kwargs)
+                except Exception as err:  # pylint: disable=broad-except
+                    self.log.error('Error restoring VM %s, skipping: %s',
+                        vm.name, err)
+                    if new_vm:
+                        del self.app.domains[new_vm.name]
+                    continue
 
             restore_info[vm.name].restored_vm = new_vm
 
