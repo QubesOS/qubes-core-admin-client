@@ -57,12 +57,6 @@ parser.add_argument('dir', action='store',
     help='Template directory')
 
 
-def move_if_exists(source, dest_dir):
-    '''Move file/directory if exists'''
-    if os.path.exists(source):
-        shutil.move(source, os.path.join(dest_dir, os.path.basename(source)))
-
-
 def get_root_img_size(source_dir):
     '''Extract size of root.img to be imported'''
     root_path = os.path.join(source_dir, 'root.img')
