@@ -95,9 +95,6 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             b'template1 class=TemplateVM state=Halted\n' \
             b'sys-net class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\nblack\ngreen\nblue\n'
-        self.app.expected_calls[
             ('vm1', 'admin.vm.List', None, None)] = \
             b'0\x00vm1 class=AppVM state=Running\n'
         self.app.expected_calls[

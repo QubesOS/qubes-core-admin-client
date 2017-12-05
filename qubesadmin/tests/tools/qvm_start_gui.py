@@ -43,9 +43,6 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
                 b'0\x00default=False type=label red'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\n'
 
         proc_mock.side_effect = [
             b'KWIN_RUNNING = 0x1\n',
@@ -85,9 +82,6 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
         self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\n'
-        self.app.expected_calls[
             ('dom0', 'admin.label.Get', 'red', None)] = \
             b'0\x000xff0000'
         self.app.expected_calls[
@@ -117,9 +111,6 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool True'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\n'
         self.app.expected_calls[
             ('dom0', 'admin.label.Get', 'red', None)] = \
             b'0\x000xff0000'

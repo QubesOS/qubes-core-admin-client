@@ -220,10 +220,6 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def clone_setup_common_calls(self, src, dst):
-        # labels
-        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\ngreen\nblue\n'
-
         # have each property type with default=no, each special-cased,
         # and some with default=yes
         properties = {
@@ -437,8 +433,6 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_035_clone_fail(self):
-        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\ngreen\nblue\n'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.List', None, None)] = \
             b'0\0qid\nname\ntemplate\nlabel\nmemory\n'
