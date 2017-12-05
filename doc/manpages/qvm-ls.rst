@@ -47,14 +47,6 @@ Options
 
    Decrease verbosity.
 
-.. option:: --spinner
-
-   Have a spinner spinning while the spinning mainloop spins new table cells.
-
-.. option:: --no-spinner
-
-   No spinner today.
-
 Authors
 -------
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>

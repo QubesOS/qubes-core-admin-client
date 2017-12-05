@@ -46,7 +46,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     firewall = None
 
-    def __init__(self, app, name, klass=None):
+    def __init__(self, app, name, klass=None, state=None):
         super(QubesVM, self).__init__(app, 'admin.vm.property.', name)
         self._volumes = None
         self._klass = klass
@@ -55,6 +55,11 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self.features = qubesadmin.features.Features(self)
         self.devices = qubesadmin.devices.DeviceManager(self)
         self.firewall = qubesadmin.firewall.Firewall(self)
+        self._state = state
+
+    def clear_cache(self):
+        self._state = None
+        super(QubesVM, self).clear_cache()
 
     @property
     def name(self):
@@ -138,7 +143,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''
         self.qubesd_call(self._method_dest, 'admin.vm.Unpause')
 
-    def get_power_state(self):
+    def get_power_state(self, force=False):
         '''Return power state description string.
 
         Return value may be one of those:
@@ -168,20 +173,21 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         '''
 
-        try:
-            vm_list_info = [line
-                for line in self.qubesd_call(
-                    self._method_dest, 'admin.vm.List', None, None
-                ).decode('ascii').split('\n')
-                if line.startswith(self._method_dest+' ')]
-        except qubesadmin.exc.QubesDaemonNoResponseError:
-            return 'NA'
-        assert len(vm_list_info) == 1
-        #  name class=... state=... other=...
-        # NOTE: when querying dom0, we get whole list
-        vm_state = vm_list_info[0].strip().partition('state=')[2].split(' ')[0]
-        return vm_state
-
+        if not self._state or force:
+            try:
+                vm_list_info = [line
+                    for line in self.qubesd_call(
+                        self._method_dest, 'admin.vm.List', None, None
+                    ).decode('ascii').split('\n')
+                    if line.startswith(self._method_dest+' ')]
+            except qubesadmin.exc.QubesDaemonNoResponseError:
+                return 'NA'
+            assert len(vm_list_info) == 1
+            #  name class=... state=... other=...
+            # NOTE: when querying dom0, we get whole list
+            self._state = (vm_list_info[0].strip().partition('state=')[2]
+                .split(' ')[0])
+        return self._state
 
     def is_halted(self):
         ''' Check whether this domain's state is 'Halted'
