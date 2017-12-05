@@ -706,6 +706,7 @@ class TC_20_QubesLocal(unittest.TestCase):
         with open(tmpdir + '/payload') as payload:
             self.assertEqual(payload.read(), 'some payload\n')
 
+    @unittest.mock.patch('os.isatty', lambda fd: fd == 2)
     def test_010_run_service(self):
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
@@ -733,6 +734,7 @@ class TC_20_QubesLocal(unittest.TestCase):
         self.assertEqual(self.get_request(),
             b'dom0\0admin.vm.Start\0some-vm\0\0')
 
+    @unittest.mock.patch('os.isatty', lambda fd: fd == 2)
     def test_012_run_service_user(self):
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
