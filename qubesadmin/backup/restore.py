@@ -1357,9 +1357,10 @@ class BackupRestore(object):
                     # This all means that if the file was correctly verified
                     # + decrypted, we will surely access the right file
                     filename = self._verify_and_decrypt(filename)
-
                 if not self.options.verify_only:
                     to_extract.put(os.path.join(self.tmpdir, filename))
+                else:
+                    os.unlink(os.path.join(self.tmpdir, filename))
 
             if self.canceled:
                 raise BackupCanceledError("Restore canceled",
@@ -1783,20 +1784,18 @@ class BackupRestore(object):
                 raise
             else:
                 self.log.error('Error extracting data: ' + str(err))
-                self.log.warning(
-                    "Continuing anyway to restore at least some VMs")
-
-        if self.options.verify_only:
-            shutil.rmtree(self.tmpdir)
-            return
+        finally:
+            if self.log.getEffectiveLevel() > logging.DEBUG:
+                shutil.rmtree(self.tmpdir)
 
         if self.canceled:
             raise BackupCanceledError("Restore canceled",
                                       tmpdir=self.tmpdir)
 
-        shutil.rmtree(self.tmpdir)
-        self.log.info("-> Done. Please install updates for all the restored "
-                      "templates.")
+        self.log.info("-> Done.")
+        if not self.options.verify_only:
+            self.log.info("-> Please install updates for all the restored "
+                          "templates.")
 
     def _restore_vms_metadata(self, restore_info):
         '''Restore VM metadata
@@ -1817,7 +1816,10 @@ class BackupRestore(object):
         for vm in self._templates_first(vms.values()):
             if self.canceled:
                 return
-            self.log.info("-> Restoring %s...", vm.name)
+            if self.options.verify_only:
+                self.log.info("-> Verifying %s...", vm.name)
+            else:
+                self.log.info("-> Restoring %s...", vm.name)
             kwargs = {}
             if vm.template:
                 template = restore_info[vm.name].template
