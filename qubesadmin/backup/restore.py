@@ -1776,7 +1776,8 @@ class BackupRestore(object):
             vms_dirs.append(os.path.dirname(restore_info['dom0'].subdir))
             vms_size += restore_info['dom0'].size
             if not self.options.verify_only:
-                handlers[restore_info['dom0'].subdir] = (self._handle_dom0, None)
+                handlers[restore_info['dom0'].subdir] = \
+                    (self._handle_dom0, None)
         try:
             self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
                 handlers=handlers)
