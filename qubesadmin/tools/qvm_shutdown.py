@@ -83,7 +83,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 # pylint: disable=no-member
                 loop.run_until_complete(asyncio.wait_for(
                     qubesadmin.events.utils.wait_for_domain_shutdown(
-                        this_round_domains),
+                        sorted(this_round_domains)),
                     args.timeout))
             except asyncio.TimeoutError:
                 for vm in this_round_domains:
