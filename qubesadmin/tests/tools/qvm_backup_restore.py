@@ -107,6 +107,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             1: BackupRestore.VMToRestore(vm1),
         }
         mock_args = mock.Mock()
+        mock_args.verify_only = False
         self.app.log = mock.Mock()
         qubesadmin.tools.qvm_backup_restore.handle_broken(
             self.app, mock_args, mock_restore_info)
@@ -164,6 +165,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
         with self.subTest('skip_broken'):
             mock_args = mock.Mock()
             mock_args.skip_broken = True
+            mock_args.verify_only = False
             self.app.log = mock.Mock()
             qubesadmin.tools.qvm_backup_restore.handle_broken(
                 self.app, mock_args, mock_restore_info)
@@ -172,6 +174,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             mock_args = mock.Mock()
             mock_args.skip_broken = False
             mock_args.ignore_missing = True
+            mock_args.verify_only = False
             self.app.log = mock.Mock()
             qubesadmin.tools.qvm_backup_restore.handle_broken(
                 self.app, mock_args, mock_restore_info)
@@ -180,6 +183,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             mock_args = mock.Mock()
             mock_args.skip_broken = False
             mock_args.ignore_missing = False
+            mock_args.verify_only = False
             self.app.log = mock.Mock()
             with self.assertRaises(qubesadmin.exc.QubesException):
                 qubesadmin.tools.qvm_backup_restore.handle_broken(
@@ -201,6 +205,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
         with self.subTest('skip_broken'):
             mock_args = mock.Mock()
             mock_args.skip_broken = True
+            mock_args.verify_only = False
             self.app.log = mock.Mock()
             qubesadmin.tools.qvm_backup_restore.handle_broken(
                 self.app, mock_args, mock_restore_info)
@@ -209,6 +214,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             mock_args = mock.Mock()
             mock_args.skip_broken = False
             mock_args.ignore_missing = True
+            mock_args.verify_only = False
             self.app.log = mock.Mock()
             qubesadmin.tools.qvm_backup_restore.handle_broken(
                 self.app, mock_args, mock_restore_info)
@@ -217,6 +223,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             mock_args = mock.Mock()
             mock_args.skip_broken = False
             mock_args.ignore_missing = False
+            mock_args.verify_only = False
             self.app.log = mock.Mock()
             with self.assertRaises(qubesadmin.exc.QubesException):
                 qubesadmin.tools.qvm_backup_restore.handle_broken(
