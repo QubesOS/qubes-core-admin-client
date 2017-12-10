@@ -134,8 +134,12 @@ def handle_broken(app, args, restore_info):
                 "Or use --rename-conflicting to restore those VMs under "
                 "modified names (with numbers at the end).")
 
-    app.log.info("The above VMs will be copied and added to your system.")
-    app.log.info("Exisiting VMs will NOT be removed.")
+    if args.verify_only:
+        app.log.info("The above VM archive(s) will be verified.")
+        app.log.info("Existing VMs will NOT be removed or altered.")
+    else:
+        app.log.info("The above VMs will be copied and added to your system.")
+        app.log.info("Exisiting VMs will NOT be removed.")
 
     if there_are_missing_templates:
         app.log.warning("*** One or more TemplateVMs are missing on the "
