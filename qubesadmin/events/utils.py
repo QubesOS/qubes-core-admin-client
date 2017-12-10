@@ -36,7 +36,7 @@ def interrupt_on_vm_shutdown(vms, subject, event):
     '''Interrupt events processing when given VM was shutdown'''
     # pylint: disable=unused-argument
     if event == 'connection-established':
-        if all(vm.is_halted() for vm in vms):
+        if all(vm.is_halted() for vm in sorted(vms)):
             raise Interrupt
     elif event == 'domain-shutdown' and subject in vms:
         vms.remove(subject)
