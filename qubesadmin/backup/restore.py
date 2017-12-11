@@ -793,7 +793,7 @@ class BackupRestore(object):
             super(BackupRestore.Dom0ToRestore, self).__init__(vm)
             if subdir:
                 self.subdir = subdir
-            self.username = os.path.basename(subdir)
+                self.username = os.path.basename(subdir)
 
     def __init__(self, app, backup_location, backup_vm, passphrase):
         super(BackupRestore, self).__init__()
@@ -1357,6 +1357,7 @@ class BackupRestore(object):
                     # This all means that if the file was correctly verified
                     # + decrypted, we will surely access the right file
                     filename = self._verify_and_decrypt(filename)
+
                 if not self.options.verify_only:
                     to_extract.put(os.path.join(self.tmpdir, filename))
                 else:
@@ -1537,7 +1538,8 @@ class BackupRestore(object):
         if self.options.dom0_home and \
                 self.backup_app.domains['dom0'].included_in_backup:
             vm = self.backup_app.domains['dom0']
-            vms_to_restore['dom0'] = self.Dom0ToRestore(vm)
+            vms_to_restore['dom0'] = self.Dom0ToRestore(vm,
+                self.backup_app.domains['dom0'].backup_path)
             local_user = grp.getgrnam('qubes').gr_mem[0]
 
             if vms_to_restore['dom0'].username != local_user:
@@ -1627,6 +1629,10 @@ class BackupRestore(object):
                     vm_info.problems:
                 summary_line += " <-- No matching netvm on the host " \
                      "or in the backup found!"
+            elif vm_info.name == "dom0" and \
+                    BackupRestore.Dom0ToRestore.USERNAME_MISMATCH in \
+                    restore_info['dom0'].problems:
+                summary_line += " <-- username in backup and dom0 mismatch"
             else:
                 if vm_info.template != vm_info.vm.template:
                     summary_line += " <-- Template change to '{}'".format(
@@ -1634,23 +1640,6 @@ class BackupRestore(object):
                 if vm_info.name != vm_info.vm.name:
                     summary_line += " <-- Will be renamed to '{}'".format(
                         vm_info.name)
-
-            summary += summary_line + "\n"
-
-        if 'dom0' in restore_info.keys():
-            summary_line = ""
-            for field in fields_to_display:
-                # noinspection PyTypeChecker
-                fmt = "{{0:>{0}}} |".format(fields[field]["max_width"] + 1)
-                if field == "name":
-                    summary_line += fmt.format("Dom0")
-                elif field == "type":
-                    summary_line += fmt.format("Home")
-                else:
-                    summary_line += fmt.format("")
-            if BackupRestore.Dom0ToRestore.USERNAME_MISMATCH in \
-                    restore_info['dom0'].problems:
-                summary_line += " <-- username in backup and dom0 mismatch"
 
             summary += summary_line + "\n"
 
@@ -1751,32 +1740,33 @@ class BackupRestore(object):
         for vm_info in self._templates_first(restore_info.values()):
             vm = vm_info.restored_vm
             if vm and vm_info.subdir:
-                vms_size += int(vm_info.size)
-                vms_dirs.append(vm_info.subdir)
+                if isinstance(vm_info, self.Dom0ToRestore) and \
+                        vm_info.good_to_go:
+                    vms_dirs.append(os.path.dirname(restore_info['dom0'].subdir))
+                    vms_size += int(restore_info['dom0'].size)
+                    if not self.options.verify_only:
+                        handlers[restore_info['dom0'].subdir] = (self._handle_dom0, None)
+                else:
+                    vms_size += int(vm_info.size)
+                    vms_dirs.append(vm_info.subdir)
 
-                if self.options.verify_only:
-                    continue
-                for name, volume in vm.volumes.items():
-                    if not volume.save_on_stop:
+                    if self.options.verify_only:
                         continue
-                    data_func = functools.partial(
-                        self._handle_volume_data, vm, volume)
-                    size_func = functools.partial(
-                        self._handle_volume_size, vm, volume)
-                    handlers[os.path.join(vm_info.subdir, name + '.img')] = \
-                        (data_func, size_func)
-                handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = (
-                    functools.partial(vm_info.vm.handle_firewall_xml, vm), None)
-                handlers[os.path.join(vm_info.subdir,
-                    'whitelisted-appmenus.list')] = (
-                    functools.partial(self._handle_appmenus_list, vm), None)
+                    for name, volume in vm.volumes.items():
+                        if not volume.save_on_stop:
+                            continue
+                        data_func = functools.partial(
+                            self._handle_volume_data, vm, volume)
+                        size_func = functools.partial(
+                            self._handle_volume_size, vm, volume)
+                        handlers[os.path.join(vm_info.subdir, name + '.img')] = \
+                            (data_func, size_func)
+                    handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = (
+                        functools.partial(vm_info.vm.handle_firewall_xml, vm), None)
+                    handlers[os.path.join(vm_info.subdir,
+                        'whitelisted-appmenus.list')] = (
+                        functools.partial(self._handle_appmenus_list, vm), None)
 
-        if 'dom0' in restore_info.keys() and \
-                restore_info['dom0'].good_to_go:
-            vms_dirs.append(os.path.dirname(restore_info['dom0'].subdir))
-            vms_size += restore_info['dom0'].size
-            if not self.options.verify_only:
-                handlers[restore_info['dom0'].subdir] = (self._handle_dom0, None)
         try:
             self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
                 handlers=handlers)

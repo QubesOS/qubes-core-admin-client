@@ -176,7 +176,8 @@ def handle_broken(app, args, restore_info):
             raise qubesadmin.exc.QubesException(
                 "INTERNAL ERROR! Please report this to the Qubes OS team!")
 
-    if 'dom0' in restore_info.keys() and args.dom0_home:
+    if 'dom0' in restore_info.keys() and args.dom0_home \
+        and not args.verify_only:
         if dom0_username_mismatch:
             app.log.warning("*** Dom0 username mismatch! This can break "
                             "some settings! ***")
