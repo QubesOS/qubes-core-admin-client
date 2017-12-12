@@ -1,3 +1,38 @@
+qubes-core-admin-client (4.0.12-1) unstable; urgency=medium
+
+  [ Jean-Philippe Ouellet ]
+  * Stop leaking terminal escapes via stderr
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: Update tests after fix for filtering stderr
+
+  [ Jean-Philippe Ouellet ]
+  * Fix qvm-ls --raw-data
+  * Disable spinner if --raw-data
+  * Remove dead code
+
+  [ qubesuser ]
+  * don't lookup list of labels just to read VM properties
+  * don't use ast.literal_eval, just directly convert to the desired
+    type
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: make filter-esc tests working also on travis
+  * tests: fix tests after dropping unnecessary admin.label.List call
+
+  [ Christopher Laprise ]
+  * Issue #3303
+  * Fix verify-only
+  * verify-only avoid dom0 handler
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: update tests for fixed verify_only handling
+  * make qvm-shutdown nice for unit tests
+  * Make pylint happy
+  * Another approach for making qvm-shutdown nice for tests
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 12 Dec 2017 01:42:19 +0100
+
 qubes-core-admin-client (4.0.11-1) unstable; urgency=medium
 
   [ qubesuser ]
