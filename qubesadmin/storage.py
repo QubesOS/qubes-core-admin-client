@@ -171,6 +171,13 @@ class Volume(object):
         self._fetch_info()
         return int(self._info['revisions_to_keep'])
 
+    def is_outdated(self):
+        ''' Returns `True` if this snapshot of a source volume (for
+        `snap_on_start`=True) is outdated.
+        '''
+        self._fetch_info(True)
+        return self._info.get('is_outdated', False) == 'True'
+
     def resize(self, size):
         '''Resize volume.
 
