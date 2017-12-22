@@ -1,11 +1,14 @@
 [MASTER]
 persistent=no
 ignore=tests
+extension-pkg-whitelist=lxml.etree
 
 [MESSAGES CONTROL]
 # abstract-class-little-used: see http://www.logilab.org/ticket/111138
 disable=
   bad-continuation,
+  raising-format-tuple,
+  inconsistent-return-statements,
   duplicate-code,
   fixme,
   locally-disabled,

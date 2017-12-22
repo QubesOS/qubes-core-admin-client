@@ -531,7 +531,7 @@ class ExtractWorker3(Process):
 
     def __run__(self):
         self.log.debug("Started sending thread")
-        self.log.debug("Moving to dir " + self.base_dir)
+        self.log.debug("Moving to dir %s", self.base_dir)
         os.chdir(self.base_dir)
 
         filename = None
@@ -543,7 +543,7 @@ class ExtractWorker3(Process):
 
             assert isinstance(filename, str)
 
-            self.log.debug("Extracting file " + filename)
+            self.log.debug("Extracting file %s", filename)
 
             if filename.endswith('.000'):
                 # next file
@@ -587,7 +587,7 @@ class ExtractWorker3(Process):
                         tar2_cmdline.insert(-1, "--use-compress-program=%s" %
                                             DEFAULT_COMPRESSION_FILTER)
 
-                self.log.debug("Running command " + str(tar2_cmdline))
+                self.log.debug("Running command %s", str(tar2_cmdline))
                 if self.encrypted:
                     # Start decrypt
                     self.decryptor_process = subprocess.Popen(
@@ -880,7 +880,7 @@ class BackupRestore(object):
         tar1_env = os.environ.copy()
         tar1_env['UPDATES_MAX_BYTES'] = str(limit_bytes)
         tar1_env['UPDATES_MAX_FILES'] = str(limit_count)
-        self.log.debug("Run command" + str(tar1_command))
+        self.log.debug("Run command %s", str(tar1_command))
         command = subprocess.Popen(
             tar1_command,
             stdin=backup_stdin,
@@ -1777,7 +1777,7 @@ class BackupRestore(object):
             if self.options.verify_only:
                 raise
             else:
-                self.log.error('Error extracting data: ' + str(err))
+                self.log.error('Error extracting data: %s', str(err))
         finally:
             if self.log.getEffectiveLevel() > logging.DEBUG:
                 shutil.rmtree(self.tmpdir)
