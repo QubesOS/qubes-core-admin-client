@@ -1742,10 +1742,12 @@ class BackupRestore(object):
             if vm and vm_info.subdir:
                 if isinstance(vm_info, self.Dom0ToRestore) and \
                         vm_info.good_to_go:
-                    vms_dirs.append(os.path.dirname(restore_info['dom0'].subdir))
-                    vms_size += int(restore_info['dom0'].size)
-                    if not self.options.verify_only:
-                        handlers[restore_info['dom0'].subdir] = (self._handle_dom0, None)
+                    vms_dirs.append(os.path.dirname(vm_info.subdir))
+                    vms_size += int(vm_info.size)
+                    if self.options.verify_only:
+                        continue
+
+                    handlers[vm_info.subdir] = (self._handle_dom0, None)
                 else:
                     vms_size += int(vm_info.size)
                     vms_dirs.append(vm_info.subdir)
@@ -1760,10 +1762,11 @@ class BackupRestore(object):
                             self._handle_volume_data, vm, volume)
                         size_func = functools.partial(
                             self._handle_volume_size, vm, volume)
-                        handlers[os.path.join(vm_info.subdir, name + '.img')] = \
-                            (data_func, size_func)
+                        img_path = os.path.join(vm_info.subdir, name + '.img')
+                        handlers[img_path] = (data_func, size_func)
                     handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = (
-                        functools.partial(vm_info.vm.handle_firewall_xml, vm), None)
+                        functools.partial(vm_info.vm.handle_firewall_xml, vm),
+                        None)
                     handlers[os.path.join(vm_info.subdir,
                         'whitelisted-appmenus.list')] = (
                         functools.partial(self._handle_appmenus_list, vm), None)
