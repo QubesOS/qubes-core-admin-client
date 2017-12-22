@@ -53,6 +53,14 @@ Options
    Give plain list of VM names, without header or separator. Useful in scripts.
    Same as --raw-data --fields=name
 
+.. option:: --disk, -d
+
+   Same as --format=disk, for compatibility with Qubes 3.x
+
+.. option:: --network, -n
+
+   Same as --format=network, for compatibility with Qubes 3.x
+
 .. option:: --verbose, -v
 
    Increase verbosity.

@@ -543,6 +543,14 @@ def get_parser():
     parser.add_argument('--raw-list', action='store_true',
         help='Same as --raw-data --fields=name')
 
+    parser.add_argument('--disk', '-d',
+        action='store_const', dest='format', const='disk',
+        help='Same as --format=disk')
+
+    parser.add_argument('--network', '-n',
+        action='store_const', dest='format', const='network',
+        help='Same as --format=network')
+
     parser.set_defaults(spinner=True)
 
 #   parser.add_argument('--conf', '-c',
