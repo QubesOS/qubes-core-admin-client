@@ -384,11 +384,11 @@ FlagsColumn()
 class Table(object):
     '''Table that is displayed to the user.
 
-    :param qubes.Qubes app: Qubes application object.
+    :param domains: Domains to include in the table.
     :param list colnames: Names of the columns (need not to be uppercase).
     '''
-    def __init__(self, app, colnames, spinner, raw_data=False):
-        self.app = app
+    def __init__(self, domains, colnames, spinner, raw_data=False):
+        self.domains = domains
         self.columns = tuple(Column.columns[col.upper().replace('_', '-')]
                 for col in colnames)
         self.spinner = spinner
@@ -417,12 +417,12 @@ class Table(object):
             self.spinner.show('please wait...')
             table_data.append(self.get_head())
             self.spinner.update()
-            for vm in sorted(self.app.domains):
+            for vm in sorted(self.domains):
                 table_data.append(self.get_row(vm))
             self.spinner.hide()
             qubesadmin.tools.print_table(table_data, stream=stream)
         else:
-            for vm in sorted(self.app.domains):
+            for vm in sorted(self.domains):
                 stream.write('|'.join(self.get_row(vm)) + '\n')
 
 
@@ -504,6 +504,7 @@ def get_parser():
         initial_indent='  ', subsequent_indent='  ')
 
     parser = qubesadmin.tools.QubesArgumentParser(
+        vmname_nargs=argparse.ZERO_OR_MORE,
         formatter_class=argparse.RawTextHelpFormatter,
         description='List Qubes domains and their parametres.',
         epilog='available formats (see --help-formats):\n{}\n\n'
@@ -579,7 +580,11 @@ def main(args=None, app=None):
     else:
         spinner = qubesadmin.spinner.DummySpinner(sys.stderr)
 
-    table = Table(args.app, columns, spinner, args.raw_data)
+    if args.domains:
+        domains = args.domains
+    else:
+        domains = args.app.domains
+    table = Table(domains, columns, spinner, args.raw_data)
     table.write_table(sys.stdout)
 
     return 0
