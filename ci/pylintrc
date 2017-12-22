@@ -6,6 +6,7 @@ ignore=tests
 # abstract-class-little-used: see http://www.logilab.org/ticket/111138
 disable=
   bad-continuation,
+  inconsistent-return-statements,
   duplicate-code,
   fixme,
   locally-disabled,

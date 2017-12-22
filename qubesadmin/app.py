@@ -563,6 +563,7 @@ class QubesRemote(QubesBase):
             payload_stream.close()
         (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
+            # pylint: disable=raising-format-tuple
             raise qubesadmin.exc.QubesDaemonNoResponseError(
                 'Service call error: %s', stderr.decode())
 
