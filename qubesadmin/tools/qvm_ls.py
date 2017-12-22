@@ -325,7 +325,7 @@ def calc_used(vm, volume_name):
     if size == 0:
         return 0
     usage = calc_usage(vm, volume_name)
-    return usage * 100 // size
+    return '{}%'.format(usage * 100 // size)
 
 
 # todo maxmem
