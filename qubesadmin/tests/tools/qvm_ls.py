@@ -112,6 +112,14 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
             'test-vm  Running  TestVM  green  template  sys-net\n')
 
+    def test_102_raw_list(self):
+        app = TestApp()
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-list'], app=app)
+        self.assertEqual(stdout.getvalue(),
+            'dom0\n'
+            'test-vm\n')
+
 
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
     def test_100_list_with_status(self):

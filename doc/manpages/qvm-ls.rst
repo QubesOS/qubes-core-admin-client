@@ -23,6 +23,15 @@ Options
 
    List all available formats with their definitions and exit.
 
+.. option:: --all
+
+   List all qubes, this is default.
+
+.. option:: --exclude
+
+   Exclude the qube from --all. You need to use --all option explicitly to use
+   --exclude.
+
 .. option:: --format=FORMAT, -o FORMAT
 
    Sets format to a list of columns defined by preset. All formats along with
@@ -38,6 +47,11 @@ Options
 
    Output data in easy to parse format. Table header is skipped and columns are
    separated by `|` character.
+
+.. option:: --raw-list
+
+   Give plain list of VM names, without header or separator. Useful in scripts.
+   Same as --raw-data --fields=name
 
 .. option:: --verbose, -v
 

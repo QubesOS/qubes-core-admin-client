@@ -539,6 +539,10 @@ def get_parser():
         action='store_false', dest='spinner',
         help='disable spinner')
 
+    # shortcuts, compatibility with Qubes 3.2
+    parser.add_argument('--raw-list', action='store_true',
+        help='Same as --raw-data --fields=name')
+
     parser.set_defaults(spinner=True)
 
 #   parser.add_argument('--conf', '-c',
@@ -562,6 +566,10 @@ def main(args=None, app=None):
     except qubesadmin.exc.QubesException as e:
         parser.print_error(str(e))
         return 1
+
+    if args.raw_list:
+        args.raw_data = True
+        args.fields = 'name'
 
     if args.fields:
         columns = [col.strip() for col in args.fields.split(',')]
