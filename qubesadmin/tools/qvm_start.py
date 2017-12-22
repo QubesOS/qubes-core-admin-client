@@ -24,6 +24,8 @@ import sys
 
 import subprocess
 
+import time
+
 import qubesadmin.devices
 import qubesadmin.exc
 import qubesadmin.tools
@@ -121,7 +123,17 @@ def get_drive_assignment(app, drive_str):
         loop_name = loop_name.strip()
         assert loop_name.startswith(b'/dev/loop')
         ident = loop_name.decode().split('/')[2]
-        # FIXME: synchronize with udev + exposing device in qubesdb
+        # wait for device to appear
+        # FIXME: convert this to waiting for event
+        timeout = 10
+        while isinstance(backend_domain.devices['block'][ident],
+                qubesadmin.devices.UnknownDevice):
+            if timeout == 0:
+                raise qubesadmin.exc.QubesException(
+                    'Timeout waiting for {}:{} device to appear'.format(
+                        backend_domain.name, ident))
+            timeout -= 1
+            time.sleep(1)
 
     options = {
         'devtype': devtype,
