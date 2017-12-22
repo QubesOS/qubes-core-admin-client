@@ -361,7 +361,9 @@ class QubesArgumentParser(argparse.ArgumentParser):
                           default=False, help=argparse.SUPPRESS)
 
         if self._vmname_nargs in [argparse.ZERO_OR_MORE, argparse.ONE_OR_MORE]:
-            vm_name_group = VmNameGroup(self, self._vmname_nargs)
+            vm_name_group = VmNameGroup(self,
+                required=(self._vmname_nargs
+                          not in [argparse.ZERO_OR_MORE, argparse.OPTIONAL]))
             self._mutually_exclusive_groups.append(vm_name_group)
         elif self._vmname_nargs is not None:
             self.add_argument('VMNAME', nargs=self._vmname_nargs,
