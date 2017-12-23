@@ -324,10 +324,20 @@ class WrapperObjectsCollection(object):
 
     def __iter__(self):
         self.refresh_cache()
-        for obj in self._names_list:
-            yield self[obj]
+        for key in self._names_list:
+            yield key
 
     def keys(self):
         '''Get list of names.'''
         self.refresh_cache()
-        return self._names_list.copy()
+        return [key for key in self._names_list]
+
+    def items(self):
+        '''Get list of (key, value) pairs'''
+        self.refresh_cache()
+        return [(key, self.get_blind(key)) for key in self._names_list]
+
+    def values(self):
+        '''Get list of objects'''
+        self.refresh_cache()
+        return [self.get_blind(key) for key in self._names_list]

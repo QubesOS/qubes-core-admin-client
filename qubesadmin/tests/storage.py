@@ -277,7 +277,7 @@ class TestPool(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00file\nlvm\n'
         seen = set()
-        for pool in self.app.pools:
+        for pool in self.app.pools.values():
             self.assertIsInstance(pool, qubesadmin.storage.Pool)
             self.assertIn(pool.name, ('file', 'lvm'))
             self.assertNotIn(pool.name, seen)

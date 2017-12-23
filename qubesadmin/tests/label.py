@@ -28,9 +28,40 @@ class TC_00_Label(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.label.List', None, None)] = \
             b'0\x00green\nred\nblack\n'
         seen = set()
-        for label in self.app.labels:
+        for label in self.app.labels.values():
             self.assertNotIn(label.name, seen)
             seen.add(label.name)
+        self.assertEqual(seen, set(['green', 'red', 'black']))
+
+    def test_001_list_names(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00green\nred\nblack\n'
+        seen = set()
+        for label in self.app.labels:
+            self.assertNotIn(label, seen)
+            seen.add(label)
+        self.assertEqual(seen, set(['green', 'red', 'black']))
+
+    def test_002_list_keys(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00green\nred\nblack\n'
+        seen = set()
+        for label in self.app.labels.keys():
+            self.assertNotIn(label, seen)
+            seen.add(label)
+        self.assertEqual(seen, set(['green', 'red', 'black']))
+
+    def test_003_list_items(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00green\nred\nblack\n'
+        seen = set()
+        for name, label in self.app.labels.items():
+            self.assertEqual(name, label.name)
+            self.assertNotIn(name, seen)
+            seen.add(name)
         self.assertEqual(seen, set(['green', 'red', 'black']))
 
     def test_010_get(self):
