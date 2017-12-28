@@ -389,7 +389,8 @@ class Table(object):
     '''
     def __init__(self, app, colnames, spinner, raw_data=False):
         self.app = app
-        self.columns = tuple(Column.columns[col.upper()] for col in colnames)
+        self.columns = tuple(Column.columns[col.upper().replace('_', '-')]
+                for col in colnames)
         self.spinner = spinner
         self.raw_data = raw_data
 

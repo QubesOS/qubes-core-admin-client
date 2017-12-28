@@ -86,6 +86,17 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'dom0     Running  TestVM  black  -         -\n'
             'test-vm  Running  TestVM  green  template  sys-net\n')
 
+    def test_101_list_with_underscore(self):
+        app = TestApp()
+        app.domains['test-vm'].virt_mode = 'pv'
+        app.domains['test-vm'].label = 'green'
+        app.domains['dom0'].label = 'black'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['-O', 'name,virt_mode,class'], app=app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME     VIRT-MODE  CLASS\n'
+            'dom0     -          TestVM\n'
+            'test-vm  pv         TestVM\n')
 
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
     def test_100_list_with_status(self):
