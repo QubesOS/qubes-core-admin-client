@@ -154,7 +154,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'TemplateVM',
             'label': 'black',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
             },
             'devices': {},
@@ -172,7 +171,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
                 'memory': '200',
                 'netvm': None,
@@ -197,7 +195,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'AppVM',
             'label': 'green',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
                 'memory': '200',
                 'provides_network': True
@@ -213,7 +210,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'AppVM',
             'label': 'gray',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
                 'vcpus': '1'
             },
@@ -228,7 +224,7 @@ parsed_qubes_xml_r2 = {
         'banking': {
             'klass': 'AppVM',
             'label': 'green',
-            'properties': {'virt_mode': 'pv', 'maxmem': '1535'},
+            'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
             'features': {'service.meminfo-writer': True},
@@ -239,7 +235,7 @@ parsed_qubes_xml_r2 = {
         'personal': {
             'klass': 'AppVM',
             'label': 'yellow',
-            'properties': {'virt_mode': 'pv', 'maxmem': '1535'},
+            'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
             'features': {'service.meminfo-writer': True},
@@ -251,7 +247,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
                 'netvm': 'test-testproxy',
                 'default_dispvm': 'disp-test-testproxy',
@@ -267,7 +262,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
                 'memory': '200',
                 'provides_network': True},
@@ -282,7 +276,6 @@ parsed_qubes_xml_r2 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'virt_mode': 'pv',
                 'maxmem': '1535',
                 'memory': '200',
                 'provides_network': True},
@@ -310,7 +303,7 @@ parsed_qubes_xml_r2 = {
         'test-work': {
             'klass': 'AppVM',
             'label': 'green',
-            'properties': {'virt_mode': 'pv', 'maxmem': '1535'},
+            'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
             'features': {'service.meminfo-writer': True},
@@ -321,7 +314,7 @@ parsed_qubes_xml_r2 = {
         'test-template-clone': {
             'klass': 'TemplateVM',
             'label': 'green',
-            'properties': {'virt_mode': 'pv', 'maxmem': '1535'},
+            'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
             'features': {
@@ -337,7 +330,7 @@ parsed_qubes_xml_r2 = {
         'test-custom-template-appvm': {
             'klass': 'AppVM',
             'label': 'yellow',
-            'properties': {'virt_mode': 'pv', 'maxmem': '1535'},
+            'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
             'features': {'service.meminfo-writer': True},
@@ -348,7 +341,7 @@ parsed_qubes_xml_r2 = {
         'test-standalonevm': {
             'klass': 'StandaloneVM',
             'label': 'blue',
-            'properties': {'virt_mode': 'pv', 'maxmem': '1535'},
+            'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
             'features': {
@@ -364,7 +357,7 @@ parsed_qubes_xml_r2 = {
         'test-net': {
             'klass': 'AppVM',
             'label': 'red',
-            'properties': {'virt_mode': 'pv',
+            'properties': {
                 'maxmem': '1535',
                 'memory': '200',
                 'netvm': None,
@@ -606,7 +599,6 @@ parsed_qubes_xml_v4 = {
             'klass': 'AppVM',
             'label': 'red',
             'properties': {
-                'virt_mode': 'pv',
                 'autostart': 'True',
                 'maxmem': '400',
                 'provides_network': 'True',

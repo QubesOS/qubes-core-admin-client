@@ -421,7 +421,6 @@
       <properties>
         <property name="autostart">True</property>
         <property name="label">label-1</property>
-        <property name="virt_mode">pv</property>
         <property name="maxmem">400</property>
         <property name="name">sys-usb</property>
         <property name="qid">5</property>

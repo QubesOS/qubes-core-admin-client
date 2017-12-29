@@ -296,8 +296,6 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             # it this way, otherwise some OSes (Windows) will crash because
             # of substantial hardware change
             vm.features['linux-stubdom'] = False
-        else:
-            vm.properties['virt_mode'] = 'pv'
         if vm_class_name in ('QubesNetVm', 'QubesProxyVm'):
             vm.properties['provides_network'] = True
         if vm_class_name == 'QubesNetVm':
