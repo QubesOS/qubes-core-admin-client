@@ -28,7 +28,7 @@ from qubesadmin.tools import QubesArgumentParser
 parser = QubesArgumentParser(description=__doc__,
                              want_app=True,
                              vmname_nargs='+')
-parser.add_argument("--yes", action="store_true", dest="no_confirm",
+parser.add_argument("--force", "-f", action="store_true", dest="no_confirm",
     default=False, help="Do not prompt for confirmation")
 
 
