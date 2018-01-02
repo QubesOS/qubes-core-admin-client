@@ -38,6 +38,8 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     go_ahead = ""
     if not args.no_confirm:
         print("This will completely remove the selected VM(s)...")
+        for vm in args.domains:
+            print(" ", vm.name)
         go_ahead = input("Are you sure? [y/N] ").upper()
 
     if args.no_confirm or go_ahead == "Y":
