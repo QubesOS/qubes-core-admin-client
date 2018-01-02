@@ -205,6 +205,7 @@ def post_install(args):
         # if data import fails, remove half-created VM
         del app.domains[vm.name]
         raise
+    vm.installed_by_rpm = True
     import_appmenus(vm, args.dir)
 
     if not args.skip_start:
@@ -226,6 +227,7 @@ def pre_remove(args):
     for appvm in tpl.appvms:
         parser.error('Qube {} uses this template'.format(appvm.name))
 
+    tpl.installed_by_rpm = False
     del app.domains[args.name]
     return 0
 
