@@ -222,9 +222,9 @@ def pre_remove(args):
     try:
         tpl = app.domains[args.name]
     except KeyError:
-        parser.error('Qube with this name do not exist')
+        parser.error('No Qube with this name exists')
     for appvm in tpl.appvms:
-        parser.error('Qube {} use this template'.format(appvm.name))
+        parser.error('Qube {} uses this template'.format(appvm.name))
 
     del app.domains[args.name]
     return 0
