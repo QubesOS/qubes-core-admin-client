@@ -156,9 +156,20 @@ Default: do not hide netmask (qube's `netmask` property) from the qube
 updates-available
 ^^^^^^^^^^^^^^^^^
 
-There are updates available.
+There are updates available. In most cases it is useful to (only) read this
+feature to check if qube needs to be updated.
 
-Default: no updates available
+Default/no value: no updates available
+
+video-model
+^^^^^^^^^^^
+
+Choose video card modes emulated by QEMU for this qube. For available values see
+libvirt documentation about <video><model type=...> element:
+https://libvirt.org/formatdomain.html#elementsVideo
+Some systems (Windows) works better with 'cirrus' model set here.
+
+Default: vga
 
 Authors
 -------
