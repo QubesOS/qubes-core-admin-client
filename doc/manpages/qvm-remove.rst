@@ -14,7 +14,7 @@
 
 Synopsis
 --------
-:command:`qvm-remove` [-h] [--verbose] [--quiet] [--force-root] [--all] [--exclude *EXCLUDE*] [--just-db] [*VMNAME* [*VMNAME* ...]]
+:command:`qvm-remove` [-h] [--verbose] [--quiet] [--force] [--force-root] [--all] [--exclude *EXCLUDE*] [--just-db] [*VMNAME* [*VMNAME* ...]]
 
 Options
 -------
@@ -27,6 +27,10 @@ Options
 .. option:: --exclude
 
    Exclude the qube from :option:`--all`.
+
+.. option:: --force, -f
+
+   Do not prompt for confirmation; assume 'yes'.
 
 .. option:: --help, -h
 

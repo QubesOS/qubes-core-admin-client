@@ -28,14 +28,29 @@ from qubesadmin.tools import QubesArgumentParser
 parser = QubesArgumentParser(description=__doc__,
                              want_app=True,
                              vmname_nargs='+')
+parser.add_argument("--force", "-f", action="store_true", dest="no_confirm",
+    default=False, help="Do not prompt for confirmation")
+
 
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
-    for vm in args.domains:
-        del args.app.domains[vm.name]
+    go_ahead = ""
+    if not args.no_confirm:
+        print("This will completely remove the selected VM(s)...")
+        for vm in args.domains:
+            print(" ", vm.name)
+        go_ahead = input("Are you sure? [y/N] ").upper()
 
-    return 0
+    if args.no_confirm or go_ahead == "Y":
+        for vm in args.domains:
+            del args.app.domains[vm.name]
+        retcode = 0
+    else:
+        print("Remove cancelled.")
+        retcode = 1
+    return retcode
+
 
 
 if __name__ == '__main__':
