@@ -45,10 +45,11 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     if args.no_confirm or go_ahead == "Y":
         for vm in args.domains:
             del args.app.domains[vm.name]
-        return 0
+        retcode = 0
     else:
         print("Remove cancelled.")
-        return 1
+        retcode = 1
+    return retcode
 
 
 
