@@ -31,5 +31,5 @@ class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Remove', None, None)] = \
             b'0\x00\n'
-        qubesadmin.tools.qvm_remove.main(['some-vm'], app=self.app)
+        qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
         self.assertAllCalled()

@@ -241,6 +241,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Set', 'netvm', b'')] = b'0\0'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Set', 'installed_by_rpm', b'True')] \
+            = b'0\0'
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Reset', 'netvm', None)] = b'0\0'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'1')] = b'0\0'
@@ -291,6 +294,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Set', 'netvm', b'')] = b'0\0'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Set', 'installed_by_rpm', b'True')] \
+            = b'0\0'
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Reset', 'netvm', None)] = b'0\0'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'1')] = b'0\0'
@@ -335,6 +341,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             mock_import_appmenus):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Set', 'installed_by_rpm', b'True')] \
+            = b'0\0'
         self.app.add_new_vm = mock.Mock()
 
         if qubesadmin.tools.qvm_template_postprocess.have_events:
@@ -365,6 +374,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.expected_calls[('test-vm', 'admin.vm.Remove', None, None)] = \
             b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Set', 'installed_by_rpm', b'False')]\
+            = b'0\0'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'template', None)] = \
             b'2\0QubesNoSuchPropertyError\0\0invalid property \'template\' of ' \
