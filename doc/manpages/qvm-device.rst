@@ -9,6 +9,10 @@ Synopsis
 | :command:`qvm-device` [*options*] *DEVICE_CLASS* {list,ls,l} <*vm-name*>
 | :command:`qvm-device` [*options*] *DEVICE_CLASS* {attach,at,a} <*vm-name*> <*device*>
 | :command:`qvm-device` [*options*] *DEVICE_CLASS* {detach,dt,d} <*vm-name*> <*device*>
+| :command:`qvm-*DEVICE_CLASS*` [*options*] {list,ls,l,attach,at,a,detach,dt,d} <*vmname*> ...
+
+Tool can be called either as `qvm-device *DEVICE_CLASS* ...`, or
+`qvm-*DEVICE_CLASS* ...`. The latter is used for `qvm-pci`, `qvm-block` etc.
 
 Options
 =======
