@@ -59,6 +59,11 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
    specify this option multiple times. See below for options specific to
    different device classes.
 
+.. option:: --ro
+
+   Alias for the `read-only=yes` option. If you specify both `--ro` and
+   `--option read-only=no`, `--ro` takes precedence.
+
 .. option:: --persistent, -p
 
    Attach device persistently, which means have it attached also after qube restart.

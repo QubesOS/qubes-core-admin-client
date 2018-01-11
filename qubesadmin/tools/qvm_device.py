@@ -119,6 +119,8 @@ def attach_device(args):
     device_assignment = args.device_assignment
     vm = args.domains[0]
     options = dict(opt.split('=', 1) for opt in args.option or [])
+    if args.ro:
+        options['read-only'] = 'yes'
     device_assignment.persistent = args.persistent
     device_assignment.options = options
     vm.devices[args.devclass].attach(device_assignment)
@@ -236,6 +238,9 @@ def get_parser(device_class=None):
     attach_parser.add_argument('--option', '-o', action='append',
         help="Set option for the device in opt=value form (can be specified "
              "multiple times), see man qvm-device for details")
+    attach_parser.add_argument('--ro', action='store_true', default=False,
+        help="Attach device read-only (alias for read-only=yes option, "
+             "takes precedence)")
     attach_parser.add_argument('--persistent', '-p', action='store_true',
         default=False,
         help="Attach device persistently (so it will be automatically "
