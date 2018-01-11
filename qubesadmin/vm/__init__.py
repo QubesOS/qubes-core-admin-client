@@ -311,6 +311,18 @@ class QubesVM(qubesadmin.base.PropertyHolder):
                 pass
 
     @property
+    def connected_vms(self):
+        ''' Return a generator containing all domains connected to the current
+            NetVM.
+        '''
+        for vm in self.app.domains:
+            try:
+                if vm.netvm == self:
+                    yield vm
+            except AttributeError:
+                pass
+
+    @property
     def klass(self):
         ''' Qube class '''
         # use cached value if available
