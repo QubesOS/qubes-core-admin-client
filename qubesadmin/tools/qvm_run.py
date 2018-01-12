@@ -213,7 +213,8 @@ def main(args=None, app=None):
                         user=args.user,
                         localcmd=args.localcmd,
                         **run_kwargs)
-                    proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
+                    proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd,
+                        wait_for_session=(args.gui and args.dispvm)))
                     proc.stdin.flush()
                 if args.passio and not args.localcmd:
                     copy_proc = multiprocessing.Process(target=copy_stdin,
