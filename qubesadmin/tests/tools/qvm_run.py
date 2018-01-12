@@ -343,6 +343,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b'0\0disp123'
         self.app.expected_calls[('disp123', 'admin.vm.Kill', None, None)] = \
             b'0\0'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
+            b'0\0default=yes type=int 30'
         ret = qubesadmin.tools.qvm_run.main(
             ['--dispvm', '--service', 'test.service'], app=self.app)
         self.assertEqual(ret, 0)
@@ -352,6 +355,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
                 'user': None,
+                'connect_timeout': 30,
             }),
             ('disp123', 'test.service', b''),
         ])
@@ -364,6 +368,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b'0\0disp123'
         self.app.expected_calls[('disp123', 'admin.vm.Kill', None, None)] = \
             b'0\0'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
+            b'0\0default=yes type=int 30'
         ret = qubesadmin.tools.qvm_run.main(
             ['--dispvm=test-vm', '--service', 'test.service'], app=self.app)
         self.assertEqual(ret, 0)
@@ -373,6 +380,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'stdout': subprocess.DEVNULL,
                 'stderr': subprocess.DEVNULL,
                 'user': None,
+                'connect_timeout': 30,
             }),
             ('disp123', 'test.service', b''),
         ])

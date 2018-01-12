@@ -28,11 +28,14 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.CreateDisposable', None, None)] = b'0\0disp123'
         self.app.expected_calls[
             ('disp123', 'admin.vm.Kill', None, None)] = b'0\0'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
+            b'0\0default=yes type=int 30'
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, None)
         (stdout, stderr) = vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('disp123', 'test.service', {}),
+            ('disp123', 'test.service', {'connect_timeout': 30}),
             ('disp123', 'test.service', b''),
         ])
         self.assertAllCalled()
@@ -44,11 +47,14 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
             b'0\0disp123'
         self.app.expected_calls[
             ('disp123', 'admin.vm.Kill', None, None)] = b'0\0'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
+            b'0\0default=yes type=int 30'
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, 'test-vm')
         (stdout, stderr) = vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('disp123', 'test.service', {}),
+            ('disp123', 'test.service', {'connect_timeout': 30}),
             ('disp123', 'test.service', b''),
         ])
         self.assertAllCalled()
