@@ -276,11 +276,14 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return stdouterr
 
     @staticmethod
-    def prepare_input_for_vmshell(command, input=None):
+    def prepare_input_for_vmshell(command, input=None, wait_for_session=False):
         '''Prepare shell input for the given command and optional (real) input
         '''  # pylint: disable=redefined-builtin
         if input is None:
             input = b''
+        if wait_for_session:
+            command = 'id -un | /etc/qubes-rpc/qubes.WaitForSession ' \
+                      '>/dev/null 2>/dev/null; ' + command
         return b''.join((command.rstrip('\n').encode('utf-8'),
             b'; exit\n', input))
 
@@ -350,6 +353,9 @@ class DispVMWrapper(QubesVM):
                     'admin.vm.CreateDisposable')
                 dispvm = dispvm.decode('ascii')
                 self._method_dest = dispvm
+                # Service call may wait for session start, give it more time
+                # than default 5s
+                kwargs['connect_timeout'] = self.qrexec_timeout
         return super(DispVMWrapper, self).run_service(service, **kwargs)
 
     def cleanup(self):
