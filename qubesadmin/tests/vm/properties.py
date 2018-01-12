@@ -164,6 +164,30 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
         del self.vm.prop1
         self.assertAllCalled()
 
+    def test_040_get_default(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.GetDefault', 'prop1', None)] = \
+            b'0\x00type=str some value'
+        default_value = self.vm.property_get_default('prop1')
+        self.assertEqual(default_value, 'some value')
+        self.assertAllCalled()
+
+    def test_041_get_default_int(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.GetDefault', 'prop1', None)] = \
+            b'0\x00type=int 42'
+        default_value = self.vm.property_get_default('prop1')
+        self.assertEqual(default_value, 42)
+        self.assertAllCalled()
+
+    def test_042_get_default_none(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.GetDefault', 'prop1', None)] = \
+            b'0\x00'
+        with self.assertRaises(AttributeError):
+            self.vm.property_get_default('prop1')
+        self.assertAllCalled()
+
 
 class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
     def test_000_get_name(self):
