@@ -209,7 +209,10 @@ def main(args=None, app=None):
                         localcmd=args.localcmd,
                         **run_kwargs)
                 else:
-                    proc = vm.run_service('qubes.VMShell',
+                    service = 'qubes.VMShell'
+                    if args.gui and args.dispvm:
+                        service += '+WaitForSession'
+                    proc = vm.run_service(service,
                         user=args.user,
                         localcmd=args.localcmd,
                         **run_kwargs)
