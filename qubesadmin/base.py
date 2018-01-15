@@ -154,6 +154,25 @@ class PropertyHolder(object):
         assert isinstance(is_default, bool)
         return is_default
 
+    def property_get_default(self, item):
+        '''
+        Get default property value, regardless of the current value
+
+        :param str item: name of property
+        :return: default value
+        '''
+        if item.startswith('_'):
+            raise AttributeError(item)
+        property_str = self.qubesd_call(
+            self._method_dest,
+            self._method_prefix + 'GetDefault',
+            item,
+            None)
+        if not property_str:
+            raise AttributeError(item + ' has no default')
+        (prop_type, value) = property_str.split(b' ', 1)
+        return self._parse_type_value(prop_type, value)
+
     def clone_properties(self, src, proplist=None):
         '''Clone properties from other object.
 
@@ -172,7 +191,6 @@ class PropertyHolder(object):
                 continue
 
     def __getattr__(self, item):
-        # pylint: disable=too-many-return-statements
         if item.startswith('_'):
             raise AttributeError(item)
         try:
@@ -184,6 +202,19 @@ class PropertyHolder(object):
         except qubesadmin.exc.QubesDaemonNoResponseError:
             raise qubesadmin.exc.QubesPropertyAccessError(item)
         (_default, prop_type, value) = property_str.split(b' ', 2)
+        return self._parse_type_value(prop_type, value)
+
+    def _parse_type_value(self, prop_type, value):
+        '''
+        Parse `type=... ...` qubesd response format. Return a value of
+        appropriate type.
+
+        :param bytes prop_type: 'type=...' part of the response (including
+            `type=` prefix)
+        :param bytes value: 'value' part of the response
+        :return: parsed value
+        '''
+        # pylint: disable=too-many-return-statements
         prop_type = prop_type.decode('ascii')
         if not prop_type.startswith('type='):
             raise qubesadmin.exc.QubesDaemonCommunicationError(
