@@ -350,6 +350,9 @@ class DispVMWrapper(QubesVM):
                     'admin.vm.CreateDisposable')
                 dispvm = dispvm.decode('ascii')
                 self._method_dest = dispvm
+                # Service call may wait for session start, give it more time
+                # than default 5s
+                kwargs['connect_timeout'] = self.qrexec_timeout
         return super(DispVMWrapper, self).run_service(service, **kwargs)
 
     def cleanup(self):

@@ -494,6 +494,7 @@ class QubesLocal(QubesBase):
         :param str user: username to run service as
         :param str localcmd: Command to connect stdin/stdout to
         :param bool wait: wait for remote process to finish
+        :param int connect_timeout: qrexec client connection timeout
         :rtype: subprocess.Popen
         '''
 
@@ -516,6 +517,8 @@ class QubesLocal(QubesBase):
             user = 'DEFAULT'
         if not wait:
             qrexec_opts.extend(['-e'])
+        if 'connect_timeout' in kwargs:
+            qrexec_opts.extend(['-w', str(kwargs.pop('connect_timeout'))])
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
