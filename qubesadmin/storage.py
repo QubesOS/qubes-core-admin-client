@@ -272,6 +272,16 @@ class Pool(object):
         return self._config
 
     @property
+    def size(self):
+        ''' Storage pool size, in bytes'''
+        return self.config['size']
+
+    @property
+    def usage(self):
+        ''' Space used in the pool, in bytes '''
+        return self.config['usage']
+
+    @property
     def driver(self):
         ''' Storage pool driver '''
         return self.config['driver']
