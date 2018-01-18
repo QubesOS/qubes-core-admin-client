@@ -1,3 +1,56 @@
+qubes-core-admin-client (4.0.13-1) unstable; urgency=medium
+
+  [ Christopher Laprise ]
+  * Fix dom0-related issues
+
+  [ Marek Marczykowski-Górecki ]
+  * backup: make pylint happy
+  * Make pylint happy
+  * tools/qvm-ls: fix handling columns with underscore
+  * backup: restore Qubes 3.x VMs as HVMs
+  * doc: update qvm-features documentation
+
+  [ Christopher Laprise ]
+  * Add --yes option and confirm prompt.
+  * Fix error message grammar
+  * Toggle installed_by_rpm in template tool
+  * Use --force instead of --yes
+  * Print vm list before prompt
+  * Avoid cloning installed_by_rpm
+  * Add --force to manpage.
+  * Fix style else-return
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: update qvm-template-process and qvm-remove tests
+  * add QubesVM.connected_vms attribute
+
+  [ Rusty Bird ]
+  * qvm-device/block: Alias '--ro' to '--option read-only=yes'
+  * qvm-device.rst: Document '--ro' option
+
+  [ Marek Marczykowski-Górecki ]
+  * doc: add info about specific qvm-device cases
+  * storage: add volume.is_outdated() function
+  * tools/qvm-start: add naive waiting for cdrom device
+  * tools: fix handling optional domain list
+  * tools/qvm-ls: allow list only selected VMs
+  * tools/qvm-ls: add --raw-list option for compatibility with R3.2
+  * tools/qvm-ls: add --network and --disk compatibility options
+  * tools/qvm-ls: clarify that disk usage is in percents
+  * base: make WrapperObjectsCollection behave like a dict
+  * rpm,deb: add missing python lxml dependency
+  * Add property_get_default method
+  * vm/DispVM: use 'qrexec_timeout' also for call connection timeout
+
+  [ Rusty Bird ]
+  * qvm-run: wait for X11 in --dispvm --gui case
+
+  [ Marek Marczykowski-Górecki ]
+  * storage: add size and usage properties
+  * backup/restore: do not shrink volumes on restore
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 18 Jan 2018 21:06:36 +0100
+
 qubes-core-admin-client (4.0.12-1) unstable; urgency=medium
 
   [ Jean-Philippe Ouellet ]
