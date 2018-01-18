@@ -476,7 +476,7 @@ class ExtractWorker3(Process):
                 else:
                     match = _tar_file_size_re.match(line)
                     if match:
-                        file_size = match.groups()[0]
+                        file_size = int(match.groups()[0])
                         size_func(file_size)
                         break
                     else:
@@ -1708,10 +1708,11 @@ class BackupRestore(object):
     def _handle_volume_size(self, vm, volume, size):
         '''Wrap volume resize with logging'''
         try:
-            volume.resize(size)
+            if volume.size < size:
+                volume.resize(size)
         except Exception as err:  # pylint: disable=broad-except
-            self.log.error('Failed to resize volume %s of VM %s: %s',
-                volume.name, vm.name, err)
+            self.log.error('Failed to resize volume %s of VM %s to %d: %s',
+                volume.name, vm.name, size, err)
 
     def restore_do(self, restore_info):
         '''
