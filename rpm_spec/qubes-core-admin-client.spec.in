@@ -1,5 +1,5 @@
 Name:		qubes-core-admin-client
-Version:    %(cat version)
+Version:    @VERSION@
 Release:	0.1%{?dist}
 Summary:	Qubes OS admin client tools
 
@@ -23,6 +23,7 @@ BuildRequires:	python3-dbus
 Requires:   python3-qubesadmin
 %endif
 BuildArch:  noarch
+Source0: %{name}-%{version}.tar.gz
 
 %if 0%{?qubes_builder}
 %define _builddir %(pwd)
