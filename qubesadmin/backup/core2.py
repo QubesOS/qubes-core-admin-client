@@ -348,7 +348,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
 
         self.globals['default_kernel'] = tree.getroot().get("default_kernel")
 
-        vm_classes = ["AdminVM", "TemplateVm", "TemplateHVm",
+        vm_classes = ["AdminVm", "TemplateVm", "TemplateHVm",
             "AppVm", "HVm", "NetVm", "ProxyVm"]
 
         # First build qid->name map
@@ -364,7 +364,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
         if 0 not in self.qid_map:
             vm = Core2VM()
             vm.name = 'dom0'
-            vm.klass = 'AdminVM'
+            vm.klass = 'AdminVm'
             vm.label = 'black'
             self.domains['dom0'] = vm
             self.qid_map[0] = 'dom0'
