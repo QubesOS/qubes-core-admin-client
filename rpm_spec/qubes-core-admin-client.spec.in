@@ -25,10 +25,6 @@ Requires:   python3-qubesadmin
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 
-%if 0%{?qubes_builder}
-%define _builddir %(pwd)
-%endif
-
 %description
 This package include managemt tools, like qvm-*.
 
@@ -66,13 +62,12 @@ Python3 module qubesadmin.
 %endif
 
 %prep
-%if !0%{?qubes_builder}
 %setup -q
-%endif
 
 
 %build
 make -C doc PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} man
+
 
 %install
 rm -rf build
