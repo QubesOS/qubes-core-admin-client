@@ -1671,7 +1671,6 @@ class BackupRestore(object):
     def _handle_dom0(self, stream):
         '''Extract dom0 home'''
         local_user = grp.getgrnam('qubes').gr_mem[0]
-        backup_path = os.path.join("dom0-home", local_user)
         home_dir = pwd.getpwnam(local_user).pw_dir
         restore_home_backupdir = "home-restore-{0}".format(
             time.strftime("%Y-%m-%d-%H%M%S"))
