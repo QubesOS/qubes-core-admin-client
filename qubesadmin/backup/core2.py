@@ -256,6 +256,9 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
         kwargs = {}
         if vm_class_name in ["QubesTemplateVm", "QubesTemplateHVm"]:
             vm.klass = "TemplateVM"
+        elif element.get('qid') == '0':
+            kwargs['dir_path'] = element.get('dir_path')
+            vm.klass = "AdminVM"
         elif element.get('template_qid').lower() == "none":
             kwargs['dir_path'] = element.get('dir_path')
             vm.klass = "StandaloneVM"
@@ -364,7 +367,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
         if 0 not in self.qid_map:
             vm = Core2VM()
             vm.name = 'dom0'
-            vm.klass = 'AdminVm'
+            vm.klass = 'AdminVM'
             vm.label = 'black'
             self.domains['dom0'] = vm
             self.qid_map[0] = 'dom0'
