@@ -1673,15 +1673,14 @@ class BackupRestore(object):
         local_user = grp.getgrnam('qubes').gr_mem[0]
         backup_path = os.path.join("dom0-home", local_user)
         home_dir = pwd.getpwnam(local_user).pw_dir
-        backup_dom0_home_dir = os.path.join(self.tmpdir, backup_path)
         restore_home_backupdir = "home-restore-{0}".format(
             time.strftime("%Y-%m-%d-%H%M%S"))
 
         self.log.info("Restoring home of user '%s' to '%s' directory...",
                      local_user, restore_home_backupdir)
         os.mkdir(os.path.join(home_dir, restore_home_backupdir))
-        tar3_cmdline = ['tar','-C',
-                        os.path.join(home_dir,restore_home_backupdir), '-x']
+        tar3_cmdline = ['tar', '-C',
+                        os.path.join(home_dir, restore_home_backupdir), '-x']
         retcode = subprocess.call(tar3_cmdline, stdin=stream)
         if retcode != 0:
             raise QubesException("Inner tar error for dom0-home")
