@@ -564,6 +564,10 @@ class ExtractWorker3(Process):
                     else:
                         # ignore this directory
                         tar2_cmdline = None
+                elif os.path.dirname(inner_name) == "dom0-home":
+                    tar2_cmdline = ['cat']
+                    redirect_stdout = subprocess.PIPE
+
                 elif inner_name in self.handlers:
                     tar2_cmdline = ['tar',
                         '-%svvO' % ("t" if self.verify_only else "x"),
@@ -578,14 +582,18 @@ class ExtractWorker3(Process):
                     os.remove(filename)
                     continue
 
+                tar_compress_cmd = None
                 if self.compressed:
                     if self.compression_filter:
-                        tar2_cmdline.insert(-1,
-                                            "--use-compress-program=%s" %
-                                            self.compression_filter)
+                        tar_compress_cmd = self.compression_filter
                     else:
-                        tar2_cmdline.insert(-1, "--use-compress-program=%s" %
-                                            DEFAULT_COMPRESSION_FILTER)
+                        tar_compress_cmd = DEFAULT_COMPRESSION_FILTER
+                    if os.path.dirname(inner_name) == "dom0-home":
+                        # Replaces 'cat' for compressed dom0-home!
+                        tar2_cmdline = [tar_compress_cmd, "-d"]
+                    else:
+                        tar2_cmdline.insert(-1, "--use-compress-program=%s " %
+                                            tar_compress_cmd)
 
                 self.log.debug("Running command %s", str(tar2_cmdline))
                 if self.encrypted:
@@ -647,7 +655,7 @@ class ExtractWorker3(Process):
                     os.remove(filename)
                     continue
 
-                self.log.debug("Releasing next chunck")
+                self.log.debug("Releasing next chunk")
                 self.feed_tar2(filename, input_pipe)
 
             self.tar2_current_file = filename
@@ -1660,33 +1668,27 @@ class BackupRestore(object):
             reverse=True)
 
 
-    def _handle_dom0(self, backup_path):
+    def _handle_dom0(self, stream):
         '''Extract dom0 home'''
         local_user = grp.getgrnam('qubes').gr_mem[0]
+        backup_path = os.path.join("dom0-home", local_user)
         home_dir = pwd.getpwnam(local_user).pw_dir
         backup_dom0_home_dir = os.path.join(self.tmpdir, backup_path)
-        restore_home_backupdir = "home-pre-restore-{0}".format(
+        restore_home_backupdir = "home-restore-{0}".format(
             time.strftime("%Y-%m-%d-%H%M%S"))
 
-        self.log.info("Restoring home of user '%s'...", local_user)
-        self.log.info("Existing files/dirs backed up in '%s' dir",
-            restore_home_backupdir)
-        os.mkdir(home_dir + '/' + restore_home_backupdir)
-        for f_name in os.listdir(backup_dom0_home_dir):
-            home_file = home_dir + '/' + f_name
-            if os.path.exists(home_file):
-                os.rename(home_file,
-                    home_dir + '/' + restore_home_backupdir + '/' + f_name)
-            if self.header_data.version == 1:
-                subprocess.call(
-                    ["cp", "-nrp", "--reflink=auto",
-                        backup_dom0_home_dir + '/' + f_name, home_file])
-            elif self.header_data.version >= 2:
-                shutil.move(backup_dom0_home_dir + '/' + f_name, home_file)
-        retcode = subprocess.call(['sudo', 'chown', '-R',
-            local_user, home_dir])
+        self.log.info("Restoring home of user '%s' to '%s' directory...",
+                     local_user, restore_home_backupdir)
+        os.mkdir(os.path.join(home_dir, restore_home_backupdir))
+        tar3_cmdline = ['tar','-C',
+                        os.path.join(home_dir,restore_home_backupdir), '-x']
+        retcode = subprocess.call(tar3_cmdline, stdin=stream)
         if retcode != 0:
-            self.log.error("*** Error while setting home directory owner")
+            raise QubesException("Inner tar error for dom0-home")
+        retcode = subprocess.call(['sudo', 'chown', '-R',
+            local_user, os.path.join(home_dir, restore_home_backupdir)])
+        if retcode != 0:
+            self.log.error("*** Error while setting restore directory owner")
 
     def _handle_appmenus_list(self, vm, stream):
         '''Handle whitelisted-appmenus.list file'''
@@ -1827,7 +1829,8 @@ class BackupRestore(object):
             new_vm = None
             vm_name = restore_info[vm.name].name
 
-            if self.options.verify_only:
+            if self.options.verify_only or vm.name == 'dom0':
+                # can't create vm, but need backup info
                 new_vm = self.backup_app.domains[vm_name]
             else:
                 try:
