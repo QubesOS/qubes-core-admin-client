@@ -100,8 +100,9 @@ def import_root_img(vm, source_dir):
             # and destination paths are the same
             vid = vm.volumes['root'].vid
             pool = vm.app.pools[vm.volumes['root'].pool]
-            if pool.driver == 'file' and root_path == os.path.join(
-                    pool.config['dir_path'], vid + '.img'):
+            if (pool.driver in ('file', 'file-reflink')
+                    and root_path == os.path.join(pool.config['dir_path'],
+                                                  vid + '.img')):
                 vm.log.info('root.img already in place, do not re-import')
                 return
         with open(root_path, 'rb') as root_file:
