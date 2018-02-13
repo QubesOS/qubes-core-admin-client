@@ -23,6 +23,7 @@
 import logging
 
 import subprocess
+import warnings
 
 import qubesadmin.base
 import qubesadmin.exc
@@ -117,6 +118,13 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         :return:
         '''
         self.qubesd_call(self._method_dest, 'admin.vm.Kill')
+
+    def force_shutdown(self):
+        '''Deprecated alias for :py:meth:`kill`'''
+        warnings.warn(
+            'Call to deprecated function force_shutdown(), use kill() instead',
+            DeprecationWarning, stacklevel=2)
+        return self.kill()
 
     def pause(self):
         '''
