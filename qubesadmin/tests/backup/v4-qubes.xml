@@ -105,7 +105,11 @@
       <properties>
         <property name="label">label-8</property>
       </properties>
-      <features/>
+      <features>
+        <feature name="backup-content">True</feature>
+        <feature name="backup-path">dom0-home/user</feature>
+        <feature name="backup-size">20971520</feature>
+      </features>
       <devices class="pci"/>
       <devices class="block"/>
       <devices class="usb"/>
