@@ -267,6 +267,15 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             vm.template = \
                 self.qid_map[int(element.get('template_qid'))]
             vm.klass = "AppVM"
+
+        vm.backup_content = element.get('backup_content', False) == 'True'
+        vm.backup_path = element.get('backup_path', None)
+        vm.size = element.get('backup_size', 0)
+
+        if vm.klass == 'AdminVM':
+            # don't set any other dom0 property
+            return
+
         # simple attributes
         for attr, default in {
             #'installed_by_rpm': 'False',
@@ -323,10 +332,6 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
                 if repl_service == service:
                     feature = repl_feature
             vm.features[feature] = value
-
-        vm.backup_content = element.get('backup_content', False) == 'True'
-        vm.backup_path = element.get('backup_path', None)
-        vm.size = element.get('backup_size', 0)
 
         pci_strictreset = element.get('pci_strictreset', True)
         pcidevs = element.get('pcidevs')
