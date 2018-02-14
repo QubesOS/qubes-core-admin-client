@@ -23,6 +23,7 @@
 import errno
 import fcntl
 import functools
+import getpass
 import grp
 import logging
 import multiprocessing
@@ -1552,7 +1553,11 @@ class BackupRestore(object):
             vm = self.backup_app.domains['dom0']
             vms_to_restore['dom0'] = self.Dom0ToRestore(vm,
                 self.backup_app.domains['dom0'].backup_path)
-            local_user = grp.getgrnam('qubes').gr_mem[0]
+            try:
+                local_user = grp.getgrnam('qubes').gr_mem[0]
+            except KeyError:
+                # if no qubes group is present, assume username matches
+                local_user = vms_to_restore['dom0'].username
 
             if vms_to_restore['dom0'].username != local_user:
                 if not self.options.ignore_username_mismatch:
@@ -1674,8 +1679,12 @@ class BackupRestore(object):
 
     def _handle_dom0(self, stream):
         '''Extract dom0 home'''
-        local_user = grp.getgrnam('qubes').gr_mem[0]
-        home_dir = pwd.getpwnam(local_user).pw_dir
+        try:
+            local_user = grp.getgrnam('qubes').gr_mem[0]
+            home_dir = pwd.getpwnam(local_user).pw_dir
+        except KeyError:
+            home_dir = os.path.expanduser('~')
+            local_user = getpass.getuser()
         restore_home_backupdir = "home-restore-{0}".format(
             time.strftime("%Y-%m-%d-%H%M%S"))
 
