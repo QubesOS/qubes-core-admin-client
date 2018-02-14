@@ -702,8 +702,12 @@ def get_supported_hmac_algo(hmac_algorithm=None):
         yield hmac_algorithm
     if hmac_algorithm != 'scrypt':
         yield 'scrypt'
-    proc = subprocess.Popen(['openssl', 'list-message-digest-algorithms'],
-                            stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        'openssl list-message-digest-algorithms || '
+        'openssl list -digest-algorithms',
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL)
     try:
         for algo in proc.stdout.readlines():
             algo = algo.decode('ascii')
