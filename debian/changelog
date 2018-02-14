@@ -1,3 +1,26 @@
+qubes-core-admin-client (4.0.14-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * vm: restore force_shutdown->kill deprecated alias
+
+  [ Christopher Laprise ]
+  * Fix AdminVm class name
+  * Fix dom0 handling
+  * Fix dom0 restore
+  * style issues
+  * unused variable
+
+  [ Marek Marczykowski-Górecki ]
+  * backup: skip dom0's properties while restoring core2 backup
+  * backup: add support for openssl 1.1.0 options
+  * tests: dom0 backup restore, both v3 and v4
+  * backup: don't crash when no 'qubes' group is present
+
+  [ Rusty Bird ]
+  * template-postprocess: fast path for file-reflink, like file
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 14 Feb 2018 04:46:52 +0100
+
 qubes-core-admin-client (4.0.13-1) unstable; urgency=medium
 
   [ Christopher Laprise ]
