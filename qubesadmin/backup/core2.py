@@ -256,6 +256,9 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
         kwargs = {}
         if vm_class_name in ["QubesTemplateVm", "QubesTemplateHVm"]:
             vm.klass = "TemplateVM"
+        elif element.get('qid') == '0':
+            kwargs['dir_path'] = element.get('dir_path')
+            vm.klass = "AdminVM"
         elif element.get('template_qid').lower() == "none":
             kwargs['dir_path'] = element.get('dir_path')
             vm.klass = "StandaloneVM"
@@ -264,6 +267,15 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             vm.template = \
                 self.qid_map[int(element.get('template_qid'))]
             vm.klass = "AppVM"
+
+        vm.backup_content = element.get('backup_content', False) == 'True'
+        vm.backup_path = element.get('backup_path', None)
+        vm.size = element.get('backup_size', 0)
+
+        if vm.klass == 'AdminVM':
+            # don't set any other dom0 property
+            return
+
         # simple attributes
         for attr, default in {
             #'installed_by_rpm': 'False',
@@ -321,10 +333,6 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
                     feature = repl_feature
             vm.features[feature] = value
 
-        vm.backup_content = element.get('backup_content', False) == 'True'
-        vm.backup_path = element.get('backup_path', None)
-        vm.size = element.get('backup_size', 0)
-
         pci_strictreset = element.get('pci_strictreset', True)
         pcidevs = element.get('pcidevs')
         if pcidevs:
@@ -348,7 +356,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
 
         self.globals['default_kernel'] = tree.getroot().get("default_kernel")
 
-        vm_classes = ["AdminVM", "TemplateVm", "TemplateHVm",
+        vm_classes = ["AdminVm", "TemplateVm", "TemplateHVm",
             "AppVm", "HVm", "NetVm", "ProxyVm"]
 
         # First build qid->name map

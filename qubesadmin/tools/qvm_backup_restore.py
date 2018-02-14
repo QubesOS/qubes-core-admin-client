@@ -188,13 +188,12 @@ def handle_broken(app, args, restore_info):
                     "--ignore-username-mismatch to continue anyway.")
             else:
                 app.log.warning("Continuing as directed.")
-        app.log.warning("NOTE: Before restoring the dom0 home directory, "
-            "a new directory named "
-            "'home-pre-restore-<current-time>' will be "
-            "created inside the dom0 home directory. If any "
-            "restored files conflict with existing files, "
-            "the existing files will be moved to this new "
-            "directory.")
+        app.log.warning("NOTE: The archived dom0 home directory "
+            "will be restored to a new directory "
+            "'home-restore-<current-time>' "
+            "created inside the dom0 home directory. Restored "
+            "files should be copied or moved out of the new "
+            "directory before using them.")
 
 def main(args=None, app=None):
     '''Main function of qvm-backup-restore'''
