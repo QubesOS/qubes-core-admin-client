@@ -55,12 +55,6 @@ parser.add_argument("--rename-conflicting", action="store_true",
     help="Restore VMs that are already present on the host "
          "under different names")
 
-parser.add_argument("--replace-template", action="append",
-    dest="replace_template", default=[],
-    help="Restore VMs using another TemplateVM; syntax: "
-         "old-template-name:new-template-name (may be "
-         "repeated)")
-
 parser.add_argument("-x", "--exclude", action="append", dest="exclude",
     default=[],
     help="Skip restore of specified VM (may be repeated)")
@@ -229,8 +223,6 @@ def main(args=None, app=None):
     if args.ignore_missing:
         backup.options.use_default_template = True
         backup.options.use_default_netvm = True
-    if args.replace_template:
-        backup.options.replace_template = args.replace_template
     if args.rename_conflicting:
         backup.options.rename_conflicting = True
     if not args.dom0_home:
