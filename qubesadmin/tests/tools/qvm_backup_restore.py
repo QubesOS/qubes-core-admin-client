@@ -93,7 +93,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             app=self.app)
         mock_backup.assert_called_once_with(
             self.app, '/some/path', None, 'testpass')
-        self.assertEqual(exclude_list, ['test-vm2'])
+        self.assertEqual(mock_backup.return_value.options.exclude, ['test-vm2'])
         self.assertAllCalled()
 
     def test_010_handle_broken_no_problems(self):
