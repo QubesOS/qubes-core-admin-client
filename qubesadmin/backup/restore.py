@@ -1872,6 +1872,8 @@ class BackupRestore(object):
                 continue
 
             for prop, value in vm.properties.items():
+                if prop == 'dispid':
+                    continue
                 # exclude VM references - handled manually according to
                 # restore options
                 if prop in ['template', 'netvm', 'default_dispvm']:
