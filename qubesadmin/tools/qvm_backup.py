@@ -94,11 +94,7 @@ def write_backup_profile(output_stream, args, passphrase=None):
     '''
 
     profile_data = {}
-    if args.vms:
-        profile_data['include'] = args.vms
-    else:
-        profile_data['include'] = [
-            '$type:AppVM', '$type:TemplateVM', '$type:StandaloneVM']
+    profile_data['include'] = args.vms or None
     if args.exclude_list:
         profile_data['exclude'] = args.exclude_list
     if passphrase:
