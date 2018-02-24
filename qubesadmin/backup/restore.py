@@ -1664,18 +1664,19 @@ class BackupRestore(object):
 
     @staticmethod
     def _templates_first(vms):
-        '''Sort templates befor other VM types (AppVM etc)'''
+        '''Sort templates before other VM types'''
         def key_function(instance):
             '''Key function for :py:func:`sorted`'''
             if isinstance(instance, BackupVM):
-                return instance.klass == 'TemplateVM'
+                if instance.klass == 'TemplateVM':
+                    return 0
+                elif instance.properties.get('template_for_dispvms', False):
+                    return 1
+                return 2
             elif hasattr(instance, 'vm'):
                 return key_function(instance.vm)
-            return 0
-        return sorted(vms,
-            key=key_function,
-            reverse=True)
-
+            return 9
+        return sorted(vms, key=key_function)
 
     def _handle_dom0(self, stream):
         '''Extract dom0 home'''
