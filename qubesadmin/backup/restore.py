@@ -1820,6 +1820,14 @@ class BackupRestore(object):
             self.log.info("-> Please install updates for all the restored "
                           "templates.")
 
+    def _restore_property(self, vm, prop, value):
+        '''Restore a single VM property, logging exceptions'''
+        try:
+            setattr(vm, prop, value)
+        except Exception as err:  # pylint: disable=broad-except
+            self.log.error('Error setting %s.%s to %s: %s',
+                vm.name, prop, value, err)
+
     def _restore_vms_metadata(self, restore_info):
         '''Restore VM metadata
 
@@ -1893,11 +1901,7 @@ class BackupRestore(object):
                 # restore options
                 if prop in ['template', 'netvm', 'default_dispvm']:
                     continue
-                try:
-                    setattr(new_vm, prop, value)
-                except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error setting %s.%s to %s: %s',
-                        vm.name, prop, value, err)
+                self._restore_property(new_vm, prop, value)
 
             for feature, value in vm.features.items():
                 try:
