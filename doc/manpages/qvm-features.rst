@@ -171,6 +171,15 @@ Some systems (Windows) works better with 'cirrus' model set here.
 
 Default: vga
 
+pci-e820-host
+^^^^^^^^^^^^^
+
+Enable e820_host option in Xen domU config if qube has any PCI device assigned.
+This is option is needed for some PCI device drivers to correctly allocate
+memory. Refer to Xen documentation for details.
+
+Default: yes if qube has any PCI device, otherwise no
+
 Authors
 -------
 
