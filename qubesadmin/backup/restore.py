@@ -1883,6 +1883,12 @@ class BackupRestore(object):
                         del self.app.domains[new_vm.name]
                     continue
 
+            # restore this property early to be ready for dependent DispVMs
+            prop = 'template_for_dispvms'
+            value = vm.properties.get(prop, None)
+            if value is not None:
+                self._restore_property(new_vm, prop, value)
+
             restore_info[vm.name].restored_vm = new_vm
 
         for vm in vms.values():
@@ -1895,7 +1901,8 @@ class BackupRestore(object):
                 continue
 
             for prop, value in vm.properties.items():
-                if prop == 'dispid':
+                # can't reset the first; already handled the second
+                if prop in ['dispid', 'template_for_dispvms']:
                     continue
                 # exclude VM references - handled manually according to
                 # restore options
