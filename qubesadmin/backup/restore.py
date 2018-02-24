@@ -1493,6 +1493,11 @@ class BackupRestore(object):
                             present_in_backup = (
                                 bak_tpl.vm.klass == 'TemplateVM')
 
+                self.log.debug(
+                    "vm=%s template=%s on_host=%s in_backup=%s",
+                    vm_info.name, vm_info.template,
+                    present_on_host, present_in_backup)
+
                 if not present_on_host and not present_in_backup:
                     if vm_info.vm.klass == 'DispVM':
                         default_template = self.app.default_dispvm
@@ -1504,6 +1509,11 @@ class BackupRestore(object):
                         if vm_info.orig_template is None:
                             vm_info.orig_template = vm_info.template
                         vm_info.template = default_template.name
+
+                        self.log.debug(
+                            "vm=%s orig_template=%s -> default_template=%s",
+                            vm_info.name, vm_info.orig_template,
+                            default_template.name)
                     else:
                         vm_info.problems.add(self.VMToRestore.MISSING_TEMPLATE)
 
