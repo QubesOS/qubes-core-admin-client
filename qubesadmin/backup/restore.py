@@ -1472,26 +1472,40 @@ class BackupRestore(object):
 
             # check template
             if vm_info.template:
-                template_name = vm_info.template
-                try:
-                    host_template = self.app.domains[template_name]
-                except KeyError:
-                    host_template = None
-                present_on_host = (host_template and
-                    host_template.klass == 'TemplateVM')
-                present_in_backup = (template_name in restore_info.keys() and
-                    restore_info[template_name].good_to_go and
-                    restore_info[template_name].vm.klass ==
-                    'TemplateVM')
-                if not present_on_host and not present_in_backup:
-                    if self.options.use_default_template and \
-                            self.app.default_template:
-                        if vm_info.orig_template is None:
-                            vm_info.orig_template = template_name
-                        vm_info.template = self.app.default_template.name
+                present_on_host = False
+                if vm_info.template in self.app.domains:
+                    host_tpl = self.app.domains[vm_info.template]
+                    if vm_info.vm.klass == 'DispVM':
+                        present_on_host = (
+                            getattr(host_tpl, 'template_for_dispvms', False))
                     else:
-                        vm_info.problems.add(
-                            self.VMToRestore.MISSING_TEMPLATE)
+                        present_on_host = host_tpl.klass == 'TemplateVM'
+
+                present_in_backup = False
+                if vm_info.template in restore_info:
+                    bak_tpl = restore_info[vm_info.template]
+                    if bak_tpl.good_to_go:
+                        if vm_info.vm.klass == 'DispVM':
+                            present_in_backup = (
+                                bak_tpl.vm.properties.get(
+                                    'template_for_dispvms', False))
+                        else:
+                            present_in_backup = (
+                                bak_tpl.vm.klass == 'TemplateVM')
+
+                if not present_on_host and not present_in_backup:
+                    if vm_info.vm.klass == 'DispVM':
+                        default_template = self.app.default_dispvm
+                    else:
+                        default_template = self.app.default_template
+
+                    if (self.options.use_default_template
+                            and default_template is not None):
+                        if vm_info.orig_template is None:
+                            vm_info.orig_template = vm_info.template
+                        vm_info.template = default_template.name
+                    else:
+                        vm_info.problems.add(self.VMToRestore.MISSING_TEMPLATE)
 
             # check netvm
             if vm_info.vm.properties.get('netvm', None) is not None:
