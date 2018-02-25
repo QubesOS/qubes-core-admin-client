@@ -55,12 +55,6 @@ parser.add_argument("--rename-conflicting", action="store_true",
     help="Restore VMs that are already present on the host "
          "under different names")
 
-parser.add_argument("--replace-template", action="append",
-    dest="replace_template", default=[],
-    help="Restore VMs using another TemplateVM; syntax: "
-         "old-template-name:new-template-name (may be "
-         "repeated)")
-
 parser.add_argument("-x", "--exclude", action="append", dest="exclude",
     default=[],
     help="Skip restore of specified VM (may be repeated)")
@@ -229,20 +223,12 @@ def main(args=None, app=None):
     if args.ignore_missing:
         backup.options.use_default_template = True
         backup.options.use_default_netvm = True
-    if args.replace_template:
-        backup.options.replace_template = args.replace_template
-    if args.rename_conflicting:
-        backup.options.rename_conflicting = True
-    if not args.dom0_home:
-        backup.options.dom0_home = False
-    if args.ignore_username_mismatch:
-        backup.options.ignore_username_mismatch = True
-    if args.ignore_size_limit:
-        backup.options.ignore_size_limit = True
-    if args.exclude:
-        backup.options.exclude = args.exclude
-    if args.verify_only:
-        backup.options.verify_only = True
+    backup.options.rename_conflicting = args.rename_conflicting
+    backup.options.dom0_home = args.dom0_home
+    backup.options.ignore_username_mismatch = args.ignore_username_mismatch
+    backup.options.ignore_size_limit = args.ignore_size_limit
+    backup.options.exclude = args.exclude
+    backup.options.verify_only = args.verify_only
 
     restore_info = None
     try:

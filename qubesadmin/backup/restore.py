@@ -1472,26 +1472,50 @@ class BackupRestore(object):
 
             # check template
             if vm_info.template:
-                template_name = vm_info.template
-                try:
-                    host_template = self.app.domains[template_name]
-                except KeyError:
-                    host_template = None
-                present_on_host = (host_template and
-                    host_template.klass == 'TemplateVM')
-                present_in_backup = (template_name in restore_info.keys() and
-                    restore_info[template_name].good_to_go and
-                    restore_info[template_name].vm.klass ==
-                    'TemplateVM')
-                if not present_on_host and not present_in_backup:
-                    if self.options.use_default_template and \
-                            self.app.default_template:
-                        if vm_info.orig_template is None:
-                            vm_info.orig_template = template_name
-                        vm_info.template = self.app.default_template.name
+                present_on_host = False
+                if vm_info.template in self.app.domains:
+                    host_tpl = self.app.domains[vm_info.template]
+                    if vm_info.vm.klass == 'DispVM':
+                        present_on_host = (
+                            getattr(host_tpl, 'template_for_dispvms', False))
                     else:
-                        vm_info.problems.add(
-                            self.VMToRestore.MISSING_TEMPLATE)
+                        present_on_host = host_tpl.klass == 'TemplateVM'
+
+                present_in_backup = False
+                if vm_info.template in restore_info:
+                    bak_tpl = restore_info[vm_info.template]
+                    if bak_tpl.good_to_go:
+                        if vm_info.vm.klass == 'DispVM':
+                            present_in_backup = (
+                                bak_tpl.vm.properties.get(
+                                    'template_for_dispvms', False))
+                        else:
+                            present_in_backup = (
+                                bak_tpl.vm.klass == 'TemplateVM')
+
+                self.log.debug(
+                    "vm=%s template=%s on_host=%s in_backup=%s",
+                    vm_info.name, vm_info.template,
+                    present_on_host, present_in_backup)
+
+                if not present_on_host and not present_in_backup:
+                    if vm_info.vm.klass == 'DispVM':
+                        default_template = self.app.default_dispvm
+                    else:
+                        default_template = self.app.default_template
+
+                    if (self.options.use_default_template
+                            and default_template is not None):
+                        if vm_info.orig_template is None:
+                            vm_info.orig_template = vm_info.template
+                        vm_info.template = default_template.name
+
+                        self.log.debug(
+                            "vm=%s orig_template=%s -> default_template=%s",
+                            vm_info.name, vm_info.orig_template,
+                            default_template.name)
+                    else:
+                        vm_info.problems.add(self.VMToRestore.MISSING_TEMPLATE)
 
             # check netvm
             if vm_info.vm.properties.get('netvm', None) is not None:
@@ -1664,18 +1688,19 @@ class BackupRestore(object):
 
     @staticmethod
     def _templates_first(vms):
-        '''Sort templates befor other VM types (AppVM etc)'''
+        '''Sort templates before other VM types'''
         def key_function(instance):
             '''Key function for :py:func:`sorted`'''
             if isinstance(instance, BackupVM):
-                return instance.klass == 'TemplateVM'
+                if instance.klass == 'TemplateVM':
+                    return 0
+                elif instance.properties.get('template_for_dispvms', False):
+                    return 1
+                return 2
             elif hasattr(instance, 'vm'):
                 return key_function(instance.vm)
-            return 0
-        return sorted(vms,
-            key=key_function,
-            reverse=True)
-
+            return 9
+        return sorted(vms, key=key_function)
 
     def _handle_dom0(self, stream):
         '''Extract dom0 home'''
@@ -1805,6 +1830,14 @@ class BackupRestore(object):
             self.log.info("-> Please install updates for all the restored "
                           "templates.")
 
+    def _restore_property(self, vm, prop, value):
+        '''Restore a single VM property, logging exceptions'''
+        try:
+            setattr(vm, prop, value)
+        except Exception as err:  # pylint: disable=broad-except
+            self.log.error('Error setting %s.%s to %s: %s',
+                vm.name, prop, value, err)
+
     def _restore_vms_metadata(self, restore_info):
         '''Restore VM metadata
 
@@ -1860,6 +1893,12 @@ class BackupRestore(object):
                         del self.app.domains[new_vm.name]
                     continue
 
+            # restore this property early to be ready for dependent DispVMs
+            prop = 'template_for_dispvms'
+            value = vm.properties.get(prop, None)
+            if value is not None:
+                self._restore_property(new_vm, prop, value)
+
             restore_info[vm.name].restored_vm = new_vm
 
         for vm in vms.values():
@@ -1872,15 +1911,14 @@ class BackupRestore(object):
                 continue
 
             for prop, value in vm.properties.items():
+                # can't reset the first; already handled the second
+                if prop in ['dispid', 'template_for_dispvms']:
+                    continue
                 # exclude VM references - handled manually according to
                 # restore options
                 if prop in ['template', 'netvm', 'default_dispvm']:
                     continue
-                try:
-                    setattr(new_vm, prop, value)
-                except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error setting %s.%s to %s: %s',
-                        vm.name, prop, value, err)
+                self._restore_property(new_vm, prop, value)
 
             for feature, value in vm.features.items():
                 try:

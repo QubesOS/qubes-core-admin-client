@@ -33,10 +33,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
         expected_profile = (
-            'destination_path: /var/tmp\n'
-            'destination_vm: dom0\n'
-            'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-            '\'$type:StandaloneVM\']\n'
+            '{destination_path: /var/tmp, destination_vm: dom0, include: null}\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
 
@@ -67,8 +64,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             'destination_path: /var/tmp\n'
             'destination_vm: dom0\n'
             'exclude: [vm1, vm2]\n'
-            'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-            '\'$type:StandaloneVM\']\n'
+            'include: null\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
 
@@ -77,11 +73,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args, passphrase='test123')
         expected_profile = (
-            'destination_path: /var/tmp\n'
-            'destination_vm: dom0\n'
-            'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-            '\'$type:StandaloneVM\']\n'
-            'passphrase_text: test123\n'
+            '{destination_path: /var/tmp, destination_vm: dom0, include: null, passphrase_text: test123}\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
 
@@ -101,10 +93,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             qvm_backup.main(['--save-profile', 'test-profile', '/var/tmp'],
                 app=self.app)
             expected_profile = (
-                'destination_path: /var/tmp\n'
-                'destination_vm: dom0\n'
-                'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-                '\'$type:StandaloneVM\']\n'
+                '{destination_path: /var/tmp, destination_vm: dom0, include: null}\n'
             )
             with open(profile_path) as f:
                 self.assertEqual(expected_profile, f.read())
@@ -130,11 +119,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             qvm_backup.main(['--save-profile', 'test-profile', '/var/tmp'],
                 app=self.app)
             expected_profile = (
-                'destination_path: /var/tmp\n'
-                'destination_vm: dom0\n'
-                'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-                '\'$type:StandaloneVM\']\n'
-                'passphrase_text: some password\n'
+                '{destination_path: /var/tmp, destination_vm: dom0, include: null, passphrase_text: some\n'
+                '    password}\n'
             )
             with open(profile_path) as f:
                 self.assertEqual(expected_profile, f.read())
@@ -194,8 +180,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             'destination_path: /var/tmp\n'
             'destination_vm: dom0\n'
             'exclude: [vm1]\n'
-            'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-            '\'$type:StandaloneVM\']\n'
+            'include: null\n'
             '# specify backup passphrase below\n'
             'passphrase_text: ...\n'
         )
@@ -225,11 +210,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                     'test-profile', '/var/tmp'],
                     app=self.app)
             expected_profile = (
-                'destination_path: /var/tmp\n'
-                'destination_vm: dom0\n'
-                'include: [\'$type:AppVM\', \'$type:TemplateVM\', '
-                '\'$type:StandaloneVM\']\n'
-                'passphrase_text: other passphrase\n'
+                '{destination_path: /var/tmp, destination_vm: dom0, include: null, passphrase_text: other\n'
+                '    passphrase}\n'
             )
             with open(profile_path) as f:
                 self.assertEqual(expected_profile, f.read())
