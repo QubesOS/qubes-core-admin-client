@@ -46,6 +46,7 @@ Summary:    Python34 module qubesadmin
 Requires:   python-daemon
 Requires:   python34-docutils
 Requires:   python34-lxml
+Requires:   python34-xcffib
 Conflicts:  qubes-manager < 4.0.6
 
 %description -n python34-qubesadmin
@@ -56,6 +57,7 @@ Summary:    Python3 module qubesadmin
 Requires:   python3-daemon
 Requires:   python3-docutils
 Requires:   python3-lxml
+Requires:   python3-xcffib
 Conflicts:  qubes-manager < 4.0.6
 
 %description -n python3-qubesadmin

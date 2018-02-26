@@ -23,10 +23,10 @@
 import os
 import signal
 import subprocess
-
 import asyncio
-
 import re
+import xcffib
+import xcffib.xproto  # pylint: disable=unused-import
 
 import daemon.pidfile
 import qubesadmin
@@ -346,6 +346,14 @@ class GUILauncher(object):
         events.add_handler('connection-established',
             self.on_connection_established)
 
+def x_reader(conn, callback):
+    '''Try reading something from X connection to check if it's still alive.
+    In case it isn't, call *callback*.
+    '''
+    try:
+        conn.poll_for_event()
+    except xcffib.ConnectionException:
+        callback()
 
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
@@ -394,10 +402,15 @@ def main(args=None):
             loop.add_signal_handler(signal.SIGHUP,
                 launcher.send_monitor_layout_all)
 
+            conn = xcffib.connect()
+            x_fd = conn.get_file_descriptor()
+            loop.add_reader(x_fd, x_reader, conn, events_listener.cancel)
+
             try:
                 loop.run_until_complete(events_listener)
             except asyncio.CancelledError:
                 pass
+            loop.remove_reader(x_fd)
             loop.stop()
             loop.run_forever()
             loop.close()
