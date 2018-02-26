@@ -12,7 +12,7 @@ BuildRequires:	python2-devel
 %if 0%{?rhel} >= 7
 BuildRequires:	python34-setuptools
 BuildRequires:	python34-devel
-BuildRequires:	python-sphinx
+BuildRequires:	python34-sphinx
 BuildRequires:	python34-dbus
 Requires:   python34-qubesadmin
 %else
@@ -69,11 +69,7 @@ Python3 module qubesadmin.
 
 
 %build
-%if 0%{?rhel} >= 7
-make -C doc PYTHON=%{__python3} SPHINXBUILD=sphinx-build man
-%else
 make -C doc PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} man
-%endif
 
 %install
 rm -rf build
@@ -81,15 +77,9 @@ rm -rf build
 rm -rf build
 %make_install PYTHON=%{__python3}
 
-%if 0%{?rhel} >= 7
-make -C doc DESTDIR=$RPM_BUILD_ROOT \
-    PYTHON=%{__python3} SPHINXBUILD=sphinx-build \
-    install
-%else
 make -C doc DESTDIR=$RPM_BUILD_ROOT \
     PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} \
     install
-%endif
 
 
 %files
