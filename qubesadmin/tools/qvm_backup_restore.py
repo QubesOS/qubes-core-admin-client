@@ -220,9 +220,8 @@ def main(args=None, app=None):
         # unreachable - error_runtime will raise SystemExit
         return 1
 
-    if args.ignore_missing:
-        backup.options.use_default_template = True
-        backup.options.use_default_netvm = True
+    backup.options.use_default_template = args.ignore_missing
+    backup.options.use_default_netvm = args.ignore_missing
     backup.options.rename_conflicting = args.rename_conflicting
     backup.options.dom0_home = args.dom0_home
     backup.options.ignore_username_mismatch = args.ignore_username_mismatch
