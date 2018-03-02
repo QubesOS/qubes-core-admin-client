@@ -97,3 +97,41 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
         self.assertIn('no such property: \'no_such_property\'',
             stderr.getvalue())
         self.assertAllCalled()
+
+    def test_005_get_str(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00dom0 class=AdminVM state=Running\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=True type=str value1'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_prefs.main(['dom0', 'prop1'], app=self.app)
+        self.assertEqual('value1\n', stdout.getvalue())
+        self.assertAllCalled()
+
+    def test_006_get_vm(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00dom0 class=AdminVM state=Running\n' \
+            b'vm1 class=AppVM state=Stopped\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=True type=vm vm1'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_prefs.main(['dom0', 'prop1'], app=self.app)
+        self.assertEqual('vm1\n', stdout.getvalue())
+        self.assertAllCalled()
+
+    def test_007_get_vm_none(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00dom0 class=AdminVM state=Running\n' \
+            b'vm1 class=AppVM state=Stopped\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=True type=vm '
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_prefs.main(['dom0', 'prop1'], app=self.app)
+        self.assertEqual('', stdout.getvalue())
+        self.assertAllCalled()
