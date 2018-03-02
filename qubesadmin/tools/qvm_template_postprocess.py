@@ -214,6 +214,11 @@ def post_install(args):
 
     if not args.keep_source:
         shutil.rmtree(args.dir)
+        # if running as root, tell underlying storage layer about just freed
+        # data blocks
+        if os.getuid() == 0:
+            subprocess.call(['sync', '-f', os.path.dirname(args.dir)])
+            subprocess.call(['fstrim', os.path.dirname(args.dir)])
 
     return 0
 
