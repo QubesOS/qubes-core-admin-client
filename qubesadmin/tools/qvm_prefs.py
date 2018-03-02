@@ -126,7 +126,9 @@ def process_actions(parser, args, target):
         return 0
 
     try:
-        print(str(getattr(target, args.property)))
+        value = getattr(target, args.property)
+        if value is not None:
+            print(str(value))
     except AttributeError:
         parser.error('no such property: {!r}'.format(args.property))
 
