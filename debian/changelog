@@ -1,3 +1,36 @@
+qubes-core-admin-client (4.0.15-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * doc: add 'pci-e820-host' feature description
+
+  [ Rusty Bird ]
+  * qvm-backup-restore: remove orphaned --replace-template option
+  * qvm-backup-restore: really pass options
+  * qvm-backup: let backup core handle default VM selection
+  * restore.py: don't try to restore dispid property
+  * restore.py: sort into three tiers in _templates_first()
+  * restore.py: deal with DispVM templates
+  * restore.py: factor out _restore_property() helper
+  * restory.py: restore template_for_dispvms property early
+  * restore.py: add template-related debug log messages
+
+  [ Frédéric Pierret ]
+  * Add support for python34-sphinx: package is provided in Qubes
+    repository
+
+  [ Marek Marczykowski-Górecki ]
+  * tools: terminate qvm-start-gui when X server is terminated
+
+  [ Rusty Bird ]
+  * qvm-backup-restore: also handle absent --ignore-missing
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-template-postprocess: call fstrim after removing image file
+  * tools/qvm-prefs: fix printing None value
+  * tests: add tests for various 'qvm-prefs vm pref' cases
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 04 Mar 2018 03:54:39 +0100
+
 qubes-core-admin-client (4.0.14-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
