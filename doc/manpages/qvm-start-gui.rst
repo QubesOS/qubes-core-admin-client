@@ -52,7 +52,7 @@ Options
 
    Pidfile path to create in --watch mode
 
-.. option:: --notify-monitory-layout
+.. option:: --notify-monitor-layout
 
    Notify running instance in --watch mode about changed monitor layout
 

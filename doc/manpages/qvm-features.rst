@@ -88,7 +88,7 @@ Default: use GUI protocol for clipboard operations
 no-monitor-layout
 ^^^^^^^^^^^^^^^^^
 
-When set to :py:pbj:`True`, monitor layout is not sent to this qube. That is
+When set to :py:obj:`True`, monitor layout is not sent to this qube. That is
 avoid calling `qubes.SetMonitorLayout` in this qube.
 
 Default: send monitor layout
