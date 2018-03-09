@@ -78,7 +78,8 @@ def import_root_img(vm, source_dir):
     '''Import root.img into VM object'''
 
     root_size = get_root_img_size(source_dir)
-    vm.volumes['root'].resize(root_size)
+    if vm.volumes['root'].size < root_size:
+        vm.volumes['root'].resize(root_size)
 
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
