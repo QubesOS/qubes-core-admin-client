@@ -24,7 +24,10 @@
 
 from __future__ import print_function
 
+import argparse
 import sys
+
+import collections
 
 import qubesadmin
 import qubesadmin.exc
@@ -84,6 +87,50 @@ class VolumeData(object):
     def __str__(self):
         return "{!s}:{!s}".format(self.pool, self.vid)
 
+def info_volume(args):
+    ''' Show info about selected volume '''
+    volume = args.volume
+    info_items = ('pool', 'vid', 'rw', 'source', 'save_on_stop',
+        'snap_on_start', 'size', 'usage', 'revisions_to_keep')
+    if args.property:
+        if args.property == 'revisions':
+            for rev in volume.revisions:
+                print(rev)
+        elif args.property == 'is_outdated':
+            print(volume.is_outdated())
+        elif args.property in info_items:
+            value = getattr(volume, args.property)
+            if value is None:
+                value = ''
+            print(value)
+        else:
+            raise qubesadmin.exc.StoragePoolException(
+                'No such property: {}'.format(args.property))
+    else:
+        info = collections.OrderedDict()
+        for item in info_items:
+            value = getattr(volume, item)
+            if value is None:
+                value = ''
+            info[item] = str(value)
+        info['is_outdated'] = str(volume.is_outdated())
+
+        qubesadmin.tools.print_table(info.items())
+        revisions = volume.revisions
+        if revisions:
+            print('Available revisions (for revert):')
+            for rev in revisions:
+                print('  ' + rev)
+        else:
+            print('Available revisions (for revert): none')
+
+def config_volume(args):
+    ''' Change property of selected volume '''
+    volume = args.volume
+    if not args.property in ('rw', 'revisions_to_keep'):
+        raise qubesadmin.exc.QubesNoSuchPropertyError(
+            'Invalid property: {}'.format(args.property))
+    setattr(volume, args.property, args.value)
 
 def list_volumes(args):
     ''' Called by the parser to execute the qvm-volume list subcommand. '''
@@ -181,7 +228,7 @@ def init_revert_parser(sub_parsers):
     revert_parser.add_argument(metavar='VM:VOLUME', dest='volume',
                                action=qubesadmin.tools.VMVolumeAction)
     revert_parser.add_argument(metavar='REVISION', dest='revision',
-        help='Optional revision to revert to;'
+        help='Optional revision to revert to; '
              'if not specified, latest one is assumed',
         action='store', nargs='?')
     revert_parser.set_defaults(func=revert_volume)
@@ -196,10 +243,32 @@ def init_extend_parser(sub_parsers):
     extend_parser.add_argument('size', help='New size in bytes')
     extend_parser.set_defaults(func=extend_volumes)
 
+def init_info_parser(sub_parsers):
+    ''' Add 'info' action related options '''
+    info_parser = sub_parsers.add_parser(
+        'info', aliases=('i',), help='info about volume')
+    info_parser.add_argument(metavar='VM:VOLUME', dest='volume',
+                             action=qubesadmin.tools.VMVolumeAction)
+    info_parser.add_argument(dest='property', action='store',
+        nargs=argparse.OPTIONAL,
+        help='Show only this property instead of all of them; use '
+             '\'revisions\' to list available revisions')
+    info_parser.set_defaults(func=info_volume)
+
+def init_config_parser(sub_parsers):
+    ''' Add 'info' action related options '''
+    info_parser = sub_parsers.add_parser(
+        'config', aliases=('c', 'set', 's'),
+        help='set config option for a volume')
+    info_parser.add_argument(metavar='VM:VOLUME', dest='volume',
+                             action=qubesadmin.tools.VMVolumeAction)
+    info_parser.add_argument(dest='property', action='store')
+    info_parser.add_argument(dest='value', action='store')
+    info_parser.set_defaults(func=config_volume)
 
 def get_parser():
     '''Create :py:class:`argparse.ArgumentParser` suitable for
-    :program:`qvm-block`.
+    :program:`qvm-volume`.
     '''
     parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
         want_app=True)
@@ -207,8 +276,10 @@ def get_parser():
         qubesadmin.tools.AliasedSubParsersAction)
     sub_parsers = parser.add_subparsers(
         title='commands',
-        description="For more information see qvm-block command -h",
+        description="For more information see qvm-volume command -h",
         dest='command')
+    init_info_parser(sub_parsers)
+    init_config_parser(sub_parsers)
     init_extend_parser(sub_parsers)
     init_list_parser(sub_parsers)
     init_revert_parser(sub_parsers)
@@ -219,7 +290,7 @@ def get_parser():
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-block`.'''
+    '''Main routine of :program:`qvm-volume`.'''
     parser = get_parser()
     try:
         args = parser.parse_args(args, app=app)

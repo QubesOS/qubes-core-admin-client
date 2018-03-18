@@ -250,3 +250,175 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
                 ['revert', 'testvm:private', '20050101'],
                 app=self.app))
         self.assertAllCalled()
+
+    def test_030_set_revisions_to_keep(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Set.revisions_to_keep', 'private',
+            b'3')] = b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['set', 'testvm:private', 'revisions_to_keep', '3'],
+                app=self.app))
+        self.assertAllCalled()
+
+    def test_031_set_rw(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Set.rw', 'private',
+            b'True')] = b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['set', 'testvm:private', 'rw', 'True'],
+                app=self.app))
+        self.assertAllCalled()
+
+    def test_032_set_invalid(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.assertNotEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['set', 'testvm:private', 'invalid', 'True'],
+                app=self.app))
+        self.assertAllCalled()
+
+    def test_040_info(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=3\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
+            b'0\x00200101010000\n200201010000\n200301010000\n'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(['info', 'testvm:private'],
+                    app=self.app))
+        output = stdout.getvalue()
+        # travis...
+        output = output.replace('\nsource\n', '\nsource             \n')
+        self.assertEqual(output,
+            'pool               lvm\n'
+            'vid                qubes_dom0/vm-testvm-private\n'
+            'rw                 True\n'
+            'source             \n'
+            'save_on_stop       True\n'
+            'snap_on_start      False\n'
+            'size               2147483648\n'
+            'usage              10000000\n'
+            'revisions_to_keep  3\n'
+            'is_outdated        False\n'
+            'Available revisions (for revert):\n'
+            '  200101010000\n'
+            '  200201010000\n'
+            '  200301010000\n')
+        self.assertAllCalled()
+
+    def test_041_info_no_revisions(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'root', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-root\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=qubes_dom0/vm-fedora-26-root\n' \
+            b'save_on_stop=False\n' \
+            b'snap_on_start=True\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'root', None)] = \
+            b'0\x00'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(['info', 'testvm:root'],
+                    app=self.app))
+        self.assertEqual(stdout.getvalue(),
+            'pool               lvm\n'
+            'vid                qubes_dom0/vm-testvm-root\n'
+            'rw                 True\n'
+            'source             qubes_dom0/vm-fedora-26-root\n'
+            'save_on_stop       False\n'
+            'snap_on_start      True\n'
+            'size               2147483648\n'
+            'usage              10000000\n'
+            'revisions_to_keep  0\n'
+            'is_outdated        False\n'
+            'Available revisions (for revert): none\n')
+        self.assertAllCalled()
+
+    def test_042_info_single_prop(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'root', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-root\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=qubes_dom0/vm-fedora-26-root\n' \
+            b'save_on_stop=False\n' \
+            b'snap_on_start=True\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(
+                    ['info', 'testvm:root', 'usage'],
+                    app=self.app))
+        self.assertEqual(stdout.getvalue(), '10000000\n')
+        self.assertAllCalled()
+
+    def test_043_info_revisions_only(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
+            b'0\x00200101010000\n200201010000\n200301010000\n'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(
+                    ['info', 'testvm:private', 'revisions'],
+                    app=self.app))
+        self.assertEqual(stdout.getvalue(),
+            '200101010000\n'
+            '200201010000\n'
+            '200301010000\n')
+        self.assertAllCalled()

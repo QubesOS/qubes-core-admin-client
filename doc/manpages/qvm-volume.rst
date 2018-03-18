@@ -60,6 +60,30 @@ passed or stdout is redirected to a pipe or file.
 
 aliases: ls, l
 
+info
+^^^^
+| :command:`qvm-volume info` [-h] [--verbose] [--quiet] *VMNAME:VOLUME* [*PROPERTY*]
+
+Show information about given volume - all properties and available revisions
+(for `revert` action). If specific property is given, only its value is printed.
+For list of revisions use `revisions` value.
+
+aliases: i
+
+config
+^^^^^^
+| :command:`qvm-volume config` [-h] [--verbose] [--quiet] *VMNAME:VOLUME* *PROPERTY* *VALUE*
+
+Set property of given volume. Properties currently possible to change:
+
+  - `rw` - `True` if volume should be writeable by the qube, `False` otherwise
+  - `revisions_to_keep` - how many revisions (previous versions of volume)
+   should be keep. At each qube shutdown its previous state is saved in new
+   revision, and the oldest revisions are remove so that only
+   `revisions_to_keep` are left. Set to `0` to not leave any previous versions.
+
+aliases: c, set, s
+
 extend
 ^^^^^^
 | :command:`qvm-volume extend` [-h] [--verbose] [--quiet] *POOL_NAME:VOLUME_ID* *NEW_SIZE*
