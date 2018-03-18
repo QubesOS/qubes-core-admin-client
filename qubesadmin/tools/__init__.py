@@ -339,7 +339,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
     def __init__(self, want_app=True, want_app_no_instance=False,
                  vmname_nargs=None, **kwargs):
 
-        super(QubesArgumentParser, self).__init__(**kwargs)
+        super(QubesArgumentParser, self).__init__(add_help=False, **kwargs)
 
         self._want_app = want_app
         self._want_app_no_instance = want_app_no_instance
@@ -359,6 +359,9 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--force-root', action='store_true',
                           default=False, help=argparse.SUPPRESS)
+
+        self.add_argument('--help', '-h', action=SubParsersHelpAction,
+                          help='show this help message and exit')
 
         if self._vmname_nargs in [argparse.ZERO_OR_MORE, argparse.ONE_OR_MORE]:
             vm_name_group = VmNameGroup(self,
@@ -434,6 +437,37 @@ class QubesArgumentParser(argparse.ArgumentParser):
     def print_error(self, *args, **kwargs):
         ''' Print to ``sys.stderr``'''
         print(*args, file=sys.stderr, **kwargs)
+
+
+class SubParsersHelpAction(argparse._HelpAction):
+    ''' Print help for all options _and all subparsers_ '''
+    # source https://stackoverflow.com/a/24122778
+    # pylint: disable=protected-access,too-few-public-methods
+
+    @staticmethod
+    def _indent(indent, text):
+        '''Indent *text* by *indent* spaces'''
+        return '\n'.join((' ' * indent) + l for l in text.splitlines())
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.print_help()
+
+        # retrieve subparsers from parser
+        subparsers_actions = [
+            action for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)]
+        # there will probably only be one subparser_action,
+        # but better save than sorry
+        for subparsers_action in subparsers_actions:
+            # get all subparsers and print help
+            for pseudo_action in subparsers_action._choices_actions:
+                choice = pseudo_action.dest.split(' ', 1)[0]
+                subparser = subparsers_action.choices[choice]
+                print("\nCommand '{}':".format(choice))
+                choice_help = subparser.format_usage()
+                choice_help = self._indent(2, choice_help)
+                print(choice_help)
+        parser.exit()
 
 
 class AliasedSubParsersAction(argparse._SubParsersAction):
