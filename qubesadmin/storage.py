@@ -142,6 +142,12 @@ class Volume(object):
         self._fetch_info()
         return self._info['rw'] == 'True'
 
+    @rw.setter
+    def rw(self, value):
+        '''Set rw property'''
+        self._qubesd_call('Set.rw', str(value).encode('ascii'))
+        self._info = None
+
     @property
     def snap_on_start(self):
         '''Create a snapshot from source on VM start.'''
@@ -170,6 +176,12 @@ class Volume(object):
         '''Number of revisions to keep around'''
         self._fetch_info()
         return int(self._info['revisions_to_keep'])
+
+    @revisions_to_keep.setter
+    def revisions_to_keep(self, value):
+        '''Set revisions_to_keep property'''
+        self._qubesd_call('Set.revisions_to_keep', str(value).encode('ascii'))
+        self._info = None
 
     def is_outdated(self):
         ''' Returns `True` if this snapshot of a source volume (for
@@ -285,6 +297,20 @@ class Pool(object):
     def driver(self):
         ''' Storage pool driver '''
         return self.config['driver']
+
+    @property
+    def revisions_to_keep(self):
+        '''Number of revisions to keep around'''
+        return int(self.config['revisions_to_keep'])
+
+    @revisions_to_keep.setter
+    def revisions_to_keep(self, value):
+        '''Set revisions_to_keep property'''
+        self.app.qubesd_call('dom0',
+            'admin.pool.Set.revisions_to_keep',
+            self.name,
+            str(value).encode('ascii'))
+        self._config = None
 
     @property
     def volumes(self):
