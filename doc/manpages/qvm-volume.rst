@@ -86,14 +86,14 @@ aliases: c, set, s
 
 extend
 ^^^^^^
-| :command:`qvm-volume extend` [-h] [--verbose] [--quiet] *POOL_NAME:VOLUME_ID* *NEW_SIZE*
+| :command:`qvm-volume extend` [-h] [--verbose] [--quiet] *VMNAME:VOLUME* *NEW_SIZE*
 
 Extend the volume with *POOL_NAME:VOLUME_ID* TO *NEW_SIZE*
 
 revert
 ^^^^^^
 
-| :command:`qvm-volume revert` [-h] [--verbose] [--quiet] *POOL_NAME:VOLUME_ID*
+| :command:`qvm-volume revert` [-h] [--verbose] [--quiet] *VMNAME:VOLUME*
 
 Revert a volume to previous revision.
 
