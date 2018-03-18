@@ -26,6 +26,7 @@ from __future__ import print_function
 import sys
 
 import qubesadmin
+import qubesadmin.exc
 import qubesadmin.tools
 
 def mode_query(args):
@@ -101,7 +102,10 @@ def main(args=None, app=None):
 
     parser = get_parser()
     args = parser.parse_args(args, app=app)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except qubesadmin.exc.QubesException as e:
+        parser.error_runtime(e)
 
 
 if __name__ == '__main__':

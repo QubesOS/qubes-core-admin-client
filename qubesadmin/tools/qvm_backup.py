@@ -157,9 +157,13 @@ def main(args=None, app=None):
     else:
         profile_name = args.profile
 
-    backup_summary = args.app.qubesd_call(
-        'dom0', 'admin.backup.Info', profile_name)
-    print(backup_summary.decode())
+    try:
+        backup_summary = args.app.qubesd_call(
+            'dom0', 'admin.backup.Info', profile_name)
+        print(backup_summary.decode())
+    except QubesException as err:
+        print('\nBackup preparation error: {}'.format(err), file=sys.stderr)
+        return 1
 
     if not args.yes:
         if input("Do you want to proceed? [y/N] ").upper() != "Y":

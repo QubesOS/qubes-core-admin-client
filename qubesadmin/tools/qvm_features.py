@@ -63,8 +63,11 @@ def main(args=None, app=None):
         if args.delete:
             parser.error('--unset requires a feature')
 
-        features = [(feat, vm.features[feat]) for feat in vm.features]
-        qubesadmin.tools.print_table(features)
+        try:
+            features = [(feat, vm.features[feat]) for feat in vm.features]
+            qubesadmin.tools.print_table(features)
+        except qubesadmin.exc.QubesException as e:
+            parser.error_runtime(e)
 
     elif args.delete:
         if args.value is not None:
@@ -73,6 +76,8 @@ def main(args=None, app=None):
             del vm.features[args.feature]
         except KeyError:
             pass
+        except qubesadmin.exc.QubesException as e:
+            parser.error_runtime(e)
 
     elif args.value is None:
         try:
@@ -80,8 +85,13 @@ def main(args=None, app=None):
             return 0
         except KeyError:
             return 1
+        except qubesadmin.exc.QubesException as e:
+            parser.error_runtime(e)
     else:
-        vm.features[args.feature] = args.value
+        try:
+            vm.features[args.feature] = args.value
+        except qubesadmin.exc.QubesException as e:
+            parser.error_runtime(e)
 
     return 0
 

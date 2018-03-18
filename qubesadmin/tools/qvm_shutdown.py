@@ -92,6 +92,8 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     except qubesadmin.exc.QubesVMNotStartedError:
                         # already shut down
                         pass
+                    except qubesadmin.exc.QubesException as e:
+                        parser.error_runtime(e)
         else:
             timeout = args.timeout
             current_vms = list(sorted(this_round_domains))
@@ -114,6 +116,8 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 except qubesadmin.exc.QubesVMNotStartedError:
                     # already shut down
                     pass
+                except qubesadmin.exc.QubesException as e:
+                    parser.error_runtime(e)
 
     if args.wait:
         if have_events:

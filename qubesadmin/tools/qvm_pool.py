@@ -168,6 +168,8 @@ def main(args=None, app=None):
             args.app.remove_pool(args.name)
         except KeyError:
             parser.print_error('no such pool %s\n' % args.name)
+        except qubesadmin.exc.QubesException as e:
+            parser.error('failed to remove pool %s: %s\n' % (args.name, str(e)))
     elif args.command == 'info':
         for pool in args.pools:
             pool_info(pool)
