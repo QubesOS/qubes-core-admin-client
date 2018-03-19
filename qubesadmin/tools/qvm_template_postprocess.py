@@ -183,9 +183,10 @@ def post_install(args):
 
     app = args.app
     try:
-        # reinstall
         vm = app.domains[args.name]
     except KeyError:
+        # installing new
+        reinstall = False
         if app.qubesd_connection_type == 'socket' and \
                 args.dir == '/var/lib/qubes/vm-templates/' + args.name:
             # vm.create_on_disk() need to create the directory on its own,
@@ -198,13 +199,19 @@ def post_install(args):
         vm = app.add_new_vm('TemplateVM',
             name=args.name,
             label=qubesadmin.config.defaults['template_label'])
+    else:
+        # reinstalling
+        reinstall = True
+        
 
     vm.log.info('Importing data')
     try:
         import_root_img(vm, args.dir)
     except:
         # if data import fails, remove half-created VM
-        del app.domains[vm.name]
+        if not reinstall:
+            vm.installed_by_rpm = False
+            del app.domains[vm.name]
         raise
     vm.installed_by_rpm = True
     import_appmenus(vm, args.dir)
