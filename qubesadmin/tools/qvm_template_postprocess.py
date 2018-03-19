@@ -195,6 +195,7 @@ def post_install(args):
     '''Handle post-installation tasks'''
 
     app = args.app
+    vm_created = False
     try:
         # reinstall
         vm = app.domains[args.name]
@@ -211,13 +212,15 @@ def post_install(args):
         vm = app.add_new_vm('TemplateVM',
             name=args.name,
             label=qubesadmin.config.defaults['template_label'])
+        vm_created = True
 
     vm.log.info('Importing data')
     try:
         import_root_img(vm, args.dir)
     except:
         # if data import fails, remove half-created VM
-        del app.domains[vm.name]
+        if vm_created:
+            del app.domains[vm.name]
         raise
     vm.installed_by_rpm = True
     import_appmenus(vm, args.dir)
