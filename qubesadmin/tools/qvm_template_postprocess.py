@@ -77,8 +77,12 @@ def get_root_img_size(source_dir):
 def import_root_img(vm, source_dir):
     '''Import root.img into VM object'''
 
+    # Try not break existing data in the volume in case of import failure. If
+    #  volume needs to be extended, do it before import, if reduced - after.
+
     root_size = get_root_img_size(source_dir)
-    vm.volumes['root'].resize(root_size)
+    if vm.volumes['root'].size < root_size:
+        vm.volumes['root'].resize(root_size)
 
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
@@ -107,6 +111,15 @@ def import_root_img(vm, source_dir):
                 return
         with open(root_path, 'rb') as root_file:
             vm.volumes['root'].import_data(stream=root_file)
+
+    if vm.volumes['root'].size > root_size:
+        try:
+            vm.volumes['root'].resize(root_size)
+        except qubesadmin.exc.QubesException as err:
+            vm.log.warning(
+                'Failed to resize root volume of {} from {} to {} after '
+                'import: {}'.format(vm.name, vm.volumes['root'].size,
+                    root_size, str(err)))
 
 
 def import_appmenus(vm, source_dir):
@@ -182,6 +195,7 @@ def post_install(args):
     '''Handle post-installation tasks'''
 
     app = args.app
+    vm_created = False
     try:
         # reinstall
         vm = app.domains[args.name]
@@ -198,13 +212,15 @@ def post_install(args):
         vm = app.add_new_vm('TemplateVM',
             name=args.name,
             label=qubesadmin.config.defaults['template_label'])
+        vm_created = True
 
     vm.log.info('Importing data')
     try:
         import_root_img(vm, args.dir)
     except:
         # if data import fails, remove half-created VM
-        del app.domains[vm.name]
+        if vm_created:
+            del app.domains[vm.name]
         raise
     vm.installed_by_rpm = True
     import_appmenus(vm, args.dir)
