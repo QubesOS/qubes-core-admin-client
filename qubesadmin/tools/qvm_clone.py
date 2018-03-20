@@ -24,6 +24,7 @@
 
 import sys
 
+import qubesadmin.exc
 from qubesadmin.tools import QubesArgumentParser
 
 parser = QubesArgumentParser(description=__doc__, vmname_nargs=1)
@@ -70,7 +71,10 @@ def main(args=None, app=None):
                 parser.error(
                     'Pool argument must be of form: -P volume_name=pool_name')
 
-    app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools)
+    try:
+        app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools)
+    except qubesadmin.exc.QubesException as e:
+        parser.error_runtime(e)
 
 if __name__ == '__main__':
     sys.exit(main())

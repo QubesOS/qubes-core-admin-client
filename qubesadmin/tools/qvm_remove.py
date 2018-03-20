@@ -23,6 +23,7 @@
 
 import sys
 
+import qubesadmin.exc
 from qubesadmin.tools import QubesArgumentParser
 
 parser = QubesArgumentParser(description=__doc__,
@@ -44,7 +45,10 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
 
     if args.no_confirm or go_ahead == "Y":
         for vm in args.domains:
-            del args.app.domains[vm.name]
+            try:
+                del args.app.domains[vm.name]
+            except qubesadmin.exc.QubesException as e:
+                parser.error_runtime(e)
         retcode = 0
     else:
         print("Remove cancelled.")
