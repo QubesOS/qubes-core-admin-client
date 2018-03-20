@@ -199,6 +199,13 @@ def extend_volumes(args):
     '''
     volume = args.volume
     size = qubesadmin.utils.parse_size(args.size)
+    if not args.force and size < volume.size:
+        raise qubesadmin.exc.StoragePoolException(
+            'For your own safety, shrinking of %s is'
+            ' disabled (%d < %d). If you really know what you'
+            ' are doing, resize filesystem manually first, then use `-f` '
+            'option.' %
+            (volume.name, size, volume.size))
     volume.resize(size)
 
 
@@ -237,10 +244,13 @@ def init_revert_parser(sub_parsers):
 def init_extend_parser(sub_parsers):
     ''' Add 'extend' action related options '''
     extend_parser = sub_parsers.add_parser(
-        "extend", help="extend volume from domain")
+        "resize", aliases=('extend', ), help="resize volume for domain")
     extend_parser.add_argument(metavar='VM:VOLUME', dest='volume',
                                action=qubesadmin.tools.VMVolumeAction)
     extend_parser.add_argument('size', help='New size in bytes')
+    extend_parser.add_argument('--force', '-f', action='store_true',
+        help='Force operation, even if new size is smaller than the current '
+             'one')
     extend_parser.set_defaults(func=extend_volumes)
 
 def init_info_parser(sub_parsers):

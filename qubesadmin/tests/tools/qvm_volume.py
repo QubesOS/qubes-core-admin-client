@@ -154,6 +154,18 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=3\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
             ('testvm', 'admin.vm.volume.Resize', 'private', b'10737418240')] = \
             b'0\x00'
         self.assertEqual(0,
@@ -169,15 +181,68 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Resize', 'private', b'1073741824')] = \
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=3\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'10737418240')] = \
             b'2\x00StoragePoolException\x00\x00Failed to resize volume: ' \
-            b'shrink not allowed\x00'
+            b'error: success\x00'
         with qubesadmin.tests.tools.StderrBuffer() as stderr:
             self.assertEqual(1,
                 qubesadmin.tools.qvm_volume.main(
-                    ['extend', 'testvm:private', '1GiB'],
+                    ['extend', 'testvm:private', '10GiB'],
                     app=self.app))
-        self.assertIn('shrink not allowed', stderr.getvalue())
+        self.assertIn('error: success', stderr.getvalue())
+        self.assertAllCalled()
+
+    def test_012_extend_deny_shrink(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=3\n' \
+            b'is_outdated=False\n'
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            self.assertEqual(1,
+                qubesadmin.tools.qvm_volume.main(
+                    ['resize', 'testvm:private', '1GiB'],
+                    app=self.app))
+        self.assertIn('shrinking of private is disabled', stderr.getvalue())
+        self.assertAllCalled()
+
+    def test_013_resize_force_shrink(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'1073741824')] = \
+            b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['resize', '-f', 'testvm:private', '1GiB'],
+                app=self.app))
         self.assertAllCalled()
 
     def test_020_revert(self):

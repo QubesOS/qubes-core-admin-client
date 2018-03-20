@@ -84,11 +84,22 @@ Set property of given volume. Properties currently possible to change:
 
 aliases: c, set, s
 
-extend
+resize
 ^^^^^^
-| :command:`qvm-volume extend` [-h] [--verbose] [--quiet] *VMNAME:VOLUME* *NEW_SIZE*
+| :command:`qvm-volume resize` [-h] [--force|-f] [--verbose] [--quiet] *VMNAME:VOLUME* *NEW_SIZE*
 
-Extend the volume with *POOL_NAME:VOLUME_ID* TO *NEW_SIZE*
+Resize the volume with *VMNAME:VOLUME* TO *NEW_SIZE*
+
+If new size is smaller than current, the tool will refuse to continue unless
+`--force` option is used. One should be very careful about that, because
+shrinking volume without shrinking filesystem and other data inside first, will
+surely end with data loss.
+
+.. option:: -f, --force
+
+   Force operation even if new size is smaller than the current one.
+
+aliases: extend
 
 revert
 ^^^^^^
