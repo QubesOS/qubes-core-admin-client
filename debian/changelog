@@ -1,3 +1,20 @@
+qubes-core-admin-client (4.0.16-1) unstable; urgency=medium
+
+  * doc: typos
+  * doc: fix module index generation
+  * storage: add 'rw' and 'revision_to_keep' setters
+  * qvm-volume: add 'info' and 'config' actions
+  * storage: make Pool.{size,usage} integers
+  * doc: update qvm-volume parameters
+  * qvm-volume: refuse to shrink volume unless --force option is used
+  * tools: add SubParsersHelpAction, which include subcommands details
+    in --help
+  * tools: suppress full traceback in console tools
+  * qvm-template-postprocess: resize volume only when needed
+  * qvm-template-postprocess: do not remove VM on failed reinstall
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 21 Mar 2018 01:55:21 +0100
+
 qubes-core-admin-client (4.0.15-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
