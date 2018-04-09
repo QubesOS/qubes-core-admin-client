@@ -745,6 +745,8 @@ class BackupRestoreOptions(object):
         #: automatically rename VM during restore, when it would conflict
         # with existing one
         self.rename_conflicting = True
+        # Prefix all names of restored VMs with given prefix
+        self.rename_prefix = ""
         #: list of VM names to exclude
         self.exclude = []
         #: restore VMs into selected storage pool
@@ -1422,20 +1424,23 @@ class BackupRestore(object):
                 "unable to extract the qubes backup. "
                 "Check extracting process errors.")
 
-    def new_name_for_conflicting_vm(self, orig_name, restore_info):
+    def new_name_for_conflicting_vm(self, orig_name, restore_info,
+            rename_prefix=""):
         '''Generate new name for conflicting VM
 
-        Add a number suffix, until the name is unique. If no unique name can
-        be found using this strategy, return :py:obj:`None`
+        Optionally add a name prefix. If name conflicts with an existing VM
+        name, add a number suffix, until the name is unique. If no unique name
+        can be found using this strategy, return :py:obj:`None`
         '''
         number = 1
-        if len(orig_name) > 29:
-            orig_name = orig_name[0:29]
-        new_name = orig_name
+        prefixed_name = "{}{}".format(rename_prefix, orig_name)
+        if len(prefixed_name) > 29:
+            prefixed_name = prefixed_name[0:29]
+        new_name = prefixed_name
         while (new_name in restore_info.keys() or
                new_name in [x.name for x in restore_info.values()] or
                new_name in self.app.domains):
-            new_name = str('{}{}'.format(orig_name, number))
+            new_name = str('{}{}'.format(prefixed_name, number))
             number += 1
             if number == 100:
                 # give up
@@ -1459,9 +1464,10 @@ class BackupRestore(object):
 
             if not self.options.verify_only and \
                     vm_info.name in self.app.domains:
-                if self.options.rename_conflicting:
+                if self.options.rename_conflicting or \
+                        self.options.rename_prefix:
                     new_name = self.new_name_for_conflicting_vm(
-                        vm, restore_info
+                        vm, restore_info, self.options.rename_prefix
                     )
                     if new_name is not None:
                         vm_info.name = new_name
