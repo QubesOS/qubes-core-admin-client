@@ -55,6 +55,10 @@ parser.add_argument("--rename-conflicting", action="store_true",
     help="Restore VMs that are already present on the host "
          "under different names")
 
+parser.add_argument("--rename-prefix", action="store",
+    dest="rename_prefix", default="",
+    help="Prefix all restored VM names (implies --rename-conflicting)")
+
 parser.add_argument("-x", "--exclude", action="append", dest="exclude",
     default=[],
     help="Skip restore of specified VM (may be repeated)")
@@ -223,6 +227,7 @@ def main(args=None, app=None):
     backup.options.use_default_template = args.ignore_missing
     backup.options.use_default_netvm = args.ignore_missing
     backup.options.rename_conflicting = args.rename_conflicting
+    backup.options.rename_prefix = args.rename_prefix
     backup.options.dom0_home = args.dom0_home
     backup.options.ignore_username_mismatch = args.ignore_username_mismatch
     backup.options.ignore_size_limit = args.ignore_size_limit

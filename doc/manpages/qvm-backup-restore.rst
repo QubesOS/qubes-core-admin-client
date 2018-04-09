@@ -53,6 +53,10 @@ Options
 
    Restore VMs that are already present on the host under different names
 
+.. option:: --rename-prefix=PREFIX
+
+   Prefix all restored VM names (implies --rename-conflicting)
+
 .. option:: --exclude=EXCLUDE, -x EXCLUDE
 
     Skip restore of specified VM (might be repeated)
