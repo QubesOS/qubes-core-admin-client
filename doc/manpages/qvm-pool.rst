@@ -59,11 +59,11 @@ Options
 Examples
 --------
 
-Create a pool backed by the default `xen` driver. 
+Create a pool backed by the `file` driver.
     
 ::
 
-    qvm-pool -o dir_path=/mnt/foo -a foo xen
+    qvm-pool -o dir_path=/mnt/foo -a foo file
 
 Authors
 -------
