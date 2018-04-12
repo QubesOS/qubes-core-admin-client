@@ -37,6 +37,10 @@ override_dh_auto_install:
 	install -m 0644 build/man/* \
 		debian/qubes-core-admin-client/usr/share/man/man1/
 
+override_dh_clean:
+	dh_clean -O--buildsystem=pybuild
+	make clean
+
 # debmake generated override targets
 # This is example for Cmake (See http://bugs.debian.org/641051 )
 #override_dh_auto_configure:
