@@ -51,6 +51,11 @@ Options
     qubes.xml, but does not delete any content (FIXME: is it really true for
     all pool drivers?).
 
+.. option:: --set NAME, -s NAME
+
+    Modify a pool. This set options of a pool. Use ``--o`` to specify actual modifications.
+
+
 Examples
 --------
 

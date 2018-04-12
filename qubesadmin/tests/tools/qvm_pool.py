@@ -92,3 +92,25 @@ class TC_00_qvm_pool(qubesadmin.tests.QubesTestCase):
             'volume_group  qubes_dom0\n'
             )
         self.assertAllCalled()
+
+    def test_050_set(self):
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+            b'0\x00pool-file\npool-lvm\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.pool.Set.revisions_to_keep', 'pool-lvm', b'2')] = \
+            b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_pool.main(['-s', 'pool-lvm', '-o',
+                'revisions_to_keep=2'],
+                app=self.app))
+        self.assertAllCalled()
+
+    def test_051_set_invalid(self):
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+            b'0\x00pool-file\npool-lvm\n'
+        with self.assertRaises(SystemExit) as e:
+            qubesadmin.tools.qvm_pool.main(
+                ['-s', 'pool-lvm', '-o', 'prop=1'],
+                app=self.app)
+        self.assertEqual(e.exception.code, 2)
+        self.assertAllCalled()

@@ -92,6 +92,23 @@ class _Add(argparse.Action):
         setattr(namespace, 'driver', driver)
 
 
+class _Set(qubesadmin.tools.PoolsAction):
+    ''' Action for argument parser that sets pool options. '''
+
+    def __init__(self, option_strings, dest=None, default=None, metavar=None):
+        super(_Set, self).__init__(option_strings=option_strings,
+                                   dest=dest,
+                                   metavar=metavar,
+                                   default=default,
+                                   help='modify pool (use -o to specify '
+                                        'modifications)')
+
+    def __call__(self, parser, namespace, name, option_string=None):
+        print('dupa')
+        setattr(namespace, 'command', 'set')
+        super(_Set, self).__call__(parser, namespace, name, option_string)
+
+
 class _Options(argparse.Action):
     ''' Action for argument parser that parsers options. '''
 
@@ -127,6 +144,8 @@ def get_parser():
                        dest='command',
                        metavar=('NAME', 'DRIVER'))
     group.add_argument('-r', '--remove', metavar='NAME', action=_Remove)
+    group.add_argument('-s', '--set', metavar='POOLNAME', dest='pool',
+                       action=_Set, default=[])
     group.add_argument('--help-drivers',
                        dest='command',
                        const='list-drivers',
@@ -173,6 +192,17 @@ def main(args=None, app=None):
     elif args.command == 'info':
         for pool in args.pools:
             pool_info(pool)
+    elif args.command == 'set':
+        pool = args.pool[0]
+        for opt, value in args.options.items():
+            if not hasattr(type(pool), opt):
+                parser.error('setting pool option %s is not supported' % (
+                    pool.name))
+            try:
+                setattr(pool, opt, value)
+            except qubesadmin.exc.QubesException as e:
+                parser.error('failed to set pool %s option %s: %s\n' % (
+                    pool.name, opt, str(e)))
     return 0
 
 
