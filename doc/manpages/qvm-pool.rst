@@ -51,14 +51,19 @@ Options
     qubes.xml, but does not delete any content (FIXME: is it really true for
     all pool drivers?).
 
+.. option:: --set NAME, -s NAME
+
+    Modify a pool. This set options of a pool. Use ``--o`` to specify actual modifications.
+
+
 Examples
 --------
 
-Create a pool backed by the default `xen` driver. 
+Create a pool backed by the `file` driver.
     
 ::
 
-    qvm-pool -o dir_path=/mnt/foo -a foo xen
+    qvm-pool -o dir_path=/mnt/foo -a foo file
 
 Authors
 -------

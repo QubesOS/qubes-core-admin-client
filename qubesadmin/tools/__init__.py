@@ -314,6 +314,9 @@ class PoolsAction(QubesAction):
             except qubesadmin.exc.QubesException as e:
                 parser.error(str(e))
                 sys.exit(2)
+            except KeyError:
+                parser.error('No such pools: %s' % pool_names)
+                sys.exit(2)
 
 
 class QubesArgumentParser(argparse.ArgumentParser):
