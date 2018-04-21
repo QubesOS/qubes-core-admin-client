@@ -61,6 +61,10 @@ Options
 
    Same as --format=network, for compatibility with Qubes 3.x
 
+.. option:: --kernel, -k
+
+   Same as --format=kernel, for compatibility with Qubes 3.x
+
 .. option:: --verbose, -v
 
    Increase verbosity.

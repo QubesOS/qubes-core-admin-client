@@ -430,6 +430,7 @@ class Table(object):
 formats = {
     'simple': ('name', 'state', 'class', 'label', 'template', 'netvm'),
     'network': ('name', 'state', 'netvm', 'ip', 'ipback', 'gateway'),
+    'kernel': ('name', 'state', 'class', 'template', 'kernel', 'kernelopts'),
     'full': ('name', 'state', 'class', 'label', 'qid', 'xid', 'uuid'),
 #   'perf': ('name', 'state', 'cpu', 'memory'),
     'disk': ('name', 'state', 'disk',
@@ -550,6 +551,10 @@ def get_parser():
     parser.add_argument('--network', '-n',
         action='store_const', dest='format', const='network',
         help='Same as --format=network')
+
+    parser.add_argument('--kernel', '-k',
+        action='store_const', dest='format', const='kernel',
+        help='Same as --format=kernel')
 
     parser.set_defaults(spinner=True)
 
