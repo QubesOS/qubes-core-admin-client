@@ -196,14 +196,21 @@ def post_install(args):
 
     app = args.app
     vm_created = False
+    # reinstall and running in dom0, using the same directory as qubes core
+    local_reinstall = False
     try:
         # reinstall
         vm = app.domains[args.name]
+        if app.qubesd_connection_type == 'socket' and \
+                args.dir == '/var/lib/qubes/vm-templates/' + args.name:
+            # VM exists and use use the same directory as target vm - on
+            # final cleanup remove only some files, not the whole directory
+            local_reinstall = True
     except KeyError:
         if app.qubesd_connection_type == 'socket' and \
                 args.dir == '/var/lib/qubes/vm-templates/' + args.name:
             # vm.create_on_disk() need to create the directory on its own,
-            # move it away for from its way
+            # move it away from its way
             tmp_sourcedir = os.path.join('/var/lib/qubes/vm-templates',
                 'tmp-' + args.name)
             shutil.move(args.dir, tmp_sourcedir)
@@ -229,7 +236,13 @@ def post_install(args):
         yield from call_postinstall_service(vm)
 
     if not args.keep_source:
-        shutil.rmtree(args.dir)
+        if local_reinstall:
+            # remove only imported root img
+            root_path = os.path.join(args.dir, 'root.img')
+            for root_part in glob.glob(root_path + '.part.*'):
+                os.unlink(root_part)
+        else:
+            shutil.rmtree(args.dir)
         # if running as root, tell underlying storage layer about just freed
         # data blocks
         if os.getuid() == 0:
