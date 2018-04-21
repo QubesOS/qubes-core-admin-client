@@ -1,3 +1,21 @@
+qubes-core-admin-client (4.0.17-1) unstable; urgency=medium
+
+  [ Frédéric Pierret ]
+  * Create .spec.in and Source0
+  * Remove _builddir and useless condition on qubes_builder
+  * doc: handle release definition when not being in a git repository
+  * spec.in: add changelog placeholder
+
+  [ Marek Marczykowski-Górecki ]
+  * tools: fix error reporing on unknown storage pool
+  * tools/qvm-pool: add --set to modify pool properties
+  * doc: adjust example in qvm-pool man page
+  * Add 'make clean' target, use it for Debian build
+  * tools/qvm-ls: add --kernel option for compatibility with R3.2
+  * tools/qvm-template-postprocess: fix reinstall action
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 21 Apr 2018 15:27:37 +0200
+
 qubes-core-admin-client (4.0.16-1) unstable; urgency=medium
 
   * doc: typos
