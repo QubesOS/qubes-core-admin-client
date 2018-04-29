@@ -68,7 +68,33 @@ class RuleAction(argparse.Action):
         rule = qubesadmin.firewall.Rule(None, **kwargs)
         setattr(namespace, self.dest, rule)
 
-parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1)
+epilog = """
+Rules can be given as positional arguments:
+    <action> [<dsthost> [<proto> [<dstports>|<icmptype>]]]
+
+And as keyword arguments:
+    action=<action> [specialtarget=dns] [dsthost=<dsthost>]
+    [proto=<proto>] [dstports=<dstports>] [icmptype=<icmptype>]
+
+Both formats, positional and keyword arguments, can be used
+interchangeably.
+
+Available rules:
+    action:        accept or drop
+    dsthost        IP, network or hostname
+                     (e.g. 10.5.3.2, 192.168.0.0/16,
+                     www.example.com, fd00::/8)
+    dstports       port or port range
+                     (e.g. 443 or 1200-1400)
+    icmptype       icmp type number (e.g. 8 for echo requests)
+    proto          icmp, tcp or udp
+    specialtarget  only the value dns is currently supported,
+                     it matches the configured dns servers of
+                     a VM
+"""
+
+parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1, epilog=epilog,
+    formatter_class=argparse.RawTextHelpFormatter)
 
 action = parser.add_subparsers(dest='command', help='action to perform')
 
