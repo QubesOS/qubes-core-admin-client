@@ -189,7 +189,7 @@ def main(args=None, app=None):
             rules_add(vm, args)
         elif args.command == 'del':
             rules_del(vm, args)
-        elif args.command == 'list':
+        else:
             if args.raw:
                 rules_list_raw(vm)
             else:

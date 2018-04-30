@@ -110,7 +110,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
                  '        -          -',
                 ])
 
-    def test_001_list(self):
+    def test_001_list_default(self):
         self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
                 None, None)] = \
             b'0\0action=accept dsthost=qubes-os.org proto=tcp ' \
@@ -118,7 +118,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             b'action=drop proto=icmp icmptype=8\n' \
             b'action=accept specialtarget=dns comment=Allow DNS\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_firewall.main(['test-vm', 'list'], app=self.app)
+            qubesadmin.tools.qvm_firewall.main(['test-vm'], app=self.app)
             self.assertEqual(
                 [l.strip() for l in stdout.getvalue().splitlines()],
                 ['NO  ACTION  HOST          PROTOCOL  PORT(S)  SPECIAL '
