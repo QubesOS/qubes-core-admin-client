@@ -21,6 +21,7 @@
 #
 
 import argparse
+import datetime
 
 import qubesadmin.firewall
 import qubesadmin.tests
@@ -65,6 +66,25 @@ class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32',
                 proto='tcp', dstports=443))
+
+    def test_004_expire_absolute(self):
+        ns = argparse.Namespace()
+        self.action(None, ns, ['dsthost=127.0.0.1', 'action=accept',
+            'expire=1525054180'])
+        self.assertEqual(ns.rule,
+            qubesadmin.firewall.Rule(
+                None, action='accept', dsthost='127.0.0.1/32',
+                expire=1525054180))
+
+    def test_005_expire_relative(self):
+        ns = argparse.Namespace()
+        now = int(datetime.datetime.now().strftime('%s'))
+        self.action(None, ns, ['dsthost=127.0.0.1', 'action=accept',
+            'expire=+100'])
+        self.assertEqual(ns.rule,
+            qubesadmin.firewall.Rule(
+                None, action='accept', dsthost='127.0.0.1/32',
+                expire=now+100))
 
 
 class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):

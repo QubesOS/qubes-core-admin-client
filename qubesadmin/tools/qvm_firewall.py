@@ -22,6 +22,7 @@
 '''qvm-firewall tool'''
 
 import argparse
+import datetime
 import sys
 import itertools
 
@@ -44,7 +45,7 @@ class RuleAction(argparse.Action):
             setattr(namespace, self.dest, None)
             return
         assumed_order = ['action', 'dsthost', 'proto', 'dstports', 'icmptype']
-        allowed_opts = assumed_order + ['specialtarget', 'comment']
+        allowed_opts = assumed_order + ['specialtarget', 'comment', 'expire']
         kwargs = {}
         for opt in values:
             opt_elements = opt.split('=')
@@ -58,6 +59,10 @@ class RuleAction(argparse.Action):
             if key not in allowed_opts:
                 raise argparse.ArgumentError(None,
                     'Invalid rule element: {}'.format(opt))
+            if key == 'expire' and value.startswith('+'):
+                value = (datetime.datetime.now() +
+                         datetime.timedelta(seconds=int(value[1:]))).\
+                    strftime('%s')
             kwargs[key] = value
             if key in assumed_order:
                 assumed_order.remove(key)
@@ -75,6 +80,7 @@ Rules can be given as positional arguments:
 And as keyword arguments:
     action=<action> [specialtarget=dns] [dsthost=<dsthost>]
     [proto=<proto>] [dstports=<dstports>] [icmptype=<icmptype>]
+    [expire=<expire>]
 
 Both formats, positional and keyword arguments, can be used
 interchangeably.
@@ -91,6 +97,9 @@ Available rules:
     specialtarget  only the value dns is currently supported,
                      it matches the configured dns servers of
                      a VM
+    expire         a rule is automatically removed at given time, given as
+                     seconds since 1/1/1970, or +seconds (e.g. +300 for rule
+                     expire in 5 minutes)
 """
 
 parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1, epilog=epilog,

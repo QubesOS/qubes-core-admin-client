@@ -7,8 +7,11 @@ Synopsis
 --------
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add *RULE*
+
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* del [--rule-no=*RULE_NUMBER*] [*RULE*]
+
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* list [--raw]
+
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* policy {accept,drop}
 
 Options
@@ -42,8 +45,7 @@ Available actions:
 
 * add - add specified rule. See `Rule syntax` section below.
 
-* del - delete specified rule. Can be selected either by rule number using
-    :option:`--rule-no`, or specifying rule itself.
+* del - delete specified rule. Can be selected either by rule number using :option:`--rule-no`, or specifying rule itself.
 
 * list - list all the rules for a given VM.
 
@@ -77,6 +79,10 @@ Supported matches:
 
  - ``specialtarget`` - predefined target. Currently the only supported value is
    ``dns``. This can be combined with other matches to narrow it down.
+
+ - ``expire`` - rule matches only until specified time and then is automatically
+ removed. The time can be given either as number of seconds since 1/1/1970, or
+ ``+seconds`` as a relative time (``+300`` means 5 minutes from now).
 
 Authors
 -------
