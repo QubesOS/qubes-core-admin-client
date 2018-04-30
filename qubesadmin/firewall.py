@@ -34,6 +34,11 @@ class RuleOption(object):
         '''API representation of this rule element'''
         raise NotImplementedError
 
+    @property
+    def pretty_value(self):
+        '''Human readable representation'''
+        return str(self)
+
     def __str__(self):
         return self._value
 
@@ -212,8 +217,15 @@ class Expire(RuleOption):
 
     @property
     def expired(self):
-        '''Have this rule expired already?'''
+        '''Has this rule expired already?'''
         return self.datetime < datetime.datetime.utcnow()
+
+    @property
+    def pretty_value(self):
+        '''Human readable representation'''
+        now = datetime.datetime.utcnow()
+        duration = (self.datetime - now).total_seconds()
+        return "{:+.0f}s".format(duration)
 
 
 class Comment(RuleOption):

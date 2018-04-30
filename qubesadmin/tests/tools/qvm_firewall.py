@@ -22,6 +22,8 @@
 
 import argparse
 import datetime
+import re
+import time
 
 import qubesadmin.firewall
 import qubesadmin.tests
@@ -103,11 +105,11 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             self.assertEqual(
                 [l.strip() for l in stdout.getvalue().splitlines()],
                 ['NO  ACTION  HOST          PROTOCOL  PORT(S)  SPECIAL '
-                 'TARGET  ICMP TYPE  COMMENT',
+                 'TARGET  ICMP TYPE  EXPIRE  COMMENT',
                  '0   accept  qubes-os.org  -         -        -       '
-                 '        -          -',
+                 '        -          -       -',
                  '1   drop    -             icmp      -        -       '
-                 '        -          -',
+                 '        -          -       -',
                 ])
 
     def test_001_list_default(self):
@@ -122,14 +124,32 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             self.assertEqual(
                 [l.strip() for l in stdout.getvalue().splitlines()],
                 ['NO  ACTION  HOST          PROTOCOL  PORT(S)  SPECIAL '
-                 'TARGET  ICMP TYPE  COMMENT',
+                 'TARGET  ICMP TYPE  EXPIRE  COMMENT',
                  '0   accept  qubes-os.org  tcp       443      -       '
-                 '        -          -',
+                 '        -          -       -',
                  '1   drop    -             icmp      -        -       '
-                 '        8          -',
+                 '        8          -       -',
                  '2   accept  -             -         -        dns     '
-                 '        -          Allow DNS',
+                 '        -          -       Allow DNS',
                 ])
+
+
+    def test_002_list_expire(self):
+        in_1h = int(time.time()) + 3600
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
+                None, None)] = \
+            '0\0action=accept dsthost=qubes-os.org proto=tcp ' \
+            'dstports=443-443 expire={}\n'.format(in_1h).encode()
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_firewall.main(['test-vm'], app=self.app)
+            line = stdout.getvalue().splitlines()[-1]
+            match = re.match(
+                '0   accept  qubes-os.org  tcp       443      -         '
+                '      -          \+(.{4})s  -',
+                line)
+            self.assertTrue(match, "no match for: {!r}".format(line))
+            duration = int(match.group(1))
+            self.assertTrue(3590 < duration <= 3600)
 
     def test_002_list_raw(self):
         self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',

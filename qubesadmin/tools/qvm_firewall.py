@@ -135,20 +135,20 @@ def rules_list_table(vm):
     :return: None
     '''
     header = ['NO', 'ACTION', 'HOST', 'PROTOCOL', 'PORT(S)',
-        'SPECIAL TARGET', 'ICMP TYPE', 'COMMENT']
+        'SPECIAL TARGET', 'ICMP TYPE', 'EXPIRE', 'COMMENT']
     rows = []
     for (rule, rule_no) in zip(vm.firewall.rules, itertools.count()):
-        row = [str(x) if x is not None else '-' for x in [
-            rule_no,
+        row = [x.pretty_value if x is not None else '-' for x in [
             rule.action,
             rule.dsthost,
             rule.proto,
             rule.dstports,
             rule.specialtarget,
             rule.icmptype,
+            rule.expire,
             rule.comment,
         ]]
-        rows.append(row)
+        rows.append([str(rule_no)] + row)
     qubesadmin.tools.print_table([header] + rows)
 
 
