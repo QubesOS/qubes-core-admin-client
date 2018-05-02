@@ -31,11 +31,11 @@ Options
 
 .. option:: --reload, -r
 
-   force reloading rules even when unchanged
+   force reload of rules even when unchanged
 
 .. option:: --raw
 
-   Print raw rules when listing
+   in combination with :option:`--list`, print raw rules
 
 
 Actions description
@@ -45,7 +45,8 @@ Available actions:
 
 * add - add specified rule. See `Rule syntax` section below.
 
-* del - delete specified rule. Can be selected either by rule number using :option:`--rule-no`, or specifying rule itself.
+* del - delete specified rule. The rule to remove can be selected either by rule number using :option:`--rule-no`
+  or by specifying the rule itself using the same syntax used for adding it.
 
 * list - list all the rules for a given VM.
 
@@ -59,8 +60,8 @@ A single rule is built from:
  - action - either ``drop`` or ``accept``
  - zero or more matches
 
-Selected action is applied on given packet when all specified matches do match,
-further rules are not evaluated. If none of the rules match, default action
+Selected action is applied to packets when all specified matches match,
+further rules are not evaluated. If none of the rules match, the default action
 (``policy``) is applied.
 
 Supported matches:
@@ -76,9 +77,9 @@ Supported matches:
  - ``proto`` - specific IP protocol. Supported values: ``tcp``, ``udp``,
    ``icmp``.
 
- - ``dstports`` - destination port or ports range. Can be either a single port,
+ - ``dstports`` - destination port or ports range. Can be either a single port
    or a range separated by ``-``. Valid only together with ``proto=udp`` or
- ``proto=tcp``.
+   ``proto=tcp``.
 
  - ``icmptype`` - ICMP message type, specified as numeric value. Valid only
    together with ``proto=icmp``.
@@ -86,9 +87,10 @@ Supported matches:
  - ``specialtarget`` - predefined target. Currently the only supported value is
    ``dns``. This can be combined with other matches to narrow it down.
 
- - ``expire`` - rule matches only until specified time and then is automatically
- removed. The time can be given either as number of seconds since 1/1/1970, or
- ``+seconds`` as a relative time (``+300`` means 5 minutes from now).
+ - ``expire`` - the rule matches only until the specified time and is then
+   automatically removed. The time can be given either as number of seconds
+   since 1/1/1970 or as ``+seconds``, a relative time (``+300`` means 5
+   minutes from now).
 
 Authors
 -------

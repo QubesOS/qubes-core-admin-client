@@ -87,7 +87,7 @@ And as keyword arguments:
 Both formats, positional and keyword arguments, can be used
 interchangeably.
 
-Available rules:
+Available matches:
     action:        accept or drop
     dst4           synonym for dsthost
     dst6           synonym for dsthost
@@ -101,9 +101,9 @@ Available rules:
     specialtarget  only the value dns is currently supported,
                      it matches the configured dns servers of
                      a VM
-    expire         a rule is automatically removed at given time, given as
-                     seconds since 1/1/1970, or +seconds (e.g. +300 for rule
-                     expire in 5 minutes)
+    expire         the rule is automatically removed at the time given as
+                     seconds since 1/1/1970, or +seconds (e.g. +300 for a rule
+                     to expire in 5 minutes)
 """
 
 parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1, epilog=epilog,
@@ -113,20 +113,20 @@ action = parser.add_subparsers(dest='command', help='action to perform')
 
 action_add = action.add_parser('add', help='add rule')
 action_add.add_argument('--before', type=int, default=None,
-    help='Add rule before rule with given number, instead of at the end')
-action_add.add_argument('rule', nargs='+', action=RuleAction,
+    help='Add rule before rule with given number instead at the end')
+action_add.add_argument('rule', metavar='match', nargs='+', action=RuleAction,
     help='rule description')
 
 action_del = action.add_parser('del', help='remove rule')
 action_del.add_argument('--rule-no', dest='rule_no', type=int,
     action='store', help='rule number')
-action_del.add_argument('rule', nargs='*', action=RuleAction,
+action_del.add_argument('rule', metavar='match', nargs='*', action=RuleAction,
     help='rule to be removed')
 
 action_list = action.add_parser('list', help='list rules')
 
 parser.add_argument('--reload', '-r', action='store_true',
-    help='force reloading rules even when unchanged')
+    help='force reload of rules even when unchanged')
 
 parser.add_argument('--raw', action='store_true',
     help='output rules as raw strings, instead of nice table')
