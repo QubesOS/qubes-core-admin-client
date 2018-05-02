@@ -1,6 +1,7 @@
 *.pyc
 *.pyo
 build/
+doc/_build/
 pkgs/
 .coverage
 __pycache__
