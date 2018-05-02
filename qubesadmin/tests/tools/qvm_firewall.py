@@ -88,6 +88,14 @@ class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
                 None, action='accept', dsthost='127.0.0.1/32',
                 expire=now+100))
 
+    def test_006_dsthost_aliases(self):
+        ns = argparse.Namespace()
+        for name in ['dsthost', 'dst4', 'dst6']:
+            self.action(None, ns, [name + '=127.0.0.1', 'accept'])
+            self.assertEqual(ns.rule,
+                qubesadmin.firewall.Rule(
+                    None, action='accept', dsthost='127.0.0.1/32'))
+
 
 class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
     def setUp(self):

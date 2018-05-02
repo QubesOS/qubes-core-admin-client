@@ -66,6 +66,12 @@ further rules are not evaluated. If none of the rules match, default action
 Supported matches:
  - ``dsthost`` - destination host or network. Can be either IP address in CIDR
    notation, or a host name. Both IPv4 and IPv6 are supported by the rule syntax.
+   In order to allow reuse of ``--raw`` output, ``dst4`` and ``dst6`` are accepted
+   as synonyms.
+
+ - ``dst4`` - see ``dsthost``
+
+ - ``dst6`` - see ``dsthost``
 
  - ``proto`` - specific IP protocol. Supported values: ``tcp``, ``udp``,
    ``icmp``.

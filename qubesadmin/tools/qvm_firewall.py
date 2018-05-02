@@ -56,6 +56,8 @@ class RuleAction(argparse.Action):
             else:
                 raise argparse.ArgumentError(None,
                     'invalid rule description: {}'.format(opt))
+            if key in ['dst4', 'dst6']:
+                key = 'dsthost'
             if key not in allowed_opts:
                 raise argparse.ArgumentError(None,
                     'Invalid rule element: {}'.format(opt))
@@ -87,6 +89,8 @@ interchangeably.
 
 Available rules:
     action:        accept or drop
+    dst4           synonym for dsthost
+    dst6           synonym for dsthost
     dsthost        IP, network or hostname
                      (e.g. 10.5.3.2, 192.168.0.0/16,
                      www.example.com, fd00::/8)
