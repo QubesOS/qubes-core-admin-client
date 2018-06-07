@@ -275,8 +275,6 @@ class PropertyHolder(object):
                 value = value.name
             if value is None:
                 value = ''
-            if str(value).lower() == "none":
-                value = ''
             try:
                 self.qubesd_call(
                     self._method_dest,
