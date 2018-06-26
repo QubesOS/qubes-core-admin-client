@@ -85,6 +85,13 @@ class VMCollection(object):
     def __getitem__(self, item):
         if not self.app.blind_mode and item not in self:
             raise KeyError(item)
+        return self.get_blind(item)
+
+    def get_blind(self, item):
+        '''
+        Get a vm without downloading the list
+        and checking if exists
+        '''
         if item not in self._vm_objects:
             cls = qubesadmin.vm.QubesVM
             # provide class name to constructor, if already cached (which can be
