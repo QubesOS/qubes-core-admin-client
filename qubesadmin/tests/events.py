@@ -54,7 +54,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         handler.reset_mock()
         self.dispatcher.handle('test-vm', 'some-event', arg1='value1')
         handler.assert_called_once_with(
-            self.app.domains['test-vm'], 'some-event', arg1='value1')
+            self.app.domains.get_blind('test-vm'), 'some-event', arg1='value1')
         handler.reset_mock()
         self.dispatcher.handle('', 'other-event', arg1='value1')
         self.assertFalse(handler.called)
@@ -70,7 +70,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         handler.reset_mock()
         self.dispatcher.handle('test-vm', 'some-event', arg1='value1')
         handler.assert_called_once_with(
-            self.app.domains['test-vm'], 'some-event', arg1='value1')
+            self.app.domains.get_blind('test-vm'), 'some-event', arg1='value1')
         handler.reset_mock()
         self.dispatcher.handle('', 'other-event', arg1='value1')
         handler.assert_called_once_with(None, 'other-event', arg1='value1')
@@ -116,9 +116,10 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         self.assertEqual(handler.mock_calls, [
             unittest.mock.call(None, 'some-event', arg1='value1'),
             unittest.mock.call(
-                self.app.domains['some-vm'], 'some-event', arg1='value1'),
+                self.app.domains.get_blind('some-vm'), 'some-event',
+                arg1='value1'),
             unittest.mock.call(
-                self.app.domains['some-vm'], 'some-event',
+                self.app.domains.get_blind('some-vm'), 'some-event',
                 arg_without_value='', arg2='value'),
         ])
         cleanup_func.assert_called_once_with()
