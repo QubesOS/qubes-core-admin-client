@@ -192,7 +192,7 @@ class EventsDispatcher(object):
             if event in ['property-set:name']:
                 self.app.domains.clear_cache()
             try:
-                subject = self.app.domains[subject]
+                subject = self.app.domains.get_blind(subject)
             except KeyError:
                 return
         else:
