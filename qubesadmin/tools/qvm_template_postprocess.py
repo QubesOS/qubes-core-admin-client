@@ -185,7 +185,10 @@ def call_postinstall_service(vm):
                 yield from asyncio.sleep(1)
                 timeout -= 1
             if not vm.is_halted():
-                vm.kill()
+                try:
+                    vm.kill()
+                except qubesadmin.exc.QubesVMNotStartedError:
+                    pass
     finally:
         vm.netvm = qubesadmin.DEFAULT
 
