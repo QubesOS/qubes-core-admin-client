@@ -135,3 +135,29 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_prefs.main(['dom0', 'prop1'], app=self.app)
         self.assertEqual('', stdout.getvalue())
         self.assertAllCalled()
+
+    def test_008_set_vm_prop_none(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00dom0 class=AdminVM state=Running\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Set', 'netvm', b'')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Set', 'default_dispvm', b'')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Set', 'user', b'none')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Set', 'prop1', b'None')] = \
+            b'0\x00'
+        self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
+            'dom0', 'netvm', 'None'], app=self.app))
+        self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
+            'dom0', 'default_dispvm', 'none'], app=self.app))
+        self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
+            'dom0', 'user', 'none'], app=self.app))
+        self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
+            'dom0', 'prop1', 'None'], app=self.app))
+        self.assertAllCalled()
