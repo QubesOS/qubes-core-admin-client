@@ -1,3 +1,30 @@
+qubes-core-admin-client (4.0.18-1) unstable; urgency=medium
+
+  [ Peter Gerber ]
+  * tools/qvm-firewall: Describe available rules in --help output
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-firewall: add 'expire' rule support
+  * tools/qvm-firewall: make 'list' a default action
+
+  [ Peter Gerber ]
+  * tools/qvm-firewall: Show EXPIRE column in list output
+  * tools/qvm-firewall: add dst4 and dst6 as synonyms for dsthost
+  * .gitignore: add doc/_build/
+  * tools/qvm-firewall: improve manpage and --help output
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix reporting events even if its source is not available anymore
+  * tools: don't fail qvm-template-postprocess on shutdown race
+    condition
+
+  [ jimtahu ]
+  * Change "None" to Property None
+  * Change "None" in qvm_prefs
+  * Add test of qvm_prefs for specal case "None"
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 27 Jun 2018 03:31:03 +0200
+
 qubes-core-admin-client (4.0.17-1) unstable; urgency=medium
 
   [ Frédéric Pierret ]
