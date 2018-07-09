@@ -214,9 +214,13 @@ class GUILauncher(object):
         This function is a coroutine.
         '''
         want_stubdom = force
-        # if no 'gui' feature set at all, assume no gui agent installed
         if not want_stubdom and \
-                vm.features.check_with_template('gui', None) is None:
+                vm.features.check_with_template('gui-emulated', False):
+            want_stubdom = True
+        # if no 'gui' or 'gui-emulated' feature set at all, use emulated GUI
+        if not want_stubdom and \
+                vm.features.check_with_template('gui', None) is None and \
+                vm.features.check_with_template('gui-emulated', None) is None:
             want_stubdom = True
         if not want_stubdom and vm.debug:
             want_stubdom = True
@@ -240,12 +244,12 @@ class GUILauncher(object):
         :param force_stubdom: Force GUI daemon for stubdomain, even if the
         one for target AppVM is running.
         '''
-        if not vm.features.check_with_template('gui', True):
-            return
-
         if vm.virt_mode == 'hvm':
             yield from self.start_gui_for_stubdomain(vm,
                 force=force_stubdom)
+
+        if not vm.features.check_with_template('gui', True):
+            return
 
         if not os.path.exists(self.guid_pidfile(vm.xid)):
             yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
