@@ -166,6 +166,9 @@ class GUILauncher(object):
         else:
             guid_cmd += ['-q']
 
+        if vm.features.check_with_template('rpc-clipboard', False):
+            guid_cmd.extend(['-Q'])
+
         guid_cmd += self.kde_guid_args(vm)
         return guid_cmd
 
@@ -189,9 +192,6 @@ class GUILauncher(object):
 
         if vm.virt_mode == 'hvm':
             guid_cmd.extend(['-n'])
-
-            if vm.features.check_with_template('rpc-clipboard', False):
-                guid_cmd.extend(['-Q'])
 
             stubdom_guid_pidfile = self.guid_pidfile(vm.stubdom_xid)
             if not vm.debug and os.path.exists(stubdom_guid_pidfile):
