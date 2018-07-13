@@ -30,6 +30,7 @@ import xcffib.xproto  # pylint: disable=unused-import
 
 import daemon.pidfile
 import qubesadmin
+import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
 have_events = False
@@ -306,17 +307,24 @@ class GUILauncher(object):
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         '''Handler of 'domain-spawn' event, starts GUI daemon for stubdomain'''
-        if not vm.features.check_with_template('gui', True):
-            return
-        if vm.virt_mode == 'hvm' and kwargs.get('start_guid', 'True') == 'True':
-            asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
+        try:
+            if not vm.features.check_with_template('gui', True):
+                return
+            if vm.virt_mode == 'hvm' and \
+                    kwargs.get('start_guid', 'True') == 'True':
+                asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
+        except qubesadmin.exc.QubesException as e:
+            vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
     def on_domain_start(self, vm, _event, **kwargs):
         '''Handler of 'domain-start' event, starts GUI daemon for actual VM'''
-        if not vm.features.check_with_template('gui', True):
-            return
-        if kwargs.get('start_guid', 'True') == 'True':
-            asyncio.ensure_future(self.start_gui_for_vm(vm))
+        try:
+            if not vm.features.check_with_template('gui', True):
+                return
+            if kwargs.get('start_guid', 'True') == 'True':
+                asyncio.ensure_future(self.start_gui_for_vm(vm))
+        except qubesadmin.exc.QubesException as e:
+            vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
     def on_connection_established(self, _subject, _event, **_kwargs):
         '''Handler of 'connection-established' event, used to launch GUI
