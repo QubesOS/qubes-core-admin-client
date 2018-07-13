@@ -471,9 +471,9 @@ class QubesLocal(QubesBase):
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             client_socket.connect(qubesadmin.config.QUBESD_SOCKET)
-        except IOError:
-            # TODO:
-            raise
+        except (IOError, OSError) as e:
+            raise qubesadmin.exc.QubesDaemonCommunicationError(
+                'Failed to connect to qubesd service: %s', str(e))
 
         # src, method, dest, arg
         for call_arg in ('dom0', method, dest, arg):
