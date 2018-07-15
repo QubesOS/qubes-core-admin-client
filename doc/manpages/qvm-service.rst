@@ -64,11 +64,6 @@ qubes-firewall
 
     Dynamic firewall manager, based on settings in dom0 (qvm-firewall, firewall tab in qubes-manager).
     This service is not supported in netvms.
-    
-qubes-network
-    Default: enabled only in NetVM and ProxyVM
-
-    Expose network for other VMs. This includes enabling network forwarding, MASQUERADE, DNS redirection and basic firewall.
 
 qubes-network
     Default: enabled only in NetVM and ProxyVM
