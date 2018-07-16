@@ -209,6 +209,7 @@ def launch_proc_with_pty(args, stdin=None, stdout=None, stderr=None, echo=True):
             termios_p[3] &= ~termios.ECHO
             termios.tcsetattr(ctty_fd, termios.TCSANOW, termios_p)
     (pty_master, pty_slave) = os.openpty()
+    # pylint: disable=subprocess-popen-preexec-fn
     p = subprocess.Popen(args, stdin=stdin, stdout=stdout,
         stderr=stderr,
         preexec_fn=lambda: set_ctty(pty_slave, pty_master))
@@ -348,8 +349,7 @@ class ExtractWorker3(Process):
             except IOError as e:
                 if e.errno == errno.EAGAIN:
                     return
-                else:
-                    raise
+                raise
         else:
             new_lines = self.tar2_process.stderr.readlines()
 
@@ -1004,11 +1004,10 @@ class BackupRestore(object):
                 self.log.debug(
                     "File verification OK -> Sending file %s", filename)
                 return True
-            else:
-                raise QubesException(
-                    "ERROR: invalid hmac for file {0}: {1}. "
-                    "Is the passphrase correct?".
-                    format(filename, load_hmac(hmac_stdout.decode('ascii'))))
+            raise QubesException(
+                "ERROR: invalid hmac for file {0}: {1}. "
+                "Is the passphrase correct?".
+                format(filename, load_hmac(hmac_stdout.decode('ascii'))))
 
     def _verify_and_decrypt(self, filename, output=None):
         '''Handle scrypt-wrapped file
@@ -1083,14 +1082,13 @@ class BackupRestore(object):
             if not filelist and 'Not found in archive' in extract_stderr:
                 if allow_none:
                     return None
-                else:
-                    raise QubesException(
-                        "unable to read the qubes backup file {0} ({1}): {2}".
-                        format(
-                            self.backup_location,
-                            retrieve_proc.wait(),
-                            extract_stderr
-                        ))
+                raise QubesException(
+                    "unable to read the qubes backup file {0} ({1}): {2}".
+                    format(
+                        self.backup_location,
+                        retrieve_proc.wait(),
+                        extract_stderr
+                    ))
         actual_files = filelist.decode('ascii').splitlines()
         if sorted(actual_files) != sorted(files):
             raise QubesException(
@@ -1101,12 +1099,11 @@ class BackupRestore(object):
             if not os.path.exists(os.path.join(self.tmpdir, fname)):
                 if allow_none:
                     return None
-                else:
-                    raise QubesException(
-                        'Unable to retrieve file {} from backup {}: {}'.format(
-                            fname, self.backup_location, extract_stderr
-                        )
+                raise QubesException(
+                    'Unable to retrieve file {} from backup {}: {}'.format(
+                        fname, self.backup_location, extract_stderr
                     )
+                )
         return files
 
     def _retrieve_backup_header(self):
@@ -1694,10 +1691,10 @@ class BackupRestore(object):
             if isinstance(instance, BackupVM):
                 if instance.klass == 'TemplateVM':
                     return 0
-                elif instance.properties.get('template_for_dispvms', False):
+                if instance.properties.get('template_for_dispvms', False):
                     return 1
                 return 2
-            elif hasattr(instance, 'vm'):
+            if hasattr(instance, 'vm'):
                 return key_function(instance.vm)
             return 9
         return sorted(vms, key=key_function)

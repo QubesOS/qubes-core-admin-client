@@ -76,9 +76,9 @@ def size_to_human(size):
     """Humane readable size, with 1/10 precision"""
     if size < 1024:
         return str(size)
-    elif size < 1024 * 1024:
+    if size < 1024 * 1024:
         return str(round(size / 1024.0, 1)) + ' KiB'
-    elif size < 1024 * 1024 * 1024:
+    if size < 1024 * 1024 * 1024:
         return str(round(size / (1024.0 * 1024), 1)) + ' MiB'
     return str(round(size / (1024.0 * 1024 * 1024), 1)) + ' GiB'
 

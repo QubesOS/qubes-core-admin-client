@@ -74,6 +74,7 @@ def process_actions(parser, args, target):
     :param args: arguments to handle
     :param target: object on which actions should be performed
     '''
+    # pylint: disable=no-else-return
     if args.help_properties:
         properties = target.property_list()
         width = max(len(prop) for prop in properties)

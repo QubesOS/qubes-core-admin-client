@@ -58,20 +58,19 @@ def main(args=None, app=None):
         if args.verbose:
             print_msg(running, "is running", "are running")
         return 0 if running else 1
-    elif args.paused:
+    if args.paused:
         paused = [vm for vm in domains if vm.is_paused()]
         if args.verbose:
             print_msg(paused, "is paused", "are paused")
         return 0 if paused else 1
-    elif args.template:
+    if args.template:
         template = [vm for vm in domains if vm.klass == 'TemplateVM']
         if args.verbose:
             print_msg(template, "is a template", "are templates")
         return 0 if template else 1
-    else:
-        if args.verbose:
-            print_msg(domains, "exists", "exist")
-        return 0 if domains else 1
+    if args.verbose:
+        print_msg(domains, "exists", "exist")
+    return 0 if domains else 1
 
 if __name__ == '__main__':
     sys.exit(main())

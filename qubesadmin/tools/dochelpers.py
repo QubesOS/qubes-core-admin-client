@@ -283,7 +283,7 @@ def check_man_args(app, doctree, docname):
 
 
 
-def break_to_pdb(app, *dummy):
+def break_to_pdb(app, *_dummy):
     '''DEBUG'''
     if not app.config.break_to_pdb:
         return

@@ -248,7 +248,7 @@ class FlagsColumn(Column):
         state = vm.get_power_state().lower()
         if state == 'unknown':
             return '?'
-        elif state in ('running', 'transient', 'paused', 'suspended',
+        if state in ('running', 'transient', 'paused', 'suspended',
                 'halting', 'dying', 'crashed'):
             return state[0]
 

@@ -98,7 +98,7 @@ class Volume(object):
         if isinstance(other, Volume):
             if self._vm and other._vm:
                 return (self._vm, self._vm_name) < (other._vm, other._vm_name)
-            elif self._vid and other._vid:
+            if self._vid and other._vid:
                 return (self._pool, self._vid) < (other._pool, other._vid)
         return NotImplemented
 
@@ -261,7 +261,7 @@ class Pool(object):
     def __eq__(self, other):
         if isinstance(other, Pool):
             return self.name == other.name
-        elif isinstance(other, str):
+        if isinstance(other, str):
             return self.name == other
         return NotImplemented
 

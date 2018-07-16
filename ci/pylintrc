@@ -5,6 +5,11 @@ extension-pkg-whitelist=lxml.etree
 
 [MESSAGES CONTROL]
 # abstract-class-little-used: see http://www.logilab.org/ticket/111138
+# disabled to keep python2 compat:
+#  - useless-object-inheritance
+#  - consider-using-set-comprehension
+#  - consider-using-dict-comprehension
+#  - not-an-iterable
 disable=
   bad-continuation,
   raising-format-tuple,
@@ -12,7 +17,11 @@ disable=
   duplicate-code,
   fixme,
   locally-disabled,
-  locally-enabled
+  locally-enabled,
+  useless-object-inheritance,
+  consider-using-set-comprehension,
+  consider-using-dict-comprehension,
+  not-an-iterable
 
 [REPORTS]
 

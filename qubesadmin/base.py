@@ -83,7 +83,7 @@ class PropertyHolder(object):
 
         if response_data[0:2] == b'\x30\x00':
             return response_data[2:]
-        elif response_data[0:2] == b'\x32\x00':
+        if response_data[0:2] == b'\x32\x00':
             (_, exc_type, _traceback, format_string, args) = \
                 response_data.split(b'\x00', 4)
             # drop last field because of terminating '\x00'
@@ -223,25 +223,24 @@ class PropertyHolder(object):
         value = value.decode()
         if prop_type == 'str':
             return str(value)
-        elif prop_type == 'bool':
+        if prop_type == 'bool':
             if value == '':
                 raise AttributeError
             return value == "True"
-        elif prop_type == 'int':
+        if prop_type == 'int':
             if value == '':
                 raise AttributeError
             return int(value)
-        elif prop_type == 'vm':
+        if prop_type == 'vm':
             if value == '':
                 return None
             return self.app.domains[value]
-        elif prop_type == 'label':
+        if prop_type == 'label':
             if value == '':
                 return None
             return self.app.labels.get_blind(value)
-        else:
-            raise qubesadmin.exc.QubesDaemonCommunicationError(
-                'Received invalid value type: {}'.format(prop_type))
+        raise qubesadmin.exc.QubesDaemonCommunicationError(
+            'Received invalid value type: {}'.format(prop_type))
 
     @classmethod
     def _local_properties(cls):
