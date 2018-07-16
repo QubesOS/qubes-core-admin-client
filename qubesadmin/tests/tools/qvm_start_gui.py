@@ -87,6 +87,10 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.label.Index', 'red', None)] = \
             b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'rpc-clipboard', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
 
         with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
                 kde_mock:
@@ -117,6 +121,10 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.label.Index', 'red', None)] = \
             b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'rpc-clipboard', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
 
         with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
                 kde_mock:
@@ -128,6 +136,40 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
                 '-c', '0xff0000',
                 '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
                 '-l', '1', '-v', '-v'])
+
+        self.assertAllCalled()
+
+    def test_012_common_args_rpc_clipboard(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
+                b'0\x00default=False type=label red'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
+                b'0\x00default=False type=bool False'
+        self.app.expected_calls[
+            ('dom0', 'admin.label.Get', 'red', None)] = \
+            b'0\x000xff0000'
+        self.app.expected_calls[
+            ('dom0', 'admin.label.Index', 'red', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+            'rpc-clipboard', None)] = \
+            b'0\x001'
+
+        with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
+                kde_mock:
+            kde_mock.return_value = []
+
+            args = self.launcher.common_guid_args(self.app.domains['test-vm'])
+            self.assertEqual(args, [
+                '/usr/bin/qubes-guid', '-N', 'test-vm',
+                '-c', '0xff0000',
+                '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
+                '-l', '1', '-q', '-Q'])
 
         self.assertAllCalled()
 
@@ -187,10 +229,6 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'rpc-clipboard',
-            None)] = \
-                b'0\x00True'
-        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
             'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -199,7 +237,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             loop.run_until_complete(self.launcher.start_gui_for_vm(
                 self.app.domains['test-vm']))
             # common arguments dropped for simplicity
-            proc_mock.assert_called_once_with('-d', '3000', '-n', '-Q')
+            proc_mock.assert_called_once_with('-d', '3000', '-n')
 
         self.assertAllCalled()
 
@@ -227,10 +265,6 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
                 b'0\x00default=False type=bool False'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'rpc-clipboard',
-            None)] = \
-                b'0\x00True'
-        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
             'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -252,7 +286,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
                 self.app.domains['test-vm']))
             # common arguments dropped for simplicity
             mock_proc.assert_called_once_with(
-                '-d', '3000', '-n', '-Q', '-K', '1234')
+                '-d', '3000', '-n', '-K', '1234')
         finally:
             unittest.mock.patch.stopall()
 
@@ -275,6 +309,43 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui-emulated',
+            None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        proc_mock = unittest.mock.Mock()
+        with unittest.mock.patch('asyncio.create_subprocess_exec',
+                lambda *args: self.mock_coroutine(proc_mock, *args)):
+            with unittest.mock.patch.object(self.launcher,
+                    'common_guid_args', lambda vm: []):
+                loop.run_until_complete(self.launcher.start_gui_for_stubdomain(
+                    self.app.domains['test-vm']))
+                # common arguments dropped for simplicity
+                proc_mock.assert_called_once_with('-d', '3001', '-t', '3000')
+
+        self.assertAllCalled()
+
+    def test_031_start_gui_for_stubdomain_forced(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
+                b'0\x00default=False type=int 3000'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
+                b'0\x00default=False type=int 3001'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
+        #     b'0\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui-emulated',
+            None)] = \
+            b'0\x001'
         proc_mock = unittest.mock.Mock()
         with unittest.mock.patch('asyncio.create_subprocess_exec',
                 lambda *args: self.mock_coroutine(proc_mock, *args)):

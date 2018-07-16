@@ -59,13 +59,28 @@ List of known features
 gui
 ^^^
 
-Qube provide any kind of GUI. Setting this feature to :py:obj:`False` disable
-GUI for given qubes - both gui-agent based and emulated VGA based one. Setting
-this feature to :py:obj:`True` enable gui-agent based GUI (i.e. with support of
-tools installed inside of qube). Not setting this feature at all, enable showing
-VGA emulated output.
+Qube has gui-agent installed. Setting this feature to :py:obj:`True` enables GUI
+based on a gui-agent installed inside the VM.
+See also `gui-emulated` feature.
 
-Default: show emulated VGA output only
+If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
+applicable for given VM virtualization mode).
+
+gui-emulated
+^^^^^^^^^^^^
+
+Qube provides GUI through emulated VGA. Setting this feature to
+:py:obj:`True` enables emulated VGA output. Note that when gui-agent connects to
+actual VM, emulated VGA output is closed (unless `debug` property is set to
+:py:obj:`True`). It's possible to open emulated VGA output for a running qube,
+regardless of this feature, using `qvm-start-gui --force-stubdomain QUBE_NAME`
+command.
+
+This feature is applicable only when qube's `virt_mode` is set to `hvm`.
+See also `gui` feature.
+
+If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
+applicable for given VM virtualization mode).
 
 qrexec
 ^^^^^^
