@@ -115,3 +115,29 @@ def updates_vms_status(qvm_collection):
             # "mixed"
             return None
     return status
+
+# Helper function that returns a list of all the places a given VM is used in.
+# Output is a list of tuples (property_holder, property_name), with None as
+# property_holder for global properties
+
+
+def vm_usage(app, reference_vm):
+
+    result = []
+
+    global_properties = ['default_dispvm', 'default_netvm',
+                         'default_template', 'clockvm', 'updatevm']
+
+    for prop in global_properties:
+        if reference_vm == getattr(app, prop, None):
+            result.append([None, prop])
+
+    vm_properties = ['template', 'netvm', 'default_dispvm']
+
+    for vm in app.domains:
+        for prop in vm_properties:
+            if reference_vm == getattr(vm, prop, None) and \
+                    not vm.property_is_default(prop):
+                result.append([vm, prop])
+
+    return result
