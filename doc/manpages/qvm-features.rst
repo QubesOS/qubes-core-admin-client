@@ -195,6 +195,16 @@ memory. Refer to Xen documentation for details.
 
 Default: yes if qube has any PCI device, otherwise no
 
+linux-stubdom
+^^^^^^^^^^^^^
+
+Use Linux-based stubdomain for running device model (qemu). This makes use of
+recent qemu upstream version. If disabled, use MiniOS-based stubdomain with old
+qemu fork (aka qemu-traditional). This applies only to `hvm` `virt_mode`, for
+other modes it is ignored.
+
+Default: True
+
 Authors
 -------
 
