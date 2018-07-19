@@ -116,12 +116,12 @@ def updates_vms_status(qvm_collection):
             return None
     return status
 
-# Helper function that returns a list of all the places a given VM is used in.
-# Output is a list of tuples (property_holder, property_name), with None as
-# property_holder for global properties
 
-
-def vm_usage(app, reference_vm):
+def vm_dependencies(app, reference_vm):
+    '''Helper function that returns a list of all the places a given VM is used
+    in. Output is a list of tuples (property_holder, property_name), with None
+    as property_holder for global properties
+    '''
 
     result = []
 

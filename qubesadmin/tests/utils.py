@@ -60,25 +60,25 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                         b'2\0QubesNoSuchPropertyError\0\0invalid property\0'
 
     def test_00_only_global(self):
-        result = qubesadmin.utils.vm_usage(self.app, self.app.domains['vm2'])
+        result = qubesadmin.utils.vm_dependencies(self.app, self.app.domains['vm2'])
 
         self.assertListEqual(result,
                              [(None, prop) for prop in self.global_properties],
                              "Incorrect global properties listed.")
 
     def test_01_only_vm(self):
-        result = qubesadmin.utils.vm_usage(
+        result = qubesadmin.utils.vm_dependencies(
             self.app, self.app.domains['template1'])
 
-        self.assertCountEqual(
-            result,
-            [(vm, prop) for vm in self.vms for prop in self.vm_properties
-             if (not vm.startswith('template')
-                 or not prop.startswith('template'))],
+        self.assertSetEqual(
+            set(result),
+            set([(vm, prop) for vm in self.vms for prop in self.vm_properties
+                 if (not vm.startswith('template')
+                 or not prop.startswith('template'))]),
             "Incorrect VM properties listed.")
 
     def test_02_empty(self):
-        result = qubesadmin.utils.vm_usage(self.app, self.app.domains['vm1'])
+        result = qubesadmin.utils.vm_dependencies(self.app, self.app.domains['vm1'])
 
         self.assertListEqual(result, [], "Incorrect use found.")
 
@@ -86,7 +86,7 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.property.Get', 'default_dispvm', None)] = b''
 
-        result = qubesadmin.utils.vm_usage(self.app, self.app.domains['vm1'])
+        result = qubesadmin.utils.vm_dependencies(self.app, self.app.domains['vm1'])
 
         self.assertListEqual(result, [], "Incorrect use found.")
 
@@ -99,7 +99,7 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
             ('vm1', 'admin.vm.property.Get', 'netvm', None)] = \
             b'0\x00default=False type=vm sys-net'
 
-        result = qubesadmin.utils.vm_usage(self.app,
-                                           self.app.domains['sys-net'])
+        result = qubesadmin.utils.vm_dependencies(self.app,
+                                                  self.app.domains['sys-net'])
 
         self.assertListEqual(result, [(self.app.domains['vm1'], 'netvm')])
