@@ -130,7 +130,7 @@ def vm_usage(app, reference_vm):
 
     for prop in global_properties:
         if reference_vm == getattr(app, prop, None):
-            result.append([None, prop])
+            result.append((None, prop))
 
     vm_properties = ['template', 'netvm', 'default_dispvm']
 
@@ -138,6 +138,6 @@ def vm_usage(app, reference_vm):
         for prop in vm_properties:
             if reference_vm == getattr(vm, prop, None) and \
                     not vm.property_is_default(prop):
-                result.append([vm, prop])
+                result.append((vm, prop))
 
     return result
