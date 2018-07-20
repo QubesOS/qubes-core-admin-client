@@ -85,6 +85,10 @@ class QubesNoTemplateError(QubesVMError):
     '''Cannot start domain, because there is no template'''
 
 
+class QubesVMInUseError(QubesVMError):
+    '''VM is in use, cannot remove.'''
+
+
 class QubesValueError(QubesException, ValueError):
     '''Cannot set some value, because it is invalid, out of bounds, etc.'''
     pass
