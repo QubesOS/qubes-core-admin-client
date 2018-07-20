@@ -1,3 +1,29 @@
+qubes-core-admin-client (4.0.19-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * app: fix error reporting when connection to qubesd fails
+  * tools/qvm-start-gui: do not crash on qubesd restart
+  * Fixes for pylint 2.0
+
+  [ Marta Marczykowska-Górecka ]
+  * Deleted a duplicate man qvm-services entry
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-start-gui: fix handlign rpc-clipboard feature
+  * Add 'gui-emulated' feature
+  * doc: add info what properties are inherited from template
+  * backup: avoid deadlock on logging during restore
+  * doc: add linux-stubdom feature to man qvm-features
+
+  [ Marta Marczykowska-Górecka ]
+  * Helper function that lists where a given VM is used
+  * Added tests and minor correction to vm_usage helper function
+  * Name change of vm dependencies helper function
+  * Better information on error in qvm-remove
+  * Added test for qvm-remove dependency reporting
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 20 Jul 2018 18:29:28 +0200
+
 qubes-core-admin-client (4.0.18-1) unstable; urgency=medium
 
   [ Peter Gerber ]
