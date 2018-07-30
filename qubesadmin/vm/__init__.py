@@ -283,14 +283,16 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         return stdouterr
 
-    @staticmethod
-    def prepare_input_for_vmshell(command, input=None):
+    def prepare_input_for_vmshell(self, command, input=None):
         '''Prepare shell input for the given command and optional (real) input
         '''  # pylint: disable=redefined-builtin
         if input is None:
             input = b''
+        close_shell_suffix = b'; exit\n'
+        if self.features.check_with_template('os', 'Linux') == 'Windows':
+            close_shell_suffix = b'& exit\n'
         return b''.join((command.rstrip('\n').encode('utf-8'),
-            b'; exit\n', input))
+            close_shell_suffix, input))
 
     def run(self, command, input=None, **kwargs):
         '''Run a shell command inside the domain using qubes.VMShell qrexec.

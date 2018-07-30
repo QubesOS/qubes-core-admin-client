@@ -43,6 +43,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
@@ -76,6 +79,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm3', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm3 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         ret = qubesadmin.tools.qvm_run.main(
             ['--no-gui', '--all', 'command'],
             app=self.app)
@@ -103,6 +112,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
@@ -130,6 +142,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
@@ -194,6 +209,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
@@ -225,6 +243,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
@@ -251,6 +272,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'default_user', None)] = \
             b'0\x00default=yes type=str user'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         # self.app.expected_calls[
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
@@ -398,6 +422,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm3', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm3 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         ret = qubesadmin.tools.qvm_run.main(
             ['--no-gui', '--all', '--exclude', 'test-vm2', 'command'],
             app=self.app)
@@ -439,6 +466,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
             b'0\0default=yes type=int 30'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         ret = qubesadmin.tools.qvm_run.main(
             ['--dispvm', '--', 'test.command'], app=self.app)
         self.assertEqual(ret, 0)
@@ -465,6 +495,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
             b'0\0default=yes type=int 30'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         ret = qubesadmin.tools.qvm_run.main(
             ['--dispvm', '--no-gui', 'test.command'], app=self.app)
         self.assertEqual(ret, 0)
@@ -477,5 +510,30 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 'connect_timeout': 30,
             }),
             ('disp123', 'qubes.VMShell', b'test.command; exit\n'),
+        ])
+        self.assertAllCalled()
+
+    def test_016_run_single_windows(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'0\x00Windows'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
+        #     b'0\x00test-vm class=AppVM state=Running\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', 'test-vm', 'command'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {
+                'localcmd': None,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMShell', b'command& exit\n')
         ])
         self.assertAllCalled()
