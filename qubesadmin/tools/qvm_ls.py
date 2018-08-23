@@ -528,6 +528,9 @@ def get_parser():
         help='user specified format (see available columns below)')
 
 
+    parser.add_argument('--tags', nargs='+', metavar='TAG',
+        help='show only VMs having specific tag(s)')
+
     parser.add_argument('--raw-data', action='store_true',
         help='Display specify data of specified VMs. Intended for '
              'bash-parsing.')
@@ -605,6 +608,12 @@ def main(args=None, app=None):
         domains = args.domains
     else:
         domains = args.app.domains
+
+    if args.tags:
+        # filter only VMs having at least one of the specified tags
+        domains = [dom for dom in domains
+                   if set(dom.tags).intersection(set(args.tags))]
+
     table = Table(domains, columns, spinner, args.raw_data)
     table.write_table(sys.stdout)
 
