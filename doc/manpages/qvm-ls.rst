@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-ls` [-h] [--verbose] [--quiet] [--help-columns] [--help-formats] [--format *FORMAT* | --fields *FIELD*,...]
+:command:`qvm-ls` [-h] [--verbose] [--quiet] [--help-columns] [--help-formats] [--format *FORMAT* | --fields *FIELD*,...] [--tags *TAG* [*TAG* ...]]
 
 Options
 -------
@@ -42,6 +42,10 @@ Options
    Sets format to specified set of columns. This gives more control over
    :option:`--format`. All columns along with short descriptions can be listed
    with :option:`--help-columns`.
+
+.. option:: --tags TAG ...
+
+   Shows only VMs having specific tag(s).
 
 .. option:: --raw-data
 

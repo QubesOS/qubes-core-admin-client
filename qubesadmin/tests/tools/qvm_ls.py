@@ -121,6 +121,60 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'test-vm\n')
 
 
+class TC_70_Tags(qubesadmin.tests.QubesTestCase):
+    def setUp(self):
+        self.app = TestApp()
+        self.app.domains = TestVMCollection(
+            [
+                (
+                    'dom0',
+                    TestVM(
+                        'dom0',
+                        tags=['my'],
+                        label='black'
+                    )
+                ),
+                (
+                    'test-vm',
+                    TestVM(
+                        'test-vm',
+                        tags=['not-my', 'other'],
+                        label='red',
+                        netvm=TestVM('sys-firewall'),
+                        template=TestVM('template')
+                    )
+                ),
+            ]
+        )
+
+    def test_100_tag(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--tags', 'my'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'dom0  Running  TestVM  black  -         -\n')
+
+    def test_100_tag_nomatch(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--tags', 'nx'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+
+    def test_100_tags(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--tags', 'my', 'other'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'dom0     Running  TestVM  black  -         -\n'
+            'test-vm  Running  TestVM  red    template  sys-firewall\n')
+
+    def test_100_tags_nomatch(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--tags', 'nx1', 'nx2'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+
+
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
     def test_100_list_with_status(self):
         self.app.expected_calls[
