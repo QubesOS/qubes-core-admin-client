@@ -6,6 +6,7 @@ python:
   - '3.4'
   - '3.5'
 install:
+  - pip install --quiet docutils
   - pip install --quiet -r ci/requirements.txt
   - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
 script:
