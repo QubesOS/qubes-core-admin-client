@@ -159,6 +159,9 @@ def main(args=None, app=None):
 
     if root_source_path:
         try:
+            root_size = os.path.getsize(root_source_path)
+            if root_size > vm.volumes['root'].size:
+                vm.volumes['root'].resize(root_size)
             with open(root_source_path, 'rb') as root_file:
                 vm.volumes['root'].import_data(root_file)
             if args.root_move_from:
