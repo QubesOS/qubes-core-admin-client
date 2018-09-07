@@ -21,6 +21,7 @@
 '''Event handling implementation, require Python >=3.5.2 for asyncio.'''
 
 import asyncio
+import fnmatch
 import subprocess
 
 import qubesadmin.config
@@ -200,7 +201,8 @@ class EventsDispatcher(object):
             if event in ['domain-add', 'domain-delete']:
                 self.app.domains.clear_cache()
             subject = None
-        for handler in self.handlers.get(event, []):
-            handler(subject, event, **kwargs)
-        for handler in self.handlers.get('*', []):
+        handlers = [h_func for h_name, h_func_set in self.handlers.items()
+            for h_func in h_func_set
+            if fnmatch.fnmatch(event, h_name)]
+        for handler in handlers:
             handler(subject, event, **kwargs)

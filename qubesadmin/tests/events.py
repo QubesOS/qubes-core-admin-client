@@ -79,6 +79,23 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         self.dispatcher.handle('', 'some-event', arg1='value1')
         self.assertFalse(handler.called)
 
+    def test_002_handler_glob_partial(self):
+        handler = unittest.mock.Mock()
+        self.dispatcher.add_handler('some-*', handler)
+        self.dispatcher.handle('', 'some-event', arg1='value1')
+        handler.assert_called_once_with(None, 'some-event', arg1='value1')
+        handler.reset_mock()
+        self.dispatcher.handle('test-vm', 'some-event', arg1='value1')
+        handler.assert_called_once_with(
+            self.app.domains.get_blind('test-vm'), 'some-event', arg1='value1')
+        handler.reset_mock()
+        self.dispatcher.handle('', 'other-event', arg1='value1')
+        self.assertFalse(handler.called)
+        handler.reset_mock()
+        self.dispatcher.remove_handler('some-*', handler)
+        self.dispatcher.handle('', 'some-event', arg1='value1')
+        self.assertFalse(handler.called)
+
     @asyncio.coroutine
     def mock_get_events_reader(self, stream, cleanup_func, expected_vm,
             vm=None):
