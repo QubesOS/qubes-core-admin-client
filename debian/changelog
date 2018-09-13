@@ -1,3 +1,19 @@
+qubes-core-admin-client (4.0.20-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Adjust shell input for Windows shell, for qvm-run tool
+  * travis: install python-docutils in separate step
+
+  [ Patrik Hagara ]
+  * qvm-ls: add filtering by tags
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-create: resize root volume if needed before imporing data
+  * events: add support for wildcard event handlers
+  * events: fix reconnecting to qubesd on its restart
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 13 Sep 2018 23:40:01 +0200
+
 qubes-core-admin-client (4.0.19-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
