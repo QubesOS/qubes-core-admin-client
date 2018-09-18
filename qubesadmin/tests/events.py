@@ -253,3 +253,13 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
             unittest.mock.call().kill.assert_called_once_with()
 
         loop.close()
+
+    def test_030_events_device(self):
+        handler = unittest.mock.Mock()
+        self.dispatcher.add_handler('device-attach:test', handler)
+        self.dispatcher.handle('test-vm', 'device-attach:test',
+            device='test-vm2:dev', options='{}')
+        vm = self.app.domains.get_blind('test-vm')
+        dev = self.app.domains.get_blind('test-vm2').devices['test']['dev']
+        handler.assert_called_once_with(vm, 'device-attach:test', device=dev,
+            options='{}')
