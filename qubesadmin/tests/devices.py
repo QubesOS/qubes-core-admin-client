@@ -298,7 +298,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Set.persistent', 'test-vm2+dev1',
                 b'True')] = b'0\0'
         dev = qubesadmin.devices.DeviceInfo(
-            self.app.domains['test-vm2'], 'dev1')
+            self.app.domains['test-vm2'], 'test', 'dev1')
         self.vm.devices['test'].update_persistent(dev, True)
         self.assertAllCalled()
 
@@ -307,6 +307,6 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Set.persistent', 'test-vm2+dev1',
                 b'False')] = b'0\0'
         dev = qubesadmin.devices.DeviceInfo(
-            self.app.domains['test-vm2'], 'dev1')
+            self.app.domains['test-vm2'], 'test', 'dev1')
         self.vm.devices['test'].update_persistent(dev, False)
         self.assertAllCalled()

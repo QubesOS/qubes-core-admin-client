@@ -76,10 +76,12 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
 class DeviceInfo(object):
     ''' Holds all information about a device '''
     # pylint: disable=too-few-public-methods
-    def __init__(self, backend_domain, ident, description=None,
+    def __init__(self, backend_domain, devclass, ident, description=None,
                  options=None, **kwargs):
         #: domain providing this device
         self.backend_domain = backend_domain
+        #: device class
+        self.devclass = devclass
         #: device identifier (unique for given domain and device type)
         self.ident = ident
         #: human readable description/name of the device
@@ -107,12 +109,12 @@ class UnknownDevice(DeviceInfo):
     # pylint: disable=too-few-public-methods
     '''Unknown device - for example exposed by domain not running currently'''
 
-    def __init__(self, backend_domain, ident, description=None,
+    def __init__(self, backend_domain, devclass, ident, description=None,
             **kwargs):
         if description is None:
             description = "Unknown device"
-        super(UnknownDevice, self).__init__(backend_domain, ident, description,
-            **kwargs)
+        super(UnknownDevice, self).__init__(backend_domain, devclass, ident,
+            description, **kwargs)
 
 
 class DeviceCollection(object):
@@ -229,7 +231,8 @@ class DeviceCollection(object):
             info, _, description = info.partition('description=')
             info_dict = dict(info_single.split('=', 1)
                 for info_single in info.split(' ') if info_single)
-            yield DeviceInfo(self._vm, ident, description=description,
+            yield DeviceInfo(self._vm, self._class, ident,
+                description=description,
                 options=None, **info_dict)
 
     def update_persistent(self, device, persistent):
@@ -271,7 +274,7 @@ class DeviceCollection(object):
                 return dev
         # if still nothing, return UnknownDevice instance for the reason
         # explained in docstring, but don't cache it
-        return UnknownDevice(self._vm, item)
+        return UnknownDevice(self._vm, self._class, item)
 
 
 
