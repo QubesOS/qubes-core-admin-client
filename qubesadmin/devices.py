@@ -77,7 +77,7 @@ class DeviceInfo(object):
     ''' Holds all information about a device '''
     # pylint: disable=too-few-public-methods
     def __init__(self, backend_domain, devclass, ident, description=None,
-                 options=None, **kwargs):
+                 **kwargs):
         #: domain providing this device
         self.backend_domain = backend_domain
         #: device class
@@ -86,7 +86,6 @@ class DeviceInfo(object):
         self.ident = ident
         #: human readable description/name of the device
         self.description = description
-        self.options = options or dict()
         self.data = kwargs
 
     def __hash__(self):
@@ -233,7 +232,7 @@ class DeviceCollection(object):
                 for info_single in info.split(' ') if info_single)
             yield DeviceInfo(self._vm, self._class, ident,
                 description=description,
-                options=None, **info_dict)
+                **info_dict)
 
     def update_persistent(self, device, persistent):
         '''Update `persistent` flag of already attached device.
