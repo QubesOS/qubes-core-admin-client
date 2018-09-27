@@ -1940,6 +1940,9 @@ class BackupRestore(object):
                 # restore options
                 if prop in ['template', 'netvm', 'default_dispvm']:
                     continue
+                # exclude as this only applied before restoring
+                if prop in ['installed_by_rpm']:
+                    continue
                 self._restore_property(new_vm, prop, value)
 
             for feature, value in vm.features.items():
