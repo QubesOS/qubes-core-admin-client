@@ -94,6 +94,7 @@ class DeviceInfo(object):
     def __eq__(self, other):
         try:
             return (
+                self.devclass == other.devclass and
                 self.backend_domain == other.backend_domain and
                 self.ident == other.ident
             )
