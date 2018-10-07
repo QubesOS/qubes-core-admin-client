@@ -202,6 +202,15 @@ class EventsDispatcher(object):
             if event in ['domain-add', 'domain-delete']:
                 self.app.domains.clear_cache()
             subject = None
+        # deserialize known attributes
+        if event.startswith('device-') and 'device' in kwargs:
+            try:
+                devclass = event.split(':', 1)[1]
+                backend_domain, ident = kwargs['device'].split(':', 1)
+                kwargs['device'] = self.app.domains.get_blind(backend_domain)\
+                    .devices[devclass][ident]
+            except (KeyError, ValueError):
+                pass
         handlers = [h_func for h_name, h_func_set in self.handlers.items()
             for h_func in h_func_set
             if fnmatch.fnmatch(event, h_name)]
