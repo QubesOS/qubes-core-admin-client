@@ -173,6 +173,8 @@ class EventsDispatcher(object):
                         value = (yield from reader.readuntil(b'\0'))[:-1].\
                             decode('utf-8')
                         kwargs[key] = value
+                except BrokenPipeError:
+                    break
                 except asyncio.IncompleteReadError as err:
                     if err.partial == b'':
                         break
