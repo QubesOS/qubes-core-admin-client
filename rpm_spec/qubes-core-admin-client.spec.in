@@ -90,8 +90,8 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %{_mandir}/man1/qubes*.1*
 
 %files -n python2-qubesadmin
-%{python_sitelib}/qubesadmin-*egg-info
-%{python_sitelib}/qubesadmin
+%{python2_sitelib}/qubesadmin-*egg-info
+%{python2_sitelib}/qubesadmin
 
 %if 0%{?rhel} >= 7
 %files -n python34-qubesadmin
