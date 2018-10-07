@@ -1,3 +1,24 @@
+qubes-core-admin-client (4.0.21-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Move pylint config to canonical place
+  * devices: add DeviceInfo.devclass attribute
+
+  [ AJ Jordan ]
+  * Fix typo
+
+  [ jimtahu ]
+  * Exclude installed_by_rpm when Restoring VM from Backup
+
+  [ Marek Marczykowski-Górecki ]
+  * devices: drop DeviceInfo.options
+  * events: deserialize DeviceInfo class in device-* events
+  * devices: include devclass when comparing devices
+  * events: try reconnecting to qubesd also on BrokenPipeError
+  * rpm: fix building on fc29
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 07 Oct 2018 15:37:03 +0200
+
 qubes-core-admin-client (4.0.20-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
