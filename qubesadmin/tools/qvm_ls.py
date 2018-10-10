@@ -494,6 +494,21 @@ class _HelpFormatsAction(argparse.Action):
         parser.exit(message=text)
 
 
+# common VM power states for easy command-line filtering
+DOMAIN_POWER_STATES = ['running', 'paused', 'halted']
+
+
+def matches_power_states(domain, **states):
+    '''Filter domains by their power state'''
+    # if all values are False (default) => return match on every VM
+    if not states or set(states.values()) == {False}:
+        return True
+
+    # otherwise => only VMs matching True states
+    requested_states = [state for state, active in states.items() if active]
+    return domain.get_power_state().lower() in requested_states
+
+
 def get_parser():
     '''Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-ls`.
@@ -530,6 +545,10 @@ def get_parser():
 
     parser.add_argument('--tags', nargs='+', metavar='TAG',
         help='show only VMs having specific tag(s)')
+
+    for pwrstate in DOMAIN_POWER_STATES:
+        parser.add_argument('--{}'.format(pwrstate), action='store_true',
+            help='show {} VMs'.format(pwrstate))
 
     parser.add_argument('--raw-data', action='store_true',
         help='Display specify data of specified VMs. Intended for '
@@ -613,6 +632,9 @@ def main(args=None, app=None):
         # filter only VMs having at least one of the specified tags
         domains = [dom for dom in domains
                    if set(dom.tags).intersection(set(args.tags))]
+
+    pwrstates = {state: getattr(args, state) for state in DOMAIN_POWER_STATES}
+    domains = filter(lambda x: matches_power_states(x, **pwrstates), domains)
 
     table = Table(domains, columns, spinner, args.raw_data)
     table.write_table(sys.stdout)

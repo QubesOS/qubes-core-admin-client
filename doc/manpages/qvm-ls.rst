@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-ls` [-h] [--verbose] [--quiet] [--help-columns] [--help-formats] [--format *FORMAT* | --fields *FIELD*,...] [--tags *TAG* [*TAG* ...]]
+:command:`qvm-ls` [-h] [--verbose] [--quiet] [--help-columns] [--help-formats] [--format *FORMAT* | --fields *FIELD*,...] [--tags *TAG* [*TAG* ...]] [--running] [--paused] [--halted]
 
 Options
 -------
@@ -46,6 +46,11 @@ Options
 .. option:: --tags TAG ...
 
    Shows only VMs having specific tag(s).
+
+.. option:: --running, --paused, --halted
+
+   Shows only VMs matching the specified power state(s). When none of these
+   options is used (default), all VMs are shown.
 
 .. option:: --raw-data
 
