@@ -312,3 +312,13 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             app=self.app)
         self.assertAllCalled()
 
+    def test_012_invalid_label(self):
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        with self.assertRaises(SystemExit):
+            with qubesadmin.tests.tools.StderrBuffer() as stderr:
+                qubesadmin.tools.qvm_create.main(['-l', 'invalid', 'name'],
+                    app=self.app)
+        self.assertIn('red, blue', stderr.getvalue())
+        self.assertAllCalled()
+

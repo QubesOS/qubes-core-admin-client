@@ -129,7 +129,7 @@ def main(args=None, app=None):
     except KeyError:
         parser.error('no such label: {!r}; available: {}'.format(
             args.properties['label'],
-            ', '.join(repr(l.name) for l in args.app.labels)))
+            ', '.join(args.app.labels)))
 
     try:
         args.app.get_vm_class(args.cls)
