@@ -137,12 +137,22 @@ def main(args=None, app=None):
         parser.error('no such domain class: {!r}'.format(args.cls))
 
     try:
-        vm = args.app.add_new_vm(args.cls,
-            name=args.properties.pop('name'),
-            label=args.properties.pop('label'),
-            template=args.properties.pop('template', None),
-            pool=pool,
-            pools=pools)
+        if args.cls == 'StandaloneVM' and 'template' in args.properties:
+            # "template-based" StandaloneVM is special, as it's a clone of
+            # the template
+            vm = args.app.clone_vm(args.properties.pop('template'),
+                args.properties.pop('name'),
+                new_cls=args.cls,
+                pool=pool,
+                pools=pools,
+                ignore_volumes=('private',))
+        else:
+            vm = args.app.add_new_vm(args.cls,
+                name=args.properties.pop('name'),
+                label=args.properties.pop('label'),
+                template=args.properties.pop('template', None),
+                pool=pool,
+                pools=pools)
     except qubesadmin.exc.QubesException as e:
         args.app.log.error('Error creating VM: {!s}'.format(e))
         return 1

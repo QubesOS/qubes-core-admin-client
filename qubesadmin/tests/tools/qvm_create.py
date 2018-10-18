@@ -210,3 +210,105 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             self.assertAllCalled()
             self.assertTrue(os.path.exists(root_file.name))
 
+    def test_011_standalonevm(self):
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00template class=TemplateVM state=Halted\n' \
+            b'new-vm class=StandaloneVM state=Halted\n'
+        self.app.expected_calls[
+            ('template', 'admin.vm.property.Get', 'label', None)] = \
+            b'0\x00default=False type=label blue'
+        self.app.expected_calls[
+            ('template', 'admin.vm.property.Get', 'vcpus', None)] = \
+            b'0\x00default=False type=int 2'
+        self.app.expected_calls[
+            ('template', 'admin.vm.property.Get', 'kernel', None)] = \
+            b'0\x00default=True type=str kernel-version'
+        self.app.expected_calls[
+            ('template', 'admin.vm.property.Get', 'memory', None)] = \
+            b'0\x00default=True type=int 400'
+        self.app.expected_calls[
+            ('template', 'admin.vm.property.Get', 'template', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00No such property\x00'
+        self.app.expected_calls[
+            ('template', 'admin.vm.property.List', None, None)] = \
+            b'0\x00name\n' \
+            b'label\n' \
+            b'vcpus\n' \
+            b'kernel\n' \
+            b'memory\n'
+        self.app.expected_calls[
+            ('template', 'admin.vm.tag.List', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('template', 'admin.vm.feature.List', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('template', 'admin.vm.firewall.Get', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM', None,
+            b'name=new-vm label=blue')] = b'0\x00'
+        # TODO this is weird...
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.property.Set', 'label', b'red')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.property.Set', 'vcpus', b'2')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.firewall.Set', None, b'')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('template', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\nvolatile\nkernel\n'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\nvolatile\nkernel\n'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.volume.Info', 'root', None)] = \
+            b'0\x00' \
+            b'snap_on_start=False\n' \
+            b'save_on_stop=True\n' \
+            b'pool=other-pool\n' \
+            b'vid=new-vm-root\n' \
+            b'rw=True\n' \
+            b'size=2\n'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00' \
+            b'snap_on_start=False\n' \
+            b'save_on_stop=True\n' \
+            b'pool=other-pool\n' \
+            b'vid=new-vm-private\n' \
+            b'rw=True\n' \
+            b'size=2\n'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.volume.Info', 'volatile', None)] = \
+            b'0\x00' \
+            b'snap_on_start=False\n' \
+            b'save_on_stop=False\n' \
+            b'pool=other-pool\n' \
+            b'vid=new-vm-volatile\n' \
+            b'rw=True\n' \
+            b'size=2\n'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.volume.Info', 'kernel', None)] = \
+            b'0\x00' \
+            b'snap_on_start=False\n' \
+            b'save_on_stop=False\n' \
+            b'pool=linux-kernel\n' \
+            b'vid=kernel-version\n' \
+            b'rw=False\n' \
+            b'size=2\n'
+        self.app.expected_calls[
+            ('template', 'admin.vm.volume.CloneFrom', 'root', None)] = \
+            b'0\0clone-cookie'
+        self.app.expected_calls[
+            ('new-vm', 'admin.vm.volume.CloneTo', 'root', b'clone-cookie')] = \
+            b'0\0'
+        qubesadmin.tools.qvm_create.main(['-C', 'StandaloneVM',
+            '-t', 'template', '-l', 'red', 'new-vm'],
+            app=self.app)
+        self.assertAllCalled()
+
