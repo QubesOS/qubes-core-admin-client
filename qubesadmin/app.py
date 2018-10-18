@@ -285,7 +285,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         return self.domains[name]
 
     def clone_vm(self, src_vm, new_name, new_cls=None,
-            pool=None, pools=None, ignore_errors=False):
+            pool=None, pools=None, ignore_errors=False, ignore_volumes=None):
         '''Clone Virtual Machine
 
         Example usage with custom storage pools:
@@ -304,6 +304,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param dict pools: storage pool for specific volumes
         :param bool ignore_errors: should errors on meta-data setting be only
         logged, or abort the whole operation?
+        :param list ignore_volumes: do not clone volumes on this list,
+        like 'private' or 'root'
         :return new VM object
         '''
 
@@ -392,6 +394,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             for dst_volume in sorted(dst_vm.volumes.values()):
                 if not dst_volume.save_on_stop:
                     # clone only persistent volumes
+                    continue
+                if ignore_volumes and dst_volume.name in ignore_volumes:
                     continue
                 src_volume = src_vm.volumes[dst_volume.name]
                 dst_vm.log.info('Cloning {} volume'.format(dst_volume.name))
