@@ -38,13 +38,13 @@ parser = qubesadmin.tools.QubesArgumentParser(
     argument_default=argparse.SUPPRESS,
     description='manage domain\'s services')
 
-parser.add_argument('service', metavar='FEATURE',
+parser.add_argument('service', metavar='SERVICE',
     action='store', nargs='?',
     help='name of the feature')
 
 parser.add_argument('value', metavar='VALUE',
     action='store', nargs='?',
-    help='new value of the service')
+    help='new value of the service (on/off)')
 
 parser.add_argument('--unset', '--default', '--delete', '-D',
     dest='delete', default=False,
@@ -59,12 +59,12 @@ parser.add_argument('--list', '-l',
 parser.add_argument('--enable', '-e',
     dest='value',
     action='store_const', const='1',
-    help='enable service')
+    help='enable service (same as setting "on" value)')
 
 parser.add_argument('--disable', '-d',
     dest='value',
     action='store_const', const='0',
-    help='disable service')
+    help='disable service (same as setting "off" value)')
 
 def parse_bool(value):
     '''Convert string value to bool according to well known representations
