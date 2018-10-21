@@ -385,6 +385,26 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 if not ignore_errors:
                     raise
 
+            try:
+                # FIXME: convert to qrexec calls to dom0/GUI VM
+                appmenus_cmd = \
+                    ['qvm-appmenus', '--init', '--update',
+                        '--source', src_vm.name, dst_vm.name]
+                subprocess.check_output(appmenus_cmd, stderr=subprocess.STDOUT)
+            except OSError:
+                # this file needs to be python 2.7 compatible,
+                # so no FileNotFoundError
+                self.log.error('Failed to clone appmenus, qvm-appmenus missing')
+                if not ignore_errors:
+                    raise qubesadmin.exc.QubesException(
+                        'Failed to clone appmenus')
+            except subprocess.CalledProcessError as e:
+                self.log.error('Failed to clone appmenus: %s',
+                    e.output.decode())
+                if not ignore_errors:
+                    raise qubesadmin.exc.QubesException(
+                        'Failed to clone appmenus')
+
         except qubesadmin.exc.QubesException:
             if not ignore_errors:
                 del self.domains[dst_vm.name]

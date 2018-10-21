@@ -19,6 +19,8 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 import os
 import tempfile
+import unittest.mock
+import subprocess
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
@@ -210,7 +212,8 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             self.assertAllCalled()
             self.assertTrue(os.path.exists(root_file.name))
 
-    def test_011_standalonevm(self):
+    @unittest.mock.patch('subprocess.check_output')
+    def test_011_standalonevm(self, check_output_mock):
         self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
             b'0\x00red\nblue\n'
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
@@ -310,6 +313,10 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         qubesadmin.tools.qvm_create.main(['-C', 'StandaloneVM',
             '-t', 'template', '-l', 'red', 'new-vm'],
             app=self.app)
+        check_output_mock.assert_called_once_with(
+            ['qvm-appmenus', '--init', '--update',
+                '--source', 'template', 'new-vm'],
+            stderr=subprocess.STDOUT)
         self.assertAllCalled()
 
     def test_012_invalid_label(self):
@@ -321,4 +328,3 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
                     app=self.app)
         self.assertIn('red, blue', stderr.getvalue())
         self.assertAllCalled()
-

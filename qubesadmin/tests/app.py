@@ -135,6 +135,16 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
 
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
+    def setUp(self):
+        super(TC_10_QubesBase, self).setUp()
+        self.check_output_patch = mock.patch(
+            'subprocess.check_output')
+        self.check_output_mock = self.check_output_patch.start()
+
+    def tearDown(self):
+        self.check_output_patch.stop()
+        super(TC_10_QubesBase, self).tearDown()
+
     def test_010_new_simple(self):
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM', None,
                 b'name=new-vm label=red')] = b'0\x00'
@@ -355,6 +365,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             'test-template', b'name=new-name label=red')] = b'0\x00'
         new_vm = self.app.clone_vm('test-vm', 'new-name')
         self.assertEqual(new_vm.name, 'new-name')
+        self.check_output_mock.assert_called_once_with(
+            ['qvm-appmenus', '--init', '--update',
+                '--source', 'test-vm', 'new-name'],
+            stderr=subprocess.STDOUT
+        )
         self.assertAllCalled()
 
     def test_031_clone_object(self):
