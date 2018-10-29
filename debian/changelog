@@ -1,3 +1,18 @@
+qubes-core-admin-client (4.0.22-1) unstable; urgency=medium
+
+  [ Patrik Hagara ]
+  * qvm-ls: add filtering by domain power state
+
+  [ Marek Marczykowski-Górecki ]
+  * app: add option to ignore select volumes on app.clone_vm()
+  * tools/qvm-create: properly create template-based StandaloneVM
+  * tools/qvm-create: fix handling invalid label
+  * Copy application menu on VM clone
+  * Code style fix
+  * tools: clarify qvm-service --help
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 29 Oct 2018 05:45:34 +0100
+
 qubes-core-admin-client (4.0.21-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
