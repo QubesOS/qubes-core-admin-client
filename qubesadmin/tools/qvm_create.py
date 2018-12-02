@@ -98,7 +98,8 @@ def main(args=None, app=None):
         vm_classes = args.app.qubesd_call('dom0', 'admin.vmclass.List').decode()
         vm_classes = vm_classes.splitlines()
         print("case insensitive, trailing 'VM' optional")
-        print('\n'.join(sorted(vm_classes)))
+        clsList=map(lambda x: x.lower().replace("vm", ""),sorted(vm_classes))
+        print('\n'.join(clsList))
         return 0
 
     pools = {}
