@@ -41,7 +41,7 @@ parser = qubesadmin.tools.QubesArgumentParser()
 
 parser.add_argument('--class', '-C', dest='cls',
     default='AppVM',
-    help='specify the class of the new domain (default: %(default)s)')
+    help='specify the class of the new domain, case insensitive (default: %(default)s)')
 
 parser.add_argument('--property', '--prop',
     action=qubesadmin.tools.PropertyAction,
@@ -97,6 +97,7 @@ def main(args=None, app=None):
     if args.help_classes:
         vm_classes = args.app.qubesd_call('dom0', 'admin.vmclass.List').decode()
         vm_classes = vm_classes.splitlines()
+        print("case insensitive, trailing 'VM' optional")
         print('\n'.join(sorted(vm_classes)))
         return 0
 
@@ -131,23 +132,24 @@ def main(args=None, app=None):
             args.properties['label'],
             ', '.join(args.app.labels)))
 
+    cls = args.cls.lower().replace("vm", "").title() + "VM"
     try:
-        args.app.get_vm_class(args.cls)
+        args.app.get_vm_class(cls)
     except KeyError:
-        parser.error('no such domain class: {!r}'.format(args.cls))
+        parser.error('no such domain class: {!r}'.format(cls))
 
     try:
-        if args.cls == 'StandaloneVM' and 'template' in args.properties:
+        if cls == 'StandaloneVM' and 'template' in args.properties:
             # "template-based" StandaloneVM is special, as it's a clone of
             # the template
             vm = args.app.clone_vm(args.properties.pop('template'),
                 args.properties.pop('name'),
-                new_cls=args.cls,
+                new_cls=cls,
                 pool=pool,
                 pools=pools,
                 ignore_volumes=('private',))
         else:
-            vm = args.app.add_new_vm(args.cls,
+            vm = args.app.add_new_vm(cls,
                 name=args.properties.pop('name'),
                 label=args.properties.pop('label'),
                 template=args.properties.pop('template', None),
