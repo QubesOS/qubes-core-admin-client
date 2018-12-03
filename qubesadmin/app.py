@@ -128,7 +128,12 @@ class VMCollection(object):
 
 
 class QubesBase(qubesadmin.base.PropertyHolder):
-    '''Main Qubes application'''
+    '''Main Qubes application.
+
+    This is a base abstract class, don't use it directly. Use specialized
+    class in py:class:`qubesadmin.Qubes` instead, which points at
+    :py:class:`QubesLocal` or :py:class:`QubesRemote`.
+    '''
 
     #: domains (VMs) collection
     domains = None
@@ -427,6 +432,26 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
         return dst_vm
 
+    def qubesd_call(self, dest, method, arg=None, payload=None,
+            payload_stream=None):
+        '''
+        Execute Admin API method.
+
+        Only one of `payload` and `payload_stream` can be specified.
+
+        :param dest: Destination VM name
+        :param method: Full API method name ('admin...')
+        :param arg: Method argument (if any)
+        :param payload: Payload send to the method
+        :param payload_stream: file-like object to read payload from
+        :return: Data returned by qubesd (string)
+
+        .. warning:: *payload_stream* will get closed by this function
+        '''
+        raise NotImplementedError(
+            'qubesd_call not implemented in QubesBase class; use specialized '
+            'class: qubesadmin.Qubes()')
+
     def run_service(self, dest, service, filter_esc=False, user=None,
             localcmd=None, wait=True, **kwargs):
         '''Run qrexec service in a given destination
@@ -442,7 +467,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param str localcmd: Command to connect stdin/stdout to
         :rtype: subprocess.Popen
         '''
-        raise NotImplementedError
+        raise NotImplementedError(
+            'run_service not implemented in QubesBase class; use specialized '
+            'class: qubesadmin.Qubes()')
 
 
 class QubesLocal(QubesBase):
