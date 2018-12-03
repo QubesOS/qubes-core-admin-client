@@ -91,7 +91,6 @@ class QubesVMInUseError(QubesVMError):
 
 class QubesValueError(QubesException, ValueError):
     '''Cannot set some value, because it is invalid, out of bounds, etc.'''
-    pass
 
 
 class QubesPropertyValueError(QubesValueError):
@@ -135,7 +134,6 @@ class QubesDaemonCommunicationError(QubesException, IOError):
 
 class DeviceAlreadyAttached(QubesException, KeyError):
     '''Trying to attach already attached device'''
-    pass
 
 
 # pylint: disable=too-many-ancestors
