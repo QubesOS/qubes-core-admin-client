@@ -195,8 +195,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
         if element.get("uses_default_netvm") is None:
             uses_default_netvm = True
         else:
-            uses_default_netvm = (
-                True if element.get("uses_default_netvm") == "True" else False)
+            uses_default_netvm = (element.get("uses_default_netvm") == "True")
         if not uses_default_netvm:
             netvm_qid = element.get("netvm_qid")
             if netvm_qid is None or netvm_qid == "none":
@@ -209,8 +208,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             uses_default_dispvm_netvm = True
         else:
             uses_default_dispvm_netvm = (
-                True if element.get("uses_default_dispvm_netvm") == "True"
-                else False)
+                element.get("uses_default_dispvm_netvm") == "True")
         if not uses_default_dispvm_netvm:
             dispvm_netvm_qid = element.get("dispvm_netvm_qid")
             if dispvm_netvm_qid is None or dispvm_netvm_qid == "none":
