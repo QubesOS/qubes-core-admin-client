@@ -43,6 +43,14 @@ parser.add_argument('--class', '-C', dest='cls',
     default='AppVM',
     help='specify the class of the new domain (default: %(default)s)')
 
+parser.add_argument('--standalone',
+    action="store_true",
+    help=' shortcut for --class StandaloneVM')
+
+parser.add_argument('--disp'
+    action=qubesadmin.tools.SinglePropertyAction,
+    help='alias for --class DispVM --label red --template <argument or default DVM>')
+
 parser.add_argument('--property', '--prop',
     action=qubesadmin.tools.PropertyAction,
     help='set domain\'s property, like "internal", "memory" or "vcpus"')
@@ -112,6 +120,14 @@ def main(args=None, app=None):
                     'Pool argument must be of form: -P volume_name=pool_name')
     if args.one_pool:
         pool = args.one_pool
+
+    if 'disp' in args.properties:
+        args.properties.setdefault('label', 'red')
+        args.cls = 'DispVM'
+        args.properties.setdefault('template', args.properties['disp'])
+
+    if 'standalone' in args.properties:
+        args.cls = 'StandaloneVM'
 
     if 'label' not in args.properties:
         parser.error('--label option is mandatory')
