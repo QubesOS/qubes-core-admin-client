@@ -19,7 +19,6 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 ''' qvm-run tool'''
-
 import os
 import subprocess
 import sys
@@ -146,11 +145,15 @@ def main(args=None, app=None):
     if not args.passio:
         run_kwargs['stdout'] = subprocess.DEVNULL
         run_kwargs['stderr'] = subprocess.DEVNULL
+    elif args.localcmd:
+        run_kwargs['stdin'] = subprocess.PIPE
+        run_kwargs['stdout'] = subprocess.PIPE
+        run_kwargs['stderr'] = None
     else:
         # connect process output to stdout/err directly if --pass-io is given
         run_kwargs['stdout'] = None
         run_kwargs['stderr'] = None
-        if not args.localcmd and args.filter_esc:
+        if args.filter_esc:
             run_kwargs['filter_esc'] = True
 
     if isinstance(args.app, qubesadmin.app.QubesLocal) and \
@@ -204,21 +207,26 @@ def main(args=None, app=None):
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     wait_session.communicate(vm.default_user.encode())
                 if args.service:
-                    proc = vm.run_service(args.cmd,
-                        user=args.user,
-                        localcmd=args.localcmd,
-                        **run_kwargs)
+                    service = args.cmd
                 else:
                     service = 'qubes.VMShell'
                     if args.gui and args.dispvm:
                         service += '+WaitForSession'
-                    proc = vm.run_service(service,
-                        user=args.user,
-                        localcmd=args.localcmd,
-                        **run_kwargs)
+                proc = vm.run_service(service,
+                    user=args.user,
+                    **run_kwargs)
+                if not args.service:
                     proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
                     proc.stdin.flush()
-                if args.passio and not args.localcmd:
+                if args.localcmd:
+                    local_proc = subprocess.Popen(args.localcmd,
+                        shell=True,
+                        stdout=proc.stdin,
+                        stdin=proc.stdout)
+                    # stdin is closed below
+                    proc.stdout.close()
+                    procs.append(local_proc)
+                elif args.passio:
                     copy_proc = multiprocessing.Process(target=copy_stdin,
                         args=(proc.stdin,))
                     copy_proc.start()
