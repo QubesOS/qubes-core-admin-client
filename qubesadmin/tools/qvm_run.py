@@ -19,7 +19,9 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 ''' qvm-run tool'''
+import contextlib
 import os
+import signal
 import subprocess
 import sys
 
@@ -114,13 +116,16 @@ def copy_stdin(stream):
     # multiprocessing.Process have sys.stdin connected to /dev/null, use fd 0
     #  directly
     while True:
-        # select so this code works even if fd 0 is non-blocking
-        select.select([0], [], [])
-        data = os.read(0, 65536)
-        if data is None or data == b'':
+        try:
+            # select so this code works even if fd 0 is non-blocking
+            select.select([0], [], [])
+            data = os.read(0, 65536)
+            if data is None or data == b'':
+                break
+            stream.write(data)
+            stream.flush()
+        except KeyboardInterrupt:
             break
-        stream.write(data)
-        stream.flush()
     stream.close()
 
 def main(args=None, app=None):
@@ -205,7 +210,12 @@ def main(args=None, app=None):
                 if args.gui and not args.dispvm:
                     wait_session = vm.run_service('qubes.WaitForSession',
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    wait_session.communicate(vm.default_user.encode())
+                    try:
+                        wait_session.communicate(vm.default_user.encode())
+                    except KeyboardInterrupt:
+                        with contextlib.suppress(ProcessLookupError):
+                            wait_session.send_signal(signal.SIGINT)
+                        break
                 if args.service:
                     service = args.cmd
                 else:
@@ -239,8 +249,15 @@ def main(args=None, app=None):
                     sys.stdout.flush()
                 vm.log.error(str(e))
                 return -1
-        for proc in procs:
-            retcode = max(retcode, proc.wait())
+        try:
+            for proc in procs:
+                retcode = max(retcode, proc.wait())
+        except KeyboardInterrupt:
+            for proc in procs:
+                with contextlib.suppress(ProcessLookupError):
+                    proc.send_signal(signal.SIGINT)
+            for proc in procs:
+                retcode = max(retcode, proc.wait())
     finally:
         if dispvm:
             dispvm.cleanup()
