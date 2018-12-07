@@ -138,24 +138,8 @@ def print_no_color(msg, file, color):
         print(msg, file=file)
 
 
-def main(args=None, app=None):
-    '''Main function of qvm-run tool'''
-    args = parser.parse_args(args, app=app)
-    if args.color_output is None and args.filter_esc:
-        args.color_output = '31'
-
-    if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
-        args.color_stderr = 31
-
-    if len(args.domains) > 1 and args.passio and not args.localcmd:
-        parser.error('--passio cannot be used when more than 1 qube is chosen '
-                     'and no --localcmd is used')
-    if args.localcmd and not args.passio:
-        parser.error('--localcmd have no effect without --pass-io')
-    if args.color_output and not args.filter_esc:
-        parser.error('--color-output must be used with --filter-escape-chars')
-
-    retcode = 0
+def run_command_single(args, vm):
+    '''Handle a single VM to run the command in'''
     run_kwargs = {}
     if not args.passio:
         run_kwargs['stdout'] = subprocess.DEVNULL
@@ -179,6 +163,55 @@ def main(args=None, app=None):
         # wait=False works only in dom0; but it's still useful, to save on
         # simultaneous vchan connections
         run_kwargs['wait'] = False
+
+    copy_proc = None
+    local_proc = None
+    if args.service:
+        service = args.cmd
+    else:
+        service = 'qubes.VMShell'
+        if args.gui and args.dispvm:
+            service += '+WaitForSession'
+    proc = vm.run_service(service,
+        user=args.user,
+        **run_kwargs)
+    if not args.service:
+        proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
+        proc.stdin.flush()
+    if args.localcmd:
+        local_proc = subprocess.Popen(args.localcmd,
+            shell=True,
+            stdout=proc.stdin,
+            stdin=proc.stdout)
+        # stdin is closed below
+        proc.stdout.close()
+    elif args.passio:
+        copy_proc = multiprocessing.Process(target=copy_stdin,
+            args=(proc.stdin,))
+        copy_proc.start()
+        # keep the copying process running
+    proc.stdin.close()
+    return proc, copy_proc, local_proc
+
+
+def main(args=None, app=None):
+    '''Main function of qvm-run tool'''
+    args = parser.parse_args(args, app=app)
+    if args.color_output is None and args.filter_esc:
+        args.color_output = '31'
+
+    if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
+        args.color_stderr = 31
+
+    if len(args.domains) > 1 and args.passio and not args.localcmd:
+        parser.error('--passio cannot be used when more than 1 qube is chosen '
+                     'and no --localcmd is used')
+    if args.localcmd and not args.passio:
+        parser.error('--localcmd have no effect without --pass-io')
+    if args.color_output and not args.filter_esc:
+        parser.error('--color-output must be used with --filter-escape-chars')
+
+    retcode = 0
 
     verbose = args.verbose - args.quiet
     if args.passio:
@@ -226,33 +259,10 @@ def main(args=None, app=None):
                         with contextlib.suppress(ProcessLookupError):
                             wait_session.send_signal(signal.SIGINT)
                         break
-                if args.service:
-                    service = args.cmd
-                else:
-                    service = 'qubes.VMShell'
-                    if args.gui and args.dispvm:
-                        service += '+WaitForSession'
-                proc = vm.run_service(service,
-                    user=args.user,
-                    **run_kwargs)
-                if not args.service:
-                    proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
-                    proc.stdin.flush()
-                if args.localcmd:
-                    local_proc = subprocess.Popen(args.localcmd,
-                        shell=True,
-                        stdout=proc.stdin,
-                        stdin=proc.stdout)
-                    # stdin is closed below
-                    proc.stdout.close()
-                    procs.append((vm, local_proc))
-                elif args.passio:
-                    copy_proc = multiprocessing.Process(target=copy_stdin,
-                        args=(proc.stdin,))
-                    copy_proc.start()
-                    # keep the copying process running
-                proc.stdin.close()
+                proc, copy_proc, local_proc = run_command_single(args, vm)
                 procs.append((vm, proc))
+                if local_proc:
+                    procs.append((vm, local_proc))
             except qubesadmin.exc.QubesException as e:
                 if args.color_output:
                     sys.stdout.write('\033[0m')
