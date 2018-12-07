@@ -329,6 +329,21 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
         label = src_vm.label
 
+        if pool is None and pools is None:
+            # use the same pools as the source - check if non default is used
+            for volume in sorted(src_vm.volumes.values()):
+                if not volume.save_on_stop:
+                    # clone only persistent volumes
+                    continue
+                if ignore_volumes and volume.name in ignore_volumes:
+                    continue
+                default_pool = getattr(self.app, 'default_pool_' + volume.name,
+                    volume.pool)
+                if default_pool != volume.pool:
+                    if pools is None:
+                        pools = {}
+                    pools[volume.name] = volume.pool
+
         method_prefix = 'admin.vm.Create.'
         payload = 'name={} label={}'.format(new_name, label)
         if pool:

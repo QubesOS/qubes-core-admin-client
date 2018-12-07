@@ -298,61 +298,62 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'0\x00'
 
         # storage
-        self.app.expected_calls[
-            (dst, 'admin.vm.volume.List', None, None)] = \
-            b'0\x00root\nprivate\nvolatile\nkernel\n'
-        self.app.expected_calls[
-            (dst, 'admin.vm.volume.Info', 'root', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=vm-test-vm/root\n' \
-            b'size=10737418240\n' \
-            b'usage=2147483648\n' \
-            b'rw=False\n' \
-            b'internal=True\n' \
-            b'source=vm-test-template/root\n' \
-            b'save_on_stop=False\n' \
-            b'snap_on_start=True\n'
-        self.app.expected_calls[
-            (dst, 'admin.vm.volume.Info', 'private', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=vm-test-vm/private\n' \
-            b'size=2147483648\n' \
-            b'usage=214748364\n' \
-            b'rw=True\n' \
-            b'internal=True\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n'
-        self.app.expected_calls[
-            (dst, 'admin.vm.volume.Info', 'volatile', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=vm-test-vm/volatile\n' \
-            b'size=10737418240\n' \
-            b'usage=0\n' \
-            b'rw=True\n' \
-            b'internal=True\n' \
-            b'source=None\n' \
-            b'save_on_stop=False\n' \
-            b'snap_on_start=False\n'
-        self.app.expected_calls[
-            (dst, 'admin.vm.volume.Info', 'kernel', None)] = \
-            b'0\x00pool=linux-kernel\n' \
-            b'vid=\n' \
-            b'size=0\n' \
-            b'usage=0\n' \
-            b'rw=False\n' \
-            b'internal=True\n' \
-            b'source=None\n' \
-            b'save_on_stop=False\n' \
-            b'snap_on_start=False\n'
-        self.app.expected_calls[
-            (src, 'admin.vm.volume.List', None, None)] = \
-            b'0\x00root\nprivate\nvolatile\nkernel\n'
+        for vm in (src, dst):
+            self.app.expected_calls[
+                (vm, 'admin.vm.volume.Info', 'root', None)] = \
+                b'0\x00pool=lvm\n' \
+                b'vid=vm-' + vm.encode() + b'/root\n' \
+                b'size=10737418240\n' \
+                b'usage=2147483648\n' \
+                b'rw=False\n' \
+                b'internal=True\n' \
+                b'source=vm-test-template/root\n' \
+                b'save_on_stop=False\n' \
+                b'snap_on_start=True\n'
+            self.app.expected_calls[
+                (vm, 'admin.vm.volume.Info', 'private', None)] = \
+                b'0\x00pool=lvm\n' \
+                b'vid=vm-' + vm.encode() + b'/private\n' \
+                b'size=2147483648\n' \
+                b'usage=214748364\n' \
+                b'rw=True\n' \
+                b'internal=True\n' \
+                b'save_on_stop=True\n' \
+                b'snap_on_start=False\n'
+            self.app.expected_calls[
+                (vm, 'admin.vm.volume.Info', 'volatile', None)] = \
+                b'0\x00pool=lvm\n' \
+                b'vid=vm-' + vm.encode() + b'/volatile\n' \
+                b'size=10737418240\n' \
+                b'usage=0\n' \
+                b'rw=True\n' \
+                b'internal=True\n' \
+                b'source=None\n' \
+                b'save_on_stop=False\n' \
+                b'snap_on_start=False\n'
+            self.app.expected_calls[
+                (vm, 'admin.vm.volume.Info', 'kernel', None)] = \
+                b'0\x00pool=linux-kernel\n' \
+                b'vid=\n' \
+                b'size=0\n' \
+                b'usage=0\n' \
+                b'rw=False\n' \
+                b'internal=True\n' \
+                b'source=None\n' \
+                b'save_on_stop=False\n' \
+                b'snap_on_start=False\n'
+            self.app.expected_calls[
+                (vm, 'admin.vm.volume.List', None, None)] = \
+                b'0\x00root\nprivate\nvolatile\nkernel\n'
         self.app.expected_calls[
             (src, 'admin.vm.volume.CloneFrom', 'private', None)] = \
             b'0\x00token-private'
         self.app.expected_calls[
             (dst, 'admin.vm.volume.CloneTo', 'private', b'token-private')] = \
             b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.property.Get', 'default_pool_private', None)] = \
+            b'0\0default=True type=str lvm'
 
     def test_030_clone(self):
         self.clone_setup_common_calls('test-vm', 'new-name')
@@ -387,6 +388,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
 
     def test_032_clone_pool(self):
         self.clone_setup_common_calls('test-vm', 'new-name')
+        for volume in ('root', 'private', 'volatile', 'kernel'):
+            del self.app.expected_calls[
+                'test-vm', 'admin.vm.volume.Info', volume, None]
+        del self.app.expected_calls[
+            'dom0', 'admin.property.Get', 'default_pool_private', None]
         self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             'test-template',
             b'name=new-name label=red pool=some-pool')] = b'0\x00'
@@ -401,6 +407,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
 
     def test_033_clone_pools(self):
         self.clone_setup_common_calls('test-vm', 'new-name')
+        for volume in ('root', 'private', 'volatile', 'kernel'):
+            del self.app.expected_calls[
+                'test-vm', 'admin.vm.volume.Info', volume, None]
+        del self.app.expected_calls[
+            'dom0', 'admin.property.Get', 'default_pool_private', None]
         self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             'test-template',
             b'name=new-name label=red pool:private=some-pool '
@@ -451,6 +462,10 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.List', None, None)] = \
             b'0\0qid\nname\ntemplate\nlabel\nmemory\n'
+        # simplify it a little, shouldn't get this far anyway
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
             b'0\0default=False type=label red'
@@ -587,6 +602,34 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             self.app.clone_vm('test-vm', 'new-name')
         self.assertAllCalled()
 
+    def test_042_clone_nondefault_pool(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=another\n' \
+            b'vid=vm-test-vm/private\n' \
+            b'size=2147483648\n' \
+            b'usage=214748364\n' \
+            b'rw=True\n' \
+            b'internal=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
+            'test-template', b'name=new-name label=red pool:private=another')]\
+            = b'0\x00'
+        new_vm = self.app.clone_vm('test-vm', 'new-name')
+        self.assertEqual(new_vm.name, 'new-name')
+        self.check_output_mock.assert_called_once_with(
+            ['qvm-appmenus', '--init', '--update',
+                '--source', 'test-vm', 'new-name'],
+            stderr=subprocess.STDOUT
+        )
+        self.assertAllCalled()
 
 
 class TC_20_QubesLocal(unittest.TestCase):
