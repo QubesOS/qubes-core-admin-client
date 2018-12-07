@@ -245,14 +245,14 @@ def main(args=None, app=None):
                         stdin=proc.stdout)
                     # stdin is closed below
                     proc.stdout.close()
-                    procs.append(local_proc)
+                    procs.append((vm, local_proc))
                 elif args.passio:
                     copy_proc = multiprocessing.Process(target=copy_stdin,
                         args=(proc.stdin,))
                     copy_proc.start()
                     # keep the copying process running
                 proc.stdin.close()
-                procs.append(proc)
+                procs.append((vm, proc))
             except qubesadmin.exc.QubesException as e:
                 if args.color_output:
                     sys.stdout.write('\033[0m')
@@ -260,13 +260,19 @@ def main(args=None, app=None):
                 vm.log.error(str(e))
                 return -1
         try:
-            for proc in procs:
+            for vm, proc in procs:
+                this_retcode = proc.wait()
+                if this_retcode and args.verbose > 0:
+                    print_no_color(
+                        '{}: command failed with code: {}'.format(
+                            vm.name, this_retcode),
+                        file=sys.stderr, color=args.color_stderr)
                 retcode = max(retcode, proc.wait())
         except KeyboardInterrupt:
-            for proc in procs:
+            for vm, proc in procs:
                 with contextlib.suppress(ProcessLookupError):
                     proc.send_signal(signal.SIGINT)
-            for proc in procs:
+            for vm, proc in procs:
                 retcode = max(retcode, proc.wait())
     finally:
         if dispvm:
