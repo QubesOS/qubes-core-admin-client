@@ -479,7 +479,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         ret = qubesadmin.tools.qvm_run.main(
             ['--no-gui', '--no-autostart', 'test-vm3', 'command'],
             app=self.app)
-        self.assertEqual(ret, 0)
+        self.assertEqual(ret, 1)
         self.assertEqual(self.app.service_calls, [])
         self.assertAllCalled()
 

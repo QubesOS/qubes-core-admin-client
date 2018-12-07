@@ -207,6 +207,10 @@ def main(args=None, app=None):
         procs = []
         for vm in domains:
             if not args.autostart and not vm.is_running():
+                if verbose > 0:
+                    print_no_color('Qube \'{}\' not started'.format(vm.name),
+                        file=sys.stderr, color=args.color_stderr)
+                retcode = max(retcode, 1)
                 continue
             try:
                 if verbose > 0:
