@@ -107,7 +107,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         ])
         self.assertAllCalled()
 
-    @unittest.expectedFailure
     def test_002_passio(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -121,19 +120,52 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
         with unittest.mock.patch('sys.stdin', echo.stdout):
             ret = qubesadmin.tools.qvm_run.main(
-                ['--no-gui', '--pass-io', 'test-vm', 'command'],
+                ['--no-gui', '--pass-io', '--filter-escape-chars',
+                    'test-vm', 'command'],
                 app=self.app)
-
+        echo.stdout.close()
+        echo.wait()
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
-                'filter_esc': self.default_filter_esc(),
+                'filter_esc': True,
                 'localcmd': None,
                 'stdout': None,
                 'stderr': None,
                 'user': None,
             }),
-            ('test-vm', 'qubes.VMShell', b'command; exit\nsome-data\n')
+            # TODO: find a way to compare b'some-data\n' sent from another
+            # proces
+            ('test-vm', 'qubes.VMShell', b'command; exit\n')
+        ])
+        self.assertAllCalled()
+
+    def test_002_passio_service(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
+        #     b'0\x00test-vm class=AppVM state=Running\n'
+        echo = subprocess.Popen(['echo', 'some-data'], stdout=subprocess.PIPE)
+        with unittest.mock.patch('sys.stdin', echo.stdout):
+            ret = qubesadmin.tools.qvm_run.main(
+                ['--no-gui', '--service', '--pass-io', '--filter-escape-chars',
+                    'test-vm', 'test.service'],
+                app=self.app)
+        echo.stdout.close()
+        echo.wait()
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'test.service', {
+                'filter_esc': True,
+                'stdout': None,
+                'stderr': None,
+                'user': None,
+            }),
+            # TODO: find a way to compare b'some-data\n' sent from another
+            # proces
+            ('test-vm', 'test.service', b'')
         ])
         self.assertAllCalled()
 
@@ -156,7 +188,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     ['--no-gui', '--filter-esc', '--pass-io', 'test-vm',
                         'command'],
                     app=self.app)
-
+        echo.stdout.close()
+        echo.wait()
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
@@ -189,6 +222,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         'test-vm', 'command'],
                     app=self.app)
 
+        echo.stdout.close()
+        echo.wait()
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
@@ -224,6 +259,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         'test-vm', 'command'],
                     app=self.app)
 
+        echo.stdout.close()
+        echo.wait()
         self.assertEqual(ret, 0)
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.VMShell', {
