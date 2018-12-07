@@ -108,7 +108,15 @@ pci
 PCI device. Only dom0 expose such devices. One should be very careful when attaching this type of devices, because some of them are strictly required to stay in dom0 (for example host bridge). Available options:
 
 * `no-strict-reset` - allow to attach device even if it does not support any reliable reset operation; switching such device to another domain (without full host restart) can be a security risk; default: `False`, accepted values: `True`, `False` (option absent)
+* `permissive` - allow write access to most of PCI config space, instead of only selected whitelisted rregisters; a workaround for some PCI passthrough problems, potentially unsafe; default: `False`, accepted values: `True`, `False` (option absent)
 
+mic
+^^^
+
+Microphone, or other audio input. Normally there is only one device of this
+type - `dom0:mic`. Use PulseAudio settings in dom0 to select which input source
+is used.
+This type of device does not support options.
 
 Authors
 =======
