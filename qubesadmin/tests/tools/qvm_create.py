@@ -99,7 +99,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         with tempfile.NamedTemporaryFile() as root_file:
             root_file.file.write(b'root data')
             root_file.file.flush()
-            self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
                 None, b'name=new-vm label=red')] = b'0\x00'
             self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
                 b'0\x00red\nblue\n'
@@ -117,7 +117,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             self.app.expected_calls[
                 ('new-vm', 'admin.vm.volume.Import', 'root', b'root data')] = \
                 b'0\0'
-            qubesadmin.tools.qvm_create.main(['-l', 'red',
+            qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                 '--root-copy-from=' + root_file.name, 'new-vm'],
                 app=self.app)
             self.assertAllCalled()
@@ -127,7 +127,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         with tempfile.NamedTemporaryFile(delete=False) as root_file:
             root_file.file.write(b'root data')
             root_file.file.flush()
-            self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
                 None, b'name=new-vm label=red')] = b'0\x00'
             self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
                 b'0\x00red\nblue\n'
@@ -145,7 +145,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             self.app.expected_calls[
                 ('new-vm', 'admin.vm.volume.Import', 'root', b'root data')] = \
                 b'0\0'
-            qubesadmin.tools.qvm_create.main(['-l', 'red',
+            qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                 '--root-move-from=' + root_file.name, 'new-vm'],
                 app=self.app)
             self.assertAllCalled()
@@ -156,7 +156,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             root_file.file.write(b'root data')
             root_file.file.flush()
             with self.assertRaises(SystemExit):
-                qubesadmin.tools.qvm_create.main(['-l', 'red',
+                qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                     '--root-copy-from=' + root_file.name,
                     '--root-move-from=' + root_file.name,
                     'new-vm'],
@@ -166,7 +166,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
 
     def test_008_root_invalid_path(self):
         with self.assertRaises(SystemExit):
-            qubesadmin.tools.qvm_create.main(['-l', 'red',
+            qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                 '--root-copy-from=/invalid', 'new-vm'],
                 app=self.app)
         self.assertAllCalled()
@@ -185,7 +185,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         with tempfile.NamedTemporaryFile() as root_file:
             root_file.file.write(b'root data')
             root_file.file.flush()
-            self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
                 None, b'name=new-vm label=red')] = b'0\x00'
             self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
                 b'0\x00red\nblue\n'
@@ -206,7 +206,7 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             self.app.expected_calls[
                 ('new-vm', 'admin.vm.volume.Import', 'root', b'root data')] = \
                 b'0\0'
-            qubesadmin.tools.qvm_create.main(['-l', 'red',
+            qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                 '--root-copy-from=' + root_file.name, 'new-vm'],
                 app=self.app)
             self.assertAllCalled()
@@ -328,3 +328,15 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
                     app=self.app)
         self.assertIn('red, blue', stderr.getvalue())
         self.assertAllCalled()
+
+    def test_013_root_copy_from_template_based(self):
+        with tempfile.NamedTemporaryFile() as root_file:
+            root_file.file.write(b'root data')
+            root_file.file.flush()
+            with self.assertRaises(SystemExit):
+                with qubesadmin.tests.tools.StderrBuffer() as stderr:
+                    qubesadmin.tools.qvm_create.main(['-l', 'red',
+                        '--root-copy-from=' + root_file.name, 'new-vm'],
+                        app=self.app)
+            self.assertIn('--root-copy-from', stderr.getvalue())
+            self.assertAllCalled()
