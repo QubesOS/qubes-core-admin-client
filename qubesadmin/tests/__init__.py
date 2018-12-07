@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import subprocess
 import traceback
 import unittest
 
@@ -61,8 +62,14 @@ class TestProcess(object):
                 lambda: self.input_callback(self.stdin.getvalue()))
         else:
             self.stdin.close = lambda: None
-        self.stdout = stdout
-        self.stderr = stderr
+        if stdout == subprocess.PIPE:
+            self.stdout = io.BytesIO()
+        else:
+            self.stdout = stdout
+        if stderr == subprocess.PIPE:
+            self.stderr = io.BytesIO()
+        else:
+            self.stderr = stderr
         self.returncode = 0
 
     def communicate(self, input=None):
@@ -146,7 +153,10 @@ class QubesTest(qubesadmin.app.QubesBase):
     def run_service(self, dest, service, **kwargs):
         self.service_calls.append((dest, service, kwargs))
         return TestProcess(lambda input: self.service_calls.append((dest,
-            service, input)))
+            service, input)),
+            stdout=kwargs.get('stdout', None),
+            stderr=kwargs.get('stderr', None),
+        )
 
 
 class QubesTestCase(unittest.TestCase):
