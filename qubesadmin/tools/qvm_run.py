@@ -128,6 +128,16 @@ def copy_stdin(stream):
             break
     stream.close()
 
+def print_no_color(msg, file, color):
+    '''Print a *msg* to *file* without coloring it.
+    Namely reset to base color first, print a message, then restore color.
+    '''
+    if color:
+        print('\033[0m{}\033[0;{}m'.format(msg, color), file=file)
+    else:
+        print(msg, file=file)
+
+
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
     args = parser.parse_args(args, app=app)
@@ -200,13 +210,9 @@ def main(args=None, app=None):
                 continue
             try:
                 if verbose > 0:
-                    if args.color_output:
-                        print('\033[0mRunning \'{}\' on {}\033[0;{}m'.format(
-                            args.cmd, vm.name, args.color_stderr),
-                            file=sys.stderr)
-                    else:
-                        print('Running \'{}\' on {}'.format(args.cmd, vm.name),
-                            file=sys.stderr)
+                    print_no_color(
+                        'Running \'{}\' on {}'.format(args.cmd, vm.name),
+                        file=sys.stderr, color=args.color_stderr)
                 if args.gui and not args.dispvm:
                     wait_session = vm.run_service('qubes.WaitForSession',
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
