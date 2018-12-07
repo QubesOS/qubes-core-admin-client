@@ -8,7 +8,7 @@ Synopsis
 ========
 | :command:`qvm-device` [*options*] *DEVICE_CLASS* {list,ls,l} <*vm-name*>
 | :command:`qvm-device` [*options*] *DEVICE_CLASS* {attach,at,a} <*vm-name*> <*device*>
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {detach,dt,d} <*vm-name*> <*device*>
+| :command:`qvm-device` [*options*] *DEVICE_CLASS* {detach,dt,d} <*vm-name*> [<*device*>]
 | :command:`qvm-*DEVICE_CLASS*` [*options*] {list,ls,l,attach,at,a,detach,dt,d} <*vmname*> ...
 
 Tool can be called either as `qvm-device *DEVICE_CLASS* ...`, or
@@ -79,7 +79,8 @@ detach
 
 | :command:`qvm-device` *DEVICE_CLASS* detach [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
 
-Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*
+Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
+If no device is given, detach all *DEVICE_CLASS* devices.
 
 aliases: d, dt
 

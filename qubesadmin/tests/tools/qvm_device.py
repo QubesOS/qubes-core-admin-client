@@ -199,3 +199,16 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             ['test', 'detach', 'test-vm2', 'test-vm1:dev7'], app=self.app)
         self.assertAllCalled()
 
+    def test_022_detach_all(self):
+        ''' Test detach action '''
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.List',
+            None, None)] = \
+            b'0\0test-vm1+dev1\ntest-vm1+dev2\n'
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Detach',
+            'test-vm1+dev1', None)] = b'0\0'
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Detach',
+            'test-vm1+dev2', None)] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['test', 'detach', 'test-vm2'], app=self.app)
+        self.assertAllCalled()
+
