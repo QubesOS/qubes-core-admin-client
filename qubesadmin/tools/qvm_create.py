@@ -47,9 +47,9 @@ parser.add_argument('--standalone',
     action="store_true",
     help=' shortcut for --class StandaloneVM')
 
-parser.add_argument('--disp'
-    action=qubesadmin.tools.SinglePropertyAction,
-    help='alias for --class DispVM --label red --template <argument or default DVM>')
+parser.add_argument('--disp',
+    action="store_true",
+    help='alias for --class DispVM --label red')
 
 parser.add_argument('--property', '--prop',
     action=qubesadmin.tools.PropertyAction,
@@ -121,12 +121,11 @@ def main(args=None, app=None):
     if args.one_pool:
         pool = args.one_pool
 
-    if 'disp' in args.properties:
+    if args.disp:
         args.properties.setdefault('label', 'red')
         args.cls = 'DispVM'
-        args.properties.setdefault('template', args.properties['disp'])
 
-    if 'standalone' in args.properties:
+    if args.standalone:
         args.cls = 'StandaloneVM'
 
     if 'label' not in args.properties:
