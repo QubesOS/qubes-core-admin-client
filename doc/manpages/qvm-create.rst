@@ -28,7 +28,7 @@ Options
 
    shortcut for --class StandaloneVM, see below
 
-..option :: --disp
+.. option:: --disp
 
    shortcut for --class DispVM --label red, see below
 
