@@ -216,11 +216,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             pass
 
         # then search for index
-        if type(label) == int or label.isdigit():
+        if isinstance(label, int) or label.isdigit():
             for i in self.labels.values():
                 if i.index == int(label):
                     return i
-
         raise KeyError(label)
 
     @staticmethod
