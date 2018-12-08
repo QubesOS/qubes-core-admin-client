@@ -6,13 +6,12 @@
 
 Synopsis
 ========
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {list,ls,l} <*vm-name*>
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {attach,at,a} <*vm-name*> <*device*>
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {detach,dt,d} <*vm-name*> [<*device*>]
-| :command:`qvm-*DEVICE_CLASS*` [*options*] {list,ls,l,attach,at,a,detach,dt,d} <*vmname*> ...
+| :command:`qvm-device` *DEVICE_CLASS* {list,ls,l} [*options*] <*vm-name*>
+| :command:`qvm-device` *DEVICE_CLASS* {attach,at,a} [*options*] <*vm-name*> <*device*>
+| :command:`qvm-device` *DEVICE_CLASS* {detach,dt,d} [*options*] <*vm-name*> [<*device*>]
+| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d} [*options*] <*vmname*> ...
 
-Tool can be called either as `qvm-device *DEVICE_CLASS* ...`, or
-`qvm-*DEVICE_CLASS* ...`. The latter is used for `qvm-pci`, `qvm-block` etc.
+.. note:: :command:`qvm-block`, :command:`qvm-usb` and :command:`qvm-pci` are just aliases for :command:`qvm-device block`, :command:`qvm-device usb` and :command:`qvm-device pci` respectively.
 
 Options
 =======
