@@ -78,9 +78,9 @@ Set property of given volume. Properties currently possible to change:
 
   - `rw` - `True` if volume should be writeable by the qube, `False` otherwise
   - `revisions_to_keep` - how many revisions (previous versions of volume)
-   should be keep. At each qube shutdown its previous state is saved in new
-   revision, and the oldest revisions are remove so that only
-   `revisions_to_keep` are left. Set to `0` to not leave any previous versions.
+    should be keep. At each qube shutdown its previous state is saved in new
+    revision, and the oldest revisions are remove so that only
+    `revisions_to_keep` are left. Set to `0` to not leave any previous versions.
 
 aliases: c, set, s
 

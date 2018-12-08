@@ -138,7 +138,7 @@ class OptionsCheckVisitor(docutils.nodes.SparseNodeVisitor):
             While the documentation talks about a
             'SparseNodeVisitor.depart_document()' function, this function does
             not exists. (For details see implementation of
-            :py:method:`NodeVisitor.dispatch_departure()`) So we need to
+            :py:meth:`NodeVisitor.dispatch_departure()`) So we need to
             manually call this.
         '''
         if ignored_options is None:
@@ -205,7 +205,7 @@ class CommandCheckVisitor(docutils.nodes.SparseNodeVisitor):
             While the documentation talks about a
             'SparseNodeVisitor.depart_document()' function, this function does
             not exists. (For details see implementation of
-            :py:method:`NodeVisitor.dispatch_departure()`) So we need to
+            :py:meth:`NodeVisitor.dispatch_departure()`) So we need to
             manually call this.
         '''
         if self.sub_commands:

@@ -406,7 +406,7 @@ class ExtractWorker3(Process):
         ''' Relocate files in given director when it's already extracted
 
         :param dirname: directory path to handle (relative to backup root),
-        without trailing slash
+            without trailing slash
         '''
         for fname, (data_func, size_func) in self.handlers.items():
             if not fname.startswith(dirname + '/'):
@@ -425,7 +425,7 @@ class ExtractWorker3(Process):
         '''Cleanup running :py:attr:`tar2_process`
 
         :param wait: wait for it termination, otherwise method exit early if
-        process is still running
+            process is still running
         :param terminate: terminate the process if still running
         '''
         if self.tar2_process is None:
@@ -721,7 +721,7 @@ def get_supported_hmac_algo(hmac_algorithm=None):
     '''Generate a list of supported hmac algorithms
 
     :param hmac_algorithm: default algorithm, if given, it is placed as a
-    first element
+        first element
     '''
     # Start with provided default
     if hmac_algorithm:

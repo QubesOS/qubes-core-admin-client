@@ -37,12 +37,12 @@ def prepare_table(dev_list):
     ''' Converts a list of :py:class:`qubes.devices.DeviceInfo` objects to a
     list of tupples for the :py:func:`qubes.tools.print_table`.
 
-        If :program:`qvm-devices` is running in a TTY, it will ommit duplicate
-        data.
+    If :program:`qvm-devices` is running in a TTY, it will ommit duplicate
+    data.
 
-        :param iterable dev_list: List of :py:class:`qubes.devices.DeviceInfo`
+    :param iterable dev_list: List of :py:class:`qubes.devices.DeviceInfo`
         objects.
-        :returns: list of tupples
+    :returns: list of tupples
     '''
     output = []
     header = []

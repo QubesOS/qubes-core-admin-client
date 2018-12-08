@@ -116,9 +116,9 @@ class EventsDispatcher(object):
         This is coroutine.
 
         :param vm: Listen for events only for this VM, use None to listen for
-        events about all VMs and not related to any particular VM.
+            events about all VMs and not related to any particular VM.
         :param reconnect: should reconnect to qubesd if connection is
-        interrupted?
+            interrupted?
         :rtype: None
         '''
         while True:

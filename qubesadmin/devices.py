@@ -162,7 +162,7 @@ class DeviceCollection(object):
         '''Detach (remove) device from domain.
 
         :param DeviceAssignment device_assignment: device to detach
-        (obtained from :py:meth:`assignments`)
+            (obtained from :py:meth:`assignments`)
         '''
         if not device_assignment.frontend_domain:
             device_assignment.frontend_domain = self._vm
@@ -188,7 +188,7 @@ class DeviceCollection(object):
         but be temporarily detached.
 
         :param bool persistent: only include devices which are or are not
-        attached persistently.
+            attached persistently.
         '''
 
         assignments_str = self._vm.qubesd_call(None,
