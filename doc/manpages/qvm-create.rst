@@ -24,6 +24,14 @@ Options
 
    Decrease verbosity.
 
+.. option:: --standalone
+
+   shortcut for --class StandaloneVM, see below
+
+..option :: --disp
+
+   shortcut for --class DispVM --label red, see below
+
 .. option:: --help-classes
 
    List available qube classes and exit. See below for short description.
