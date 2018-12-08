@@ -328,3 +328,25 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
                     app=self.app)
         self.assertIn('red, blue', stderr.getvalue())
         self.assertAllCalled()
+
+    def test_014_standalone_shortcut(self):
+        self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
+            None, b'name=new-vm label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-vm class=StandaloneVM state=Halted\n'
+        qubesadmin.tools.qvm_create.main(['-l', 'red', '--standalone', 'new-vm'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_015_disp_shortcut(self):
+        self.app.expected_calls[('dom0', 'admin.vm.Create.DispVM',
+            None, b'name=new-vm label=red')] = b'0\x00'
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-vm class=DispVM state=Halted\n'
+        qubesadmin.tools.qvm_create.main(['--disp', 'new-vm'],
+            app=self.app)
+        self.assertAllCalled()
