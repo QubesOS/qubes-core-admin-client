@@ -1,3 +1,43 @@
+qubes-core-admin-client (4.0.23-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Clarify QubesBase(), Qubes() and QubesLocal/QubesRemote usage
+  * Remove useless 'pass' to make pylint happy
+  * backup: simplify test expressions to make pylint happy
+
+  [ GammaSQ ]
+  * get_label now accepts integer and has correct return-type
+  * forgot braces
+  * reverted to comparing .index
+  * forgot braces
+  * isinstance instead of type
+  * added --standalone and --disp shortcuts
+  * diff doesn't set template
+  * added tests for shortcuts
+  * Documentation is important! Added shortcuts to manpages
+  * Fixed typo in documentation
+
+  [ Marek Marczykowski-Górecki ]
+  * tests/tools: extend vm.run_service() mockup
+  * tests/tools: improve qvm-run tests
+  * tools: fix qvm-run --pass-io --localcmd=... vmname command
+  * tools/qvm-run: handle Ctrl+C nicely
+  * tools/qvm-run: factor out print_no_color function
+  * tools/qvm-run: fix error reporting on qvm-run -n on halted qube
+  * tools/qvm-run: add error message if command in VM failed
+  * tools/qvm-device: allow detaching all devices
+  * doc: add 'permissive' PCI device option and 'mic' device class
+  * Clone VM's volume into the same pool, unless overridden specifically
+  * tools: remove extra debug
+  * tools/qvm-create: reject --root-{move,copy}-from with template-based
+    qubes
+  * tools/qvm-run: factor out actual process running into separate
+    function
+  * doc: improve qvm-device man page
+  * doc: fix rst syntax in documentation, including docstrings
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 09 Dec 2018 18:33:27 +0100
+
 qubes-core-admin-client (4.0.22-1) unstable; urgency=medium
 
   [ Patrik Hagara ]
