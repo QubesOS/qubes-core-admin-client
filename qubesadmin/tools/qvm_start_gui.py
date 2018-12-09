@@ -186,7 +186,7 @@ class GUILauncher(object):
 
         :param vm: VM for which start GUI daemon
         :param monitor_layout: monitor layout to send; if None, fetch it from
-        local X server.
+            local X server.
         '''
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.xid)])
@@ -243,7 +243,7 @@ class GUILauncher(object):
 
         :param vm: VM for which GUI daemon should be started
         :param force_stubdom: Force GUI daemon for stubdomain, even if the
-        one for target AppVM is running.
+            one for target AppVM is running.
         '''
         if vm.virt_mode == 'hvm':
             yield from self.start_gui_for_stubdomain(vm,
@@ -263,7 +263,7 @@ class GUILauncher(object):
 
         :param vm: VM to which send monitor layout
         :param layout: monitor layout to send; if None, fetch it from
-        local X server.
+            local X server.
         :param startup:
         :return: None
         '''

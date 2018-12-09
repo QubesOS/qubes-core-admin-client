@@ -326,11 +326,12 @@ class QubesArgumentParser(argparse.ArgumentParser):
     :param bool want_app_no_instance: don't actually instantiate \
         :py:class:`qubes.Qubes` object, just add argument for custom xml file
     :param mixed vmname_nargs: The number of ``VMNAME`` arguments that should be
-            consumed. Values include:
-                - N (an integer) consumes N arguments (and produces a list)
-                - '?' consumes zero or one arguments
-                - '*' consumes zero or more arguments (and produces a list)
-                - '+' consumes one or more arguments (and produces a list)
+        consumed. Values include:
+        * N (an integer) consumes N arguments (and produces a list)
+        * '?' consumes zero or one arguments
+        * '*' consumes zero or more arguments (and produces a list)
+        * '+' consumes one or more arguments (and produces a list)
+
     *kwargs* are passed to :py:class:`argparser.ArgumentParser`.
 
     Currenty supported options:
@@ -443,7 +444,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
 
 class SubParsersHelpAction(argparse._HelpAction):
-    ''' Print help for all options _and all subparsers_ '''
+    ''' Print help for all options and all subparsers '''
     # source https://stackoverflow.com/a/24122778
     # pylint: disable=protected-access,too-few-public-methods
 

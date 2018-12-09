@@ -193,9 +193,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
         :param name: name of storage pool to create
         :param driver: driver to use, see :py:meth:`pool_drivers` for
-        available drivers
+            available drivers
         :param kwargs: configuration parameters for storage pool,
-        see :py:meth:`pool_driver_parameters` for a list
+            see :py:meth:`pool_driver_parameters` for a list
         '''
         # sort parameters only to ease testing, not required by API
         payload = 'name={}\n'.format(name) + \
@@ -255,9 +255,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param str name: name of VM
         :param str label: label color for new VM
         :param str template: template to use (if apply for given VM class),
-        can be also VM object; use None for default value
+            can be also VM object; use None for default value
         :param str pool: storage pool to use instead of default one
         :param dict pools: storage pool for specific volumes
+
         :return new VM object
         '''
 
@@ -303,13 +304,14 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param QubesVM or str src_vm: source VM
         :param str new_name: name of new VM
         :param str new_cls: name of VM class (`AppVM`, `TemplateVM` etc) - use
-        None to copy it from *src_vm*
+            None to copy it from *src_vm*
         :param str pool: storage pool to use instead of default one
         :param dict pools: storage pool for specific volumes
         :param bool ignore_errors: should errors on meta-data setting be only
-        logged, or abort the whole operation?
+            logged, or abort the whole operation?
         :param list ignore_volumes: do not clone volumes on this list,
-        like 'private' or 'root'
+            like 'private' or 'root'
+
         :return new VM object
         '''
 
@@ -327,6 +329,21 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             template = str(template)
 
         label = src_vm.label
+
+        if pool is None and pools is None:
+            # use the same pools as the source - check if non default is used
+            for volume in sorted(src_vm.volumes.values()):
+                if not volume.save_on_stop:
+                    # clone only persistent volumes
+                    continue
+                if ignore_volumes and volume.name in ignore_volumes:
+                    continue
+                default_pool = getattr(self.app, 'default_pool_' + volume.name,
+                    volume.pool)
+                if default_pool != volume.pool:
+                    if pools is None:
+                        pools = {}
+                    pools[volume.name] = volume.pool
 
         method_prefix = 'admin.vm.Create.'
         payload = 'name={} label={}'.format(new_name, label)
@@ -458,7 +475,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
 
         :param str dest: Destination - may be a VM name or empty
-        string for default (for a given service)
+            string for default (for a given service)
         :param str service: service name
         :param bool filter_esc: filter escape sequences to protect terminal \
             emulator
@@ -544,7 +561,7 @@ class QubesLocal(QubesBase):
         '''Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
-        string for default (for a given service)
+            string for default (for a given service)
         :param str service: service name
         :param bool filter_esc: filter escape sequences to protect terminal \
             emulator
@@ -634,7 +651,7 @@ class QubesRemote(QubesBase):
         '''Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
-        string for default (for a given service)
+            string for default (for a given service)
         :param str service: service name
         :param bool filter_esc: filter escape sequences to protect terminal \
             emulator

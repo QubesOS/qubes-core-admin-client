@@ -19,8 +19,9 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 ''' qvm-run tool'''
-
+import contextlib
 import os
+import signal
 import subprocess
 import sys
 
@@ -115,14 +116,83 @@ def copy_stdin(stream):
     # multiprocessing.Process have sys.stdin connected to /dev/null, use fd 0
     #  directly
     while True:
-        # select so this code works even if fd 0 is non-blocking
-        select.select([0], [], [])
-        data = os.read(0, 65536)
-        if data is None or data == b'':
+        try:
+            # select so this code works even if fd 0 is non-blocking
+            select.select([0], [], [])
+            data = os.read(0, 65536)
+            if data is None or data == b'':
+                break
+            stream.write(data)
+            stream.flush()
+        except KeyboardInterrupt:
             break
-        stream.write(data)
-        stream.flush()
     stream.close()
+
+def print_no_color(msg, file, color):
+    '''Print a *msg* to *file* without coloring it.
+    Namely reset to base color first, print a message, then restore color.
+    '''
+    if color:
+        print('\033[0m{}\033[0;{}m'.format(msg, color), file=file)
+    else:
+        print(msg, file=file)
+
+
+def run_command_single(args, vm):
+    '''Handle a single VM to run the command in'''
+    run_kwargs = {}
+    if not args.passio:
+        run_kwargs['stdout'] = subprocess.DEVNULL
+        run_kwargs['stderr'] = subprocess.DEVNULL
+    elif args.localcmd:
+        run_kwargs['stdin'] = subprocess.PIPE
+        run_kwargs['stdout'] = subprocess.PIPE
+        run_kwargs['stderr'] = None
+    else:
+        # connect process output to stdout/err directly if --pass-io is given
+        run_kwargs['stdout'] = None
+        run_kwargs['stderr'] = None
+        if args.filter_esc:
+            run_kwargs['filter_esc'] = True
+
+    if isinstance(args.app, qubesadmin.app.QubesLocal) and \
+            not args.passio and \
+            not args.localcmd and \
+            args.service and \
+            not args.dispvm:
+        # wait=False works only in dom0; but it's still useful, to save on
+        # simultaneous vchan connections
+        run_kwargs['wait'] = False
+
+    copy_proc = None
+    local_proc = None
+    if args.service:
+        service = args.cmd
+    else:
+        service = 'qubes.VMShell'
+        if args.gui and args.dispvm:
+            service += '+WaitForSession'
+    proc = vm.run_service(service,
+        user=args.user,
+        **run_kwargs)
+    if not args.service:
+        proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
+        proc.stdin.flush()
+    if args.localcmd:
+        local_proc = subprocess.Popen(args.localcmd,
+            shell=True,
+            stdout=proc.stdin,
+            stdin=proc.stdout)
+        # stdin is closed below
+        proc.stdout.close()
+    elif args.passio:
+        copy_proc = multiprocessing.Process(target=copy_stdin,
+            args=(proc.stdin,))
+        copy_proc.start()
+        # keep the copying process running
+    proc.stdin.close()
+    return proc, copy_proc, local_proc
+
 
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
@@ -142,25 +212,6 @@ def main(args=None, app=None):
         parser.error('--color-output must be used with --filter-escape-chars')
 
     retcode = 0
-    run_kwargs = {}
-    if not args.passio:
-        run_kwargs['stdout'] = subprocess.DEVNULL
-        run_kwargs['stderr'] = subprocess.DEVNULL
-    else:
-        # connect process output to stdout/err directly if --pass-io is given
-        run_kwargs['stdout'] = None
-        run_kwargs['stderr'] = None
-        if not args.localcmd and args.filter_esc:
-            run_kwargs['filter_esc'] = True
-
-    if isinstance(args.app, qubesadmin.app.QubesLocal) and \
-            not args.passio and \
-            not args.localcmd and \
-            args.service and \
-            not args.dispvm:
-        # wait=False works only in dom0; but it's still useful, to save on
-        # simultaneous vchan connections
-        run_kwargs['wait'] = False
 
     verbose = args.verbose - args.quiet
     if args.passio:
@@ -189,50 +240,50 @@ def main(args=None, app=None):
         procs = []
         for vm in domains:
             if not args.autostart and not vm.is_running():
+                if verbose > 0:
+                    print_no_color('Qube \'{}\' not started'.format(vm.name),
+                        file=sys.stderr, color=args.color_stderr)
+                retcode = max(retcode, 1)
                 continue
             try:
                 if verbose > 0:
-                    if args.color_output:
-                        print('\033[0mRunning \'{}\' on {}\033[0;{}m'.format(
-                            args.cmd, vm.name, args.color_stderr),
-                            file=sys.stderr)
-                    else:
-                        print('Running \'{}\' on {}'.format(args.cmd, vm.name),
-                            file=sys.stderr)
+                    print_no_color(
+                        'Running \'{}\' on {}'.format(args.cmd, vm.name),
+                        file=sys.stderr, color=args.color_stderr)
                 if args.gui and not args.dispvm:
                     wait_session = vm.run_service('qubes.WaitForSession',
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    wait_session.communicate(vm.default_user.encode())
-                if args.service:
-                    proc = vm.run_service(args.cmd,
-                        user=args.user,
-                        localcmd=args.localcmd,
-                        **run_kwargs)
-                else:
-                    service = 'qubes.VMShell'
-                    if args.gui and args.dispvm:
-                        service += '+WaitForSession'
-                    proc = vm.run_service(service,
-                        user=args.user,
-                        localcmd=args.localcmd,
-                        **run_kwargs)
-                    proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
-                    proc.stdin.flush()
-                if args.passio and not args.localcmd:
-                    copy_proc = multiprocessing.Process(target=copy_stdin,
-                        args=(proc.stdin,))
-                    copy_proc.start()
-                    # keep the copying process running
-                proc.stdin.close()
-                procs.append(proc)
+                    try:
+                        wait_session.communicate(vm.default_user.encode())
+                    except KeyboardInterrupt:
+                        with contextlib.suppress(ProcessLookupError):
+                            wait_session.send_signal(signal.SIGINT)
+                        break
+                proc, copy_proc, local_proc = run_command_single(args, vm)
+                procs.append((vm, proc))
+                if local_proc:
+                    procs.append((vm, local_proc))
             except qubesadmin.exc.QubesException as e:
                 if args.color_output:
                     sys.stdout.write('\033[0m')
                     sys.stdout.flush()
                 vm.log.error(str(e))
                 return -1
-        for proc in procs:
-            retcode = max(retcode, proc.wait())
+        try:
+            for vm, proc in procs:
+                this_retcode = proc.wait()
+                if this_retcode and args.verbose > 0:
+                    print_no_color(
+                        '{}: command failed with code: {}'.format(
+                            vm.name, this_retcode),
+                        file=sys.stderr, color=args.color_stderr)
+                retcode = max(retcode, proc.wait())
+        except KeyboardInterrupt:
+            for vm, proc in procs:
+                with contextlib.suppress(ProcessLookupError):
+                    proc.send_signal(signal.SIGINT)
+            for vm, proc in procs:
+                retcode = max(retcode, proc.wait())
     finally:
         if dispvm:
             dispvm.cleanup()

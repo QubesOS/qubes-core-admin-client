@@ -6,13 +6,12 @@
 
 Synopsis
 ========
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {list,ls,l} <*vm-name*>
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {attach,at,a} <*vm-name*> <*device*>
-| :command:`qvm-device` [*options*] *DEVICE_CLASS* {detach,dt,d} <*vm-name*> <*device*>
-| :command:`qvm-*DEVICE_CLASS*` [*options*] {list,ls,l,attach,at,a,detach,dt,d} <*vmname*> ...
+| :command:`qvm-device` *DEVICE_CLASS* {list,ls,l} [*options*] <*vm-name*>
+| :command:`qvm-device` *DEVICE_CLASS* {attach,at,a} [*options*] <*vm-name*> <*device*>
+| :command:`qvm-device` *DEVICE_CLASS* {detach,dt,d} [*options*] <*vm-name*> [<*device*>]
+| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d} [*options*] <*vmname*> ...
 
-Tool can be called either as `qvm-device *DEVICE_CLASS* ...`, or
-`qvm-*DEVICE_CLASS* ...`. The latter is used for `qvm-pci`, `qvm-block` etc.
+.. note:: :command:`qvm-block`, :command:`qvm-usb` and :command:`qvm-pci` are just aliases for :command:`qvm-device block`, :command:`qvm-device usb` and :command:`qvm-device pci` respectively.
 
 Options
 =======
@@ -79,7 +78,8 @@ detach
 
 | :command:`qvm-device` *DEVICE_CLASS* detach [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
 
-Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*
+Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
+If no device is given, detach all *DEVICE_CLASS* devices.
 
 aliases: d, dt
 
@@ -107,7 +107,15 @@ pci
 PCI device. Only dom0 expose such devices. One should be very careful when attaching this type of devices, because some of them are strictly required to stay in dom0 (for example host bridge). Available options:
 
 * `no-strict-reset` - allow to attach device even if it does not support any reliable reset operation; switching such device to another domain (without full host restart) can be a security risk; default: `False`, accepted values: `True`, `False` (option absent)
+* `permissive` - allow write access to most of PCI config space, instead of only selected whitelisted rregisters; a workaround for some PCI passthrough problems, potentially unsafe; default: `False`, accepted values: `True`, `False` (option absent)
 
+mic
+^^^
+
+Microphone, or other audio input. Normally there is only one device of this
+type - `dom0:mic`. Use PulseAudio settings in dom0 to select which input source
+is used.
+This type of device does not support options.
 
 Authors
 =======

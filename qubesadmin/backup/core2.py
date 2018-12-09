@@ -51,7 +51,7 @@ class Core2VM(qubesadmin.backup.BackupVM):
 
         :param node: XML node for the rule
         :param action: action to apply (in old format it wasn't part of the
-        rule itself)
+            rule itself)
         '''
         netmask = node.get('netmask')
         if netmask is None:

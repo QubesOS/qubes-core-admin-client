@@ -104,7 +104,6 @@ class _Set(qubesadmin.tools.PoolsAction):
                                         'modifications)')
 
     def __call__(self, parser, namespace, name, option_string=None):
-        print('dupa')
         setattr(namespace, 'command', 'set')
         super(_Set, self).__call__(parser, namespace, name, option_string)
 

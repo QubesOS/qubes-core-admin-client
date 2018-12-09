@@ -139,6 +139,12 @@ def main(args=None, app=None):
         parser.error(
             'File pointed by --root-copy-from/--root-move-from does not exist')
 
+    # those are known of non-persistent root, do not list those with known
+    # persistent root, as an extension may add new classes
+    if root_source_path and args.cls in ('AppVM', 'DispVM'):
+        parser.error('--root-copy-from/--root-move-from used but this qube '
+                     'does not have own \'root\' volume (uses template\'s one)')
+
     try:
         args.app.get_label(args.properties['label'])
     except KeyError:
