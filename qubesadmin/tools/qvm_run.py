@@ -272,7 +272,7 @@ def main(args=None, app=None):
         try:
             for vm, proc in procs:
                 this_retcode = proc.wait()
-                if this_retcode and args.verbose > 0:
+                if this_retcode and verbose > 0:
                     print_no_color(
                         '{}: command failed with code: {}'.format(
                             vm.name, this_retcode),
