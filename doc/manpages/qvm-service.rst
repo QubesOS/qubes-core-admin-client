@@ -55,9 +55,7 @@ meminfo-writer
 
     .. note::
 
-        This service is enforced to be set by dom0 code. If you try to
-        remove it (reset to default state), will be recreated with the rule: enabled
-        if VM have no PCI devices assigned, otherwise disabled.
+        This service is managed by dom0 code and is not visible for *qvm-service* tool.
 
 qubes-firewall
     Default: enabled only in ProxyVM
