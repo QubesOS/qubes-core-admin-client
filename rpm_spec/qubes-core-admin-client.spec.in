@@ -14,6 +14,7 @@ BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
 BuildRequires:	python%{python3_pkgversion}-dbus
 Requires:   python%{python3_pkgversion}-qubesadmin
+Requires:   python%{python3_pkgversion}-yaml
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 
