@@ -9,19 +9,11 @@ URL:		https://www.qubes-os.org
 
 BuildRequires:	python2-setuptools
 BuildRequires:	python2-devel
-%if 0%{?rhel} >= 7
-BuildRequires:	python34-setuptools
-BuildRequires:	python34-devel
-BuildRequires:	python34-sphinx
-BuildRequires:	python34-dbus
-Requires:   python34-qubesadmin
-%else
-BuildRequires:	python3-setuptools
-BuildRequires:	python3-devel
-BuildRequires:	python3-sphinx
-BuildRequires:	python3-dbus
-Requires:   python3-qubesadmin
-%endif
+BuildRequires:	python%{python3_pkgversion}-setuptools
+BuildRequires:	python%{python3_pkgversion}-devel
+BuildRequires:	python%{python3_pkgversion}-sphinx
+BuildRequires:	python%{python3_pkgversion}-dbus
+Requires:   python%{python3_pkgversion}-qubesadmin
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 
@@ -37,29 +29,20 @@ Requires:   python2-lxml
 %description -n python2-qubesadmin
 Python2 module qubesadmin.
 
+%package -n python%{python3_pkgversion}-qubesadmin
+Summary:    Python%{python3_pkgversion} module qubesadmin
 %if 0%{?rhel} >= 7
-%package -n python34-qubesadmin
-Summary:    Python34 module qubesadmin
 Requires:   python-daemon
-Requires:   python34-docutils
-Requires:   python34-lxml
-Requires:   python34-xcffib
-Conflicts:  qubes-manager < 4.0.6
-
-%description -n python34-qubesadmin
-Python34 module qubesadmin.
 %else
-%package -n python3-qubesadmin
-Summary:    Python3 module qubesadmin
 Requires:   python3-daemon
-Requires:   python3-docutils
-Requires:   python3-lxml
-Requires:   python3-xcffib
+%endif
+Requires:   python%{python3_pkgversion}-docutils
+Requires:   python%{python3_pkgversion}-lxml
+Requires:   python%{python3_pkgversion}-xcffib
 Conflicts:  qubes-manager < 4.0.6
 
-%description -n python3-qubesadmin
+%description -n python%{python3_pkgversion}-qubesadmin
 Python3 module qubesadmin.
-%endif
 
 %prep
 %setup -q
@@ -93,11 +76,7 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %{python2_sitelib}/qubesadmin-*egg-info
 %{python2_sitelib}/qubesadmin
 
-%if 0%{?rhel} >= 7
-%files -n python34-qubesadmin
-%else
-%files -n python3-qubesadmin
-%endif
+%files -n python%{python3_pkgversion}-qubesadmin
 %{python3_sitelib}/qubesadmin-*egg-info
 %{python3_sitelib}/qubesadmin
 
