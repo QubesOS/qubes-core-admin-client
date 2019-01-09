@@ -227,7 +227,7 @@ def launch_scrypt(action, input_name, output_name, passphrase):
     :param passphrase: passphrase
     :return: subprocess.Popen object
     '''
-    command_line = ['scrypt', action, input_name, output_name]
+    command_line = ['scrypt', action, '-f', input_name, output_name]
     (p, pty) = launch_proc_with_pty(command_line,
         stdin=subprocess.PIPE if input_name == '-' else None,
         stdout=subprocess.PIPE if output_name == '-' else None,
