@@ -197,11 +197,12 @@ def run_command_single(args, vm):
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
     args = parser.parse_args(args, app=app)
-    if args.color_output is None and args.filter_esc:
-        args.color_output = '31'
+    if args.passio:
+        if args.color_output is None and args.filter_esc:
+            args.color_output = 31
 
-    if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
-        args.color_stderr = 31
+        if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
+            args.color_stderr = 31
 
     if len(args.domains) > 1 and args.passio and not args.localcmd:
         parser.error('--passio cannot be used when more than 1 qube is chosen '
