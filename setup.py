@@ -6,10 +6,9 @@ import setuptools.command.install
 import sys
 
 exclude=[]
-if sys.version_info[0:2] < (3, 4):
-    exclude += ['qubesadmin.tools', 'qubesadmin.tests.tools']
-    exclude += ['qubesadmin.backup', 'qubesadmin.tests.backup']
 if sys.version_info[0:2] < (3, 5):
+    exclude += ['qubesadmin.backup', 'qubesadmin.tests.backup']
+    exclude += ['qubesadmin.tools', 'qubesadmin.tests.tools']
     exclude += ['qubesadmin.events']
 
 # don't import: import * is unreliable and there is no need, since this is

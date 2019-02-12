@@ -7,8 +7,8 @@ Compatibility
 =============
 
 Most of the API modules are compatible with Python >= 2.7.
-Very few parts require Python >= 3.4:
+Very few parts require Python >= 3.5:
  - tools (`qvm-*`)
  - qubesadmin.events module (for asyncio module)
 
-Parts not compatible with Python < 3.4, are not installed in such environment.
+Parts not compatible with Python < 3.5, are not installed in such environment.
