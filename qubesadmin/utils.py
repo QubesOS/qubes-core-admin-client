@@ -126,13 +126,14 @@ def vm_dependencies(app, reference_vm):
     result = []
 
     global_properties = ['default_dispvm', 'default_netvm',
-                         'default_template', 'clockvm', 'updatevm']
+                         'default_template', 'clockvm', 'updatevm',
+                         'management_dispvm']
 
     for prop in global_properties:
         if reference_vm == getattr(app, prop, None):
             result.append((None, prop))
 
-    vm_properties = ['template', 'netvm', 'default_dispvm']
+    vm_properties = ['template', 'netvm', 'default_dispvm', 'management_dispvm']
 
     for vm in app.domains:
         for prop in vm_properties:

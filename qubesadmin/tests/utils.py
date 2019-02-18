@@ -36,7 +36,8 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
             b'sys-firewall class=AppVM state=Running\n'
 
         self.global_properties = ['default_dispvm', 'default_netvm',
-                                  'default_template', 'clockvm', 'updatevm']
+                                  'default_template', 'clockvm', 'updatevm',
+                                  'management_dispvm']
 
         for prop in self.global_properties:
             self.app.expected_calls[
@@ -45,7 +46,8 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
 
         self.vms = ['vm1', 'vm2', 'sys-net', 'sys-firewall',
                     'template1', 'template2']
-        self.vm_properties = ['template', 'netvm', 'default_dispvm']
+        self.vm_properties = ['template', 'netvm', 'default_dispvm',
+            'management_dispvm']
 
         for vm in self.vms:
             for prop in self.vm_properties:
