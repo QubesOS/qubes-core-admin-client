@@ -1968,7 +1968,8 @@ class BackupRestore(object):
                         options=options,
                         persistent=True)
                     try:
-                        new_vm.devices[bus].attach(assignment)
+                        if not self.options.verify_only:
+                            new_vm.devices[bus].attach(assignment)
                     except Exception as err:  # pylint: disable=broad-except
                         self.log.error('Error attaching device %s:%s to %s: %s',
                             bus, ident, vm.name, err)
