@@ -124,9 +124,7 @@ class EventsDispatcher(object):
         while True:
             try:
                 yield from self._listen_for_events(vm)
-            except (ConnectionRefusedError, ConnectionResetError,
-                    FileNotFoundError,
-                    qubesadmin.exc.QubesDaemonCommunicationError):
+            except (OSError, qubesadmin.exc.QubesDaemonCommunicationError):
                 pass
             if not reconnect:
                 break
