@@ -53,7 +53,11 @@ Options
 
 .. option:: --compress, -z
 
-   Compress the backup
+   Compress the backup. This is default.
+
+.. option:: --no-compress,
+
+   Do not compress the backup.
 
 .. option:: --compress-filter, -Z
 

@@ -65,8 +65,11 @@ no_profile.add_argument("--passphrase-file", "-p", action="store",
     help="Read passphrase from a file, or use '-' to read "
          "from stdin")
 no_profile.add_argument("--compress", "-z", action="store_true",
-    dest="compression", default=False,
-    help="Compress the backup")
+    dest="compression", default=True,
+    help="Compress the backup (default)")
+no_profile.add_argument("--no-compress", action="store_false",
+    dest="compression",
+    help="Do not compress the backup")
 no_profile.add_argument("--compress-filter", "-Z", action="store",
     dest="compression",
     help="Specify a non-default compression filter program "
@@ -99,8 +102,7 @@ def write_backup_profile(output_stream, args, passphrase=None):
         profile_data['exclude'] = args.exclude_list
     if passphrase:
         profile_data['passphrase_text'] = passphrase
-    if args.compression:
-        profile_data['compression'] = args.compression
+    profile_data['compression'] = args.compression
     if args.appvm:
         profile_data['destination_vm'] = args.appvm
     else:
