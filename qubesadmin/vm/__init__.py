@@ -21,6 +21,7 @@
 '''Qubes VM objects.'''
 
 import logging
+import shlex
 
 import subprocess
 import warnings
@@ -304,6 +305,15 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         except subprocess.CalledProcessError as e:
             e.cmd = command
             raise e
+
+    def run_with_args(self, *args, **kwargs):
+        '''Run a single command inside the domain using qubes.VMShell qrexec.
+
+        This method execute a single command, without interpreting any shell
+        special characters.
+
+        '''  # pylint: disable=redefined-builtin
+        return self.run(' '.join(shlex.quote(arg) for arg in args), **kwargs)
 
     @property
     def appvms(self):
