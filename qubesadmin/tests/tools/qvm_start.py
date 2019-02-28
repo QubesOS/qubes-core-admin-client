@@ -193,11 +193,11 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
                 as mock_run:
             mock_run.return_value = (b'/dev/loop7', b'')
             qubesadmin.tools.qvm_start.main([
-                '--cdrom=other-vm:/home/some/image.iso',
+                '--cdrom=other-vm:/home/some image.iso',
                 'some-vm'],
                 app=self.app)
             mock_run.assert_called_once_with(
-                'losetup -f --show /home/some/image.iso',
+                'losetup -f --show \'/home/some image.iso\'',
                 user='root')
         self.assertAllCalled()
 

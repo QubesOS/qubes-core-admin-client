@@ -115,8 +115,9 @@ def get_drive_assignment(app, drive_str):
                 loop_name = subprocess.check_output(
                     ['sudo', 'losetup', '-f', '--show', ident])
             else:
-                loop_name, _ = backend_domain.run(
-                    'losetup -f --show ' + ident, user='root')
+                loop_name, _ = backend_domain.run_with_args(
+                    'losetup', '-f', '--show', ident,
+                    user='root')
         except subprocess.CalledProcessError:
             raise qubesadmin.exc.QubesException(
                 'Failed to setup loop device for %s', ident)
