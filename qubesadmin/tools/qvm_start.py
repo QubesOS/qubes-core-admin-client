@@ -20,6 +20,7 @@
 
 '''qvm-start - start a domain'''
 import argparse
+import string
 import sys
 
 import subprocess
@@ -114,14 +115,23 @@ def get_drive_assignment(app, drive_str):
             if backend_domain.klass == 'AdminVM':
                 loop_name = subprocess.check_output(
                     ['sudo', 'losetup', '-f', '--show', ident])
+                loop_name = loop_name.strip()
             else:
-                loop_name, _ = backend_domain.run_with_args(
+                untrusted_loop_name, _ = backend_domain.run_with_args(
                     'losetup', '-f', '--show', ident,
                     user='root')
+                untrusted_loop_name = untrusted_loop_name.strip()
+                allowed_chars = string.ascii_lowercase + string.digits + '/'
+                allowed_chars = allowed_chars.encode('ascii')
+                if not all(c in allowed_chars for c in untrusted_loop_name):
+                    raise qubesadmin.exc.QubesException(
+                        'Invalid loop device name received from {}'.format(
+                            backend_domain.name))
+                loop_name = untrusted_loop_name
+                del untrusted_loop_name
         except subprocess.CalledProcessError:
             raise qubesadmin.exc.QubesException(
                 'Failed to setup loop device for %s', ident)
-        loop_name = loop_name.strip()
         assert loop_name.startswith(b'/dev/loop')
         ident = loop_name.decode().split('/')[2]
         # wait for device to appear
