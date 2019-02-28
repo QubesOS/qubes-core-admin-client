@@ -73,3 +73,36 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             b'0\x00'
         self.vm.resume()
         self.assertAllCalled()
+
+    def test_010_run_linux(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.vm.run('some command')
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', b'some command; exit\n'),
+        ])
+
+    def test_011_run_windows(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'0\x00Windows'
+        self.vm.run('some command')
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', b'some command& exit\n'),
+        ])
+
+    def test_015_run_with_args(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.vm.run_with_args('some', 'argument with spaces',
+            'and $pecial; chars')
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell',
+                b'some \'argument with spaces\' \'and $pecial; chars\'; '
+                b'exit\n'),
+        ])
