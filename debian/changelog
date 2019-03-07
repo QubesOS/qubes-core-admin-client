@@ -1,3 +1,32 @@
+qubes-core-admin-client (4.0.25-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * doc: update meminfo-writer service note
+
+  [ GammaSQ ]
+  * fixed typo
+
+  [ Marek Marczykowski-Górecki ]
+  * rpm: unify fedora and centos packaging
+  * rpm: add R: python3-yaml, as needed by qvm-backup tool
+  * backup: do not fail restore if scrypt anticipate more time needed
+  * tools/qvm-run: do not color the output unless --pass-io is used
+  * Bump Python version requirement for qvm-* to 3.5
+  * utils: include management_dispvm property when checking where VM is
+    used
+  * backup: Do not try to attach devices during backup verification
+  * tools/qvm-backup: allow to disable compression
+  * events: simplify handling qubesd reconnect
+  * vm: add run_with_args method to call a single command with specific
+    arguments
+  * tests: vm.run, vm.run_with_args
+  * tools/qvm-start: use vm.run_with_args to call losetup in the VM
+  * tools/qvm-start: validate output of losetup command
+  * Make vm.run_with_args working on python2
+  * Make pylint happy
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 07 Mar 2019 03:58:08 +0100
+
 qubes-core-admin-client (4.0.24-1) unstable; urgency=medium
 
   * tools/qvm-run: make -q affect 'command failed with code' message
