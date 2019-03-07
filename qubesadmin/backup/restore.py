@@ -1003,8 +1003,7 @@ class BackupRestore(object):
                     if f_one.read() != f_two.read():
                         raise QubesException(
                             'Invalid hmac on {}'.format(filename))
-                    else:
-                        return True
+                    return True
 
         with open(os.path.join(self.tmpdir, filename), 'rb') as f_input:
             hmac_proc = subprocess.Popen(
@@ -1016,23 +1015,22 @@ class BackupRestore(object):
         if hmac_stderr:
             raise QubesException(
                 "ERROR: verify file {0}: {1}".format(filename, hmac_stderr))
-        else:
-            self.log.debug("Loading hmac for file %s", filename)
-            try:
-                with open(os.path.join(self.tmpdir, hmacfile), 'r',
-                        encoding='ascii') as f_hmac:
-                    hmac = load_hmac(f_hmac.read())
-            except UnicodeDecodeError as err:
-                raise QubesException('Cannot load hmac file: ' + str(err))
-            if hmac and load_hmac(hmac_stdout.decode('ascii')) == hmac:
-                os.unlink(os.path.join(self.tmpdir, hmacfile))
-                self.log.debug(
-                    "File verification OK -> Sending file %s", filename)
-                return True
-            raise QubesException(
-                "ERROR: invalid hmac for file {0}: {1}. "
-                "Is the passphrase correct?".
-                format(filename, load_hmac(hmac_stdout.decode('ascii'))))
+        self.log.debug("Loading hmac for file %s", filename)
+        try:
+            with open(os.path.join(self.tmpdir, hmacfile), 'r',
+                    encoding='ascii') as f_hmac:
+                hmac = load_hmac(f_hmac.read())
+        except UnicodeDecodeError as err:
+            raise QubesException('Cannot load hmac file: ' + str(err))
+        if hmac and load_hmac(hmac_stdout.decode('ascii')) == hmac:
+            os.unlink(os.path.join(self.tmpdir, hmacfile))
+            self.log.debug(
+                "File verification OK -> Sending file %s", filename)
+            return True
+        raise QubesException(
+            "ERROR: invalid hmac for file {0}: {1}. "
+            "Is the passphrase correct?".
+            format(filename, load_hmac(hmac_stdout.decode('ascii'))))
 
     def _verify_and_decrypt(self, filename, output=None):
         '''Handle scrypt-wrapped file
@@ -1242,7 +1240,7 @@ class BackupRestore(object):
         """
         if self.header_data.version == 1:
             raise NotImplementedError('Backup format version 1 not supported')
-        elif self.header_data.version in [2, 3]:
+        if self.header_data.version in [2, 3]:
             self._retrieve_backup_header_files(
                 ['qubes.xml.000', 'qubes.xml.000.hmac'])
             self._verify_hmac("qubes.xml.000", "qubes.xml.000.hmac")
@@ -1407,12 +1405,11 @@ class BackupRestore(object):
                     raise QubesException(
                         'retrieved backup size exceed expected size, if you '
                         'believe this is ok, use --ignore-size-limit option')
-                else:
-                    raise QubesException(
-                        "unable to read the qubes backup file {} ({}): {}"
-                        .format(self.backup_location,
-                            retrieve_proc.returncode, error_pipe.read(
-                            MAX_STDERR_BYTES)))
+                raise QubesException(
+                    "unable to read the qubes backup file {} ({}): {}"
+                    .format(self.backup_location,
+                        retrieve_proc.returncode, error_pipe.read(
+                        MAX_STDERR_BYTES)))
             # wait for other processes (if any)
             for proc in self.processes_to_kill_on_cancel:
                 proc.wait()
@@ -1837,8 +1834,7 @@ class BackupRestore(object):
         except QubesException as err:
             if self.options.verify_only:
                 raise
-            else:
-                self.log.error('Error extracting data: %s', str(err))
+            self.log.error('Error extracting data: %s', str(err))
         finally:
             if self.log.getEffectiveLevel() > logging.DEBUG:
                 shutil.rmtree(self.tmpdir)

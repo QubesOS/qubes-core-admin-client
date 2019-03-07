@@ -142,7 +142,7 @@ def handle_broken(app, args, restore_info):
             raise qubesadmin.exc.QubesException(
                 "Install them before proceeding with the restore."
                 "Or pass: --skip-broken or --ignore-missing.")
-        elif args.skip_broken:
+        if args.skip_broken:
             app.log.warning("Skipping broken entries: VMs that depend on "
                             "missing TemplateVMs will NOT be restored.")
         elif args.ignore_missing:
@@ -160,7 +160,7 @@ def handle_broken(app, args, restore_info):
             raise qubesadmin.exc.QubesException(
                 "Install them before proceeding with the restore."
                 "Or pass: --skip-broken or --ignore-missing.")
-        elif args.skip_broken:
+        if args.skip_broken:
             app.log.warning("Skipping broken entries: VMs that depend on "
                             "missing NetVMs will NOT be restored.")
         elif args.ignore_missing:
@@ -180,8 +180,7 @@ def handle_broken(app, args, restore_info):
                     "Skip restoring the dom0 home directory "
                     "(--skip-dom0-home), or pass "
                     "--ignore-username-mismatch to continue anyway.")
-            else:
-                app.log.warning("Continuing as directed.")
+            app.log.warning("Continuing as directed.")
         app.log.warning("NOTE: The archived dom0 home directory "
             "will be restored to a new directory "
             "'home-restore-<current-time>' "

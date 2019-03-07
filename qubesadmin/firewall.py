@@ -89,7 +89,7 @@ class DstHost(RuleOption):
         # TODO: in python >= 3.3 ipaddress module could be used
         if value.count('/') > 1:
             raise ValueError('Too many /: ' + value)
-        elif not value.count('/'):
+        if not value.count('/'):
             # add prefix length to bare IP addresses
             try:
                 socket.inet_pton(socket.AF_INET6, value)

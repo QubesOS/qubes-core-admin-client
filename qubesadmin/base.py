@@ -100,9 +100,8 @@ class PropertyHolder(object):
                     exc_class = qubesadmin.exc.QubesException
             # TODO: handle traceback if given
             raise exc_class(format_string, *args)
-        else:
-            raise qubesadmin.exc.QubesDaemonCommunicationError(
-                'Invalid response format')
+        raise qubesadmin.exc.QubesDaemonCommunicationError(
+            'Invalid response format')
 
     def property_list(self):
         '''
