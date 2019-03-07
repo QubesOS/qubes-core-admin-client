@@ -34,6 +34,10 @@ import qubesadmin.devices
 import qubesadmin.firewall
 import qubesadmin.tags
 
+if not hasattr(shlex, 'quote'):
+    # python2 compat
+    import pipes
+    shlex.quote = pipes.quote
 
 class QubesVM(qubesadmin.base.PropertyHolder):
     '''Qubes domain.'''
