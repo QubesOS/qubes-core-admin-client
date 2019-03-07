@@ -55,7 +55,7 @@ Options
 
    Compress the backup. This is default.
 
-.. option:: --no-compress,
+.. option:: --no-compress
 
    Do not compress the backup.
 
