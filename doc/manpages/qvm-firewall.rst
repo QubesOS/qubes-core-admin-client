@@ -12,8 +12,6 @@ Synopsis
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* list [--raw]
 
-:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* policy {accept,drop}
-
 Options
 -------
 
@@ -50,8 +48,6 @@ Available actions:
 
 * list - list all the rules for a given VM.
 
-* policy - set default action if no rule matches.
-
 
 Rule syntax
 -----------
@@ -61,8 +57,8 @@ A single rule is built from:
  - zero or more matches
 
 Selected action is applied to packets when all specified matches match,
-further rules are not evaluated. If none of the rules match, the default action
-(``policy``) is applied.
+further rules are not evaluated. If none of the rules match, the default
+firewall policy is ``drop``.
 
 Supported matches:
  - ``dsthost`` - destination host or network. Can be either IP address in CIDR
