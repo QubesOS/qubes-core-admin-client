@@ -33,8 +33,10 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
         expected_profile = (
-            '{compression: true, destination_path: /var/tmp, '
-            'destination_vm: dom0, include: null}\n'
+            'compression: true\n'
+            'destination_path: /var/tmp\n'
+            'destination_vm: dom0\n'
+            'include: null\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
 
@@ -52,7 +54,9 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             'compression: true\n'
             'destination_path: /var/tmp\n'
             'destination_vm: dom0\n'
-            'include: [vm1, vm2]\n'
+            'include:\n'
+            '- vm1\n'
+            '- vm2\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
         self.assertAllCalled()
@@ -66,7 +70,9 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             'compression: true\n'
             'destination_path: /var/tmp\n'
             'destination_vm: dom0\n'
-            'exclude: [vm1, vm2]\n'
+            'exclude:\n'
+            '- vm1\n'
+            '- vm2\n'
             'include: null\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
@@ -76,9 +82,11 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args, passphrase='test123')
         expected_profile = (
-            '{compression: true, destination_path: /var/tmp, '
-            'destination_vm: dom0, include: null,\n'
-            '  passphrase_text: test123}\n'
+            'compression: true\n'
+            'destination_path: /var/tmp\n'
+            'destination_vm: dom0\n'
+            'include: null\n'
+            'passphrase_text: test123\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
 
@@ -88,8 +96,10 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
         expected_profile = (
-            '{compression: false, destination_path: /var/tmp, '
-            'destination_vm: dom0, include: null}\n'
+            'compression: false\n'
+            'destination_path: /var/tmp\n'
+            'destination_vm: dom0\n'
+            'include: null\n'
         )
         self.assertEqual(profile.getvalue(), expected_profile)
 
@@ -109,8 +119,10 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             qvm_backup.main(['--save-profile', 'test-profile', '/var/tmp'],
                 app=self.app)
             expected_profile = (
-                '{compression: true, destination_path: /var/tmp, '
-                'destination_vm: dom0, include: null}\n'
+                'compression: true\n'
+                'destination_path: /var/tmp\n'
+                'destination_vm: dom0\n'
+                'include: null\n'
             )
             with open(profile_path) as f:
                 self.assertEqual(expected_profile, f.read())
@@ -136,9 +148,11 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             qvm_backup.main(['--save-profile', 'test-profile', '/var/tmp'],
                 app=self.app)
             expected_profile = (
-                '{compression: true, destination_path: /var/tmp, '
-                'destination_vm: dom0, include: null,\n'
-                '  passphrase_text: some password}\n'
+                'compression: true\n'
+                'destination_path: /var/tmp\n'
+                'destination_vm: dom0\n'
+                'include: null\n'
+                'passphrase_text: some password\n'
             )
             with open(profile_path) as f:
                 self.assertEqual(expected_profile, f.read())
@@ -198,7 +212,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             'compression: true\n'
             'destination_path: /var/tmp\n'
             'destination_vm: dom0\n'
-            'exclude: [vm1]\n'
+            'exclude:\n'
+            '- vm1\n'
             'include: null\n'
             '# specify backup passphrase below\n'
             'passphrase_text: ...\n'
@@ -229,9 +244,11 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                     'test-profile', '/var/tmp'],
                     app=self.app)
             expected_profile = (
-                '{compression: true, destination_path: /var/tmp, '
-                'destination_vm: dom0, include: null,\n'
-                '  passphrase_text: other passphrase}\n'
+                'compression: true\n'
+                'destination_path: /var/tmp\n'
+                'destination_vm: dom0\n'
+                'include: null\n'
+                'passphrase_text: other passphrase\n'
             )
             with open(profile_path) as f:
                 self.assertEqual(expected_profile, f.read())
