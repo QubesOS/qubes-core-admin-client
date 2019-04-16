@@ -31,7 +31,7 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
             b'test-vm class=AppVM state=Halted\n'
         qubesadmin.tools.qvm_clone.main(['test-vm', 'new-vm'], app=self.app)
         self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
-            'new-vm', new_cls=None, pool=None, pools={})
+            'new-vm', new_cls=None, pool=None, pools={}, ignore_errors=False)
         self.assertAllCalled()
 
     def test_001_missing_vm(self):
@@ -43,6 +43,19 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
         self.assertFalse(self.app.clone_vm.called)
         self.assertAllCalled()
 
+    def test_002_ignore_errors(self):
+        self.app.clone_vm = mock.Mock()
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-vm class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n'
+
+        test_args = ['test-vm', 'new-vm', '--ignore-errors']
+        qubesadmin.tools.qvm_clone.main(test_args, app=self.app)
+        self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
+            'new-vm', new_cls=None, pool=None, pools={},
+            ignore_errors=True)
+        self.assertAllCalled()
+
     def test_004_pool(self):
         self.app.clone_vm = mock.Mock()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
@@ -51,7 +64,7 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
         qubesadmin.tools.qvm_clone.main(['-P', 'some-pool', 'test-vm', 'new-vm'],
             app=self.app)
         self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
-            'new-vm', new_cls=None, pool='some-pool', pools={})
+            'new-vm', new_cls=None, pool='some-pool', pools={}, ignore_errors=False)
         self.assertAllCalled()
 
     def test_005_pools(self):
@@ -64,7 +77,7 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
             app=self.app)
         self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
             'new-vm', new_cls=None, pool=None, pools={'private': 'some-pool',
-                'volatile': 'other-pool'})
+                'volatile': 'other-pool'}, ignore_errors=False)
         self.assertAllCalled()
 
     def test_006_new_cls(self):
@@ -76,5 +89,6 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
             'test-vm', 'new-vm'],
             app=self.app)
         self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
-            'new-vm', new_cls='StandaloneVM', pool=None, pools={})
+            'new-vm', new_cls='StandaloneVM', pool=None, pools={},
+            ignore_errors=False)
         self.assertAllCalled()

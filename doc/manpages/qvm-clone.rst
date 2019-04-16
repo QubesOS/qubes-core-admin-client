@@ -38,6 +38,11 @@ Options
 
     Specify the pool to use for the specific volume
 
+.. option:: --ignore-errors
+
+    Log errors encountered when creating metadata, but continue with clone
+    operation. Useful if qvm-appmenus call fails from an AdminVM during clone.
+
 .. option:: --quiet, -q
 
     Be quiet
