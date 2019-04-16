@@ -37,6 +37,10 @@ parser.add_argument('--class', '-C', dest='cls',
     default=None,
     help='specify the class of the new domain (default: same as source)')
 
+parser.add_argument('--ignore-errors', action='store_true',
+    default=False,
+    help='log errors encountered during setting metadata, but continue clone operation')
+
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-P',
                     metavar='POOL',
@@ -72,7 +76,7 @@ def main(args=None, app=None):
                     'Pool argument must be of form: -P volume_name=pool_name')
 
     try:
-        app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools)
+        app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools, ignore_errors=args.ignore_errors)
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(e)
 
