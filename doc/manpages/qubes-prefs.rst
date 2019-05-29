@@ -19,6 +19,10 @@ Options
 
    List available properties with short descriptions and exit.
 
+.. option:: --hide-default
+
+   Do not show properties that are set to the default value.
+
 .. option:: --verbose, -v
 
    Increase verbosity.

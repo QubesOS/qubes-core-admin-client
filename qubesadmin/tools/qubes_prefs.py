@@ -20,8 +20,6 @@
 
 ''' Manipulate global properties.'''
 
-# TODO list only non-default properties
-
 from __future__ import print_function
 
 import sys

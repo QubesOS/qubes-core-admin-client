@@ -19,7 +19,6 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 ''' Manipulate VM properties.'''
-# TODO list only non-default properties
 
 from __future__ import print_function
 
@@ -40,6 +39,10 @@ def get_parser(vmname_nargs=1):
     parser.add_argument('--help-properties',
         action='store_true',
         help='list all available properties with short descriptions and exit')
+
+    parser.add_argument('--hide-default',
+        action='store_true',
+        help='Do not show properties that are set to the default value.')
 
     parser.add_argument('--get', '-g',
         action='store_true',
@@ -101,11 +104,11 @@ def process_actions(parser, args, target):
                     name=prop, width=width))
                 continue
 
-            if target.property_is_default(prop):
-                print('{name:{width}s}  D  {value!s}'.format(
-                    name=prop, width=width, value=value))
-            else:
+            if not target.property_is_default(prop):
                 print('{name:{width}s}  -  {value!s}'.format(
+                    name=prop, width=width, value=value))
+            elif not args.hide_default:
+                print('{name:{width}s}  D  {value!s}'.format(
                     name=prop, width=width, value=value))
 
         return 0
