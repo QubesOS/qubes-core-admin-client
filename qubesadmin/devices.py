@@ -209,7 +209,7 @@ class DeviceCollection(object):
                               ['True', 'yes', True])
             if persistent is not None and dev_persistent != persistent:
                 continue
-            backend_domain = self._vm.app.domains[backend_domain]
+            backend_domain = self._vm.app.domains.get_blind(backend_domain)
             yield DeviceAssignment(backend_domain, ident, options,
                                    persistent=dev_persistent,
                                    frontend_domain=self._vm,
