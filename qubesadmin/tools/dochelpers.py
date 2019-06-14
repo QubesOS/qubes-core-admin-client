@@ -223,11 +223,12 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
         try:
             parser = qubesadmin.tools.get_parser_for_command(command)
         except ImportError:
-            app.warn('cannot import module for command')
+            app.warn('cannot import module for command {}'.format(command))
             self.parser = None
             return
         except AttributeError:
-            raise sphinx.errors.SphinxError('cannot find parser in module')
+            raise sphinx.errors.SphinxError('cannot find parser for command '
+                '{} in module'.format(command))
 
         self.command = command
         self.parser = parser
