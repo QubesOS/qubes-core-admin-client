@@ -25,66 +25,8 @@ import sys
 
 from qubesadmin.backup.restore import BackupRestore
 import qubesadmin.exc
-import qubesadmin.tools
 import qubesadmin.utils
-
-parser = qubesadmin.tools.QubesArgumentParser()
-
-parser.add_argument("--verify-only", action="store_true",
-    dest="verify_only", default=False,
-    help="Verify backup integrity without restoring any "
-         "data")
-
-parser.add_argument("--skip-broken", action="store_true", dest="skip_broken",
-    default=False,
-    help="Do not restore VMs that have missing TemplateVMs "
-         "or NetVMs")
-
-parser.add_argument("--ignore-missing", action="store_true",
-    dest="ignore_missing", default=False,
-    help="Restore VMs even if their associated TemplateVMs "
-         "and NetVMs are missing")
-
-parser.add_argument("--skip-conflicting", action="store_true",
-    dest="skip_conflicting", default=False,
-    help="Do not restore VMs that are already present on "
-         "the host")
-
-parser.add_argument("--rename-conflicting", action="store_true",
-    dest="rename_conflicting", default=False,
-    help="Restore VMs that are already present on the host "
-         "under different names")
-
-parser.add_argument("-x", "--exclude", action="append", dest="exclude",
-    default=[],
-    help="Skip restore of specified VM (may be repeated)")
-
-parser.add_argument("--skip-dom0-home", action="store_false", dest="dom0_home",
-    default=True,
-    help="Do not restore dom0 user home directory")
-
-parser.add_argument("--ignore-username-mismatch", action="store_true",
-    dest="ignore_username_mismatch", default=False,
-    help="Ignore dom0 username mismatch when restoring home "
-         "directory")
-
-parser.add_argument("--ignore-size-limit", action="store_true",
-    dest="ignore_size_limit", default=False,
-    help="Ignore size limit calculated from backup metadata")
-
-parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
-    help="Specify VM containing the backup to be restored")
-
-parser.add_argument("-p", "--passphrase-file", action="store",
-    dest="pass_file", default=None,
-    help="Read passphrase from file, or use '-' to read from stdin")
-
-parser.add_argument('backup_location', action='store',
-    help="Backup directory name, or command to pipe from")
-
-parser.add_argument('vms', nargs='*', action='store', default=[],
-    help='Restore only those VMs')
-
+from qubesadmin.toolparsers.qvm_backup_restore import get_parser
 
 def handle_broken(app, args, restore_info):
     '''Display information about problems with VMs selected for resetore'''
@@ -191,6 +133,7 @@ def handle_broken(app, args, restore_info):
 def main(args=None, app=None):
     '''Main function of qvm-backup-restore'''
     # pylint: disable=too-many-return-statements
+    parser = get_parser()
     args = parser.parse_args(args, app=app)
 
     appvm = None
