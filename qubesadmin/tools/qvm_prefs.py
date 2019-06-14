@@ -26,49 +26,9 @@ import sys
 import textwrap
 
 import qubesadmin
-import qubesadmin.tools
 import qubesadmin.utils
 import qubesadmin.vm
-
-
-def get_parser(vmname_nargs=1):
-    '''Return argument parser for generic property-related tool'''
-    parser = qubesadmin.tools.QubesArgumentParser(
-        vmname_nargs=vmname_nargs)
-
-    parser.add_argument('--help-properties',
-        action='store_true',
-        help='list all available properties with short descriptions and exit')
-
-    parser.add_argument('--hide-default',
-        action='store_true',
-        help='Do not show properties that are set to the default value.')
-
-    parser.add_argument('--get', '-g',
-        action='store_true',
-        help='Ignored; for compatibility with older scripts.')
-
-    parser.add_argument('--set', '-s',
-        action='store_true',
-        help='Ignored; for compatibility with older scripts.')
-
-    parser.add_argument('property', metavar='PROPERTY',
-        nargs='?',
-        help='name of the property to show or change')
-
-    parser_value = parser.add_mutually_exclusive_group()
-
-    parser_value.add_argument('value', metavar='VALUE',
-        nargs='?',
-        help='new value of the property')
-
-    parser.add_argument('--default', '-D',
-        dest='delete',
-        action='store_true',
-        help='reset property to its default value')
-
-    return parser
-
+from qubesadmin.toolparsers.qvm_prefs import get_parser
 
 def process_actions(parser, args, target):
     '''Handle actions for generic property-related tool
