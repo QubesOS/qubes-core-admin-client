@@ -233,7 +233,7 @@ class PropertyHolder(object):
         if prop_type == 'vm':
             if value == '':
                 return None
-            return self.app.domains[value]
+            return self.app.domains.get_blind(value)
         if prop_type == 'label':
             if value == '':
                 return None
