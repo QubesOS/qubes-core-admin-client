@@ -518,8 +518,12 @@ def get_parser_for_command(command):
     :raises AttributeError: when parser was not found
     '''
 
-    module = importlib.import_module(
-        '.' + command.replace('-', '_'), 'qubesadmin.tools')
+    try:
+        module = importlib.import_module(
+            '.' + command.replace('-', '_'), 'qubesadmin.toolparsers')
+    except ImportError:
+        module = importlib.import_module(
+            '.' + command.replace('-', '_'), 'qubesadmin.tools')
 
     try:
         parser = module.parser
