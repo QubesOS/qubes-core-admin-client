@@ -18,21 +18,13 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-''' Manipulate global properties.'''
+''' Parser for qubes-prefs'''
 
 from __future__ import print_function
 
-import sys
+import qubesadmin.toolparsers.qvm_prefs
 
-import qubesadmin
-import qubesadmin.tools.qvm_prefs
-from qubesadmin.toolparsers.qubes_prefs import get_parser
 
-def main(args=None, app=None):  # pylint: disable=missing-docstring
-    parser = get_parser()
-    args = parser.parse_args(args, app=app)
-    target = args.app
-    return qubesadmin.tools.qvm_prefs.process_actions(parser, args, target)
-
-if __name__ == '__main__':
-    sys.exit(main())
+def get_parser():
+    '''Prepare argument parser'''
+    return qubesadmin.toolparsers.qvm_prefs.get_parser(None)
