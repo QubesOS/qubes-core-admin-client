@@ -30,23 +30,7 @@ import sys
 
 import qubesadmin
 import qubesadmin.tools
-
-parser = qubesadmin.tools.QubesArgumentParser(
-    vmname_nargs=1,
-    description='manage domain\'s features')
-
-parser.add_argument('feature', metavar='FEATURE',
-    action='store', nargs='?',
-    help='name of the feature')
-
-parser.add_argument('value', metavar='VALUE',
-    action='store', nargs='?',
-    help='new value of the feature')
-
-parser.add_argument('--unset', '--default', '--delete', '-D',
-    dest='delete',
-    action='store_true',
-    help='unset the feature')
+from qubesadmin.toolparsers.qvm_features import get_parser
 
 
 def main(args=None, app=None):
@@ -55,7 +39,7 @@ def main(args=None, app=None):
     :param list args: Optional arguments to override those delivered from \
         command line.
     '''
-
+    parser = get_parser()
     args = parser.parse_args(args, app=app)
     vm = args.domains[0]
 
