@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
