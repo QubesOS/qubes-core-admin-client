@@ -26,7 +26,6 @@ from __future__ import print_function
 import sys
 
 from qubesadmin.toolparsers.qvm_check import get_parser
-import qubesadmin.vm
 
 
 def print_msg(domains, what_single, what_plural):
