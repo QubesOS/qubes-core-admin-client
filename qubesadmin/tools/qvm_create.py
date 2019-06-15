@@ -34,72 +34,12 @@ import os
 import sys
 
 import qubesadmin
-import qubesadmin.tools
-
-
-parser = qubesadmin.tools.QubesArgumentParser()
-
-parser.add_argument('--class', '-C', dest='cls',
-    default='AppVM',
-    help='specify the class of the new domain (default: %(default)s)')
-
-parser.add_argument('--standalone',
-    action="store_true",
-    help=' shortcut for --class StandaloneVM')
-
-parser.add_argument('--disp',
-    action="store_true",
-    help='alias for --class DispVM --label red')
-
-parser.add_argument('--property', '--prop',
-    action=qubesadmin.tools.PropertyAction,
-    help='set domain\'s property, like "internal", "memory" or "vcpus"')
-
-parser.add_argument('--pool', '-p',
-                    action='append',
-                    metavar='VOLUME_NAME=POOL_NAME',
-                    help='specify the pool to use for a volume')
-
-parser.add_argument('-P',
-                    metavar='POOL_NAME',
-                    dest='one_pool',
-                    default='',
-                    help='change all volume pools to specified pool')
-
-parser.add_argument('--template', '-t',
-    action=qubesadmin.tools.SinglePropertyAction,
-    help='specify the TemplateVM to use')
-
-parser.add_argument('--label', '-l',
-    action=qubesadmin.tools.SinglePropertyAction,
-    help='specify the label to use for the new domain'
-        ' (e.g. red, yellow, green, ...)')
-
-parser.add_argument('--help-classes',
-    action='store_true',
-    help='List available classes and exit')
-
-parser_root = parser.add_mutually_exclusive_group()
-parser_root.add_argument('--root-copy-from', '-r', metavar='FILENAME',
-    help='use provided root.img instead of default/empty one'
-        ' (file will be COPIED)')
-parser_root.add_argument('--root-move-from', '-R', metavar='FILENAME',
-    help='use provided root.img instead of default/empty one'
-        ' (file will be MOVED)')
-
-# silently ignored
-parser_root.add_argument('--no-root',
-    action='store_true', default=False,
-    help=argparse.SUPPRESS)
-
-parser.add_argument('name', metavar='VMNAME',
-    action=qubesadmin.tools.SinglePropertyAction,
-    nargs='?',
-    help='name of the domain to create')
+from qubesadmin.toolparsers.qvm_create import get_parser
 
 
 def main(args=None, app=None):
     '''Main function of qvm-create tool'''
+    parser = get_parser()
     args = parser.parse_args(args, app=app)
 
     if args.help_classes:
