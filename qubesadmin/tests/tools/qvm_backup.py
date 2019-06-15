@@ -29,7 +29,7 @@ import qubesadmin.tools.qvm_backup as qvm_backup
 
 class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
     def test_000_write_backup_profile(self):
-        args = qvm_backup.parser.parse_args(['/var/tmp'], app=self.app)
+        args = qvm_backup.get_parser().parse_args(['/var/tmp'], app=self.app)
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
         expected_profile = (
@@ -46,7 +46,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             b'vm1 class=AppVM state=Halted\n' \
             b'vm2 class=AppVM state=Halted\n' \
             b'vm3 class=AppVM state=Halted\n'
-        args = qvm_backup.parser.parse_args(['/var/tmp', 'vm1', 'vm2'],
+        args = qvm_backup.get_parser().parse_args(['/var/tmp', 'vm1', 'vm2'],
             app=self.app)
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
@@ -62,7 +62,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_002_write_backup_profile_exclude(self):
-        args = qvm_backup.parser.parse_args([
+        args = qvm_backup.get_parser().parse_args([
             '-x', 'vm1', '-x', 'vm2', '/var/tmp'], app=self.app)
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
@@ -78,7 +78,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         self.assertEqual(profile.getvalue(), expected_profile)
 
     def test_003_write_backup_with_passphrase(self):
-        args = qvm_backup.parser.parse_args(['/var/tmp'], app=self.app)
+        args = qvm_backup.get_parser().parse_args(['/var/tmp'], app=self.app)
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args, passphrase='test123')
         expected_profile = (
@@ -91,7 +91,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
         self.assertEqual(profile.getvalue(), expected_profile)
 
     def test_004_write_backup_profile_no_compress(self):
-        args = qvm_backup.parser.parse_args(['--no-compress', '/var/tmp'],
+        args = qvm_backup.get_parser().parse_args(['--no-compress', '/var/tmp'],
             app=self.app)
         profile = io.StringIO()
         qvm_backup.write_backup_profile(profile, args)
