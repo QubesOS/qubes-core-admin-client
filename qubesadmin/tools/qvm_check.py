@@ -25,17 +25,8 @@ from __future__ import print_function
 
 import sys
 
-import qubesadmin.tools
+from qubesadmin.toolparsers.qvm_check import get_parser
 import qubesadmin.vm
-
-parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-    vmname_nargs='+')
-parser.add_argument("--running", action="store_true", dest="running",
-    default=False, help="Determine if (any of given) VM is running")
-parser.add_argument("--paused", action="store_true", dest="paused",
-    default=False, help="Determine if (any of given) VM is paused")
-parser.add_argument("--template", action="store_true", dest="template",
-    default=False, help="Determine if (any of given) VM is a template")
 
 
 def print_msg(domains, what_single, what_plural):
@@ -51,6 +42,7 @@ def print_msg(domains, what_single, what_plural):
 
 def main(args=None, app=None):
     '''Main function of qvm-check tool'''
+    parser = get_parser()
     args = parser.parse_args(args, app=app)
     domains = args.domains
     if args.running:
