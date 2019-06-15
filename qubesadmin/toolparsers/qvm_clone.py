@@ -25,6 +25,7 @@
 from qubesadmin.toolparsers import QubesArgumentParser
 
 def get_parser():
+    '''Return argument parser for qvm-clone'''
     parser = QubesArgumentParser(description=__doc__, vmname_nargs=1)
     parser.add_argument('new_name',
                         metavar='NEWVM',

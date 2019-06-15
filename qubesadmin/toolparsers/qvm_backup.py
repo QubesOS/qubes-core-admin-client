@@ -23,6 +23,7 @@
 import qubesadmin.toolparsers
 
 def get_parser():
+    '''Return argument parser for qvm-backup'''
     parser = qubesadmin.toolparsers.QubesArgumentParser()
 
     parser.add_argument("--yes", "-y", action="store_true",
@@ -68,7 +69,8 @@ def get_parser():
         help="Backup location (absolute directory path, "
              "or command to pipe backup to)")
 
-    no_profile.add_argument("vms", nargs="*", action=qubesadmin.toolparsers.VmNameAction,
+    no_profile.add_argument("vms", nargs="*",
+        action=qubesadmin.toolparsers.VmNameAction,
         help="Backup only those VMs")
 
     return parser

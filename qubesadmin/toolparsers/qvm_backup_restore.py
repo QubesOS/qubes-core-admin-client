@@ -24,6 +24,7 @@ import qubesadmin.toolparsers
 
 
 def get_parser():
+    '''Return argument parser for qvm-backup-restore'''
     parser = qubesadmin.toolparsers.QubesArgumentParser()
 
     parser.add_argument("--verify-only", action="store_true",
@@ -31,8 +32,8 @@ def get_parser():
         help="Verify backup integrity without restoring any "
              "data")
 
-    parser.add_argument("--skip-broken", action="store_true", dest="skip_broken",
-        default=False,
+    parser.add_argument("--skip-broken", action="store_true",
+        dest="skip_broken", default=False,
         help="Do not restore VMs that have missing TemplateVMs "
              "or NetVMs")
 
@@ -55,8 +56,8 @@ def get_parser():
         default=[],
         help="Skip restore of specified VM (may be repeated)")
 
-    parser.add_argument("--skip-dom0-home", action="store_false", dest="dom0_home",
-        default=True,
+    parser.add_argument("--skip-dom0-home", action="store_false",
+        dest="dom0_home", default=True,
         help="Do not restore dom0 user home directory")
 
     parser.add_argument("--ignore-username-mismatch", action="store_true",

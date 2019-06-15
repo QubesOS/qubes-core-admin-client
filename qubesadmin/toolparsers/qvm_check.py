@@ -26,6 +26,7 @@ from __future__ import print_function
 import qubesadmin.toolparsers
 
 def get_parser():
+    '''Return argument parser for qvm-check'''
     parser = qubesadmin.toolparsers.QubesArgumentParser(description=__doc__,
         vmname_nargs='+')
     parser.add_argument("--running", action="store_true", dest="running",

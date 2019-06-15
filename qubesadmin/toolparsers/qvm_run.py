@@ -26,6 +26,7 @@ import qubesadmin.toolparsers
 
 
 def get_parser():
+    '''Return argument parser for qvm-run'''
     parser = qubesadmin.toolparsers.QubesArgumentParser()
 
     parser.add_argument('--user', '-u', metavar='USER',
@@ -77,8 +78,8 @@ def get_parser():
 
     parser.add_argument('--no-filter-escape-chars',
         action='store_false', dest='filter_esc',
-        help='do not filter terminal escape sequences; DANGEROUS when output is a'
-            ' terminal emulator')
+        help='do not filter terminal escape sequences; DANGEROUS when output'
+            ' is a terminal emulator')
 
     parser.add_argument('--service',
         action='store_true', dest='service',

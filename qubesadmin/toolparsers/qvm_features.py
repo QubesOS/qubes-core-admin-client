@@ -29,6 +29,7 @@ from __future__ import print_function
 import qubesadmin.toolparsers
 
 def get_parser():
+    '''Return argument parser for qvm-features'''
     parser = qubesadmin.toolparsers.QubesArgumentParser(
         vmname_nargs=1,
         description='manage domain\'s features')

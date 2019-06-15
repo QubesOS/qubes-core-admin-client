@@ -31,6 +31,7 @@ import qubesadmin.toolparsers
 
 
 def get_parser():
+    '''Return argument parser for qvm-create'''
     parser = qubesadmin.toolparsers.QubesArgumentParser()
 
     parser.add_argument('--class', '-C', dest='cls',
