@@ -40,7 +40,7 @@ import sphinx.errors
 import sphinx.locale
 import sphinx.util.docfields
 
-import qubesadmin.tools
+import qubesadmin.toolparsers
 
 SUBCOMMANDS_TITLE = 'COMMANDS'
 OPTIONS_TITLE = 'OPTIONS'
@@ -53,7 +53,7 @@ def make_rst_section(heading, char):
 
 def prepare_manpage(command):
     '''Build a man page skeleton'''
-    parser = qubesadmin.tools.get_parser_for_command(command)
+    parser = qubesadmin.toolparsers.get_parser_for_command(command)
     stream = io.StringIO()
     stream.write('.. program:: {}\n\n'.format(command))
     stream.write(make_rst_section(
@@ -221,7 +221,7 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
     def __init__(self, app, command, document):
         docutils.nodes.SparseNodeVisitor.__init__(self, document)
         try:
-            parser = qubesadmin.tools.get_parser_for_command(command)
+            parser = qubesadmin.toolparsers.get_parser_for_command(command)
         except ImportError:
             app.warn('cannot import module for command {}'.format(command))
             self.parser = None
@@ -242,7 +242,7 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
                 continue
 
             if issubclass(action.__class__,
-                          qubesadmin.tools.AliasedSubParsersAction):
+                          qubesadmin.toolparsers.AliasedSubParsersAction):
                 for cmd, cmd_parser in action._name_parser_map.items():
                     self.sub_commands[cmd] = set()
                     for sub_action in cmd_parser._actions:
