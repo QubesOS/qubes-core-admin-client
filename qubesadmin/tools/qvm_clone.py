@@ -25,39 +25,12 @@
 import sys
 
 import qubesadmin.exc
-from qubesadmin.tools import QubesArgumentParser
-
-parser = QubesArgumentParser(description=__doc__, vmname_nargs=1)
-parser.add_argument('new_name',
-                    metavar='NEWVM',
-                    action='store',
-                    help='name of the domain to create')
-
-parser.add_argument('--class', '-C', dest='cls',
-    default=None,
-    help='specify the class of the new domain (default: same as source)')
-
-parser.add_argument('--ignore-errors', action='store_true',
-    default=False,
-    help='log errors encountered during setting metadata'
-         'but continue clone operation')
-
-group = parser.add_mutually_exclusive_group()
-group.add_argument('-P',
-                    metavar='POOL',
-                    dest='one_pool',
-                    default='',
-                    help='pool to use for the new domain')
-
-group.add_argument('-p',
-                    '--pool',
-                    action='append',
-                    metavar='VOLUME=POOL',
-                    help='specify the pool to use for the specific volume')
+from qubesadmin.toolparsers.qvm_clone import get_parser
 
 
 def main(args=None, app=None):
     ''' Clones an existing VM by copying all its disk files '''
+    parser = get_parser()
     args = parser.parse_args(args, app=app)
     app = args.app
     src_vm = args.domains[0]
