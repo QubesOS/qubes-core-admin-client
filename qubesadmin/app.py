@@ -83,6 +83,8 @@ class VMCollection(object):
                 del self._vm_objects[name]
 
     def __getitem__(self, item):
+        if isinstance(item, qubesadmin.vm.QubesVM):
+            item = item.name
         if not self.app.blind_mode and item not in self:
             raise KeyError(item)
         return self.get_blind(item)
@@ -104,6 +106,8 @@ class VMCollection(object):
         return self._vm_objects[item]
 
     def __contains__(self, item):
+        if isinstance(item, qubesadmin.vm.QubesVM):
+            item = item.name
         self.refresh_cache()
         return item in self._vm_list
 
