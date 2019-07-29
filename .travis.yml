@@ -3,8 +3,9 @@ dist: xenial
 language: python
 python:
   - '2.7'
-  - '3.4'
   - '3.5'
+  - '3.6'
+  - '3.7'
 install:
   - pip install --quiet docutils
   - pip install --quiet -r ci/requirements.txt
@@ -28,8 +29,6 @@ jobs:
       python: '3.5'
     - env: DISTS_VM=fc30 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
       python: '3.5'
-    - env: DISTS_VM=jessie USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
-      python: '3.4'
     - env: DISTS_VM=stretch USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
       python: '3.5'
     - env: DISTS_VM=buster USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
