@@ -107,7 +107,8 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         for event in events:
             stream.feed_data(event)
             # don't use yield from...
-            for x in asyncio.sleep(0.01):
+            sleep = asyncio.sleep(0.01)
+            for x in iter(lambda: sleep.send(None), None):
                 yield x
         stream.feed_eof()
 
