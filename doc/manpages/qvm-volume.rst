@@ -110,6 +110,32 @@ Revert a volume to previous revision.
 
 aliases: rv, r
 
+import
+^^^^^^
+| :command:`qvm-volume import` [-h] [--size=SIZE|--no-resize] [--verbose] [--quiet] *VMNAME:VOLUME* *PATH*
+
+Import file *PATH* into volume *VMNAME:VOLUME*. Use `-` as *PATH* to import from
+stdin.
+
+The tool will try to resize volume to match input size before the import. In
+case of importing from stdin, you may need to provide size explicitly with
+`--size` option. You can keep previous volume size by using `--no-resize`
+option.
+
+A specific use case is importing empty data to clear private volume:
+
+| :command:`qvm-volume` import --no-resize some-vm:private /dev/null
+
+Old data will be stored as a revision, subject to `revisions_to_keep` limit.
+
+.. option:: --size
+
+   Provide the size explicitly, instead of using *FILE* size.
+
+.. option:: --no-resize
+
+   Do not resize volume before the import.
+
 Authors
 -------
 

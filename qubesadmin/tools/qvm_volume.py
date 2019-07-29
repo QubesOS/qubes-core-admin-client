@@ -25,6 +25,7 @@
 from __future__ import print_function
 
 import argparse
+import os
 import sys
 
 import collections
@@ -131,6 +132,37 @@ def config_volume(args):
         raise qubesadmin.exc.QubesNoSuchPropertyError(
             'Invalid property: {}'.format(args.property))
     setattr(volume, args.property, args.value)
+
+def import_volume(args):
+    ''' Import a file into volume '''
+
+    volume = args.volume
+    old_size = volume.size
+    input_path = args.input_path
+    if input_path == '-':
+        input_file = sys.stdin.buffer
+    else:
+        input_file = open(input_path, 'rb')
+    try:
+        if not args.no_resize:
+            if args.size:
+                size = args.size
+            else:
+                try:
+                    size = os.stat(input_file.fileno()).st_size
+                except OSError as e:
+                    raise qubesadmin.exc.QubesException(
+                        'Failed to get %s file size, '
+                        'specify it explicitly with --size, '
+                        'or use --no-resize option', str(e))
+            if size > old_size:
+                volume.resize(size)
+        volume.import_data(stream=input_file)
+        if not args.no_resize and size < old_size:
+            volume.resize(size)
+    finally:
+        if input_path != '-':
+            input_file.close()
 
 def list_volumes(args):
     ''' Called by the parser to execute the qvm-volume list subcommand. '''
@@ -276,6 +308,20 @@ def init_config_parser(sub_parsers):
     info_parser.add_argument(dest='value', action='store')
     info_parser.set_defaults(func=config_volume)
 
+def init_import_parser(sub_parsers):
+    ''' Add 'import' action related options '''
+    import_parser = sub_parsers.add_parser(
+        'import', help='import volume data')
+    import_parser.add_argument(metavar='VM:VOLUME', dest='volume',
+                             action=qubesadmin.tools.VMVolumeAction)
+    import_parser.add_argument('input_path', metavar='PATH',
+        help='File path to import, use \'-\' for standard input')
+    import_parser.add_argument('--size', action='store', type=int,
+        help='Set volume size to this value in bytes')
+    import_parser.add_argument('--no-resize', action='store_true',
+        help='Do not resize volume before importing data')
+    import_parser.set_defaults(func=import_volume)
+
 def get_parser():
     '''Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-volume`.
@@ -293,6 +339,7 @@ def get_parser():
     init_extend_parser(sub_parsers)
     init_list_parser(sub_parsers)
     init_revert_parser(sub_parsers)
+    init_import_parser(sub_parsers)
     # default action
     parser.set_defaults(func=list_volumes)
 

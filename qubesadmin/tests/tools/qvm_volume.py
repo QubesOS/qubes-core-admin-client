@@ -17,6 +17,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import tempfile
+import unittest.mock
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
@@ -486,4 +488,164 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             '200101010000\n'
             '200201010000\n'
             '200301010000\n')
+        self.assertAllCalled()
+
+    def test_050_import_file(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'9')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            b'0\x00'
+        with tempfile.NamedTemporaryFile() as input_file:
+            input_file.write(b'test-data')
+            input_file.seek(0)
+            input_file.flush()
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(
+                    ['import', 'testvm:private', input_file.name],
+                    app=self.app))
+        self.assertAllCalled()
+
+    def test_051_import_stdin(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'9')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            b'0\x00'
+        with tempfile.NamedTemporaryFile() as input_file:
+            input_file.write(b'test-data')
+            input_file.seek(0)
+            with unittest.mock.patch('sys.stdin') as mock_stdin:
+                mock_stdin.buffer = input_file
+                self.assertEqual(0,
+                    qubesadmin.tools.qvm_volume.main(
+                        ['import', 'testvm:private', '-'],
+                        app=self.app))
+        self.assertAllCalled()
+
+    def test_052_import_file_size(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Resize', 'private', b'512')] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            b'0\x00'
+        with tempfile.NamedTemporaryFile() as input_file:
+            input_file.write(b'test-data')
+            input_file.seek(0)
+            input_file.flush()
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(
+                    ['import', '--size=512', 'testvm:private', input_file.name],
+                    app=self.app))
+        self.assertAllCalled()
+
+    def test_053_import_file_noresize(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            b'0\x00'
+        with tempfile.NamedTemporaryFile() as input_file:
+            input_file.write(b'test-data')
+            input_file.seek(0)
+            input_file.flush()
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(
+                    ['import', '--no-resize', 'testvm:private', input_file.name],
+                    app=self.app))
+        self.assertAllCalled()
+
+    def test_053_import_file_matching_size(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=9\n' \
+            b'usage=1\n' \
+            b'rw=True\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=0\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            b'0\x00'
+        with tempfile.NamedTemporaryFile() as input_file:
+            input_file.write(b'test-data')
+            input_file.seek(0)
+            input_file.flush()
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(
+                    ['import', 'testvm:private', input_file.name],
+                    app=self.app))
         self.assertAllCalled()
