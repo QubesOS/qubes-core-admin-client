@@ -160,6 +160,21 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             vm, template_dir)
         self.assertAllCalled()
 
+    def test_005_reset_private_img(self):
+        self.app.qubesd_connection_type = 'socket'
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\0root\nprivate\nvolatile\nkernel\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.volume.Import', 'private',
+                                 b'')] = b'0\0'
+
+        vm = self.app.domains['test-vm']
+        qubesadmin.tools.qvm_template_postprocess.reset_private_img(vm)
+        self.assertAllCalled()
+
     def test_010_import_appmenus(self):
         with open(os.path.join(self.source_dir.name,
                 'vm-whitelisted-appmenus.list'), 'w') as f:
@@ -314,8 +329,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
 
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_root_img')
-    def test_021_post_install_reinstall(self, mock_import_root_img,
-            mock_import_appmenus):
+    @mock.patch('qubesadmin.tools.qvm_template_postprocess.reset_private_img')
+    def test_021_post_install_reinstall(self, mock_reset_private_img,
+            mock_import_root_img, mock_import_appmenus):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.add_new_vm = mock.Mock()
@@ -353,6 +369,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.assertFalse(self.app.add_new_vm.called)
         mock_import_root_img.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
+        mock_reset_private_img.assert_called_once_with(self.app.domains[
+            'test-vm'])
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
         if qubesadmin.tools.qvm_template_postprocess.have_events:
@@ -366,8 +384,9 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
 
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_root_img')
-    def test_022_post_install_skip_start(self, mock_import_root_img,
-            mock_import_appmenus):
+    @mock.patch('qubesadmin.tools.qvm_template_postprocess.reset_private_img')
+    def test_022_post_install_skip_start(self, mock_reset_private_img,
+            mock_import_root_img, mock_import_appmenus):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.expected_calls[
@@ -391,6 +410,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.assertFalse(self.app.add_new_vm.called)
         mock_import_root_img.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
+        mock_reset_private_img.assert_called_once_with(self.app.domains[
+            'test-vm'])
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
         if qubesadmin.tools.qvm_template_postprocess.have_events:

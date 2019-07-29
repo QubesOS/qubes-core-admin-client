@@ -122,6 +122,12 @@ def import_root_img(vm, source_dir):
                     root_size, str(err)))
 
 
+def reset_private_img(vm):
+    '''Clear private volume'''
+    with open('/dev/null', 'rb') as null:
+        vm.volumes['private'].import_data(stream=null)
+
+
 def import_appmenus(vm, source_dir):
     '''Import appmenus settings into VM object (later: GUI VM)'''
     if os.getuid() == 0:
@@ -232,6 +238,9 @@ def post_install(args):
         if vm_created:
             del app.domains[vm.name]
         raise
+    if not vm_created:
+        vm.log.info('Clearing private volume')
+        reset_private_img(vm)
     vm.installed_by_rpm = True
     import_appmenus(vm, args.dir)
 
