@@ -1,3 +1,37 @@
+qubes-core-admin-client (4.0.26-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * doc: typo fix
+
+  [ anadahz ]
+  * Remove policy option from man page
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: update yaml syntax in qvm-backup tests
+
+  [ Conor Schaefer ]
+  * Adds support for `--ignore-errors` to qvm-clone CLI
+  * Adds docs for clone ignore_errors, feeds linter
+
+  [ Malte Leip ]
+  * qvm-prefs: add --hide-default option
+
+  [ Marek Marczykowski-Górecki ]
+  * travis: switch to xenial, update distributions
+
+  [ unman ]
+  * Remove unnecessary comma in qvm-backup.rst
+
+  [ Marek Marczykowski-Górecki ]
+  * Allow app.domains[vm] where vm is a QubesVM object
+  * travis: drop python 3.4, add python 3.6 and 3.7
+  * tests: fix events tests on python3.7
+  * tools: reset private volume when importing template over existing
+    one
+  * tools/qvm-volume: add 'import' action
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 30 Jul 2019 16:29:31 +0200
+
 qubes-core-admin-client (4.0.25-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
