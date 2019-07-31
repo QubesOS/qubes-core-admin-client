@@ -15,7 +15,7 @@
 Synopsis
 --------
 
-:command:`qvm-check` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--running] [--paused] [--template] [*VMNAME* [*VMNAME* ...]]
+:command:`qvm-check` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--running] [--paused] [--template] [--networked] [*VMNAME* [*VMNAME* ...]]
 
 Options
 -------
@@ -52,6 +52,10 @@ Options
 
    Determine if (any of given) VM is a template
 
+.. option:: --networked
+
+   Determine if (any of given) VM can reach network
+
 Authors
 -------
 
@@ -59,5 +63,6 @@ Authors
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
 | Wojtek Porczyk <woju at invisiblethingslab dot com>
+| Frédéric Pierret <frederic dot pierret at qubes dash os dot com>
 
 .. vim: ts=3 sw=3 et tw=80
