@@ -21,14 +21,14 @@
 import qubesadmin.tests
 import qubesadmin.tools.qvm_check
 
+
 class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
     def test_000_exists(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.assertEqual(
-            qubesadmin.tools.qvm_check.main(['some-vm'], app=self.app),
-            0)
+            qubesadmin.tools.qvm_check.main(['some-vm'], app=self.app), 0)
         self.assertAllCalled()
 
     def test_001_exists_multi(self):
@@ -38,20 +38,17 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'other-vm class=AppVM state=Running\n'
         self.assertEqual(
             qubesadmin.tools.qvm_check.main(['some-vm', 'other-vm'],
-                app=self.app),
-            0)
+                                            app=self.app), 0)
         self.assertAllCalled()
 
     def test_002_exists_verbose(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['some-vm'], app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VM some-vm exists\n')
+                qubesadmin.tools.qvm_check.main(['some-vm'], app=self.app), 0)
+            self.assertEqual(logger.output, ['INFO:qvm-check:some-vm: exists'])
         self.assertAllCalled()
 
     def test_003_exists_multi_verbose(self):
@@ -59,13 +56,12 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
                 qubesadmin.tools.qvm_check.main(['some-vm', 'other-vm'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VMs other-vm, some-vm exist\n')
+                                                app=self.app), 0)
+            self.assertEqual(logger.output, ['INFO:qvm-check:other-vm: exists',
+                                             'INFO:qvm-check:some-vm: exists'])
         self.assertAllCalled()
 
     def test_004_running_verbose(self):
@@ -77,13 +73,11 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--running',
-                    'some-vm'], app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VM some-vm is running\n')
+                qubesadmin.tools.qvm_check.main(['--running', 'some-vm'],
+                                                app=self.app), 0)
+            self.assertEqual(logger.output, ['INFO:qvm-check:some-vm: running'])
         self.assertAllCalled()
 
     def test_005_running_multi_verbose(self):
@@ -98,14 +92,12 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm2', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm2 class=AppVM state=Running\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--running',
-                    'some-vm', 'some-vm2'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VMs some-vm, some-vm2 are running\n')
+        with self.assertLogs() as logger:
+            self.assertEqual(qubesadmin.tools.qvm_check.main(
+                ['--running', 'some-vm', 'some-vm2'], app=self.app), 0)
+            self.assertEqual(logger.output, ['INFO:qvm-check:some-vm: running',
+                                             'INFO:qvm-check:some-vm2: running']
+                             )
         self.assertAllCalled()
 
     def test_006_running_multi_verbose2(self):
@@ -123,14 +115,13 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm3', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm3 class=AppVM state=Halted\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--running',
-                    '--all'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VMs some-vm, some-vm2 are running\n')
+                qubesadmin.tools.qvm_check.main(['--running', '--all'],
+                                                app=self.app), 3)
+            self.assertEqual(logger.output, ['INFO:qvm-check:some-vm: running',
+                                             'INFO:qvm-check:some-vm2: running']
+                             )
         self.assertAllCalled()
 
     def test_007_not_running_verbose(self):
@@ -142,14 +133,12 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm3', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm3 class=AppVM state=Halted\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--running',
-                    'some-vm3'],
-                    app=self.app),
-                1)
-            self.assertEqual(stdout.getvalue(),
-                'None of given VM is running\n')
+                qubesadmin.tools.qvm_check.main(['--running', 'some-vm3'],
+                                                app=self.app), 1)
+            self.assertEqual(logger.output,
+                             ['INFO:qvm-check:None of qubes: running'])
         self.assertAllCalled()
 
     def test_008_paused(self):
@@ -161,14 +150,11 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm2', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm2 class=AppVM state=Paused\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--paused',
-                    'some-vm2'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VM some-vm2 is paused\n')
+                qubesadmin.tools.qvm_check.main(['--paused', 'some-vm2'],
+                                                app=self.app), 0)
+            self.assertEqual(logger.output, ['INFO:qvm-check:some-vm2: paused'])
         self.assertAllCalled()
 
     def test_009_paused_multi(self):
@@ -183,16 +169,11 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--paused',
-                    'some-vm2', 'some-vm'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VM some-vm2 is paused\n')
+        with self.assertLogs() as logger:
+            self.assertEqual(qubesadmin.tools.qvm_check.main(
+                ['--paused', 'some-vm2', 'some-vm'], app=self.app), 3)
+            self.assertEqual(logger.output, ['INFO:qvm-check:some-vm2: paused'])
         self.assertAllCalled()
-
 
     def test_010_template(self):
         self.app.expected_calls[
@@ -200,14 +181,12 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=TemplateVM state=Halted\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+        with self.assertLogs() as logger:
             self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--template',
-                    'some-vm3'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VM some-vm3 is a template\n')
+                qubesadmin.tools.qvm_check.main(['--template', 'some-vm3'],
+                                                app=self.app), 0)
+            self.assertEqual(logger.output,
+                             ['INFO:qvm-check:some-vm3: template'])
         self.assertAllCalled()
 
     def test_011_template_multi(self):
@@ -216,13 +195,53 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=TemplateVM state=Halted\n'
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            self.assertEqual(
-                qubesadmin.tools.qvm_check.main(['--template',
-                    'some-vm2', 'some-vm3'],
-                    app=self.app),
-                0)
-            self.assertEqual(stdout.getvalue(),
-                'VM some-vm3 is a template\n')
+        with self.assertLogs() as logger:
+            self.assertEqual(qubesadmin.tools.qvm_check.main(
+                ['--template', 'some-vm2', 'some-vm3'], app=self.app), 3)
+            self.assertEqual(logger.output,
+                             ['INFO:qvm-check:some-vm3: template'])
         self.assertAllCalled()
 
+    def test_012_networked(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n' \
+            b'some-vm2 class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm2', 'admin.vm.property.Get', 'provides_network', None)] = \
+            b'0\x00default=false type=bool false'
+        self.app.expected_calls[
+            ('some-vm2', 'admin.vm.property.Get', 'netvm', None)] = \
+            b'0\x00default=false type=vm some-vm'
+        with self.assertLogs() as logger:
+            self.assertEqual(
+                qubesadmin.tools.qvm_check.main(['--networked', 'some-vm2'],
+                                                app=self.app), 0)
+            self.assertEqual(logger.output,
+                             ['INFO:qvm-check:some-vm2: networked'])
+        self.assertAllCalled()
+
+    def test_013_networked_multi(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n' \
+            b'some-vm2 class=AppVM state=Running\n' \
+            b'some-vm3 class=TemplateVM state=Halted\n'
+        self.app.expected_calls[
+            ('some-vm2', 'admin.vm.property.Get', 'provides_network', None)] = \
+            b'0\x00default=false type=bool false'
+        self.app.expected_calls[
+            ('some-vm3', 'admin.vm.property.Get', 'provides_network', None)] = \
+            b'0\x00default=false type=bool false'
+        self.app.expected_calls[
+            ('some-vm2', 'admin.vm.property.Get', 'netvm', None)] = \
+            b'0\x00default=false type=vm some-vm'
+        self.app.expected_calls[
+            ('some-vm3', 'admin.vm.property.Get', 'netvm', None)] = \
+            b"0\x00default=false type=vm "
+        with self.assertLogs() as logger:
+            self.assertEqual(qubesadmin.tools.qvm_check.main(
+                ['--networked', 'some-vm2', 'some-vm3'], app=self.app), 3)
+            self.assertEqual(logger.output,
+                             ['INFO:qvm-check:some-vm2: networked'])
+        self.assertAllCalled()
