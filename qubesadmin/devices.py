@@ -301,3 +301,16 @@ class DeviceManager(dict):
     def __missing__(self, key):
         self[key] = DeviceCollection(self._vm, key)
         return self[key]
+
+    def __iter__(self):
+        yield from self._get_device_classes()
+
+    def keys(self):
+        return self._get_device_classes()
+
+    def _get_device_classes(self):
+        device_classes = \
+            self._vm.app.qubesd_call('dom0', 'admin.deviceclass.List').decode()
+        device_classes = sorted(device_classes.splitlines())
+
+        return device_classes
