@@ -306,3 +306,13 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.app.domains['test-vm2'], 'test', 'dev1')
         self.vm.devices['test'].update_persistent(dev, False)
         self.assertAllCalled()
+
+    def test_072_list(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\x00block\nmic\nusb\n'
+        seen = set()
+        for devclass in self.app.domains['test-vm'].devices:
+            self.assertNotIn(devclass, seen)
+            seen.add(devclass)
+        self.assertEqual(seen, {'block', 'mic', 'usb'})
