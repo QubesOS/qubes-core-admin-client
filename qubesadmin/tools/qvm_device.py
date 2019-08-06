@@ -21,7 +21,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-'''Qubes volume and block device managment'''
+"""Qubes volume and block device managment"""
 
 import argparse
 import os
@@ -34,7 +34,7 @@ import qubesadmin.devices
 
 
 def prepare_table(dev_list):
-    ''' Converts a list of :py:class:`qubes.devices.DeviceInfo` objects to a
+    """ Converts a list of :py:class:`qubes.devices.DeviceInfo` objects to a
     list of tupples for the :py:func:`qubes.tools.print_table`.
 
     If :program:`qvm-devices` is running in a TTY, it will ommit duplicate
@@ -43,7 +43,7 @@ def prepare_table(dev_list):
     :param iterable dev_list: List of :py:class:`qubes.devices.DeviceInfo`
         objects.
     :returns: list of tupples
-    '''
+    """
     output = []
     header = []
     if sys.stdout.isatty():
@@ -60,7 +60,8 @@ def prepare_table(dev_list):
 
 
 class Line(object):
-    '''Helper class to hold single device info for listing'''
+    """Helper class to hold single device info for listing"""
+
     # pylint: disable=too-few-public-methods
     def __init__(self, device: qubesadmin.devices.DeviceInfo, attached_to=None):
         self.ident = "{!s}:{!s}".format(device.backend_domain, device.ident)
@@ -70,13 +71,13 @@ class Line(object):
 
     @property
     def assignments(self):
-        '''list of frontends the device is assigned to'''
+        """list of frontends the device is assigned to"""
         return ', '.join(self.frontends)
 
 
 def list_devices(args):
-    ''' Called by the parser to execute the qubes-devices list
-    subcommand. '''
+    """ Called by the parser to execute the qubes-devices list
+    subcommand. """
     app = args.app
 
     devices = set()
@@ -105,7 +106,8 @@ def list_devices(args):
                 if assignment.options:
                     result[dev].frontends.append('{!s} ({})'.format(
                         domain, ', '.join('{}={}'.format(key, value)
-                            for key, value in assignment.options.items())))
+                                          for key, value in
+                                          assignment.options.items())))
                 else:
                     result[dev].frontends.append(str(domain))
 
@@ -113,9 +115,9 @@ def list_devices(args):
 
 
 def attach_device(args):
-    ''' Called by the parser to execute the :program:`qvm-devices attach`
+    """ Called by the parser to execute the :program:`qvm-devices attach`
         subcommand.
-    '''
+    """
     device_assignment = args.device_assignment
     vm = args.domains[0]
     options = dict(opt.split('=', 1) for opt in args.option or [])
@@ -127,9 +129,9 @@ def attach_device(args):
 
 
 def detach_device(args):
-    ''' Called by the parser to execute the :program:`qvm-devices detach`
+    """ Called by the parser to execute the :program:`qvm-devices detach`
         subcommand.
-    '''
+    """
     vm = args.domains[0]
     if args.device_assignment:
         vm.devices[args.devclass].detach(args.device_assignment)
@@ -139,7 +141,7 @@ def detach_device(args):
 
 
 def init_list_parser(sub_parsers):
-    ''' Configures the parser for the :program:`qvm-devices list` subcommand '''
+    """ Configures the parser for the :program:`qvm-devices list` subcommand """
     # pylint: disable=protected-access
     list_parser = sub_parsers.add_parser('list', aliases=('ls', 'l'),
                                          help='list devices')
@@ -152,10 +154,10 @@ def init_list_parser(sub_parsers):
 
 
 class DeviceAction(qubesadmin.tools.QubesAction):
-    ''' Action for argument parser that gets the
+    """ Action for argument parser that gets the
         :py:class:``qubesadmin.device.DeviceAssignment`` from a
         BACKEND:DEVICE_ID string.
-    '''  # pylint: disable=too-few-public-methods
+    """  # pylint: disable=too-few-public-methods
 
     def __init__(self, help='A backend & device id combination',
                  required=True, allow_unknown=False, **kwargs):
@@ -165,7 +167,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                                            **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        ''' Set ``namespace.device_assignment`` to ``values`` '''
+        """ Set ``namespace.device_assignment`` to ``values`` """
         setattr(namespace, self.dest, values)
 
     def parse_qubes_app(self, parser, namespace):
@@ -177,6 +179,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
 
         try:
             vmname, device_id = backend_device_id.split(':', 1)
+            vm = None
             try:
                 vm = app.domains[vmname]
             except KeyError:
@@ -184,36 +187,37 @@ class DeviceAction(qubesadmin.tools.QubesAction):
 
             try:
                 dev = vm.devices[devclass][device_id]
-                if not self.allow_unknown and isinstance(dev,
-                        qubesadmin.devices.UnknownDevice):
+                if not self.allow_unknown and \
+                        isinstance(dev, qubesadmin.devices.UnknownDevice):
                     raise KeyError(device_id)
             except KeyError:
                 parser.error_runtime(
-                    "backend vm {!r} doesn't expose device {!r}"
-                    .format(vmname, device_id))
-            device_assignment = qubesadmin.devices.DeviceAssignment(vm,
-                device_id)
+                    "backend vm {!r} doesn't expose device {!r}".format(
+                        vmname, device_id))
+            device_assignment = qubesadmin.devices.DeviceAssignment(
+                vm, device_id)
             setattr(namespace, self.dest, device_assignment)
         except ValueError:
-            parser.error('expected a backend vm & device id combination ' \
-                         'like foo:bar got %s' % backend_device_id)
+            parser.error(
+                'expected a backend vm & device id combination like foo:bar '
+                'got %s' % backend_device_id)
 
 
 def get_parser(device_class=None):
-    '''Create :py:class:`argparse.ArgumentParser` suitable for
+    """Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-block`.
-    '''
+    """
     parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-        want_app=True)
+                                                  want_app=True)
     parser.register('action', 'parsers',
-        qubesadmin.tools.AliasedSubParsersAction)
+                    qubesadmin.tools.AliasedSubParsersAction)
     if device_class:
         parser.add_argument('devclass', const=device_class,
-            action='store_const',
-            help=argparse.SUPPRESS)
+                            action='store_const',
+                            help=argparse.SUPPRESS)
     else:
         parser.add_argument('devclass', metavar='DEVICE_CLASS', action='store',
-            help="Device class to manage ('pci', 'usb', etc)")
+                            help="Device class to manage ('pci', 'usb', etc)")
 
     # default action
     parser.set_defaults(func=list_devices)
@@ -229,27 +233,32 @@ def get_parser(device_class=None):
         "detach", help="Detach device from domain", aliases=('d', 'dt'))
 
     attach_parser.add_argument('VMNAME', nargs=1,
-        action=qubesadmin.tools.VmNameAction)
+                               action=qubesadmin.tools.VmNameAction)
     detach_parser.add_argument('VMNAME', nargs=1,
-        action=qubesadmin.tools.VmNameAction)
+                               action=qubesadmin.tools.VmNameAction)
 
     attach_parser.add_argument(metavar='BACKEND:DEVICE_ID',
-        dest='device_assignment',
-        action=DeviceAction)
+                               dest='device_assignment',
+                               action=DeviceAction)
     detach_parser.add_argument(metavar='BACKEND:DEVICE_ID',
-        dest='device_assignment', nargs=argparse.OPTIONAL,
-        action=DeviceAction, allow_unknown=True)
+                               dest='device_assignment',
+                               nargs=argparse.OPTIONAL,
+                               action=DeviceAction, allow_unknown=True)
 
     attach_parser.add_argument('--option', '-o', action='append',
-        help="Set option for the device in opt=value form (can be specified "
-             "multiple times), see man qvm-device for details")
+                               help="Set option for the device in opt=value "
+                                    "form (can be specified "
+                                    "multiple times), see man qvm-device for "
+                                    "details")
     attach_parser.add_argument('--ro', action='store_true', default=False,
-        help="Attach device read-only (alias for read-only=yes option, "
-             "takes precedence)")
+                               help="Attach device read-only (alias for "
+                                    "read-only=yes option, "
+                                    "takes precedence)")
     attach_parser.add_argument('--persistent', '-p', action='store_true',
-        default=False,
-        help="Attach device persistently (so it will be automatically "
-             "attached at qube startup)")
+                               default=False,
+                               help="Attach device persistently (so it will "
+                                    "be automatically "
+                                    "attached at qube startup)")
 
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
@@ -258,7 +267,7 @@ def get_parser(device_class=None):
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-block`.'''
+    """Main routine of :program:`qvm-block`."""
     basename = os.path.basename(sys.argv[0])
     devclass = None
     if basename.startswith('qvm-') and basename != 'qvm-device':
