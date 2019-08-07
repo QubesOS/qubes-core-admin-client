@@ -303,7 +303,7 @@ class DeviceManager(dict):
         return self[key]
 
     def __iter__(self):
-        yield from self._get_device_classes()
+        return iter(self._get_device_classes())
 
     def keys(self):
         return self._get_device_classes()
