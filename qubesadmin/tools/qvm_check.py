@@ -4,6 +4,7 @@
 # The Qubes OS Project, http://www.qubes-os.org
 #
 # Copyright (C) 2016 Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>
+# Copyright (C) 2019 Frédéric Pierret <frederic.pierret@qubes-os.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,9 +20,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-''' Exits sucessfull if the provided domains exists, else returns failure '''
-
-from __future__ import print_function
+""" Exits sucessfull if the provided domains exists, else returns failure """
 
 import sys
 
@@ -29,48 +28,83 @@ import qubesadmin.tools
 import qubesadmin.vm
 
 parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-    vmname_nargs='+')
+                                              vmname_nargs='+')
 parser.add_argument("--running", action="store_true", dest="running",
-    default=False, help="Determine if (any of given) VM is running")
+                    default=False,
+                    help="Determine if (any of given) VM is running")
 parser.add_argument("--paused", action="store_true", dest="paused",
-    default=False, help="Determine if (any of given) VM is paused")
+                    default=False,
+                    help="Determine if (any of given) VM is paused")
 parser.add_argument("--template", action="store_true", dest="template",
-    default=False, help="Determine if (any of given) VM is a template")
+                    default=False,
+                    help="Determine if (any of given) VM is a template")
+parser.add_argument("--networked", action="store_true", dest="networked",
+                    default=False,
+                    help="Determine if (any of given) VM can reach network")
 
 
-def print_msg(domains, what_single, what_plural):
-    '''Print message in appropriate form about given domain(s)'''
+def print_msg(log, domains, status):
+    """Print message in appropriate form about given domain(s)"""
     if not domains:
-        print("None of given VM {!s}".format(what_single))
-    elif len(domains) == 1:
-        print("VM {!s} {!s}".format(domains[0], what_single))
+        log.info("None of qubes: {!s}".format(', '.join(status)))
     else:
-        txt = ", ".join([vm.name for vm in sorted(domains)])
-        print("VMs {!s} {!s}".format(txt, what_plural))
+        for vm in sorted(list(domains)):
+            log.info("{!s}: {!s}".format(vm.name, ', '.join(status)))
+
+
+def get_filters(args):
+    """Get status and check functions"""
+    filters = []
+
+    if args.running:
+        filters.append({'status': 'running', 'check': lambda x: x.is_running()})
+    if args.paused:
+        filters.append({'status': 'paused', 'check': lambda x: x.is_paused()})
+    if args.template:
+        filters.append(
+            {'status': 'template', 'check': lambda x: x.klass == 'TemplateVM'})
+    if args.networked:
+        filters.append(
+            {'status': 'networked', 'check': lambda x: x.is_networked()})
+
+    return filters
 
 
 def main(args=None, app=None):
-    '''Main function of qvm-check tool'''
+    """Main function of qvm-check tool"""
     args = parser.parse_args(args, app=app)
     domains = args.domains
-    if args.running:
-        running = [vm for vm in domains if vm.is_running()]
+    return_code = 0
+
+    log = args.app.log
+    log.name = "qvm-check"
+
+    status = []
+    filters = get_filters(args)
+    filtered_domains = set(domains)
+    if filters:
+        for filt in filters:
+            status.append(filt['status'])
+            check = filt['check']
+            filtered_domains = filtered_domains.intersection(
+                [vm for vm in domains if check(vm)])
+
+        if set(domains) & set(filtered_domains) != set(domains):
+            if not filtered_domains:
+                return_code = 1
+            else:
+                return_code = 3
+
         if args.verbose:
-            print_msg(running, "is running", "are running")
-        return 0 if running else 1
-    if args.paused:
-        paused = [vm for vm in domains if vm.is_paused()]
-        if args.verbose:
-            print_msg(paused, "is paused", "are paused")
-        return 0 if paused else 1
-    if args.template:
-        template = [vm for vm in domains if vm.klass == 'TemplateVM']
-        if args.verbose:
-            print_msg(template, "is a template", "are templates")
-        return 0 if template else 1
-    if args.verbose:
-        print_msg(domains, "exists", "exist")
-    return 0 if domains else 1
+            print_msg(log, filtered_domains, status)
+    else:
+        if not domains:
+            return_code = 1
+        elif args.verbose:
+            print_msg(log, domains, ["exists"])
+
+    return return_code
+
 
 if __name__ == '__main__':
     sys.exit(main())
