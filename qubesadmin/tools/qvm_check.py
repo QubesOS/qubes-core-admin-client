@@ -48,7 +48,7 @@ def print_msg(log, domains, status):
     if not domains:
         log.info("None of qubes: {!s}".format(', '.join(status)))
     else:
-        for vm in sorted(domains):
+        for vm in sorted(list(domains)):
             log.info("{!s}: {!s}".format(vm.name, ', '.join(status)))
 
 
@@ -88,8 +88,6 @@ def main(args=None, app=None):
             check = filt['check']
             filtered_domains = filtered_domains.intersection(
                 [vm for vm in domains if check(vm)])
-
-        filtered_domains = list(filtered_domains)
 
         if set(domains) & set(filtered_domains) != set(domains):
             if not filtered_domains:
