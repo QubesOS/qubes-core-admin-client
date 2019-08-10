@@ -19,9 +19,9 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-'''
+"""
 Main Qubes() class and related classes.
-'''
+"""
 import os
 import shlex
 import socket
@@ -40,19 +40,21 @@ import qubesadmin.config
 
 BUF_SIZE = 4096
 
+
 class VMCollection(object):
-    '''Collection of VMs objects'''
+    """Collection of VMs objects"""
+
     def __init__(self, app):
         self.app = app
         self._vm_list = None
         self._vm_objects = {}
 
     def clear_cache(self):
-        '''Clear cached list of VMs'''
+        """Clear cached list of VMs"""
         self._vm_list = None
 
     def refresh_cache(self, force=False):
-        '''Refresh cached list of VMs'''
+        """Refresh cached list of VMs"""
         if not force and self._vm_list is not None:
             return
         vm_list_data = self.app.qubesd_call(
@@ -90,10 +92,10 @@ class VMCollection(object):
         return self.get_blind(item)
 
     def get_blind(self, item):
-        '''
+        """
         Get a vm without downloading the list
         and checking if exists
-        '''
+        """
         if item not in self._vm_objects:
             cls = qubesadmin.vm.QubesVM
             # provide class name to constructor, if already cached (which can be
@@ -121,23 +123,23 @@ class VMCollection(object):
             yield self[vm]
 
     def keys(self):
-        '''Get list of VM names.'''
+        """Get list of VM names."""
         self.refresh_cache()
         return self._vm_list.keys()
 
     def values(self):
-        '''Get list of VM objects.'''
+        """Get list of VM objects."""
         self.refresh_cache()
         return [self[name] for name in self._vm_list]
 
 
 class QubesBase(qubesadmin.base.PropertyHolder):
-    '''Main Qubes application.
+    """Main Qubes application.
 
     This is a base abstract class, don't use it directly. Use specialized
     class in py:class:`qubesadmin.Qubes` instead, which points at
     :py:class:`QubesLocal` or :py:class:`QubesRemote`.
-    '''
+    """
 
     #: domains (VMs) collection
     domains = None
@@ -164,11 +166,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self.log = logging.getLogger('app')
 
     def _refresh_pool_drivers(self):
-        '''
+        """
         Refresh cached storage pool drivers and their parameters.
 
         :return: None
-        '''
+        """
         if self._pool_drivers is None:
             pool_drivers_data = self.qubesd_call(
                 'dom0', 'admin.pool.ListDrivers', None, None)
@@ -183,40 +185,40 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     @property
     def pool_drivers(self):
-        ''' Available storage pool drivers '''
+        """ Available storage pool drivers """
         self._refresh_pool_drivers()
         return self._pool_drivers.keys()
 
     def pool_driver_parameters(self, driver):
-        ''' Parameters to initialize storage pool using given driver '''
+        """ Parameters to initialize storage pool using given driver """
         self._refresh_pool_drivers()
         return self._pool_drivers[driver]
 
     def add_pool(self, name, driver, **kwargs):
-        ''' Add a storage pool to config
+        """ Add a storage pool to config
 
         :param name: name of storage pool to create
         :param driver: driver to use, see :py:meth:`pool_drivers` for
             available drivers
         :param kwargs: configuration parameters for storage pool,
             see :py:meth:`pool_driver_parameters` for a list
-        '''
+        """
         # sort parameters only to ease testing, not required by API
         payload = 'name={}\n'.format(name) + \
                   ''.join('{}={}\n'.format(key, value)
-            for key, value in sorted(kwargs.items()))
+                          for key, value in sorted(kwargs.items()))
         self.qubesd_call('dom0', 'admin.pool.Add', driver,
-            payload.encode('utf-8'))
+                         payload.encode('utf-8'))
 
     def remove_pool(self, name):
-        ''' Remove a storage pool '''
+        """ Remove a storage pool """
         self.qubesd_call('dom0', 'admin.pool.Remove', name, None)
 
     def get_label(self, label):
-        '''Get label as identified by index or name
+        """Get label as identified by index or name
 
         :throws KeyError: when label is not found
-        '''
+        """
 
         # first search for name, verbatim
         try:
@@ -233,19 +235,19 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     @staticmethod
     def get_vm_class(clsname):
-        '''Find the class for a domain.
+        """Find the class for a domain.
 
         Compatibility function, client tools use str to identify domain classes.
 
         :param str clsname: name of the class
         :return str: class
-        '''
+        """
 
         return clsname
 
     def add_new_vm(self, cls, name, label, template=None, pool=None,
-            pools=None):
-        '''Create new Virtual Machine
+                   pools=None):
+        """Create new Virtual Machine
 
         Example usage with custom storage pools:
 
@@ -264,7 +266,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param dict pools: storage pool for specific volumes
 
         :return new VM object
-        '''
+        """
 
         if not isinstance(cls, str):
             cls = cls.__name__
@@ -284,18 +286,18 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             method_prefix = 'admin.vm.CreateInPool.'
         if pools:
             payload += ''.join(' pool:{}={}'.format(vol, str(pool))
-                for vol, pool in sorted(pools.items()))
+                               for vol, pool in sorted(pools.items()))
             method_prefix = 'admin.vm.CreateInPool.'
 
         self.qubesd_call('dom0', method_prefix + cls, template,
-            payload.encode('utf-8'))
+                         payload.encode('utf-8'))
 
         self.domains.clear_cache()
         return self.domains[name]
 
-    def clone_vm(self, src_vm, new_name, new_cls=None,
-            pool=None, pools=None, ignore_errors=False, ignore_volumes=None):
-        '''Clone Virtual Machine
+    def clone_vm(self, src_vm, new_name, new_cls=None, pool=None, pools=None,
+                 ignore_errors=False, ignore_volumes=None):
+        """Clone Virtual Machine
 
         Example usage with custom storage pools:
 
@@ -317,7 +319,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             like 'private' or 'root'
 
         :return new VM object
-        '''
+        """
 
         if pool and pools:
             raise ValueError('only one of pool= and pools= can be used')
@@ -343,7 +345,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 if ignore_volumes and volume.name in ignore_volumes:
                     continue
                 default_pool = getattr(self.app, 'default_pool_' + volume.name,
-                    volume.pool)
+                                       volume.pool)
                 if default_pool != volume.pool:
                     if pools is None:
                         pools = {}
@@ -356,11 +358,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             method_prefix = 'admin.vm.CreateInPool.'
         if pools:
             payload += ''.join(' pool:{}={}'.format(vol, str(pool))
-                for vol, pool in sorted(pools.items()))
+                               for vol, pool in sorted(pools.items()))
             method_prefix = 'admin.vm.CreateInPool.'
 
         self.qubesd_call('dom0', method_prefix + new_cls, template,
-            payload.encode('utf-8'))
+                         payload.encode('utf-8'))
 
         self.domains.clear_cache()
         dst_vm = self.domains[new_name]
@@ -369,7 +371,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             for prop in src_vm.property_list():
                 # handled by admin.vm.Create call
                 if prop in ('name', 'qid', 'template', 'label', 'uuid',
-                        'installed_by_rpm'):
+                            'installed_by_rpm'):
                     continue
                 if src_vm.property_is_default(prop):
                     continue
@@ -414,7 +416,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 # FIXME: convert to qrexec calls to dom0/GUI VM
                 appmenus_cmd = \
                     ['qvm-appmenus', '--init', '--update',
-                        '--source', src_vm.name, dst_vm.name]
+                     '--source', src_vm.name, dst_vm.name]
                 subprocess.check_output(appmenus_cmd, stderr=subprocess.STDOUT)
             except OSError:
                 # this file needs to be python 2.7 compatible,
@@ -425,7 +427,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                         'Failed to clone appmenus')
             except subprocess.CalledProcessError as e:
                 self.log.error('Failed to clone appmenus: %s',
-                    e.output.decode())
+                               e.output.decode())
                 if not ignore_errors:
                     raise qubesadmin.exc.QubesException(
                         'Failed to clone appmenus')
@@ -453,8 +455,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         return dst_vm
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
-            payload_stream=None):
-        '''
+                    payload_stream=None):
+        """
         Execute Admin API method.
 
         Only one of `payload` and `payload_stream` can be specified.
@@ -467,14 +469,14 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :return: Data returned by qubesd (string)
 
         .. warning:: *payload_stream* will get closed by this function
-        '''
+        """
         raise NotImplementedError(
             'qubesd_call not implemented in QubesBase class; use specialized '
             'class: qubesadmin.Qubes()')
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-            localcmd=None, wait=True, **kwargs):
-        '''Run qrexec service in a given destination
+                    localcmd=None, wait=True, **kwargs):
+        """Run qrexec service in a given destination
 
         *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
 
@@ -485,24 +487,25 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             emulator
         :param str user: username to run service as
         :param str localcmd: Command to connect stdin/stdout to
+        :param bool wait: Wait service run
         :rtype: subprocess.Popen
-        '''
+        """
         raise NotImplementedError(
             'run_service not implemented in QubesBase class; use specialized '
             'class: qubesadmin.Qubes()')
 
 
 class QubesLocal(QubesBase):
-    '''Application object communicating through local socket.
+    """Application object communicating through local socket.
 
     Used when running in dom0.
-    '''
+    """
 
     qubesd_connection_type = 'socket'
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
-            payload_stream=None):
-        '''
+                    payload_stream=None):
+        """
         Execute Admin API method.
 
         Only one of `payload` and `payload_stream` can be specified.
@@ -515,7 +518,7 @@ class QubesLocal(QubesBase):
         :return: Data returned by qubesd (string)
 
         .. warning:: *payload_stream* will get closed by this function
-        '''
+        """
         if payload and payload_stream:
             raise ValueError(
                 'Only one of payload and payload_stream can be used')
@@ -530,11 +533,11 @@ class QubesLocal(QubesBase):
                 raise qubesadmin.exc.QubesDaemonCommunicationError(
                     '{} not found'.format(method_path))
             command = ['env', 'QREXEC_REMOTE_DOMAIN=dom0',
-                'QREXEC_REQUESTED_TARGET=' + dest, method_path, arg]
+                       'QREXEC_REQUESTED_TARGET=' + dest, method_path, arg]
             if os.getuid() != 0:
                 command.insert(0, 'sudo')
             proc = subprocess.Popen(command, stdin=payload_stream,
-                stdout=subprocess.PIPE)
+                                    stdout=subprocess.PIPE)
             payload_stream.close()
             (return_data, _) = proc.communicate()
             return self._parse_qubesd_response(return_data)
@@ -561,8 +564,8 @@ class QubesLocal(QubesBase):
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-            localcmd=None, wait=True, **kwargs):
-        '''Run qrexec service in a given destination
+                    localcmd=None, wait=True, **kwargs):
+        """Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
             string for default (for a given service)
@@ -572,9 +575,8 @@ class QubesLocal(QubesBase):
         :param str user: username to run service as
         :param str localcmd: Command to connect stdin/stdout to
         :param bool wait: wait for remote process to finish
-        :param int connect_timeout: qrexec client connection timeout
         :rtype: subprocess.Popen
-        '''
+        """
 
         if not dest:
             raise ValueError('Empty destination name allowed only from a VM')
@@ -600,23 +602,23 @@ class QubesLocal(QubesBase):
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
-        proc = subprocess.Popen([qubesadmin.config.QREXEC_CLIENT] +
-            qrexec_opts + ['{}:QUBESRPC {} dom0'.format(user, service)],
-            **kwargs)
+        proc = subprocess.Popen(
+            [qubesadmin.config.QREXEC_CLIENT] + qrexec_opts + [
+                '{}:QUBESRPC {} dom0'.format(user, service)], **kwargs)
         return proc
 
 
 class QubesRemote(QubesBase):
-    '''Application object communicating through qrexec services.
+    """Application object communicating through qrexec services.
 
     Used when running in VM.
-    '''
+    """
 
     qubesd_connection_type = 'qrexec'
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
-            payload_stream=None):
-        '''
+                    payload_stream=None):
+        """
         Execute Admin API method.
 
         Only one of `payload` and `payload_stream` can be specified.
@@ -629,7 +631,7 @@ class QubesRemote(QubesBase):
         :return: Data returned by qubesd (string)
 
         .. warning:: *payload_stream* will get closed by this function
-        '''
+        """
         if payload and payload_stream:
             raise ValueError(
                 'Only one of payload and payload_stream can be used')
@@ -637,10 +639,10 @@ class QubesRemote(QubesBase):
         if arg is not None:
             service_name += '+' + arg
         p = subprocess.Popen([qubesadmin.config.QREXEC_CLIENT_VM,
-            dest, service_name],
-            stdin=(payload_stream or subprocess.PIPE),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+                              dest, service_name],
+                             stdin=(payload_stream or subprocess.PIPE),
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         if payload_stream is not None:
             payload_stream.close()
         (stdout, stderr) = p.communicate(payload)
@@ -651,8 +653,8 @@ class QubesRemote(QubesBase):
         return self._parse_qubesd_response(stdout)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-            localcmd=None, wait=True, **kwargs):
-        '''Run qrexec service in a given destination
+                    localcmd=None, wait=True, **kwargs):
+        """Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
             string for default (for a given service)
@@ -663,7 +665,7 @@ class QubesRemote(QubesBase):
         :param str localcmd: Command to connect stdin/stdout to
         :param bool wait: wait for process to finish
         :rtype: subprocess.Popen
-        '''
+        """
         if filter_esc:
             raise NotImplementedError(
                 'filter_esc not implemented for calls from VM')
@@ -685,7 +687,7 @@ class QubesRemote(QubesBase):
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
-        proc = subprocess.Popen([qubesadmin.config.QREXEC_CLIENT_VM,
-            dest or '', service] + (shlex.split(localcmd) if localcmd else []),
-            **kwargs)
+        proc = subprocess.Popen(
+            [qubesadmin.config.QREXEC_CLIENT_VM, dest or '', service] + (
+                shlex.split(localcmd) if localcmd else []), **kwargs)
         return proc
