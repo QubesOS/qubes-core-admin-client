@@ -165,6 +165,18 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self._pool_drivers = None
         self.log = logging.getLogger('app')
 
+    def list_vmclass(self):
+        """Call Qubesd in order to obtain the vm classes list"""
+        vmclass = self.qubesd_call('dom0', 'admin.vmclass.List')\
+            .decode().splitlines()
+        return sorted(vmclass)
+
+    def list_deviceclass(self):
+        """Call Qubesd in order to obtain the device classes list"""
+        deviceclasses = self.qubesd_call('dom0', 'admin.deviceclass.List')\
+            .decode().splitlines()
+        return sorted(deviceclasses)
+
     def _refresh_pool_drivers(self):
         """
         Refresh cached storage pool drivers and their parameters.
