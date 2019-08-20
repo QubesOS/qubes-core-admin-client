@@ -1300,6 +1300,19 @@ class BackupRestore(object):
         self.log.debug("Working in temporary dir: %s", self.tmpdir)
         self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
 
+        # check tmpdir has enough free space
+        statvfs = os.statvfs(self.tmpdir)
+        available_space = statvfs.f_frsize * statvfs.f_bavail
+
+        self.log.info("Available space on %s is %s", \
+                self.tmpdir, size_to_human(available_space))
+
+        if available_space * 0.95 < vms_size and \
+                not self.options.ignore_size_limit:
+            raise qubesadmin.exc.QubesException(
+               'Not enough free space on {}'.
+               format(self.tmpdir))
+
         # retrieve backup from the backup stream (either VM, or dom0 file)
         (retrieve_proc, filelist_pipe, error_pipe) = \
             self._start_retrieval_process(
