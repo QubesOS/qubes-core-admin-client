@@ -28,6 +28,10 @@ Options
 
    decrease verbosity
 
+.. option:: --list-device-classes
+
+   list device classes
+
 Commands
 ========
 
@@ -122,3 +126,4 @@ Authors
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
+| Frédéric Pierret <frederic.pierret at qubes dash os dot org>
