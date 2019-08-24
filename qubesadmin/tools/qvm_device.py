@@ -211,6 +211,7 @@ def get_parser(device_class=None):
                                                   want_app=True)
     parser.register('action', 'parsers',
                     qubesadmin.tools.AliasedSubParsersAction)
+    parser.allow_abbrev = False
     if device_class:
         parser.add_argument('devclass', const=device_class,
                             action='store_const',
