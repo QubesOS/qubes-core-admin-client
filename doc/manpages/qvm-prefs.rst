@@ -101,7 +101,7 @@ default_user
 
     TemplateBasedVM use its template's value as a default.
 
-dispvm_allowed
+template_for_dispvms
     Property type: bool
 
     Allow to use this VM as a base AppVM for Disposable VM. I.e. start this
