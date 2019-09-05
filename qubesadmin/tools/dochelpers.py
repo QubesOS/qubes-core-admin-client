@@ -39,8 +39,11 @@ import sphinx
 import sphinx.errors
 import sphinx.locale
 import sphinx.util.docfields
+from sphinx.util import logging
 
 import qubesadmin.tools
+
+log = logging.getLogger(__name__)
 
 SUBCOMMANDS_TITLE = 'COMMANDS'
 OPTIONS_TITLE = 'OPTIONS'
@@ -79,14 +82,13 @@ def prepare_manpage(command):
 
     stream.write(make_rst_section('Options', '-'))
 
-    for action in parser._actions: # pylint: disable=protected-access
+    for action in parser._actions:  # pylint: disable=protected-access
         stream.write('.. option:: ')
         if action.metavar:
-            stream.write(', '.join('{}{}{}'.format(
-                    option,
-                    '=' if option.startswith('--') else ' ',
-                    action.metavar)
-                for option in sorted(action.option_strings)))
+            stream.write(', '.join(
+                '{}{}{}'.format(option, '=' if option.startswith('--') else ' ',
+                                action.metavar) for option in
+                sorted(action.option_strings)))
         else:
             stream.write(', '.join(sorted(action.option_strings)))
         stream.write('\n\n   {}\n\n'.format(action.help))
@@ -107,6 +109,7 @@ def prepare_manpage(command):
 class OptionsCheckVisitor(docutils.nodes.SparseNodeVisitor):
     ''' Checks if the visited option nodes and the specified args are in sync.
     '''
+
     def __init__(self, command, args, document):
         assert isinstance(args, set)
         docutils.nodes.SparseNodeVisitor.__init__(self, document)
@@ -118,7 +121,6 @@ class OptionsCheckVisitor(docutils.nodes.SparseNodeVisitor):
         # pylint: disable=no-self-use
         if not node.get('desctype', None) == 'option':
             raise docutils.nodes.SkipChildren
-
 
     def visit_desc_name(self, node):
         ''' Checks if the option is defined `self.args` '''
@@ -198,7 +200,6 @@ class CommandCheckVisitor(docutils.nodes.SparseNodeVisitor):
                 assert alias in self.sub_commands
                 del self.sub_commands[alias]
 
-
     def check_undocumented_sub_commands(self):
         ''' Call this to check if any undocumented sub_commands are left.
 
@@ -218,12 +219,13 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
     ''' Checks if the sub-commands and options specified in the 'COMMAND' and
         'OPTIONS' (case insensitve) sections in sync the command parser.
     '''
+
     def __init__(self, app, command, document):
         docutils.nodes.SparseNodeVisitor.__init__(self, document)
         try:
             parser = qubesadmin.tools.get_parser_for_command(command)
         except ImportError:
-            app.warn('cannot import module for command')
+            log.warning('cannot import module for command')
             self.parser = None
             return
         except AttributeError:
@@ -261,7 +263,7 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
         section_title = str(node[0][0]).upper()
         if section_title == OPTIONS_TITLE:
             options_visitor = OptionsCheckVisitor(self.command, self.options,
-                                          self.document)
+                                                  self.document)
             node.walkabout(options_visitor)
             options_visitor.check_undocumented_arguments()
         elif section_title == SUBCOMMANDS_TITLE:
@@ -269,6 +271,7 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
                 self.command, self.sub_commands, self.document)
             node.walkabout(sub_cmd_visitor)
             sub_cmd_visitor.check_undocumented_sub_commands()
+
 
 def check_man_args(app, doctree, docname):
     ''' Checks the manpage for undocumented or obsolete sub-commands and
@@ -278,9 +281,8 @@ def check_man_args(app, doctree, docname):
     if os.path.basename(dirname) != 'manpages':
         return
 
-    app.info('Checking arguments for {!r}'.format(command))
+    log.info('Checking arguments for {!r}'.format(command))
     doctree.walk(ManpageCheckVisitor(app, command, doctree))
-
 
 
 def break_to_pdb(app, *_dummy):
@@ -297,6 +299,5 @@ def setup(app):
 
     app.connect('doctree-resolved', break_to_pdb)
     app.connect('doctree-resolved', check_man_args)
-
 
 # vim: ts=4 sw=4 et
