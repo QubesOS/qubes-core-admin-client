@@ -87,7 +87,8 @@ crond
     Enable CRON service.
 
 network-manager
-    Default: enabled in NetVM
+    Default: enabled in every qube that has no netvm and has provides_network
+    preference set to True
 
     Enable NetworkManager. Only VM with direct access to network device needs
     this service, but can be useful in ProxyVM to ease VPN setup.
