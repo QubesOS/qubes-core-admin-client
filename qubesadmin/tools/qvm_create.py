@@ -103,9 +103,8 @@ def main(args=None, app=None):
     args = parser.parse_args(args, app=app)
 
     if args.help_classes:
-        vm_classes = args.app.qubesd_call('dom0', 'admin.vmclass.List').decode()
-        vm_classes = vm_classes.splitlines()
-        print('\n'.join(sorted(vm_classes)))
+        vm_classes = args.app.list_vmclass()
+        print('\n'.join(vm_classes))
         return 0
 
     pools = {}

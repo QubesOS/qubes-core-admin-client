@@ -303,17 +303,7 @@ class DeviceManager(dict):
         return self[key]
 
     def __iter__(self):
-        return iter(self._get_device_classes())
+        return iter(self._vm.app.list_deviceclass())
 
     def keys(self):
-        return self._get_device_classes()
-
-    def _get_device_classes(self):
-        """Function used to call Qubesd in order to obtain
-        the device classes list
-        """
-        device_classes = \
-            self._vm.app.qubesd_call('dom0', 'admin.deviceclass.List').decode()
-        device_classes = sorted(device_classes.splitlines())
-
-        return device_classes
+        return self._vm.app.list_deviceclass()

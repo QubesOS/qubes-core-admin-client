@@ -211,6 +211,7 @@ def get_parser(device_class=None):
                                                   want_app=True)
     parser.register('action', 'parsers',
                     qubesadmin.tools.AliasedSubParsersAction)
+    parser.allow_abbrev = False
     if device_class:
         parser.add_argument('devclass', const=device_class,
                             action='store_const',
@@ -263,6 +264,9 @@ def get_parser(device_class=None):
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
 
+    parser.add_argument('--list-device-classes', action='store_true',
+                        default=False)
+
     return parser
 
 
@@ -272,7 +276,13 @@ def main(args=None, app=None):
     devclass = None
     if basename.startswith('qvm-') and basename != 'qvm-device':
         devclass = basename[4:]
+
     args = get_parser(devclass).parse_args(args, app=app)
+
+    if args.list_device_classes:
+        print('\n'.join(qubesadmin.Qubes().list_deviceclass()))
+        return 0
+
     try:
         args.func(args)
     except qubesadmin.exc.QubesException as e:
@@ -282,4 +292,10 @@ def main(args=None, app=None):
 
 
 if __name__ == '__main__':
+    # Special treatment for '--list-device-classes' (alias --list-classes)
+    curr_action = sys.argv[1:]
+    if set(curr_action).intersection(
+            {'--list-device-classes', '--list-classes'}):
+        sys.exit(main(args=['', '--list-device-classes']))
+
     sys.exit(main())
