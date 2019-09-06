@@ -43,7 +43,10 @@ from sphinx.util import logging
 
 import qubesadmin.tools
 
-log = logging.getLogger(__name__)
+try:
+    log = logging.getLogger(__name__)
+except AttributeError:
+    log = None
 
 SUBCOMMANDS_TITLE = 'COMMANDS'
 OPTIONS_TITLE = 'OPTIONS'
@@ -225,7 +228,13 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
         try:
             parser = qubesadmin.tools.get_parser_for_command(command)
         except ImportError:
-            log.warning('cannot import module for command')
+            msg = 'cannot import module for command'
+            if log:
+                log.warning(msg)
+            else:
+                # Handle legacy
+                app.warn(msg)
+
             self.parser = None
             return
         except AttributeError:
@@ -281,7 +290,12 @@ def check_man_args(app, doctree, docname):
     if os.path.basename(dirname) != 'manpages':
         return
 
-    log.info('Checking arguments for {!r}'.format(command))
+    msg = 'Checking arguments for {!r}'.format(command)
+    if log:
+        log.info(msg)
+    else:
+        # Handle legacy
+        app.info(msg)
     doctree.walk(ManpageCheckVisitor(app, command, doctree))
 
 
