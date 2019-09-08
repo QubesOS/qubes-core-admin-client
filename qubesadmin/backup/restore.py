@@ -921,7 +921,7 @@ class BackupRestore(object):
 
         #: VM from which backup should be retrieved
         self.backup_vm = backup_vm
-        if backup_vm and backup_vm.qid == 0:
+        if backup_vm and backup_vm.name == 'dom0':
             self.backup_vm = None
 
         #: backup path, inside VM pointed by :py:attr:`backup_vm`
