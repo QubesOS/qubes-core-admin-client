@@ -2035,8 +2035,9 @@ class BackupRestore(object):
                 try:
                     new_vm.tags.add(tag)
                 except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error adding tag %s to %s: %s',
-                        tag, vm.name, err)
+                    if tag not in new_vm.tags:
+                        self.log.error('Error adding tag %s to %s: %s',
+                            tag, vm.name, err)
 
             for bus in vm.devices:
                 for backend_domain, ident in vm.devices[bus]:
