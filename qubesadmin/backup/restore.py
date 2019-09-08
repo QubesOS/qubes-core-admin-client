@@ -192,6 +192,11 @@ class BackupHeader(object):
             else:
                 raise QubesException("Unrecognized header type")
             if not header.validator(value):
+                if key == 'compression-filter':
+                    raise QubesException(
+                        "Unusual compression filter '{f}' found. Use "
+                        "--compression-filter={f} to use it anyway.".format(
+                            f=value))
                 raise QubesException("Invalid value for header: {}".format(key))
             setattr(self, header.field, value)
 
@@ -902,7 +907,8 @@ class BackupRestore(object):
                 self.subdir = subdir
                 self.username = os.path.basename(subdir)
 
-    def __init__(self, app, backup_location, backup_vm, passphrase):
+    def __init__(self, app, backup_location, backup_vm, passphrase,
+                 force_compression_filter=None):
         super(BackupRestore, self).__init__()
 
         #: qubes.Qubes instance
@@ -918,6 +924,10 @@ class BackupRestore(object):
 
         #: backup path, inside VM pointed by :py:attr:`backup_vm`
         self.backup_location = backup_location
+
+        #: force using specific application for (de)compression, instead of
+        #: the one named in the backup header
+        self.force_compression_filter = force_compression_filter
 
         #: passphrase protecting backup integrity and optionally decryption
         self.passphrase = passphrase
@@ -1252,7 +1262,9 @@ class BackupRestore(object):
                     "failed). Is the password correct?")
             filename = os.path.join(self.tmpdir, filename)
             with open(filename, 'rb') as f_header:
-                header_data = BackupHeader(f_header.read())
+                header_data = BackupHeader(
+                    f_header.read(),
+                    compression_filter=self.force_compression_filter)
             os.unlink(filename)
 
         return header_data

@@ -58,7 +58,8 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             mock_handle_broken.assert_called_once_with(
                 self.app, mock.ANY, mock_restore_info)
         mock_backup.assert_called_once_with(
-            self.app, '/some/path', None, 'testpass')
+            self.app, '/some/path', None, 'testpass',
+            force_compression_filter=None)
         self.assertAllCalled()
 
     @mock.patch('qubesadmin.tools.qvm_backup_restore.input', create=True)
@@ -92,7 +93,8 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
         qubesadmin.tools.qvm_backup_restore.main(['/some/path', 'test-vm'],
             app=self.app)
         mock_backup.assert_called_once_with(
-            self.app, '/some/path', None, 'testpass')
+            self.app, '/some/path', None, 'testpass',
+            force_compression_filter=None)
         self.assertEqual(mock_backup.return_value.options.exclude, ['test-vm2'])
         self.assertAllCalled()
 

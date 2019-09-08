@@ -72,6 +72,13 @@ Options
     this limit and restore such (broken, or potentially malicious) backup
     anyway.
 
+.. option:: --compression-filter, -Z
+
+    Force specific compression filter, instead of the one named in the backup
+    header. The compression filter is a command that accepts ``-d`` option to
+    decompress data on stdin and output it to stdout.  This can be used to
+    override built-in protection against uncommon compression.
+
 .. option:: --dest-vm=APPVM, -d APPVM
 
     Restore from a backup located in a specific AppVM
