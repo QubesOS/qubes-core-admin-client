@@ -84,6 +84,10 @@ parser.add_argument("-p", "--passphrase-file", action="store",
     dest="pass_file", default=None,
     help="Read passphrase from file, or use '-' to read from stdin")
 
+parser.add_argument("--location-is-service", action="store_true",
+    help="Interpret backup location as a qrexec service name,"
+         "possibly with an argument separated by +.Requires -d option.")
+
 parser.add_argument('backup_location', action='store',
     help="Backup directory name, or command to pipe from")
 
@@ -205,6 +209,9 @@ def main(args=None, app=None):
         except KeyError:
             parser.error('no such domain: {!r}'.format(args.appvm))
 
+    if args.location_is_service and not args.appvm:
+        parser.error('--location-is-service option requires -d')
+
     if args.pass_file is not None:
         pass_f = open(args.pass_file) if args.pass_file != "-" else sys.stdin
         passphrase = pass_f.readline().rstrip()
@@ -218,7 +225,7 @@ def main(args=None, app=None):
 
     try:
         backup = BackupRestore(args.app, args.backup_location,
-            appvm, passphrase,
+            appvm, passphrase, location_is_service=args.location_is_service,
             force_compression_filter=args.compression)
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(str(e))

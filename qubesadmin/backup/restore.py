@@ -910,7 +910,7 @@ class BackupRestore(object):
                 self.username = os.path.basename(subdir)
 
     def __init__(self, app, backup_location, backup_vm, passphrase,
-                 force_compression_filter=None):
+                 location_is_service=False, force_compression_filter=None):
         super(BackupRestore, self).__init__()
 
         #: qubes.Qubes instance
@@ -926,6 +926,10 @@ class BackupRestore(object):
 
         #: backup path, inside VM pointed by :py:attr:`backup_vm`
         self.backup_location = backup_location
+
+        #: use alternative qrexec service to retrieve backup data, instead of
+        #: ``qubes.Restore`` with *backup_location* given on stdin
+        self.location_is_service = location_is_service
 
         #: force using specific application for (de)compression, instead of
         #: the one named in the backup header
@@ -973,11 +977,14 @@ class BackupRestore(object):
         vmproc = None
         if self.backup_vm is not None:
             # If APPVM, STDOUT is a PIPE
-            vmproc = self.backup_vm.run_service('qubes.Restore')
-            vmproc.stdin.write(
-                (self.backup_location.replace("\r", "").replace("\n",
-                    "") + "\n").encode())
-            vmproc.stdin.flush()
+            if self.location_is_service:
+                vmproc = self.backup_vm.run_service(self.backup_location)
+            else:
+                vmproc = self.backup_vm.run_service('qubes.Restore')
+                vmproc.stdin.write(
+                    (self.backup_location.replace("\r", "").replace("\n",
+                        "") + "\n").encode())
+                vmproc.stdin.flush()
 
             # Send to tar2qfile the VMs that should be extracted
             vmproc.stdin.write((" ".join(filelist) + "\n").encode())

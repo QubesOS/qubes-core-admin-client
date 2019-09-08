@@ -87,6 +87,10 @@ Options
 
    Read passphrase from file, or use '-' to read from stdin
 
+.. option:: --location-is-service
+
+   Provided backup location is a qrexec service name (optionally with an
+   argument, separated by ``+``), instead of file path or a command.
 
 
 Authors
