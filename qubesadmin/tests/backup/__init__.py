@@ -169,7 +169,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
 
     def restore_backup(self, source=None, appvm=None, options=None,
                        expect_errors=None, manipulate_restore_info=None,
-                       passphrase='qubes'):
+                       passphrase='qubes', force_compression_filter=None):
         if source is None:
             backupfile = os.path.join(self.backupdir,
                                       sorted(os.listdir(self.backupdir))[-1])
@@ -178,7 +178,8 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
 
         with self.assertNotRaises(qubesadmin.exc.QubesException):
             restore_op = qubesadmin.backup.restore.BackupRestore(
-                self.app, backupfile, appvm, passphrase)
+                self.app, backupfile, appvm, passphrase,
+                force_compression_filter=force_compression_filter)
             if options:
                 for key, value in options.items():
                     setattr(restore_op.options, key, value)
