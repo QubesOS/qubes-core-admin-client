@@ -992,9 +992,14 @@ class BackupRestore(object):
             self.processes_to_kill_on_cancel.append(vmproc)
 
             backup_stdin = vmproc.stdout
-            # FIXME use /usr/lib/qubes/qfile-unpacker in non-dom0
-            tar1_command = ['/usr/libexec/qubes/qfile-dom0-unpacker',
-                            str(os.getuid()), self.tmpdir, '-v']
+            if isinstance(self.app, qubesadmin.app.QubesRemote):
+                qfile_unpacker_path = '/usr/lib/qubes/qfile-unpacker'
+            else:
+                qfile_unpacker_path = '/usr/libexec/qubes/qfile-dom0-unpacker'
+            # keep at least 500M free for decryption of a previous chunk
+            tar1_command = [qfile_unpacker_path,
+                            str(os.getuid()), self.tmpdir, '-v',
+                            '-w', str(500 * 1024 * 1024)]
         else:
             backup_stdin = open(self.backup_location, 'rb')
 
