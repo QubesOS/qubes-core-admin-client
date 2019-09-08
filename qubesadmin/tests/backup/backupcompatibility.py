@@ -1440,8 +1440,14 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     str(value).encode())] = b'0\0'
 
             for tag in vm['tags']:
-                self.app.expected_calls[
-                    (name, 'admin.vm.tag.Set', tag, None)] = b'0\0'
+                if tag.startswith('created-by-'):
+                    self.app.expected_calls[
+                        (name, 'admin.vm.tag.Set', tag, None)] = b''
+                    self.app.expected_calls[
+                        (name, 'admin.vm.tag.Get', tag, None)] = b'0\0001'
+                else:
+                    self.app.expected_calls[
+                        (name, 'admin.vm.tag.Set', tag, None)] = b'0\0'
 
             if vm['backup_path']:
                 appmenus = (
@@ -1727,7 +1733,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
             call_args = qubesd_calls_queue.get()
-            self.app.qubesd_call(*call_args)
+            with contextlib.suppress(qubesadmin.exc.QubesException):
+                self.app.qubesd_call(*call_args)
         qubesd_calls_queue.close()
 
         self.assertAllCalled()
@@ -1797,7 +1804,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
             call_args = qubesd_calls_queue.get()
-            self.app.qubesd_call(*call_args)
+            with contextlib.suppress(qubesadmin.exc.QubesException):
+                self.app.qubesd_call(*call_args)
         qubesd_calls_queue.close()
 
         self.assertAllCalled()
@@ -1867,7 +1875,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
             call_args = qubesd_calls_queue.get()
-            self.app.qubesd_call(*call_args)
+            with contextlib.suppress(qubesadmin.exc.QubesException):
+                self.app.qubesd_call(*call_args)
         qubesd_calls_queue.close()
 
         self.assertAllCalled()
@@ -1968,7 +1977,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # retrieve calls from other multiprocess.Process instances
         while not qubesd_calls_queue.empty():
             call_args = qubesd_calls_queue.get()
-            self.app.qubesd_call(*call_args)
+            with contextlib.suppress(qubesadmin.exc.QubesException):
+                self.app.qubesd_call(*call_args)
         qubesd_calls_queue.close()
 
         self.assertAllCalled()
