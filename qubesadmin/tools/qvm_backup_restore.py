@@ -72,6 +72,11 @@ parser.add_argument("--ignore-size-limit", action="store_true",
     dest="ignore_size_limit", default=False,
     help="Ignore size limit calculated from backup metadata")
 
+parser.add_argument("--compression-filter", "-Z", action="store",
+    dest="compression",
+    help="Force specific compression filter program, "
+         "instead of the one from the backup header")
+
 parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
     help="Specify VM containing the backup to be restored")
 
@@ -213,7 +218,8 @@ def main(args=None, app=None):
 
     try:
         backup = BackupRestore(args.app, args.backup_location,
-            appvm, passphrase)
+            appvm, passphrase,
+            force_compression_filter=args.compression)
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(str(e))
         # unreachable - error_runtime will raise SystemExit
