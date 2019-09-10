@@ -23,6 +23,7 @@ Package: qubes-core-admin-client
 Architecture: any
 Depends:
  python3-qubesadmin,
+ scrypt,
  ${python:Depends},
  ${python3:Depends},
  ${misc:Depends}
