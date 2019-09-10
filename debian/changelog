@@ -1,3 +1,12 @@
+qubes-core-admin-client (4.0.27-1) wheezy; urgency=medium
+
+  * backup/restore: reject uncommon compression filters and improve
+    header validation
+  * backup/restore: add option to use uncommon compression filter anyway
+  * tests: check rejecting/accepting compression filters
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 10 Sep 2019 15:22:35 +0200
+
 qubes-core-admin-client (4.0.26-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
