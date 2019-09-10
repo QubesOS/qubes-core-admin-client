@@ -92,6 +92,14 @@ Options
    Provided backup location is a qrexec service name (optionally with an
    argument, separated by ``+``), instead of file path or a command.
 
+.. option:: --paranoid-mode, --plan-b
+
+  Isolate restore process in a DisposableVM, defend against potentially
+  compromised backup. In this mode some parts of the backup are skipped,
+  specifically:
+
+    - dom0 home directory (desktop environment settings)
+    - PCI devices assignments
 
 Authors
 =======

@@ -17,12 +17,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import itertools
+
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_backup_restore
 from unittest import mock
 from qubesadmin.backup import BackupVM
 from qubesadmin.backup.restore import BackupRestore
+from qubesadmin.backup.dispvm import RestoreInDisposableVM
 
 
 class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
@@ -231,3 +234,14 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_backup_restore.handle_broken(
                     self.app, mock_args, mock_restore_info)
             self.assertAppropriateLogging('NetVM', 'error')
+
+    def test_100_restore_in_dispvm_parser(self):
+        """Verify if qvm-backup-restore tool options matches un-parser
+        for paranoid restore mode"""
+        parser = qubesadmin.tools.qvm_backup_restore.parser
+        actions = parser._get_optional_actions()
+        options_tool = set(itertools.chain(*(a.option_strings for a in actions)))
+
+        options_parser = set(itertools.chain(
+            *(o.opts for o in RestoreInDisposableVM.arguments.values())))
+        self.assertEqual(options_tool, options_parser)

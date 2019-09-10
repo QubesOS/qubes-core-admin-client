@@ -24,12 +24,17 @@ import getpass
 import sys
 
 from qubesadmin.backup.restore import BackupRestore
+from qubesadmin.backup.dispvm import RestoreInDisposableVM
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.utils
 
 parser = qubesadmin.tools.QubesArgumentParser()
 
+# WARNING:
+# When adding options, update/verify also
+# qubeadmin.restore.dispvm.RestoreInDisposableVM.arguments
+#
 parser.add_argument("--verify-only", action="store_true",
     dest="verify_only", default=False,
     help="Verify backup integrity without restoring any "
@@ -87,6 +92,10 @@ parser.add_argument("-p", "--passphrase-file", action="store",
 parser.add_argument("--location-is-service", action="store_true",
     help="Interpret backup location as a qrexec service name,"
          "possibly with an argument separated by +.Requires -d option.")
+
+parser.add_argument('--paranoid-mode', '--plan-b', action="store_true",
+    help="Isolate restore process in a DispVM, defend against untrusted backup;"
+         "implies --skip-dom0-home")
 
 parser.add_argument('backup_location', action='store',
     help="Backup directory name, or command to pipe from")
@@ -211,6 +220,19 @@ def main(args=None, app=None):
 
     if args.location_is_service and not args.appvm:
         parser.error('--location-is-service option requires -d')
+
+    if args.paranoid_mode:
+        args.dom0_home = False
+        args.app.log.info("Starting restore process in a DisposableVM...")
+        args.app.log.info("When operation completes, close its window "
+                          "manually.")
+        restore_in_dispvm = RestoreInDisposableVM(args.app, args)
+        try:
+            restore_in_dispvm.run()
+        except qubesadmin.exc.QubesException as e:
+            parser.error_runtime(str(e))
+            return 1
+        return
 
     if args.pass_file is not None:
         pass_f = open(args.pass_file) if args.pass_file != "-" else sys.stdin
