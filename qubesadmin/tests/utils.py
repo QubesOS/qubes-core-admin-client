@@ -76,7 +76,7 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
             set(result),
             set([(vm, prop) for vm in self.vms for prop in self.vm_properties
                  if (not vm.startswith('template')
-                 or not prop.startswith('template'))]),
+                 or not prop.startswith('template')) and vm != 'template1']),
             "Incorrect VM properties listed.")
 
     def test_02_empty(self):
