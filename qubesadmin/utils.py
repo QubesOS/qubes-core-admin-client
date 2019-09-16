@@ -136,6 +136,8 @@ def vm_dependencies(app, reference_vm):
     vm_properties = ['template', 'netvm', 'default_dispvm', 'management_dispvm']
 
     for vm in app.domains:
+        if vm == reference_vm:
+            continue
         for prop in vm_properties:
             if reference_vm == getattr(vm, prop, None) and \
                     not vm.property_is_default(prop):
