@@ -86,6 +86,10 @@ class BackupCanceledError(QubesException):
         self.tmpdir = tmpdir
 
 def init_supported_hmac_and_crypto():
+    """Collect supported hmac and crypto algorithms.
+
+    This calls openssl to list actual supported algos.
+    """
     if not KNOWN_HMAC_ALGORITHMS:
         KNOWN_HMAC_ALGORITHMS.extend(get_supported_hmac_algo())
 
@@ -101,7 +105,7 @@ class BackupHeader(object):
 
     known_headers = {
         'version': Header(field='version', t=int,
-                          validator=lambda x: x >= 1 and x <= 4),
+                          validator=lambda x: 1 <= x <= 4),
         'encrypted': Header(field='encrypted', t=bool,
                             validator=lambda x: True),
         'compressed': Header(field='compressed', t=bool,
