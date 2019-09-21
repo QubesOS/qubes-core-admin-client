@@ -1,6 +1,6 @@
 Name:		qubes-core-admin-client
 Version:    @VERSION@
-Release:	0.1%{?dist}
+Release:	1%{?dist}
 Summary:	Qubes OS admin client tools
 
 Group:		Qubes
