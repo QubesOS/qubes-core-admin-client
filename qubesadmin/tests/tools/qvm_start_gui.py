@@ -511,7 +511,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
         loop.run_until_complete(self.launcher.send_monitor_layout(
             vm, layout=monitor_layout, startup=True))
         mock_run_service.assert_called_once_with(
-            'qubes.SetMonitorLayout', b'1920 1080 0 0\n')
+            'qubes.SetMonitorLayout', autostart=False, input=b'1920 1080 0 0\n')
         self.assertAllCalled()
 
     def test_061_send_monitor_layout_exclude(self):

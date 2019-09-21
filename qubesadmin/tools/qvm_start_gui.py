@@ -25,6 +25,8 @@ import signal
 import subprocess
 import asyncio
 import re
+
+import functools
 import xcffib
 import xcffib.xproto  # pylint: disable=unused-import
 
@@ -292,8 +294,10 @@ class GUILauncher(object):
 
         try:
             yield from asyncio.get_event_loop().run_in_executor(None,
-                vm.run_service_for_stdio, 'qubes.SetMonitorLayout',
-                    ''.join(layout).encode())
+                functools.partial(vm.run_service_for_stdio,
+                                  'qubes.SetMonitorLayout',
+                                  input=''.join(layout).encode(),
+                                  autostart=False))
         except subprocess.CalledProcessError as e:
             vm.log.warning('Failed to send monitor layout: %s', e.stderr)
 
