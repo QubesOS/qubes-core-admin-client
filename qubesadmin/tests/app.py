@@ -29,6 +29,7 @@ try:
     import unittest.mock as mock
 except ImportError:
     import mock
+from mock import call
 
 import tempfile
 
@@ -909,5 +910,32 @@ class TC_30_QubesRemote(unittest.TestCase):
         self.proc_mock.assert_called_once_with([
             qubesadmin.config.QREXEC_CLIENT_VM,
             '-T', '', 'service.name'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_014_run_service_no_autostart1(self):
+        self.set_proc_stdout( b'0\x00some-vm class=AppVM state=Running\n')
+        self.app.run_service('some-vm', 'service.name', autostart=False)
+        self.proc_mock.assert_has_calls([
+            call([qubesadmin.config.QREXEC_CLIENT_VM,
+                  'some-vm', 'admin.vm.List'],
+                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                 stderr=subprocess.PIPE),
+            call().communicate(None),
+            call([qubesadmin.config.QREXEC_CLIENT_VM,
+                  '-T', 'some-vm', 'service.name'],
+                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                 stderr=subprocess.PIPE),
+        ])
+
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_015_run_service_no_autostart2(self):
+        self.set_proc_stdout( b'0\x00some-vm class=AppVM state=Halted\n')
+        with self.assertRaises(qubesadmin.exc.QubesVMNotRunningError):
+            self.app.run_service('some-vm', 'service.name', autostart=False)
+        self.proc_mock.assert_called_once_with([
+            qubesadmin.config.QREXEC_CLIENT_VM,
+            'some-vm', 'admin.vm.List'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)

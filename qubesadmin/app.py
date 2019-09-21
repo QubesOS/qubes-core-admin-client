@@ -487,7 +487,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             'class: qubesadmin.Qubes()')
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-                    localcmd=None, wait=True, **kwargs):
+                    localcmd=None, wait=True, autostart=True, **kwargs):
         """Run qrexec service in a given destination
 
         *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
@@ -500,6 +500,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param str user: username to run service as
         :param str localcmd: Command to connect stdin/stdout to
         :param bool wait: Wait service run
+        :param bool autostart: Automatically start the target VM
         :rtype: subprocess.Popen
         """
         raise NotImplementedError(
@@ -576,7 +577,7 @@ class QubesLocal(QubesBase):
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-                    localcmd=None, wait=True, **kwargs):
+                    localcmd=None, wait=True, autostart=True, **kwargs):
         """Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
@@ -594,10 +595,14 @@ class QubesLocal(QubesBase):
             raise ValueError('Empty destination name allowed only from a VM')
         if not wait and localcmd:
             raise ValueError('wait=False incompatible with localcmd')
-        try:
-            self.qubesd_call(dest, 'admin.vm.Start')
-        except qubesadmin.exc.QubesVMNotHaltedError:
-            pass
+        if autostart:
+            try:
+                self.qubesd_call(dest, 'admin.vm.Start')
+            except qubesadmin.exc.QubesVMNotHaltedError:
+                pass
+        elif not self.domains.get_blind(dest).is_running():
+            raise qubesadmin.exc.QubesVMNotRunningError(
+                '%s is not running', dest)
         qrexec_opts = ['-d', dest]
         if filter_esc:
             qrexec_opts.extend(['-t'])
@@ -665,7 +670,7 @@ class QubesRemote(QubesBase):
         return self._parse_qubesd_response(stdout)
 
     def run_service(self, dest, service, filter_esc=False, user=None,
-                    localcmd=None, wait=True, **kwargs):
+                    localcmd=None, wait=True, autostart=True, **kwargs):
         """Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
@@ -678,6 +683,9 @@ class QubesRemote(QubesBase):
         :param bool wait: wait for process to finish
         :rtype: subprocess.Popen
         """
+        if not autostart and not dest:
+            raise ValueError(
+                'autostart=False makes sense only with a defined target')
         if user:
             raise ValueError(
                 'non-default user not possible for calls from VM')
@@ -686,8 +694,12 @@ class QubesRemote(QubesBase):
         qrexec_opts = []
         if filter_esc:
             qrexec_opts.extend(['-t'])
-        if filter_esc or os.isatty(sys.stderr.fileno()):
+        if filter_esc or (
+                os.isatty(sys.stderr.fileno()) and 'stderr' not in kwargs):
             qrexec_opts.extend(['-T'])
+        if not autostart and not self.domains.get_blind(dest).is_running():
+            raise qubesadmin.exc.QubesVMNotRunningError(
+                '%s is not running', dest)
         if not wait:
             # qrexec-client-vm can only request service calls, which are
             # started using MSG_EXEC_CMDLINE qrexec protocol message; this
