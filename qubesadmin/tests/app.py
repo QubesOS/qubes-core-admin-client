@@ -880,26 +880,34 @@ class TC_30_QubesRemote(unittest.TestCase):
         ])
         self.assertEqual(value, b'return-value')
 
+    @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_010_run_service(self):
         self.app.run_service('some-vm', 'service.name')
         self.proc_mock.assert_called_once_with([
             qubesadmin.config.QREXEC_CLIENT_VM,
-            'some-vm', 'service.name'],
+            '-T', 'some-vm', 'service.name'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
 
+    @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_011_run_service_filter_esc(self):
-        with self.assertRaises(NotImplementedError):
-            p = self.app.run_service('some-vm', 'service.name', filter_esc=True)
+        self.app.run_service('some-vm', 'service.name', filter_esc=True)
+        self.proc_mock.assert_called_once_with([
+            qubesadmin.config.QREXEC_CLIENT_VM,
+            '-t', '-T', 'some-vm', 'service.name'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
 
+    @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_012_run_service_user(self):
         with self.assertRaises(ValueError):
             p = self.app.run_service('some-vm', 'service.name', user='user')
 
+    @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_013_run_service_default_target(self):
         self.app.run_service('', 'service.name')
         self.proc_mock.assert_called_once_with([
             qubesadmin.config.QREXEC_CLIENT_VM,
-            '', 'service.name'],
+            '-T', '', 'service.name'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)

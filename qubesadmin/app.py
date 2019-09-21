@@ -678,14 +678,16 @@ class QubesRemote(QubesBase):
         :param bool wait: wait for process to finish
         :rtype: subprocess.Popen
         """
-        if filter_esc:
-            raise NotImplementedError(
-                'filter_esc not implemented for calls from VM')
         if user:
             raise ValueError(
                 'non-default user not possible for calls from VM')
         if not wait and localcmd:
             raise ValueError('wait=False incompatible with localcmd')
+        qrexec_opts = []
+        if filter_esc:
+            qrexec_opts.extend(['-t'])
+        if filter_esc or os.isatty(sys.stderr.fileno()):
+            qrexec_opts.extend(['-T'])
         if not wait:
             # qrexec-client-vm can only request service calls, which are
             # started using MSG_EXEC_CMDLINE qrexec protocol message; this
@@ -700,6 +702,9 @@ class QubesRemote(QubesBase):
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
         proc = subprocess.Popen(
-            [qubesadmin.config.QREXEC_CLIENT_VM, dest or '', service] + (
-                shlex.split(localcmd) if localcmd else []), **kwargs)
+            [qubesadmin.config.QREXEC_CLIENT_VM] +
+             qrexec_opts +
+             [dest or '', service] +
+             (shlex.split(localcmd) if localcmd else []),
+            **kwargs)
         return proc
