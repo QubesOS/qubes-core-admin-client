@@ -359,7 +359,7 @@ class WrapperObjectsCollection(object):
     def keys(self):
         '''Get list of names.'''
         self.refresh_cache()
-        return [key for key in self._names_list]
+        return list(self._names_list)
 
     def items(self):
         '''Get list of (key, value) pairs'''

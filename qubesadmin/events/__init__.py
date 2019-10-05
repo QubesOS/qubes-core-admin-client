@@ -176,8 +176,7 @@ class EventsDispatcher(object):
                 except asyncio.IncompleteReadError as err:
                     if err.partial == b'':
                         break
-                    else:
-                        raise
+                    raise
 
                 if not subject:
                     subject = None

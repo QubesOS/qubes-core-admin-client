@@ -256,7 +256,7 @@ def main(args=None, app=None):
 
     if args.pass_file is None:
         if input("Do you want to proceed? [y/N] ").upper() != "Y":
-            exit(0)
+            sys.exit(0)
 
     try:
         backup.restore_do(restore_info)

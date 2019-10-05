@@ -634,7 +634,8 @@ def main(args=None, app=None):
                    if set(dom.tags).intersection(set(args.tags))]
 
     pwrstates = {state: getattr(args, state) for state in DOMAIN_POWER_STATES}
-    domains = filter(lambda x: matches_power_states(x, **pwrstates), domains)
+    domains = [d for d in domains
+               if matches_power_states(d, **pwrstates)]
 
     table = Table(domains, columns, spinner, args.raw_data)
     table.write_table(sys.stdout)
