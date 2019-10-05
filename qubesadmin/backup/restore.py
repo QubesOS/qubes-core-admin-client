@@ -555,10 +555,8 @@ class ExtractWorker3(Process):
                         file_size = int(match.groups()[0])
                         size_func(file_size)
                         break
-                    else:
-                        self.log.warning(
-                            'unexpected tar output (no file size report): %s',
-                            line)
+                    self.log.warning(
+                        'unexpected tar output (no file size report): %s', line)
 
         return data_func(tar2_process.stdout)
 

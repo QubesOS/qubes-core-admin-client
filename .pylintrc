@@ -13,6 +13,7 @@ extension-pkg-whitelist=lxml.etree
 disable=
   bad-continuation,
   raising-format-tuple,
+  import-outside-toplevel,
   inconsistent-return-statements,
   duplicate-code,
   fixme,
