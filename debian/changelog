@@ -1,3 +1,46 @@
+qubes-core-admin-client (4.0.28-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * devices: make PEP8 happy
+  * devices: handle listing of available device classes
+  * tests/devices: make PEP8 happy
+  * tests/devices: add test for handling listing device classes
+  * tools/qvm-device: make PEP8 happy
+  * devices: make iteration device classes compatible with Python2
+  * devices: add missing docstring for _get_device_classes
+  * qvm-check: refactor check mechanism and add filter for checking
+    netvm
+  * qvm-check: fix from Marek's comment
+  * qubesadmin: make PEP8 happy
+  * qubesadmin: define methods list_vmclass and list_devicesclass
+  * qvm-device: handle 'list-device-classes' and 'list-classes'
+  * qvm-device: prevent parser allowing abbreviations
+  * qvm-device: add manpage entry
+
+  [ hexagonrecursion ]
+  * Clarify the network-manager qubes service default
+  * Correct network-manager qubes service default
+  * Fix a pref name in the qvm-prefs man page
+
+  [ Frédéric Pierret (fepitre) ]
+  * Fix Sphinx 2 new API for Fedora 31+
+  * dochelpers: handle legacy sphinx library
+  * dochelpers: make PEP8 happier
+
+  [ Marta Marczykowska-Górecka ]
+  * Fixed error with VM being incorrectly listed as its own dependency
+
+  [ Marek Marczykowski-Górecki ]
+  * backup/restore: make pylint happy
+  * rpm: fix release number
+  * Add support for run_service(..., filter_esc=True) in a VM
+  * Add run_service(..., autostart=False) argument
+  * tools/qvm-start-gui: avoid starting a VM just to send it monitor
+    layout
+  * Make pylint happy
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 09 Oct 2019 05:10:40 +0200
+
 qubes-core-admin-client (4.0.27-1) wheezy; urgency=medium
 
   * backup/restore: reject uncommon compression filters and improve
