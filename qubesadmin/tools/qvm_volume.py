@@ -326,8 +326,7 @@ def get_parser():
     '''Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-volume`.
     '''
-    parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-        want_app=True)
+    parser = qubesadmin.tools.QubesArgumentParser(description=__doc__)
     parser.register('action', 'parsers',
         qubesadmin.tools.AliasedSubParsersAction)
     sub_parsers = parser.add_subparsers(

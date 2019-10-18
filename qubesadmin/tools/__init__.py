@@ -322,9 +322,6 @@ class PoolsAction(QubesAction):
 class QubesArgumentParser(argparse.ArgumentParser):
     '''Parser preconfigured for use in most of the Qubes command-line tools.
 
-    :param bool want_app: instantiate :py:class:`qubes.Qubes` object
-    :param bool want_app_no_instance: don't actually instantiate \
-        :py:class:`qubes.Qubes` object, just add argument for custom xml file
     :param mixed vmname_nargs: The number of ``VMNAME`` arguments that should be
         consumed. Values include:
         * N (an integer) consumes N arguments (and produces a list)
@@ -340,20 +337,11 @@ class QubesArgumentParser(argparse.ArgumentParser):
         ``--verbose`` and ``--quiet``
     '''
 
-    def __init__(self, want_app=True, want_app_no_instance=False,
-                 vmname_nargs=None, **kwargs):
+    def __init__(self, vmname_nargs=None, **kwargs):
 
         super(QubesArgumentParser, self).__init__(add_help=False, **kwargs)
 
-        self._want_app = want_app
-        self._want_app_no_instance = want_app_no_instance
         self._vmname_nargs = vmname_nargs
-        if self._want_app:
-            self.add_argument('--qubesxml', metavar='FILE', action='store',
-                              dest='app', help=argparse.SUPPRESS)
-            self.add_argument('--offline-mode', action='store_true',
-                default=None, dest='offline_mode', help=argparse.SUPPRESS)
-
 
         self.add_argument('--verbose', '-v', action='count',
                           help='increase verbosity')
@@ -384,12 +372,11 @@ class QubesArgumentParser(argparse.ArgumentParser):
         app = kwargs.pop('app', None)
         namespace = super(QubesArgumentParser, self).parse_args(*args, **kwargs)
 
-        if self._want_app and not self._want_app_no_instance:
-            self.set_qubes_verbosity(namespace)
-            if app is not None:
-                namespace.app = app
-            else:
-                namespace.app = qubesadmin.Qubes()
+        self.set_qubes_verbosity(namespace)
+        if app is not None:
+            namespace.app = app
+        else:
+            namespace.app = qubesadmin.Qubes()
 
         for action in self._actions:
             # pylint: disable=protected-access
