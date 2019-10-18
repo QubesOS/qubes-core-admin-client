@@ -19,8 +19,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """Handle backup extraction using DisposableVM"""
+import collections
 import datetime
+import itertools
 import logging
+import os
 import string
 
 import subprocess
@@ -74,14 +77,6 @@ def skip(_option, _value):
     return []
 
 
-def handle_unsupported(option, value):
-    """Reject argument as unsupported"""
-    if value:
-        raise NotImplementedError(
-            '{} option is not supported with --paranoid-mode'.format(
-                option.opts[0]))
-    return []
-
 class RestoreInDisposableVM:
     """Perform backup restore with actual archive extraction isolated
     within DisposableVM"""
@@ -105,10 +100,11 @@ class RestoreInDisposableVM:
             handle_store_true),
         'compression': Option(('--compression-filter', '-Z'), handle_store),
         'appvm': Option(('--dest-vm', '-d'), handle_store),
-        'pass_file': Option(('--passphrase-file', '-p'), handle_unsupported),
+        'pass_file': Option(('--passphrase-file', '-p'), handle_store),
         'location_is_service': Option(('--location-is-service',),
             handle_store_true),
         'paranoid_mode': Option(('--paranoid-mode', '--plan-b',), skip),
+        'auto_close': Option(('--auto-close',), skip),
         # make the verification easier, those don't really matter
         'help': Option(('--help', '-h'), skip),
         'force_root': Option(('--force-root',), skip),
@@ -134,7 +130,17 @@ class RestoreInDisposableVM:
         #: tag added to a VM storing the backup archive
         self.storage_tag = 'backup-restore-storage'
 
-        self.terminal_app = ('xterm', '-hold', '-title', 'Backup restore', '-e')
+        # FIXME: make it random, collision free
+        #  (when considering non-disposable case)
+        self.backup_log_path = '/var/tmp/backup-restore.log'
+        self.terminal_app = ('xterm', '-hold', '-title', 'Backup restore', '-e',
+                             '/bin/sh', '-c',
+                             'exec "$0" "$@" 2>&1 | tee {}'.format(
+                                 self.backup_log_path))
+        if args.auto_close:
+            # filter-out '-hold'
+            self.terminal_app = tuple(a for a in self.terminal_app
+                                      if a != '-hold')
 
         self.dispvm = None
 
@@ -160,6 +166,18 @@ class RestoreInDisposableVM:
                                           template=self.app.management_dispvm)
         self.dispvm.auto_cleanup = True
         self.dispvm.features['tag-created-vm-with'] = self.restored_tag
+
+    def transfer_pass_file(self, path):
+        """Copy passhprase file to the DisposableVM"""
+        subprocess.check_call(
+            ['qvm-copy-to-vm', self.dispvm_name, path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
+        return '/home/{}/QubesIncoming/{}/{}'.format(
+            self.dispvm.default_user,
+            os.uname()[1],
+            os.path.basename(path)
+        )
 
     def register_backup_source(self):
         """Tell backup archive holding VM we want this content.
@@ -235,6 +253,23 @@ class RestoreInDisposableVM:
                     datetime.date.strftime(datetime.date.today(), '%F')))
             domain.tags.discard('backup-restore-in-progress')
 
+    @staticmethod
+    def sanitize_log(untrusted_log):
+        """Replace characters potentially dangerouns to terminal in
+        a backup log"""
+        allowed_set = set(range(0x20, 0x7e))
+        allowed_set.update({0x0a})
+        return bytes(c if c in allowed_set else ord('.') for c in untrusted_log)
+
+    def extract_log(self):
+        """Extract restore log from the DisposableVM"""
+        untrusted_backup_log, _ = self.dispvm.run_with_args(
+            'cat', self.backup_log_path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL)
+        backup_log = self.sanitize_log(untrusted_backup_log)
+        return backup_log
+
     def run(self):
         """Run the backup restore operation"""
         lock = qubesadmin.utils.LockFile(LOCKFILE, True)
@@ -243,14 +278,19 @@ class RestoreInDisposableVM:
             self.create_dispvm()
             self.clear_old_tags()
             self.register_backup_source()
-            args = self.prepare_inner_args()
             self.dispvm.start()
             self.dispvm.run_service_for_stdio('qubes.WaitForSession')
+            if self.args.pass_file:
+                self.args.pass_file = self.transfer_pass_file(
+                    self.args.pass_file)
+            args = self.prepare_inner_args()
             self.dispvm.tags.add(self.dispvm_tag)
+            # TODO: better error detection
             self.dispvm.run_with_args(*self.terminal_app,
                                       'qvm-backup-restore', *args,
                                       stdout=subprocess.DEVNULL,
                                       stderr=subprocess.DEVNULL)
+            return self.extract_log()
         except subprocess.CalledProcessError as e:
             if e.returncode == 127:
                 raise qubesadmin.exc.QubesException(
@@ -259,8 +299,13 @@ class RestoreInDisposableVM:
                     'package there'.format(self.terminal_app[0],
                                            self.dispvm.template.template.name)
                 )
-            raise qubesadmin.exc.QubesException(
-                'qvm-backup-restore failed with {}'.format(e.returncode))
+            try:
+                backup_log = self.extract_log()
+            except:  # pylint: disable=bare-except
+                backup_log = None
+            raise qubesadmin.exc.BackupRestoreError(
+                'qvm-backup-restore failed with {}'.format(e.returncode),
+                backup_log=backup_log)
         finally:
             if self.dispvm is not None:
                 # first revoke permission, then cleanup

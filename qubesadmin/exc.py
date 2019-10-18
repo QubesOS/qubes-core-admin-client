@@ -154,6 +154,12 @@ class DeviceAlreadyAttached(QubesException, KeyError):
         return QubesException.__str__(self)
 
 
+class BackupRestoreError(QubesException):
+    '''Restoring a backup failed'''
+    def __init__(self, msg, backup_log=None):
+        super(BackupRestoreError, self).__init__(msg)
+        self.backup_log = backup_log
+
 # pylint: disable=too-many-ancestors
 class QubesDaemonNoResponseError(QubesDaemonCommunicationError):
     '''Got empty response from qubesd'''

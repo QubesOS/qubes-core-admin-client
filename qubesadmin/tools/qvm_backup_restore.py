@@ -21,6 +21,7 @@
 '''Console frontend for backup restore code'''
 
 import getpass
+import os
 import sys
 
 from qubesadmin.backup.restore import BackupRestore
@@ -88,6 +89,10 @@ parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
 parser.add_argument("-p", "--passphrase-file", action="store",
     dest="pass_file", default=None,
     help="Read passphrase from file, or use '-' to read from stdin")
+
+parser.add_argument('--auto-close', action="store_true",
+    help="Auto-close restore window and display log on the stdout "
+         "(applies to --paranoid-mode)")
 
 parser.add_argument("--location-is-service", action="store_true",
     help="Interpret backup location as a qrexec service name,"
@@ -206,6 +211,18 @@ def handle_broken(app, args, restore_info):
             "files should be copied or moved out of the new "
             "directory before using them.")
 
+
+def print_backup_log(backup_log):
+    """Print a log on stdout, coloring it red if it's a terminal"""
+    if os.isatty(sys.stdout.fileno()):
+        sys.stdout.write('\033[0;31m')
+        sys.stdout.flush()
+    sys.stdout.buffer.write(backup_log)
+    if os.isatty(sys.stdout.fileno()):
+        sys.stdout.write('\033[0m')
+        sys.stdout.flush()
+
+
 def main(args=None, app=None):
     '''Main function of qvm-backup-restore'''
     # pylint: disable=too-many-return-statements
@@ -228,7 +245,14 @@ def main(args=None, app=None):
                           "manually.")
         restore_in_dispvm = RestoreInDisposableVM(args.app, args)
         try:
-            restore_in_dispvm.run()
+            backup_log = restore_in_dispvm.run()
+            if args.auto_close:
+                print_backup_log(backup_log)
+        except qubesadmin.exc.BackupRestoreError as e:
+            if e.backup_log is not None:
+                print_backup_log(e.backup_log)
+            parser.error_runtime(str(e))
+            return 1
         except qubesadmin.exc.QubesException as e:
             parser.error_runtime(str(e))
             return 1

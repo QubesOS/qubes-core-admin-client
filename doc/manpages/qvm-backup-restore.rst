@@ -101,6 +101,13 @@ Options
     - dom0 home directory (desktop environment settings)
     - PCI devices assignments
 
+.. option:: --auto-close
+
+  When running with --paranoid-mode (see above), automatically close restore
+  progress window after the restore process is finished and display restore log
+  on the standard output. The log will be colored red if the standard output is
+  a terminal.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
