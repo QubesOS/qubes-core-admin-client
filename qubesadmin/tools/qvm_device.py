@@ -207,8 +207,7 @@ def get_parser(device_class=None):
     """Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-block`.
     """
-    parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-                                                  want_app=True)
+    parser = qubesadmin.tools.QubesArgumentParser(description=__doc__)
     parser.register('action', 'parsers',
                     qubesadmin.tools.AliasedSubParsersAction)
     parser.allow_abbrev = False
