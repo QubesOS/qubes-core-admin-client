@@ -13,6 +13,8 @@ BuildRequires:	python%{python3_pkgversion}-setuptools
 BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
 BuildRequires:	python%{python3_pkgversion}-dbus
+BuildRequires:	python%{python3_pkgversion}-lxml
+BuildRequires:	python%{python3_pkgversion}-xcffib
 Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
 BuildArch:  noarch
