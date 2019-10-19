@@ -107,10 +107,8 @@ class _AssertNotRaisesContext(object):
 
         self.failureException = test_case.failureException
 
-
     def __enter__(self):
         return self
-
 
     def __exit__(self, exc_type, exc_value, tb):
         if exc_type is None:
