@@ -253,7 +253,7 @@ class GUILauncher(object):
         :param monitor_layout: monitor layout configuration
         """
         guivm = getattr(vm, 'guivm', None)
-        if guivm != vm.app.get_local_name():
+        if guivm != vm.app.local_name:
             vm.log.info('GUI connected to {}. Skipping.'.format(guivm))
             return
 
@@ -316,7 +316,7 @@ class GUILauncher(object):
         """Send monitor layout to all (running) VMs"""
         monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
-            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.local_name:
                 continue
             if vm.klass == 'AdminVM':
                 continue
@@ -329,7 +329,7 @@ class GUILauncher(object):
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
         try:
-            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
             if not vm.features.check_with_template('gui', True):
                 return
@@ -342,7 +342,7 @@ class GUILauncher(object):
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI daemon for actual VM"""
         try:
-            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
             if not vm.features.check_with_template('gui', True):
                 return
@@ -360,7 +360,7 @@ class GUILauncher(object):
         for vm in self.app.domains:
             if vm.klass == 'AdminVM':
                 continue
-            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.local_name:
                 continue
             if not vm.features.check_with_template('gui', True):
                 continue

@@ -399,7 +399,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
             b'0\x00default=False type=vm gui-vm'
 
-        self.app.local_name = 'gui-vm'
+        self.app._local_name = 'gui-vm'
         vm = self.app.domains['test-vm']
         mock_start_vm = unittest.mock.Mock()
         mock_start_stubdomain = unittest.mock.Mock()
@@ -681,7 +681,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('test-vm4', 'admin.vm.property.Get', 'guivm', None)] = \
             b'0\x00default=False type=vm gui-vm'
 
-        self.app.local_name = 'gui-vm'
+        self.app._local_name = 'gui-vm'
 
         vm = self.app.domains['test-vm']
         vm2 = self.app.domains['test-vm2']
