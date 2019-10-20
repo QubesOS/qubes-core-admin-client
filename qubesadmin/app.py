@@ -153,6 +153,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     log = None
     #: do not check for object (VM, label etc) existence before really needed
     blind_mode = False
+    #: local name
+    local_name = None
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')
@@ -226,10 +228,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         """ Remove a storage pool """
         self.qubesd_call('dom0', 'admin.pool.Remove', name, None)
 
-    @staticmethod
-    def get_local_name():
+    def get_local_name(self):
         """ Get localhost name """
-        return os.uname()[1]
+        if not self.local_name:
+            self.local_name = os.uname()[1]
+
+        return self.local_name
 
     def get_label(self, label):
         """Get label as identified by index or name
