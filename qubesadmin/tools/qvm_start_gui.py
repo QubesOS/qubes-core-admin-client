@@ -252,10 +252,9 @@ class GUILauncher(object):
             one for target AppVM is running.
         :param monitor_layout: monitor layout configuration
         """
-        guivm_name = getattr(vm, 'guivm', None)
-        if guivm_name != vm.app.get_local_name():
-            vm.log.info(
-                '{} has GuiVM {}. Skipping.'.format(vm.name, guivm_name))
+        guivm = getattr(vm, 'guivm', None)
+        if guivm != vm.app.get_local_name():
+            vm.log.info('GUI connected to {}. Skipping.'.format(guivm))
             return
 
         if vm.virt_mode == 'hvm':
