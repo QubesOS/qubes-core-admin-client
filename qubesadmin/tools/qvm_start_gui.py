@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-''' GUI daemon launcher tool'''
+""" GUI daemon launcher tool"""
 
 import os
 import signal
@@ -35,10 +35,12 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
+
 have_events = False
 try:
     # pylint: disable=wrong-import-position
     import qubesadmin.events
+
     have_events = True
 except ImportError:
     pass
@@ -47,7 +49,7 @@ GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
 
 # "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
-REGEX_OUTPUT = re.compile(r'''
+REGEX_OUTPUT = re.compile(r"""
         (?x)                           # ignore whitespace
         ^                              # start of string
         (?P<output>[A-Za-z0-9\-]*)[ ]  # LVDS VGA etc
@@ -67,11 +69,11 @@ REGEX_OUTPUT = re.compile(r'''
         )?
         .*                             # ignore rest of line
         )?                             # everything after (dis)connect is optional
-        ''')
+        """)
 
 
 def get_monitor_layout():
-    '''Get list of monitors and their size/position'''
+    """Get list of monitors and their size/position"""
     outputs = []
 
     for line in subprocess.Popen(
@@ -85,7 +87,7 @@ def get_monitor_layout():
                     # don't provide real values for privacy reasons - see
                     # #1951 for details
                     dpi = (int(output_params['width']) * 254 //
-                          int(output_params['width_mm']) // 10)
+                           int(output_params['width_mm']) // 10)
                     if dpi > 300:
                         dpi = 300
                     elif dpi > 200:
@@ -102,28 +104,29 @@ def get_monitor_layout():
                             int(output_params['height']) * 254 // dpi // 10,
                         )
                 outputs.append("%s %s %s %s%s\n" % (
-                            output_params['width'],
-                            output_params['height'],
-                            output_params['x'],
-                            output_params['y'],
-                            phys_size,
+                    output_params['width'],
+                    output_params['height'],
+                    output_params['x'],
+                    output_params['y'],
+                    phys_size,
                 ))
     return outputs
 
 
 class GUILauncher(object):
-    '''Launch GUI daemon for VMs'''
+    """Launch GUI daemon for VMs"""
+
     def __init__(self, app: qubesadmin.app.QubesBase):
-        ''' Initialize GUILauncher.
+        """ Initialize GUILauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
-        '''
+        """
         self.app = app
         self.started_processes = {}
 
     @staticmethod
     def kde_guid_args(vm):
-        '''Return KDE-specific arguments for gui-daemon, if applicable'''
+        """Return KDE-specific arguments for gui-daemon, if applicable"""
 
         guid_cmd = []
         # Avoid using environment variables for checking the current session,
@@ -149,19 +152,20 @@ class GUILauncher(object):
                 data_dir = os.path.expanduser('~/.local/share')
 
             guid_cmd += ['-p',
-                '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
-                    os.path.join(data_dir,
-                        'qubes-kde', vm.label.name + '.colors'))]
+                         '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
+                             os.path.join(data_dir,
+                                          'qubes-kde',
+                                          vm.label.name + '.colors'))]
         return guid_cmd
 
     def common_guid_args(self, vm):
-        '''Common qubes-guid arguments for PV(H), HVM and Stubdomain'''
+        """Common qubes-guid arguments for PV(H), HVM and Stubdomain"""
 
         guid_cmd = [GUI_DAEMON_PATH,
-            '-N', vm.name,
-            '-c', vm.label.color,
-            '-i', os.path.join(QUBES_ICON_DIR, vm.label.icon) + '.png',
-            '-l', str(vm.label.index)]
+                    '-N', vm.name,
+                    '-c', vm.label.color,
+                    '-i', os.path.join(QUBES_ICON_DIR, vm.label.icon) + '.png',
+                    '-l', str(vm.label.index)]
 
         if vm.debug:
             guid_cmd += ['-v', '-v']
@@ -177,19 +181,19 @@ class GUILauncher(object):
 
     @staticmethod
     def guid_pidfile(xid):
-        '''Helper function to construct a pidfile path'''
+        """Helper function to construct a pidfile path"""
         return '/var/run/qubes/guid-running.{}'.format(xid)
 
     @asyncio.coroutine
     def start_gui_for_vm(self, vm, monitor_layout=None):
-        '''Start GUI daemon (qubes-guid) connected directly to a VM
+        """Start GUI daemon (qubes-guid) connected directly to a VM
 
         This function is a coroutine.
 
         :param vm: VM for which start GUI daemon
         :param monitor_layout: monitor layout to send; if None, fetch it from
             local X server.
-        '''
+        """
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.xid)])
 
@@ -208,14 +212,14 @@ class GUILauncher(object):
         yield from asyncio.create_subprocess_exec(*guid_cmd)
 
         yield from self.send_monitor_layout(vm, layout=monitor_layout,
-            startup=True)
+                                            startup=True)
 
     @asyncio.coroutine
     def start_gui_for_stubdomain(self, vm, force=False):
-        '''Start GUI daemon (qubes-guid) connected to a stubdomain
+        """Start GUI daemon (qubes-guid) connected to a stubdomain
 
         This function is a coroutine.
-        '''
+        """
         want_stubdom = force
         if not want_stubdom and \
                 vm.features.check_with_template('gui-emulated', False):
@@ -239,17 +243,17 @@ class GUILauncher(object):
 
     @asyncio.coroutine
     def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
-        '''Start GUI daemon regardless of start event.
+        """Start GUI daemon regardless of start event.
 
         This function is a coroutine.
 
         :param vm: VM for which GUI daemon should be started
         :param force_stubdom: Force GUI daemon for stubdomain, even if the
             one for target AppVM is running.
-        '''
+        :param monitor_layout: monitor layout configuration
+        """
         if vm.virt_mode == 'hvm':
-            yield from self.start_gui_for_stubdomain(vm,
-                force=force_stubdom)
+            yield from self.start_gui_for_stubdomain(vm, force=force_stubdom)
 
         if not vm.features.check_with_template('gui', True):
             return
@@ -259,7 +263,7 @@ class GUILauncher(object):
 
     @asyncio.coroutine
     def send_monitor_layout(self, vm, layout=None, startup=False):
-        '''Send monitor layout to a given VM
+        """Send monitor layout to a given VM
 
         This function is a coroutine.
 
@@ -268,7 +272,7 @@ class GUILauncher(object):
             local X server.
         :param startup:
         :return: None
-        '''
+        """
         # pylint: disable=no-self-use
         if vm.features.check_with_template('no-monitor-layout', False) \
                 or not vm.is_running():
@@ -293,16 +297,18 @@ class GUILauncher(object):
                 pass
 
         try:
-            yield from asyncio.get_event_loop().run_in_executor(None,
-                functools.partial(vm.run_service_for_stdio,
-                                  'qubes.SetMonitorLayout',
-                                  input=''.join(layout).encode(),
-                                  autostart=False))
+            yield from asyncio.get_event_loop(). \
+                run_in_executor(None,
+                                functools.partial(
+                                    vm.run_service_for_stdio,
+                                    'qubes.SetMonitorLayout',
+                                    input=''.join(layout).encode(),
+                                    autostart=False))
         except subprocess.CalledProcessError as e:
             vm.log.warning('Failed to send monitor layout: %s', e.stderr)
 
     def send_monitor_layout_all(self):
-        '''Send monitor layout to all (running) VMs'''
+        """Send monitor layout to all (running) VMs"""
         monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
             if vm.klass == 'AdminVM':
@@ -311,10 +317,10 @@ class GUILauncher(object):
                 if not vm.features.check_with_template('gui', True):
                     continue
                 asyncio.ensure_future(self.send_monitor_layout(vm,
-                    monitor_layout))
+                                                               monitor_layout))
 
     def on_domain_spawn(self, vm, _event, **kwargs):
-        '''Handler of 'domain-spawn' event, starts GUI daemon for stubdomain'''
+        """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
         try:
             if not vm.features.check_with_template('gui', True):
                 return
@@ -325,7 +331,7 @@ class GUILauncher(object):
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
     def on_domain_start(self, vm, _event, **kwargs):
-        '''Handler of 'domain-start' event, starts GUI daemon for actual VM'''
+        """Handler of 'domain-start' event, starts GUI daemon for actual VM"""
         try:
             if not vm.features.check_with_template('gui', True):
                 return
@@ -335,8 +341,8 @@ class GUILauncher(object):
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
     def on_connection_established(self, _subject, _event, **_kwargs):
-        '''Handler of 'connection-established' event, used to launch GUI
-        daemon for domains started before this tool. '''
+        """Handler of 'connection-established' event, used to launch GUI
+        daemon for domains started before this tool. """
 
         monitor_layout = get_monitor_layout()
         self.app.domains.clear_cache()
@@ -347,8 +353,8 @@ class GUILauncher(object):
                 continue
             power_state = vm.get_power_state()
             if power_state == 'Running':
-                asyncio.ensure_future(self.start_gui(vm,
-                    monitor_layout=monitor_layout))
+                asyncio.ensure_future(
+                    self.start_gui(vm, monitor_layout=monitor_layout))
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start' event when
                 # fully started
@@ -356,43 +362,47 @@ class GUILauncher(object):
                     asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
 
     def register_events(self, events):
-        '''Register domain startup events in app.events dispatcher'''
+        """Register domain startup events in app.events dispatcher"""
         events.add_handler('domain-spawn', self.on_domain_spawn)
         events.add_handler('domain-start', self.on_domain_start)
         events.add_handler('connection-established',
-            self.on_connection_established)
+                           self.on_connection_established)
+
 
 def x_reader(conn, callback):
-    '''Try reading something from X connection to check if it's still alive.
+    """Try reading something from X connection to check if it's still alive.
     In case it isn't, call *callback*.
-    '''
+    """
     try:
         conn.poll_for_event()
     except xcffib.ConnectionException:
         callback()
 
+
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
-        'qvm-start-gui.pid')
+                                'qvm-start-gui.pid')
 else:
     pidfile_path = os.path.join(os.environ.get('HOME', '/'),
-        '.qvm-start-gui.pid')
+                                '.qvm-start-gui.pid')
 
 parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
-    help='Keep watching for further domains startups, must be used with --all')
+                    help='Keep watching for further domains'
+                         ' startups, must be used with --all')
 parser.add_argument('--force-stubdomain', action='store_true',
-    help='Start GUI to stubdomain-emulated VGA, even if gui-agent is running '
-         'in the VM')
+                    help='Start GUI to stubdomain-emulated VGA,'
+                         ' even if gui-agent is running in the VM')
 parser.add_argument('--pidfile', action='store', default=pidfile_path,
-    help='Pidfile path to create in --watch mode')
+                    help='Pidfile path to create in --watch mode')
 parser.add_argument('--notify-monitor-layout', action='store_true',
-    help='Notify running instance in --watch mode about changed monitor layout')
+                    help='Notify running instance in --watch mode'
+                         ' about changed monitor layout')
 
 
 def main(args=None):
-    ''' Main function of qvm-start-gui tool'''
+    """ Main function of qvm-start-gui tool"""
     args = parser.parse_args(args)
     if args.watch and not args.all_domains:
         parser.error('--watch option must be used with --all')
@@ -413,10 +423,10 @@ def main(args=None):
 
             for signame in ('SIGINT', 'SIGTERM'):
                 loop.add_signal_handler(getattr(signal, signame),
-                    events_listener.cancel)  # pylint: disable=no-member
+                                        events_listener.cancel)  # pylint: disable=no-member
 
             loop.add_signal_handler(signal.SIGHUP,
-                launcher.send_monitor_layout_all)
+                                    launcher.send_monitor_layout_all)
 
             conn = xcffib.connect()
             x_fd = conn.get_file_descriptor()
@@ -437,7 +447,7 @@ def main(args=None):
             os.kill(pid, signal.SIGHUP)
         except (FileNotFoundError, ValueError) as e:
             parser.error('Cannot open pidfile {}: {}'.format(pidfile_path,
-                str(e)))
+                                                             str(e)))
     else:
         loop = asyncio.get_event_loop()
         tasks = []

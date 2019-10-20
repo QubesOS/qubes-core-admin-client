@@ -167,13 +167,13 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     def list_vmclass(self):
         """Call Qubesd in order to obtain the vm classes list"""
-        vmclass = self.qubesd_call('dom0', 'admin.vmclass.List')\
+        vmclass = self.qubesd_call('dom0', 'admin.vmclass.List') \
             .decode().splitlines()
         return sorted(vmclass)
 
     def list_deviceclass(self):
         """Call Qubesd in order to obtain the device classes list"""
-        deviceclasses = self.qubesd_call('dom0', 'admin.deviceclass.List')\
+        deviceclasses = self.qubesd_call('dom0', 'admin.deviceclass.List') \
             .decode().splitlines()
         return sorted(deviceclasses)
 
@@ -715,8 +715,8 @@ class QubesRemote(QubesBase):
         kwargs.setdefault('stderr', subprocess.PIPE)
         proc = subprocess.Popen(
             [qubesadmin.config.QREXEC_CLIENT_VM] +
-             qrexec_opts +
-             [dest or '', service] +
-             (shlex.split(localcmd) if localcmd else []),
+            qrexec_opts +
+            [dest or '', service] +
+            (shlex.split(localcmd) if localcmd else []),
             **kwargs)
         return proc
