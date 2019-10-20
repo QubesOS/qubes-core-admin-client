@@ -228,6 +228,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     @staticmethod
     def get_local_name():
+        """ Get localhost name """
         return os.uname()[1]
 
     def get_label(self, label):
