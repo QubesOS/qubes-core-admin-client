@@ -252,9 +252,10 @@ class GUILauncher(object):
             one for target AppVM is running.
         :param monitor_layout: monitor layout configuration
         """
-        if vm.guivm != vm.app.get_local_name():
+        guivm_name = getattr(vm, 'guivm', None)
+        if guivm_name != vm.app.get_local_name():
             vm.log.info(
-                '{} has GuiVM {}. Skipping.'.format(vm.name, vm.guivm))
+                '{} has GuiVM {}. Skipping.'.format(vm.name, guivm_name))
             return
 
         if vm.virt_mode == 'hvm':
@@ -316,7 +317,7 @@ class GUILauncher(object):
         """Send monitor layout to all (running) VMs"""
         monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
-            if vm.guivm != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
                 continue
             if vm.klass == 'AdminVM':
                 continue
@@ -329,7 +330,7 @@ class GUILauncher(object):
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
         try:
-            if vm.guivm != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
                 return
             if not vm.features.check_with_template('gui', True):
                 return
@@ -342,7 +343,7 @@ class GUILauncher(object):
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI daemon for actual VM"""
         try:
-            if vm.guivm != vm.app.get_local_name():
+            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
                 return
             if not vm.features.check_with_template('gui', True):
                 return
@@ -360,10 +361,7 @@ class GUILauncher(object):
         for vm in self.app.domains:
             if vm.klass == 'AdminVM':
                 continue
-            try:
-                if vm.guivm != vm.app.get_local_name():
-                    continue
-            except qubesadmin.exc.QubesPropertyAccessError:
+            if getattr(vm, 'guivm', None) != vm.app.get_local_name():
                 continue
             if not vm.features.check_with_template('gui', True):
                 continue
