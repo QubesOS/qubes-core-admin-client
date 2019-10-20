@@ -369,7 +369,8 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'gui-vm class=AppVM state=Running'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
@@ -389,7 +390,11 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
                 b'0\x00default=False type=int 3001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
 
+        self.app.local_name = 'gui-vm'
         vm = self.app.domains['test-vm']
         mock_start_vm = unittest.mock.Mock()
         mock_start_stubdomain = unittest.mock.Mock()
@@ -625,8 +630,9 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n' \
             b'test-vm2 class=AppVM state=Running\n' \
-            b'test-vm3 class=AppVM state=Runnig\n' \
-            b'test-vm4 class=AppVM state=Halted\n'
+            b'test-vm3 class=AppVM state=Running\n' \
+            b'test-vm4 class=AppVM state=Halted\n' \
+            b'gui-vm class=AppVM state=Running'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
@@ -651,6 +657,23 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('test-vm3', 'admin.vm.feature.CheckWithTemplate',
             'gui', None)] = \
             b'0\x00'
+        self.app.expected_calls[
+            ('gui-vm', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=True type=vm '
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-vm4', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+
+        self.app.local_name = 'gui-vm'
 
         vm = self.app.domains['test-vm']
         vm2 = self.app.domains['test-vm2']
