@@ -252,6 +252,11 @@ class GUILauncher(object):
             one for target AppVM is running.
         :param monitor_layout: monitor layout configuration
         """
+        if vm.guivm != vm.app.get_local_name():
+            vm.log.info(
+                '{} has GuiVM {}. Skipping.'.format(vm.name, vm.guivm))
+            return
+
         if vm.virt_mode == 'hvm':
             yield from self.start_gui_for_stubdomain(vm, force=force_stubdom)
 
@@ -311,6 +316,8 @@ class GUILauncher(object):
         """Send monitor layout to all (running) VMs"""
         monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
+            if vm.guivm != vm.app.get_local_name():
+                continue
             if vm.klass == 'AdminVM':
                 continue
             if vm.is_running():
@@ -322,6 +329,8 @@ class GUILauncher(object):
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
         try:
+            if vm.guivm != vm.app.get_local_name():
+                return
             if not vm.features.check_with_template('gui', True):
                 return
             if vm.virt_mode == 'hvm' and \
@@ -333,6 +342,8 @@ class GUILauncher(object):
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI daemon for actual VM"""
         try:
+            if vm.guivm != vm.app.get_local_name():
+                return
             if not vm.features.check_with_template('gui', True):
                 return
             if kwargs.get('start_guid', 'True') == 'True':
@@ -348,6 +359,11 @@ class GUILauncher(object):
         self.app.domains.clear_cache()
         for vm in self.app.domains:
             if vm.klass == 'AdminVM':
+                continue
+            try:
+                if vm.guivm != vm.app.get_local_name():
+                    continue
+            except qubesadmin.exc.QubesPropertyAccessError:
                 continue
             if not vm.features.check_with_template('gui', True):
                 continue

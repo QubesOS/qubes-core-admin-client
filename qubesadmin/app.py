@@ -226,6 +226,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         """ Remove a storage pool """
         self.qubesd_call('dom0', 'admin.pool.Remove', name, None)
 
+    @staticmethod
+    def get_local_name():
+        return os.uname()[1]
+
     def get_label(self, label):
         """Get label as identified by index or name
 
