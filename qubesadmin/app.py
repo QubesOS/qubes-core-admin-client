@@ -164,16 +164,17 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         #: cache for available storage pool drivers and options to create them
         self._pool_drivers = None
         self.log = logging.getLogger('app')
+        self._local_name = None
 
     def list_vmclass(self):
         """Call Qubesd in order to obtain the vm classes list"""
-        vmclass = self.qubesd_call('dom0', 'admin.vmclass.List')\
+        vmclass = self.qubesd_call('dom0', 'admin.vmclass.List') \
             .decode().splitlines()
         return sorted(vmclass)
 
     def list_deviceclass(self):
         """Call Qubesd in order to obtain the device classes list"""
-        deviceclasses = self.qubesd_call('dom0', 'admin.deviceclass.List')\
+        deviceclasses = self.qubesd_call('dom0', 'admin.deviceclass.List') \
             .decode().splitlines()
         return sorted(deviceclasses)
 
@@ -225,6 +226,14 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     def remove_pool(self, name):
         """ Remove a storage pool """
         self.qubesd_call('dom0', 'admin.pool.Remove', name, None)
+
+    @property
+    def local_name(self):
+        """ Get localhost name """
+        if not self._local_name:
+            self._local_name = os.uname()[1]
+
+        return self._local_name
 
     def get_label(self, label):
         """Get label as identified by index or name
@@ -715,8 +724,8 @@ class QubesRemote(QubesBase):
         kwargs.setdefault('stderr', subprocess.PIPE)
         proc = subprocess.Popen(
             [qubesadmin.config.QREXEC_CLIENT_VM] +
-             qrexec_opts +
-             [dest or '', service] +
-             (shlex.split(localcmd) if localcmd else []),
+            qrexec_opts +
+            [dest or '', service] +
+            (shlex.split(localcmd) if localcmd else []),
             **kwargs)
         return proc
