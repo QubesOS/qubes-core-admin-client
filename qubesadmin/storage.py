@@ -271,6 +271,16 @@ class Pool(object):
         return NotImplemented
 
     @property
+    def usage_details(self):
+        ''' Storage pool usage details (current - not cached) '''
+        pool_usage_data = self.app.qubesd_call(
+            'dom0', 'admin.pool.UsageDetails', self.name, None)
+        pool_usage_data = pool_usage_data.decode('utf-8')
+        assert pool_usage_data.endswith('\n')
+        pool_usage_data = pool_usage_data[:-1]
+        return dict(l.split('=', 1) for l in pool_usage_data.splitlines())
+
+    @property
     def config(self):
         ''' Storage pool config '''
         if self._config is None:
@@ -287,7 +297,7 @@ class Pool(object):
     def size(self):
         ''' Storage pool size, in bytes'''
         try:
-            return int(self.config['size'])
+            return int(self.usage_details['data_size'])
         except KeyError:
             # pool driver does not provide size information
             return None
@@ -296,7 +306,7 @@ class Pool(object):
     def usage(self):
         ''' Space used in the pool, in bytes '''
         try:
-            return int(self.config['usage'])
+            return int(self.usage_details['data_usage'])
         except KeyError:
             # pool driver does not provide usage information
             return None
