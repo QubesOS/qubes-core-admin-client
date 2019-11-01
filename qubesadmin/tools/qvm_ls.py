@@ -68,7 +68,7 @@ class Column(object):
         self.__class__.columns[self.ls_head] = self
 
 
-    def cell(self, vm):
+    def cell(self, vm, insertion=0):
         '''Format one cell.
 
         .. note::
@@ -78,11 +78,15 @@ class Column(object):
             :py:meth:`Column.format` method instead.
 
         :param qubes.vm.qubesvm.QubesVM: Domain to get a value from.
+        :param int insertion: Intending to shift the value to the right.
         :returns: string to display
         :rtype: str
         '''
 
         value = self.format(vm) or '-'
+        if insertion > 0 and self.ls_head == 'NAME':
+            value = '└─' + value
+            value = '  ' * (insertion-1) + value
         return value
 
 
@@ -387,24 +391,71 @@ class Table(object):
     :param domains: Domains to include in the table.
     :param list colnames: Names of the columns (need not to be uppercase).
     '''
-    def __init__(self, domains, colnames, spinner, raw_data=False):
+    def __init__(self, domains, colnames, spinner, raw_data=False,
+                tree_sorted=False):
         self.domains = domains
         self.columns = tuple(Column.columns[col.upper().replace('_', '-')]
                 for col in colnames)
         self.spinner = spinner
         self.raw_data = raw_data
+        self.tree_sorted = tree_sorted
 
     def get_head(self):
         '''Get table head data (all column heads).'''
         return [col.ls_head for col in self.columns]
 
-    def get_row(self, vm):
+    def get_row(self, vm, insertion=0):
         '''Get single table row data (all columns for one domain).'''
         ret = []
         for col in self.columns:
-            ret.append(col.cell(vm))
+            if self.tree_sorted and col.ls_head == 'NAME':
+                ret.append(col.cell(vm, insertion))
+            else:
+                ret.append(col.cell(vm))
             self.spinner.update()
         return ret
+
+    def tree_append_child(self, parent, level):
+        '''Concatenate the network children of the vm to a list.
+
+        :param qubes.vm.qubesvm.QubesVM: Parent vm of the children VMs
+        '''
+
+        childs = list()
+        for child in parent.connected_vms:
+            if child.provides_network and child in self.domains:
+                childs.append((level, child))
+                childs += self.tree_append_child(child, level+1)
+            elif child in self.domains:
+                childs.append((level, child))
+        return childs
+
+    def sort_to_tree(self, domains):
+        '''Sort the domains as a network tree. It returns a list of sets. Each
+        tuple stores the insertion of the cell name and the vm object.
+
+        :param list() domains: The domains which will be sorted
+        :return list(tuple()) tree: returns a list of tuple(insertion, vm)
+        '''
+        tree = list()
+        # First append the domains without netvm and no attached vms
+        for dom in domains:
+            try:
+                if dom.netvm is None and not dom.provides_network:
+                    tree.append((0, dom))
+            # dom0 and eventually others have no netvm attribute
+            except qubesadmin.exc.QubesNoSuchPropertyError:
+                tree.append((0, dom))
+                domains.remove(dom)
+
+        # search for netvms and append their childs recursivly
+        for dom in domains:
+            if dom.netvm is None and dom.provides_network:
+                tree.append((0, dom))
+                domains.remove(dom)
+                tree += self.tree_append_child(dom, 1)
+
+        return tree
 
     def write_table(self, stream=sys.stdout):
         '''Write whole table to file-like object.
@@ -417,8 +468,13 @@ class Table(object):
             self.spinner.show('please wait...')
             table_data.append(self.get_head())
             self.spinner.update()
-            for vm in sorted(self.domains):
-                table_data.append(self.get_row(vm))
+            if self.tree_sorted:
+                insertion_vm_list = self.sort_to_tree(self.domains)
+                for insertion, vm in insertion_vm_list:
+                    table_data.append(self.get_row(vm, insertion))
+            else:
+                for vm in sorted(self.domains):
+                    table_data.append(self.get_row(vm))
             self.spinner.hide()
             qubesadmin.tools.print_table(table_data, stream=stream)
         else:
@@ -554,6 +610,10 @@ def get_parser():
         help='Display specify data of specified VMs. Intended for '
              'bash-parsing.')
 
+    parser.add_argument('--tree', '-t',
+        action='store_const', const='tree',
+        help='sort domain list as network tree')
+
     parser.add_argument('--spinner',
         action='store_true', dest='spinner',
         help='reenable spinner')
@@ -637,7 +697,7 @@ def main(args=None, app=None):
     domains = [d for d in domains
                if matches_power_states(d, **pwrstates)]
 
-    table = Table(domains, columns, spinner, args.raw_data)
+    table = Table(domains, columns, spinner, args.raw_data, args.tree)
     table.write_table(sys.stdout)
 
     return 0
