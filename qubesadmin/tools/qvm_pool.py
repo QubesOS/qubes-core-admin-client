@@ -22,7 +22,6 @@
 
 from __future__ import print_function
 
-import argparse
 import sys
 
 import qubesadmin
@@ -114,8 +113,8 @@ def init_info_parser(sub_parsers):
     ''' Add 'info' action related options '''
     i_parser = sub_parsers.add_parser(
         'info', aliases=('i',), help='Print info about the specified pools')
-    i_parser.add_argument(metavar='POOL_NAME', dest='pools', nargs='+',
-                             action=qubesadmin.tools.PoolsAction)
+    i_parser.add_argument(metavar='POOL_NAME', dest='pools',
+                          action=qubesadmin.tools.PoolsAction)
     i_parser.set_defaults(func=info_pools)
 
 
