@@ -1,11 +1,16 @@
 .. program:: qvm-pool
 
-:program:`qvm-pool` -- manage pools
+:program:`qvm-pool` -- Manage pools
 ===================================
 
 Synopsis
 --------
-:command:`qvm-pool` [-h] [--verbose] [--quiet] [--help-drivers] [-o options] [-l | -i *NAME* | -a *NAME* *DRIVER* | -r *NAME*]
+| :command:`qvm-pool` {add,a} [*options*] <*pool_name*> <*driver*>
+| :command:`qvm-pool` {drivers,d} [*options*]
+| :command:`qvm-pool` {info,i} [*options*] <*pool_name*>
+| :command:`qvm-pool` {list,ls,l} [*options*]
+| :command:`qvm-pool` {remove,rm,i} [*options*] <*pool_name*> ...
+| :command:`qvm-pool` {set,s} [*options*] <*pool_name*>
 
 Options
 -------
@@ -22,49 +27,82 @@ Options
 
     Increase verbosity
 
-.. option:: --help-drivers
+Commands
+--------
 
-    List all known drivers with their options. The listed driver options can be
-    used with the ``-o options`` switch.
+add
+^^^
+| :command:`qvm-pool add` [-h] [--verbose] [--quiet] *POOL_NAME* *DRIVER*
 
-.. option:: -o options
+Add a new pool.
 
-    Comma separated list of driver options. See ``--help-drivers`` for a list of
-    driver options.
-    
-.. option:: --list, -l
+.. option:: --option, -o
 
-    List all pools.
+    Set option for the driver in `name=value` format. You can specify this
+    option multiple times. For supported drivers and their options,
+    see ``drivers``.
 
-.. option:: --info NAME, -i NAME
+aliases: a
 
-    Show information about a pool
+drivers
+^^^^^^^
+| :command:`qvm-pool drivers` [-h] [--verbose] [--quiet]
 
-.. option:: --add NAME DRIVER, -a NAME DRIVER
+List all known drivers with their options.
+The listed driver options can be used with the ``-o options`` switch.
 
-    Add a pool. For supported drivers and their options see ``--help-drivers``.
-    Most of the drivers expect some kind of options.
+aliases: d
 
-.. option:: --remove NAME, -r NAME
+info
+^^^^
+| :command:`qvm-pool info` [-h] [--verbose] [--quiet] *POOL_NAME*
 
-    Remove a pool. This removes only the information about the pool in
-    qubes.xml, but does not delete any content (FIXME: is it really true for
-    all pool drivers?).
+Print info about a specified pool
 
-.. option:: --set NAME, -s NAME
+aliases: i
 
-    Modify a pool. This set options of a pool. Use ``--o`` to specify actual modifications.
+list
+^^^^
+| :command:`qvm-pool list` [-h] [--verbose] [--quiet]
 
+List all available pools.
+
+aliases: l, ls
+
+remove
+^^^^^^
+| :command:`qvm-pool remove` [-h] [--verbose] [--quiet] *POOL_NAME* [*POOL_NAME* ...]
+
+Remove the specified pools. This removes only the information about the pool
+from qubes.xml, but does not delete any content (FIXME: is it really true for
+all pool drivers?).
+
+aliases: r, rm
+
+set
+^^^
+| :command:`qvm-pool set` [-h] [--verbose] [--quiet] *POOL_NAME*
+
+Modify driver options for a pool.
+
+.. option:: --option, -o
+
+    Set option for the driver in `name=value` format. You can specify this
+    option multiple times. For supported drivers and their options,
+    see ``drivers``.
+
+aliases: s
 
 Examples
 --------
 
 Create a pool backed by the `file` driver.
-    
+
 ::
 
-    qvm-pool -o dir_path=/mnt/foo -a foo file
+    qvm-pool add foo file -o dir_path=/mnt/foo
 
 Authors
 -------
-| Bahtiar \`kalkin-\` Gadimov <bahtiar at gadimov dot de> 
+| Bahtiar \`kalkin-\` Gadimov <bahtiar at gadimov dot de>
+| Saswat Padhi <padhi at cs dot ucla dot edu>
