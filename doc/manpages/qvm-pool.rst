@@ -12,6 +12,17 @@ Synopsis
 | :command:`qvm-pool` {remove,rm,i} [*options*] <*pool_name*> ...
 | :command:`qvm-pool` {set,s} [*options*] <*pool_name*>
 
+Legacy Mode
+^^^^^^^^^^^
+| :command:`qvm-pool` [*options*] {-a, --add} <*pool_name*> <*driver*>
+| :command:`qvm-pool` [*options*] {-i, --info} <*pool_name*>
+| :command:`qvm-pool` [*options*] {-l, --list}
+| :command:`qvm-pool` [*options*] {-r, --remove} <*pool_name*>
+| :command:`qvm-pool` [*options*] {-s, --set} <*pool_name*>
+| :command:`qvm-pool` [*options*] --help-drivers
+
+.. deprecated:: 4.0.18
+
 Options
 -------
 
@@ -39,10 +50,13 @@ Add a new pool.
 .. option:: --option, -o
 
     Set option for the driver in `name=value` format. You can specify this
-    option multiple times. For supported drivers and their options,
-    see ``drivers``.
+    option multiple times.
+
+    .. seealso:: The `drivers` command for supported drivers and their options.
 
 aliases: a
+
+Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --add *POOL_NAME* *DRIVER* -o *OPTIONS*
 
 drivers
 ^^^^^^^
@@ -53,6 +67,8 @@ The listed driver options can be used with the ``-o options`` switch.
 
 aliases: d
 
+Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --help-drivers
+
 info
 ^^^^
 | :command:`qvm-pool info` [-h] [--verbose] [--quiet] *POOL_NAME*
@@ -61,6 +77,8 @@ Print info about a specified pool
 
 aliases: i
 
+Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --info *POOL_NAME*
+
 list
 ^^^^
 | :command:`qvm-pool list` [-h] [--verbose] [--quiet]
@@ -68,6 +86,8 @@ list
 List all available pools.
 
 aliases: l, ls
+
+Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --list
 
 remove
 ^^^^^^
@@ -79,6 +99,8 @@ all pool drivers?).
 
 aliases: r, rm
 
+Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --remove *POOL_NAME* [*POOL_NAME* ...]
+
 set
 ^^^
 | :command:`qvm-pool set` [-h] [--verbose] [--quiet] *POOL_NAME*
@@ -88,10 +110,13 @@ Modify driver options for a pool.
 .. option:: --option, -o
 
     Set option for the driver in `name=value` format. You can specify this
-    option multiple times. For supported drivers and their options,
-    see ``drivers``.
+    option multiple times.
+
+    .. seealso:: The `drivers` command for supported drivers and their options.
 
 aliases: s
+
+Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --set *POOL_NAME* -o *OPTIONS*
 
 Examples
 --------

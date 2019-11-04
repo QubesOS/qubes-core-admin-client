@@ -22,12 +22,13 @@
 
 from __future__ import print_function
 
+import argparse
 import sys
 
 import qubesadmin
 import qubesadmin.exc
-import qubesadmin.storage
 import qubesadmin.tools
+import qubesadmin.tools.qvm_pool_legacy
 
 
 def list_drivers(args):
@@ -103,14 +104,14 @@ def set_pool(args):
 
 
 def init_list_parser(sub_parsers):
-    ''' Add 'list' action related options '''
+    ''' Adds 'list' action related options '''
     l_parser = sub_parsers.add_parser(
         'list', aliases=('l', 'ls'), help='List all available pools')
     l_parser.set_defaults(func=list_pools)
 
 
 def init_info_parser(sub_parsers):
-    ''' Add 'info' action related options '''
+    ''' Adds 'info' action related options '''
     i_parser = sub_parsers.add_parser(
         'info', aliases=('i',), help='Print info about the specified pools')
     i_parser.add_argument(metavar='POOL_NAME', dest='pools',
@@ -119,7 +120,7 @@ def init_info_parser(sub_parsers):
 
 
 def init_add_parser(sub_parsers):
-    ''' Add 'add' action related options '''
+    ''' Adds 'add' action related options '''
     a_parser = sub_parsers.add_parser(
         'add', aliases=('a',), help='Add a new pool')
     a_parser.add_argument(metavar='POOL_NAME', dest='pool_name')
@@ -132,7 +133,7 @@ def init_add_parser(sub_parsers):
 
 
 def init_remove_parser(sub_parsers):
-    ''' Add 'remove' action related options '''
+    ''' Adds 'remove' action related options '''
     r_parser = sub_parsers.add_parser(
         'remove', aliases=('r', 'rm'), help='Remove the specified pools')
     r_parser.add_argument(metavar='POOL_NAME', dest='pool_names', nargs='+')
@@ -140,7 +141,7 @@ def init_remove_parser(sub_parsers):
 
 
 def init_set_parser(sub_parsers):
-    ''' Add 'set' action related options '''
+    ''' Adds 'set' action related options '''
     s_parser = sub_parsers.add_parser(
         'set', aliases=('s',), help='Modify driver options for a pool')
     s_parser.add_argument(metavar='POOL_NAME', dest='pool_name')
@@ -152,8 +153,8 @@ def init_set_parser(sub_parsers):
 
 
 def get_parser():
-    '''Create :py:class:`argparse.ArgumentParser` suitable for
-    :program:`qvm-pool`.
+    ''' Creates :py:class:`argparse.ArgumentParser` suitable for
+        :program:`qvm-pool`.
     '''
     parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
                                                   want_app=True)
@@ -162,7 +163,7 @@ def get_parser():
 
     sub_parsers = parser.add_subparsers(
         title='commands', dest='command',
-        description="For more information see qvm-pool command -h")
+        description="For more information see qvm-pool <command> -h")
 
     d_parser = sub_parsers.add_parser(
         'drivers', aliases=('d',), help='List all drivers with their options')
@@ -180,8 +181,41 @@ def get_parser():
     return parser
 
 
+def uses_legacy_options(args, app):
+    ''' Checks if legacy options and used, and invokes the legacy tool '''
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     usage=argparse.SUPPRESS)
+
+    parser.add_argument('-a', '--add',
+                        dest='has_legacy_options', action='store_true',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('-i', '--info',
+                        dest='has_legacy_options', action='store_true',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('-l', '--list',
+                        dest='has_legacy_options', action='store_true',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('-r', '--remove',
+                        dest='has_legacy_options', action='store_true',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('-s', '--set',
+                        dest='has_legacy_options', action='store_true',
+                        help=argparse.SUPPRESS)
+    parser.add_argument('--help-drivers',
+                        dest='has_legacy_options', action='store_true',
+                        help=argparse.SUPPRESS)
+
+    parsed_args, _ = parser.parse_known_args(args)
+    if parsed_args.has_legacy_options:
+        qubesadmin.tools.qvm_pool_legacy.main(args, app)
+        return True
+    return False
+
+
 def main(args=None, app=None):
     '''Main routine of :program:`qvm-pool`.'''
+    if uses_legacy_options(args, app):
+        return 0
 
     parser = get_parser()
     args = parser.parse_args(args, app=app)
@@ -191,7 +225,6 @@ def main(args=None, app=None):
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(str(e))
         return 1
-
     return 0
 
 
