@@ -38,6 +38,7 @@ import qubesadmin.spinner
 import qubesadmin.tools
 import qubesadmin.utils
 import qubesadmin.vm
+import qubesadmin.exc
 
 #
 # columns
@@ -420,7 +421,6 @@ class Table(object):
 
         :param qubes.vm.qubesvm.QubesVM: Parent vm of the children VMs
         '''
-
         childs = list()
         for child in parent.connected_vms:
             if child.provides_network and child in self.domains:
@@ -438,18 +438,20 @@ class Table(object):
         :return list(tuple()) tree: returns a list of tuple(insertion, vm)
         '''
         tree = list()
-        # First append the domains without netvm and no attached vms
-        for dom in domains:
+        # We need a copy of domains, because domains.remove() is not allowed
+        # while iterating over it. Besides, the domains should be sorted anyway.
+        sorted_doms = sorted(domains)
+        for dom in sorted_doms:
             try:
                 if dom.netvm is None and not dom.provides_network:
                     tree.append((0, dom))
+                    domains.remove(dom)
             # dom0 and eventually others have no netvm attribute
-            except qubesadmin.exc.QubesNoSuchPropertyError:
+            except (qubesadmin.exc.QubesNoSuchPropertyError, AttributeError):
                 tree.append((0, dom))
                 domains.remove(dom)
 
-        # search for netvms and append their childs recursivly
-        for dom in domains:
+        for dom in sorted(domains):
             if dom.netvm is None and dom.provides_network:
                 tree.append((0, dom))
                 domains.remove(dom)
