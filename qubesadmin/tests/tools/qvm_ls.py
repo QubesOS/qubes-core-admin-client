@@ -120,6 +120,57 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'dom0\n'
             'test-vm\n')
 
+    def test_103_network_tree(self):
+        app = TestApp()
+        app.domains = TestVMCollection(
+            [
+                ('dom0', TestVM('dom0')),
+                ('test-vm-temp', TestVM('test-vm-temp')),
+                ('test-vm-proxy', TestVM('test-vm-proxy')),
+                ('test-vm-1', TestVM('test-vm-1')),
+                ('test-vm-2', TestVM('test-vm-2')),
+                ('test-vm-3', TestVM('test-vm-3')),
+                ('test-vm-4', TestVM('test-vm-4')),
+                ('test-vm-net-1', TestVM('test-vm-net-1')),
+                ('test-vm-net-2', TestVM('test-vm-net-2')),
+            ]
+        )
+        ad = app.domains # For the sake of a 80 character line
+        ad['dom0'].label = 'black'
+        ad['test-vm-temp'].template = TestVM('template')
+        ad['test-vm-net-1'].netvm = None
+        ad['test-vm-net-1'].provides_network = True
+        ad['test-vm-net-2'].netvm = None
+        ad['test-vm-net-2'].provides_network = True
+        ad['test-vm-proxy'].netvm = TestVM('test-vm-net-2')
+        ad['test-vm-proxy'].provides_network = True
+        ad['test-vm-1'].netvm = TestVM('test-vm-net-1')
+        ad['test-vm-1'].provides_network = False
+        ad['test-vm-2'].netvm = TestVM('test-vm-proxy')
+        ad['test-vm-2'].provides_network = False
+        ad['test-vm-3'].netvm = TestVM('test-vm-proxy')
+        ad['test-vm-3'].provides_network = False
+        ad['test-vm-4'].netvm = TestVM('test-vm-net-2')
+        ad['test-vm-4'].provides_network = False
+        ad['test-vm-net-1'].connected_vms = [ad['test-vm-1']]
+        ad['test-vm-proxy'].connected_vms = [ad['test-vm-2'],
+                                            ad['test-vm-3']]
+        ad['test-vm-net-2'].connected_vms = [ad['test-vm-proxy'],
+                                            ad['test-vm-4']]
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--tree'], app=app)
+        self.assertEqual(stdout.getvalue(),
+        'NAME             STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+        'dom0             Running  TestVM  black  -         -\n'
+        'test-vm-temp     Running  TestVM  -      template  -\n'
+        'test-vm-net-1    Running  TestVM  -      -         -\n'
+        '└─test-vm-1      Running  TestVM  -      -         test-vm-net-1\n'
+        'test-vm-net-2    Running  TestVM  -      -         -\n'
+        '└─test-vm-proxy  Running  TestVM  -      -         test-vm-net-2\n'
+        '  └─test-vm-2    Running  TestVM  -      -         test-vm-proxy\n'
+        '  └─test-vm-3    Running  TestVM  -      -         test-vm-proxy\n'
+        '└─test-vm-4      Running  TestVM  -      -         test-vm-net-2\n')
 
 class TC_70_Tags(qubesadmin.tests.QubesTestCase):
     def setUp(self):

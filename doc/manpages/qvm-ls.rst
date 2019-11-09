@@ -62,6 +62,11 @@ Options
    Give plain list of VM names, without header or separator. Useful in scripts.
    Same as --raw-data --fields=name
 
+.. option:: --tree, -t
+
+   List domains as a network tree. Domains are sorted as they are connected to
+   their netvms. Names are indented relative to the number of connected netvms.
+
 .. option:: --disk, -d
 
    Same as --format=disk, for compatibility with Qubes 3.x
