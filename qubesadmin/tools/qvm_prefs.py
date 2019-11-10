@@ -117,7 +117,8 @@ def process_actions(parser, args, target):
 
     if args.value is not None:
         if str(args.value).lower() == "none":
-            if args.property in ["default_dispvm", "netvm", "template"]:
+            if args.property in ["default_dispvm", "netvm", "template",
+                                 "guivm"]:
                 args.value = ''
         try:
             setattr(target, args.property, args.value)
