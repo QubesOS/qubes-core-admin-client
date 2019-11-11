@@ -22,14 +22,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''Various utility functions.'''
+"""Various utility functions."""
 import os
 
 import qubesadmin.exc
 
 
 def parse_size(size):
-    '''Parse human readable size into bytes.'''
+    """Parse human readable size into bytes."""
     units = [
         ('K', 1000), ('KB', 1000),
         ('M', 1000 * 1000), ('MB', 1000 * 1000),
@@ -52,21 +52,21 @@ def parse_size(size):
 
 
 def mbytes_to_kmg(size):
-    '''Convert mbytes to human readable format.'''
+    """Convert mbytes to human readable format."""
     if size > 1024:
         return "%d GiB" % (size / 1024)
     return "%d MiB" % size
 
 
 def kbytes_to_kmg(size):
-    '''Convert kbytes to human readable format.'''
+    """Convert kbytes to human readable format."""
     if size > 1024:
         return mbytes_to_kmg(size / 1024)
     return "%d KiB" % size
 
 
 def bytes_to_kmg(size):
-    '''Convert bytes to human readable format.'''
+    """Convert bytes to human readable format."""
     if size > 1024:
         return kbytes_to_kmg(size / 1024)
     return "%d B" % size
@@ -84,27 +84,28 @@ def size_to_human(size):
 
 
 def get_entry_point_one(group, name):
-    '''Get a single entry point of given type,
+    """Get a single entry point of given type,
     raise TypeError when there are multiple.
-    '''
+    """
     import pkg_resources
     epoints = tuple(pkg_resources.iter_entry_points(group, name))
     if not epoints:
         raise KeyError(name)
     if len(epoints) > 1:
-        raise TypeError(
-            'more than 1 implementation of {!r} found: {}'.format(name,
-                ', '.join('{}.{}'.format(ep.module_name, '.'.join(ep.attrs))
-                    for ep in epoints)))
+        raise TypeError('more than 1 implementation of {!r} found: {}'.format(
+            name, ', '.join('{}.{}'.format(ep.module_name, '.'.join(ep.attrs))
+                            for ep in epoints)))
     return epoints[0].load()
+
 
 UPDATES_DEFAULT_VM_DISABLE_FLAG = \
     '/var/lib/qubes/updates/vm-default-disable-updates'
 
+
 def updates_vms_status(qvm_collection):
-    '''Check whether all VMs have the same check-updates value;
+    """Check whether all VMs have the same check-updates value;
     if yes, return it; otherwise, return None
-    '''
+    """
     # default value:
     status = not os.path.exists(UPDATES_DEFAULT_VM_DISABLE_FLAG)
     # check if all the VMs uses the default value
@@ -118,10 +119,10 @@ def updates_vms_status(qvm_collection):
 
 
 def vm_dependencies(app, reference_vm):
-    '''Helper function that returns a list of all the places a given VM is used
+    """Helper function that returns a list of all the places a given VM is used
     in. Output is a list of tuples (property_holder, property_name), with None
     as property_holder for global properties
-    '''
+    """
 
     result = []
 
