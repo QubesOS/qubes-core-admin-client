@@ -111,6 +111,11 @@ class BackupCancelledError(QubesException):
     '''Thrown at user when backup was manually cancelled'''
 
 
+class BackupAlreadyRunningError(QubesException):
+    '''Thrown at user when they try to run the same backup twice at
+    the same time'''
+
+
 class QubesMemoryError(QubesException, MemoryError):
     '''Cannot start domain, because not enough memory is available'''
 
