@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
-import unittest
+
 import qubesadmin.tests
 import qubesadmin.utils
 
@@ -42,7 +42,7 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
         for prop in self.global_properties:
             self.app.expected_calls[
                 ('dom0', 'admin.property.Get', prop, None)] = \
-                    b'0\x00default=True type=vm vm2'
+                b'0\x00default=True type=vm vm2'
 
         self.vms = ['vm1', 'vm2', 'sys-net', 'sys-firewall',
                     'template1', 'template2']
@@ -63,7 +63,8 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                         b'2\0QubesNoSuchPropertyError\0\0invalid property\0'
 
     def test_00_only_global(self):
-        result = qubesadmin.utils.vm_dependencies(self.app, self.app.domains['vm2'])
+        result = qubesadmin.utils.vm_dependencies(self.app,
+                                                  self.app.domains['vm2'])
 
         self.assertListEqual(result,
                              [(None, prop) for prop in self.global_properties],
@@ -77,11 +78,13 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
             set(result),
             set([(vm, prop) for vm in self.vms for prop in self.vm_properties
                  if (not vm.startswith('template')
-                 or not prop.startswith('template')) and vm != 'template1']),
+                     or not prop.startswith(
+                            'template')) and vm != 'template1']),
             "Incorrect VM properties listed.")
 
     def test_02_empty(self):
-        result = qubesadmin.utils.vm_dependencies(self.app, self.app.domains['vm1'])
+        result = qubesadmin.utils.vm_dependencies(self.app,
+                                                  self.app.domains['vm1'])
 
         self.assertListEqual(result, [], "Incorrect use found.")
 
@@ -89,7 +92,8 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.property.Get', 'default_dispvm', None)] = b''
 
-        result = qubesadmin.utils.vm_dependencies(self.app, self.app.domains['vm1'])
+        result = qubesadmin.utils.vm_dependencies(self.app,
+                                                  self.app.domains['vm1'])
 
         self.assertListEqual(result, [], "Incorrect use found.")
 
