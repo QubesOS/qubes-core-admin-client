@@ -1,3 +1,47 @@
+qubes-core-admin-client (4.1.1-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * travis: switch to bionic
+  * Make PEP8 happier
+  * qvm-start-gui: handle GuiVM
+  * guivm: use getattr instead of try/except and direct property access
+  * qvm-start-gui: simplify log info for start_gui function
+  * app: fix missing docstring for get_local_name
+  * app: get_local_name set/from self attribute
+  * tests: fix with respect to gui properties
+  * tests: qvm_start_gui: make PEP8 happier
+  * app: switch get_local_name method to property
+
+  [ Marta Marczykowska-Górecka ]
+  * Fixed error with import
+  * Added pool.usage_details API method
+
+  [ Saswat Padhi ]
+  * Improvements to qvm-pool argument parser
+  * Updated tests for qvm-pool
+  * Fixed a bug and removed unused import
+  * Added a new test and minor updates to others
+  * Updated qvm-pool.rst file
+  * Preserve backward compatibility
+
+  [ Rot127 ]
+  * added feature to list domains as network tree
+  * network tree manpage entry added
+  * Sort domains in network tree list
+  * Add tests for --tree option of qvm-ls
+
+  [ Frédéric Pierret (fepitre) ]
+  * prefs: handle 'none' value for guivm
+  * utils: handle default_guivm and guivm properties
+  * utils: make PEP8 happy
+  * tests: add default_guivm and guivm in utils properties
+  * tests: make PEP8 and pylint happy
+
+  [ Marta Marczykowska-Górecka ]
+  * Added an exception for backup already in progress
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 13 Nov 2019 05:58:53 +0100
+
 qubes-core-admin-client (4.1.0-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
