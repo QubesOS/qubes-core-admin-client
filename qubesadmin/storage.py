@@ -298,7 +298,7 @@ class Pool(object):
         ''' Storage pool size, in bytes'''
         try:
             return int(self.usage_details['data_size'])
-        except KeyError:
+        except (KeyError, ValueError):
             # pool driver does not provide size information
             return None
 
@@ -307,7 +307,7 @@ class Pool(object):
         ''' Space used in the pool, in bytes '''
         try:
             return int(self.usage_details['data_usage'])
-        except KeyError:
+        except (KeyError, ValueError):
             # pool driver does not provide usage information
             return None
 
