@@ -18,14 +18,13 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-""" GUI daemon launcher tool"""
+""" GUI/AUDIO daemon launcher tool"""
 
 import os
 import signal
 import subprocess
 import asyncio
 import re
-
 import functools
 import xcffib
 import xcffib.xproto  # pylint: disable=unused-import
@@ -46,6 +45,7 @@ except ImportError:
     pass
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
+PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
 
 # "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
@@ -113,158 +113,16 @@ def get_monitor_layout():
     return outputs
 
 
-class GUILauncher(object):
-    """Launch GUI daemon for VMs"""
+class DAEMONLauncher:
+    """Launch GUI/AUDIO daemon for VMs"""
 
     def __init__(self, app: qubesadmin.app.QubesBase):
-        """ Initialize GUILauncher.
+        """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
         """
         self.app = app
         self.started_processes = {}
-
-    @staticmethod
-    def kde_guid_args(vm):
-        """Return KDE-specific arguments for gui-daemon, if applicable"""
-
-        guid_cmd = []
-        # Avoid using environment variables for checking the current session,
-        #  because this script may be called with cleared env (like with sudo).
-        if subprocess.check_output(
-                ['xprop', '-root', '-notype', 'KWIN_RUNNING']) == \
-                b'KWIN_RUNNING = 0x1\n':
-            # native decoration plugins is used, so adjust window properties
-            # accordingly
-            guid_cmd += ['-T']  # prefix window titles with VM name
-            # get owner of X11 session
-            session_owner = None
-            for line in subprocess.check_output(['xhost']).splitlines():
-                if line == b'SI:localuser:root':
-                    pass
-                elif line.startswith(b'SI:localuser:'):
-                    session_owner = line.split(b':')[2].decode()
-            if session_owner is not None:
-                data_dir = os.path.expanduser(
-                    '~{}/.local/share'.format(session_owner))
-            else:
-                # fallback to current user
-                data_dir = os.path.expanduser('~/.local/share')
-
-            guid_cmd += ['-p',
-                         '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
-                             os.path.join(data_dir,
-                                          'qubes-kde',
-                                          vm.label.name + '.colors'))]
-        return guid_cmd
-
-    def common_guid_args(self, vm):
-        """Common qubes-guid arguments for PV(H), HVM and Stubdomain"""
-
-        guid_cmd = [GUI_DAEMON_PATH,
-                    '-N', vm.name,
-                    '-c', vm.label.color,
-                    '-i', os.path.join(QUBES_ICON_DIR, vm.label.icon) + '.png',
-                    '-l', str(vm.label.index)]
-
-        if vm.debug:
-            guid_cmd += ['-v', '-v']
-            #       elif not verbose:
-        else:
-            guid_cmd += ['-q']
-
-        if vm.features.check_with_template('rpc-clipboard', False):
-            guid_cmd.extend(['-Q'])
-
-        guid_cmd += self.kde_guid_args(vm)
-        return guid_cmd
-
-    @staticmethod
-    def guid_pidfile(xid):
-        """Helper function to construct a pidfile path"""
-        return '/var/run/qubes/guid-running.{}'.format(xid)
-
-    @asyncio.coroutine
-    def start_gui_for_vm(self, vm, monitor_layout=None):
-        """Start GUI daemon (qubes-guid) connected directly to a VM
-
-        This function is a coroutine.
-
-        :param vm: VM for which start GUI daemon
-        :param monitor_layout: monitor layout to send; if None, fetch it from
-            local X server.
-        """
-        guid_cmd = self.common_guid_args(vm)
-        guid_cmd.extend(['-d', str(vm.xid)])
-
-        if vm.virt_mode == 'hvm':
-            guid_cmd.extend(['-n'])
-
-            stubdom_guid_pidfile = self.guid_pidfile(vm.stubdom_xid)
-            if not vm.debug and os.path.exists(stubdom_guid_pidfile):
-                # Terminate stubdom guid once "real" gui agent connects
-                with open(stubdom_guid_pidfile, 'r') as pidfile:
-                    stubdom_guid_pid = pidfile.read().strip()
-                guid_cmd += ['-K', stubdom_guid_pid]
-
-        vm.log.info('Starting GUI')
-
-        yield from asyncio.create_subprocess_exec(*guid_cmd)
-
-        yield from self.send_monitor_layout(vm, layout=monitor_layout,
-                                            startup=True)
-
-    @asyncio.coroutine
-    def start_gui_for_stubdomain(self, vm, force=False):
-        """Start GUI daemon (qubes-guid) connected to a stubdomain
-
-        This function is a coroutine.
-        """
-        want_stubdom = force
-        if not want_stubdom and \
-                vm.features.check_with_template('gui-emulated', False):
-            want_stubdom = True
-        # if no 'gui' or 'gui-emulated' feature set at all, use emulated GUI
-        if not want_stubdom and \
-                vm.features.check_with_template('gui', None) is None and \
-                vm.features.check_with_template('gui-emulated', None) is None:
-            want_stubdom = True
-        if not want_stubdom and vm.debug:
-            want_stubdom = True
-        if not want_stubdom:
-            return
-        if os.path.exists(self.guid_pidfile(vm.stubdom_xid)):
-            return
-        vm.log.info('Starting GUI (stubdomain)')
-        guid_cmd = self.common_guid_args(vm)
-        guid_cmd.extend(['-d', str(vm.stubdom_xid), '-t', str(vm.xid)])
-
-        yield from asyncio.create_subprocess_exec(*guid_cmd)
-
-    @asyncio.coroutine
-    def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
-        """Start GUI daemon regardless of start event.
-
-        This function is a coroutine.
-
-        :param vm: VM for which GUI daemon should be started
-        :param force_stubdom: Force GUI daemon for stubdomain, even if the
-            one for target AppVM is running.
-        :param monitor_layout: monitor layout configuration
-        """
-        guivm = getattr(vm, 'guivm', None)
-        if guivm != vm.app.local_name:
-            vm.log.info('GUI connected to {}. Skipping.'.format(guivm))
-            return
-
-        if vm.virt_mode == 'hvm':
-            yield from self.start_gui_for_stubdomain(vm, force=force_stubdom)
-
-        if not vm.features.check_with_template('gui', True):
-            return
-
-        if not os.path.exists(self.guid_pidfile(vm.xid)):
-            yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
 
     @asyncio.coroutine
     def send_monitor_layout(self, vm, layout=None, startup=False):
@@ -326,6 +184,186 @@ class GUILauncher(object):
                 asyncio.ensure_future(self.send_monitor_layout(vm,
                                                                monitor_layout))
 
+    @staticmethod
+    def kde_guid_args(vm):
+        """Return KDE-specific arguments for gui-daemon, if applicable"""
+
+        guid_cmd = []
+        # Avoid using environment variables for checking the current session,
+        #  because this script may be called with cleared env (like with sudo).
+        if subprocess.check_output(
+                ['xprop', '-root', '-notype', 'KWIN_RUNNING']) == \
+                b'KWIN_RUNNING = 0x1\n':
+            # native decoration plugins is used, so adjust window properties
+            # accordingly
+            guid_cmd += ['-T']  # prefix window titles with VM name
+            # get owner of X11 session
+            session_owner = None
+            for line in subprocess.check_output(['xhost']).splitlines():
+                if line == b'SI:localuser:root':
+                    pass
+                elif line.startswith(b'SI:localuser:'):
+                    session_owner = line.split(b':')[2].decode()
+            if session_owner is not None:
+                data_dir = os.path.expanduser(
+                    '~{}/.local/share'.format(session_owner))
+            else:
+                # fallback to current user
+                data_dir = os.path.expanduser('~/.local/share')
+
+            guid_cmd += ['-p',
+                         '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
+                             os.path.join(data_dir,
+                                          'qubes-kde',
+                                          vm.label.name + '.colors'))]
+        return guid_cmd
+
+    def common_guid_args(self, vm):
+        """Common qubes-guid arguments for PV(H), HVM and Stubdomain"""
+
+        guid_cmd = [GUI_DAEMON_PATH,
+                    '-N', vm.name,
+                    '-c', vm.label.color,
+                    '-i', os.path.join(QUBES_ICON_DIR, vm.label.icon) + '.png',
+                    '-l', str(vm.label.index)]
+
+        if vm.debug:
+            guid_cmd += ['-v', '-v']
+            #       elif not verbose:
+        else:
+            guid_cmd += ['-q']
+
+        if vm.features.check_with_template('rpc-clipboard', False):
+            guid_cmd.extend(['-Q'])
+
+        guid_cmd += self.kde_guid_args(vm)
+        return guid_cmd
+
+    @staticmethod
+    def guid_pidfile(xid):
+        """Helper function to construct a GUI pidfile path"""
+        return '/var/run/qubes/guid-running.{}'.format(xid)
+
+    @staticmethod
+    def pacat_pidfile(xid):
+        """Helper function to construct an AUDIO pidfile path"""
+        return '/var/run/qubes/pacat-running.{}'.format(xid)
+
+    @asyncio.coroutine
+    def start_gui_for_vm(self, vm, monitor_layout=None):
+        """Start GUI daemon (qubes-guid) connected directly to a VM
+
+        This function is a coroutine.
+
+        :param vm: VM for which start GUI daemon
+        :param monitor_layout: monitor layout to send; if None, fetch it from
+            local X server.
+        """
+        guid_cmd = self.common_guid_args(vm)
+        guid_cmd.extend(['-d', str(vm.xid)])
+
+        if vm.virt_mode == 'hvm':
+            guid_cmd.extend(['-n'])
+
+            stubdom_guid_pidfile = self.guid_pidfile(vm.stubdom_xid)
+            if not vm.debug and os.path.exists(stubdom_guid_pidfile):
+                # Terminate stubdom guid once "real" gui agent connects
+                with open(stubdom_guid_pidfile, 'r') as pidfile:
+                    stubdom_guid_pid = pidfile.read().strip()
+                guid_cmd += ['-K', stubdom_guid_pid]
+
+        vm.log.info('Starting GUI')
+
+        yield from asyncio.create_subprocess_exec(*guid_cmd)
+
+        yield from self.send_monitor_layout(vm, layout=monitor_layout,
+                                            startup=True)
+
+    @asyncio.coroutine
+    def start_gui_for_stubdomain(self, vm, force=False):
+        """Start GUI daemon (qubes-guid) connected to a stubdomain
+
+        This function is a coroutine.
+        """
+        want_stubdom = force
+        if not want_stubdom and \
+                vm.features.check_with_template('gui-emulated', False):
+            want_stubdom = True
+        # if no 'gui' or 'gui-emulated' feature set at all, use emulated GUI
+        if not want_stubdom and \
+                vm.features.check_with_template('gui', None) is None and \
+                vm.features.check_with_template('gui-emulated', None) is None:
+            want_stubdom = True
+        if not want_stubdom and vm.debug:
+            want_stubdom = True
+        if not want_stubdom:
+            return
+        if os.path.exists(self.guid_pidfile(vm.stubdom_xid)):
+            return
+        vm.log.info('Starting GUI (stubdomain)')
+        guid_cmd = self.common_guid_args(vm)
+        guid_cmd.extend(['-d', str(vm.stubdom_xid), '-t', str(vm.xid)])
+
+        yield from asyncio.create_subprocess_exec(*guid_cmd)
+
+    @asyncio.coroutine
+    def start_audio_for_vm(self, vm):
+        """Start AUDIO daemon (pacat-simple-vchan) connected directly to a VM
+
+        This function is a coroutine.
+
+        :param vm: VM for which start AUDIO daemon
+        """
+        # pylint: disable=no-self-use
+        pacat_cmd = [PACAT_DAEMON_PATH, vm.xid, vm.name]
+        vm.log.info('Starting AUDIO')
+
+        yield from asyncio.create_subprocess_exec(*pacat_cmd)
+
+    @asyncio.coroutine
+    def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
+        """Start GUI daemon regardless of start event.
+
+        This function is a coroutine.
+
+        :param vm: VM for which GUI daemon should be started
+        :param force_stubdom: Force GUI daemon for stubdomain, even if the
+            one for target AppVM is running.
+        :param monitor_layout: monitor layout configuration
+        """
+        guivm = getattr(vm, 'guivm', None)
+        if guivm != vm.app.local_name:
+            vm.log.info('GUI connected to {}. Skipping.'.format(guivm))
+            return
+
+        if vm.virt_mode == 'hvm':
+            yield from self.start_gui_for_stubdomain(vm, force=force_stubdom)
+
+        if not vm.features.check_with_template('gui', True):
+            return
+
+        if not os.path.exists(self.guid_pidfile(vm.xid)):
+            yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
+
+    @asyncio.coroutine
+    def start_audio(self, vm):
+        """Start AUDIO daemon regardless of start event.
+
+        This function is a coroutine.
+
+        :param vm: VM for which AUDIO daemon should be started
+        """
+        audiovm = getattr(vm, 'audiovm', None)
+        if audiovm != vm.app.local_name:
+            vm.log.info('AUDIO connected to {}. Skipping.'.format(audiovm))
+            return
+
+        if not vm.features.check_with_template('audio', True):
+            return
+
+        if not os.path.exists(self.pacat_pidfile(vm.xid)):
+            yield from self.start_audio_for_vm(vm)
+
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
         try:
@@ -340,7 +378,8 @@ class GUILauncher(object):
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
     def on_domain_start(self, vm, _event, **kwargs):
-        """Handler of 'domain-start' event, starts GUI daemon for actual VM"""
+        """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
+        actual VM """
         try:
             if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
@@ -351,8 +390,18 @@ class GUILauncher(object):
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
+        try:
+            if getattr(vm, 'audiovm', None) != vm.app.local_name:
+                return
+            if not vm.features.check_with_template('audio', True):
+                return
+            if kwargs.get('start_audio', 'True') == 'True':
+                asyncio.ensure_future(self.start_audio_for_vm(vm))
+        except qubesadmin.exc.QubesException as e:
+            vm.log.warning('Failed to start AUDIO for %s: %s', vm.name, str(e))
+
     def on_connection_established(self, _subject, _event, **_kwargs):
-        """Handler of 'connection-established' event, used to launch GUI
+        """Handler of 'connection-established' event, used to launch GUI/AUDIO
         daemon for domains started before this tool. """
 
         monitor_layout = get_monitor_layout()
@@ -360,19 +409,23 @@ class GUILauncher(object):
         for vm in self.app.domains:
             if vm.klass == 'AdminVM':
                 continue
-            if getattr(vm, 'guivm', None) != vm.app.local_name:
-                continue
-            if not vm.features.check_with_template('gui', True):
-                continue
-            power_state = vm.get_power_state()
-            if power_state == 'Running':
-                asyncio.ensure_future(
-                    self.start_gui(vm, monitor_layout=monitor_layout))
-            elif power_state == 'Transient':
-                # it is still starting, we'll get 'domain-start' event when
-                # fully started
-                if vm.virt_mode == 'hvm':
-                    asyncio.ensure_future(self.start_gui_for_stubdomain(vm))
+            if getattr(vm, 'guivm', None) == vm.app.local_name:
+                if vm.features.check_with_template('gui', True):
+                    power_state = vm.get_power_state()
+                    if power_state == 'Running':
+                        asyncio.ensure_future(
+                            self.start_gui(vm, monitor_layout=monitor_layout))
+                    elif power_state == 'Transient':
+                        # it is still starting, we'll get 'domain-start'
+                        # event when fully started
+                        if vm.virt_mode == 'hvm':
+                            asyncio.ensure_future(
+                                self.start_gui_for_stubdomain(vm))
+            if getattr(vm, 'audiovm', None) == vm.app.local_name:
+                if vm.features.check_with_template('audio', True):
+                    power_state = vm.get_power_state()
+                    if power_state == 'Running':
+                        asyncio.ensure_future(self.start_audio(vm))
 
     def register_events(self, events):
         """Register domain startup events in app.events dispatcher"""
@@ -394,10 +447,10 @@ def x_reader(conn, callback):
 
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
-                                'qvm-start-gui.pid')
+                                'qvm-start-daemon.pid')
 else:
     pidfile_path = os.path.join(os.environ.get('HOME', '/'),
-                                '.qvm-start-gui.pid')
+                                '.qvm-start-daemon.pid')
 
 parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
@@ -415,13 +468,13 @@ parser.add_argument('--notify-monitor-layout', action='store_true',
 
 
 def main(args=None):
-    """ Main function of qvm-start-gui tool"""
+    """ Main function of qvm-start-daemon tool"""
     args = parser.parse_args(args)
     if args.watch and not args.all_domains:
         parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    launcher = GUILauncher(args.app)
+    launcher = DAEMONLauncher(args.app)
     if args.watch:
         if not have_events:
             parser.error('--watch option require Python >= 3.5')
@@ -468,6 +521,8 @@ def main(args=None):
             if vm.is_running():
                 tasks.append(asyncio.ensure_future(launcher.start_gui(
                     vm, force_stubdom=args.force_stubdomain)))
+                tasks.append(asyncio.ensure_future(launcher.start_audio(
+                    vm)))
         if tasks:
             loop.run_until_complete(asyncio.wait(tasks))
         loop.stop()

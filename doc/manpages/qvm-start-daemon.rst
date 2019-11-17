@@ -1,6 +1,6 @@
-.. program:: qvm-start-gui
+.. program:: qvm-start-daemon
 
-:program:`qvm-start-gui` -- start GUI for qube(s)
+:program:`qvm-start-daemon` -- start GUI/AUDIO for qube(s)
 =========================================================
 
 .. warning::
@@ -15,7 +15,7 @@
 Synopsis
 --------
 
-:command:`qvm-start-gui` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--watch] [--force-stubdomain] [--pidfile *PIDFILE*] [--notify-monitory-layout] [*VMNAME* [*VMNAME* ...]]
+:command:`qvm-start-daemon` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--watch] [--force-stubdomain] [--pidfile *PIDFILE*] [--notify-monitory-layout] [*VMNAME* [*VMNAME* ...]]
 
 Options
 -------

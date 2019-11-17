@@ -73,7 +73,7 @@ Qube provides GUI through emulated VGA. Setting this feature to
 :py:obj:`True` enables emulated VGA output. Note that when gui-agent connects to
 actual VM, emulated VGA output is closed (unless `debug` property is set to
 :py:obj:`True`). It's possible to open emulated VGA output for a running qube,
-regardless of this feature, using `qvm-start-gui --force-stubdomain QUBE_NAME`
+regardless of this feature, using `qvm-start-daemon --force-stubdomain QUBE_NAME`
 command.
 
 This feature is applicable only when qube's `virt_mode` is set to `hvm`.
