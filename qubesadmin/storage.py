@@ -276,7 +276,7 @@ class Pool(object):
         pool_usage_data = self.app.qubesd_call(
             'dom0', 'admin.pool.UsageDetails', self.name, None)
         pool_usage_data = pool_usage_data.decode('utf-8')
-        assert pool_usage_data.endswith('\n')
+        assert pool_usage_data.endswith('\n') or pool_usage_data == ''
         pool_usage_data = pool_usage_data[:-1]
         return dict(l.split('=', 1) for l in pool_usage_data.splitlines())
 
