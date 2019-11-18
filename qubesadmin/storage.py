@@ -278,7 +278,12 @@ class Pool(object):
         pool_usage_data = pool_usage_data.decode('utf-8')
         assert pool_usage_data.endswith('\n')
         pool_usage_data = pool_usage_data[:-1]
-        return dict(l.split('=', 1) for l in pool_usage_data.splitlines())
+
+        def _int_split(text):  # pylint: disable=missing-docstring
+            key, value = text.split("=", 1)
+            return key, int(value)
+
+        return dict(_int_split(l) for l in pool_usage_data.splitlines())
 
     @property
     def config(self):
