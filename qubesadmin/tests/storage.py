@@ -313,10 +313,10 @@ class TestPool(qubesadmin.tests.QubesTestCase):
             b'metadata_usage=50\n'
         pool = self.app.pools['lvm']
         self.assertEqual(pool.usage_details, {
-            'data_size': '204800',
-            'data_usage': '102400',
-            'metadata_size': '1024',
-            'metadata_usage': '50',
+            'data_size': 204800,
+            'data_usage': 102400,
+            'metadata_size': 1024,
+            'metadata_usage': 50,
         })
         self.assertAllCalled()
 
