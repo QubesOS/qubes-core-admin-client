@@ -13,7 +13,7 @@ install:
 	install -d $(DESTDIR)/etc/xdg/autostart
 	install -m 0644 etc/qvm-start-daemon.desktop $(DESTDIR)/etc/xdg/autostart/
 	install -d $(DESTDIR)/usr/bin
-	ln -sf /usr/bin/qubes-start-daemon $(DESTDIR)/usr/bin/qubes-start-gui
+	ln -sf qvm-start-daemon $(DESTDIR)/usr/bin/qvm-start-gui
 
 clean:
 	rm -rf test-packages/__pycache__ qubesadmin/__pycache__

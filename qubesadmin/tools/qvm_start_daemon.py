@@ -409,23 +409,18 @@ class DAEMONLauncher:
         for vm in self.app.domains:
             if vm.klass == 'AdminVM':
                 continue
-            if getattr(vm, 'guivm', None) == vm.app.local_name:
-                if vm.features.check_with_template('gui', True):
-                    power_state = vm.get_power_state()
-                    if power_state == 'Running':
-                        asyncio.ensure_future(
-                            self.start_gui(vm, monitor_layout=monitor_layout))
-                    elif power_state == 'Transient':
-                        # it is still starting, we'll get 'domain-start'
-                        # event when fully started
-                        if vm.virt_mode == 'hvm':
-                            asyncio.ensure_future(
-                                self.start_gui_for_stubdomain(vm))
-            if getattr(vm, 'audiovm', None) == vm.app.local_name:
-                if vm.features.check_with_template('audio', True):
-                    power_state = vm.get_power_state()
-                    if power_state == 'Running':
-                        asyncio.ensure_future(self.start_audio(vm))
+
+            power_state = vm.get_power_state()
+            if power_state == 'Running':
+                asyncio.ensure_future(
+                    self.start_gui(vm, monitor_layout=monitor_layout))
+                asyncio.ensure_future(self.start_audio(vm))
+            elif power_state == 'Transient':
+                # it is still starting, we'll get 'domain-start'
+                # event when fully started
+                if vm.virt_mode == 'hvm':
+                    asyncio.ensure_future(
+                        self.start_gui_for_stubdomain(vm))
 
     def register_events(self, events):
         """Register domain startup events in app.events dispatcher"""
