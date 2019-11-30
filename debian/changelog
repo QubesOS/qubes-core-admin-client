@@ -1,3 +1,11 @@
+qubes-core-admin-client (4.1.2-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Fixed overeager assert
+  * Fixed metadata usage being served as strings
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 30 Nov 2019 05:12:01 +0100
+
 qubes-core-admin-client (4.1.1-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
