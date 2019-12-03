@@ -142,6 +142,9 @@ class PropertyHolder(object):
         '''
         if item.startswith('_'):
             raise AttributeError(item)
+        # pre-fill cache if enabled
+        if self.app.cache_enabled and not self._properties_cache:
+            self._fetch_all_properties()
         # cached value
         if item in self._properties_cache:
             return self._properties_cache[item][0]
@@ -197,6 +200,9 @@ class PropertyHolder(object):
     def __getattr__(self, item):
         if item.startswith('_'):
             raise AttributeError(item)
+        # pre-fill cache if enabled
+        if self.app.cache_enabled and not self._properties_cache:
+            self._fetch_all_properties()
         # cached value
         if item in self._properties_cache:
             value = self._properties_cache[item][1]
@@ -271,6 +277,50 @@ class PropertyHolder(object):
             return self.app.labels.get_blind(value)
         raise qubesadmin.exc.QubesDaemonCommunicationError(
             'Received invalid value type: {}'.format(prop_type))
+
+    def _fetch_all_properties(self):
+        """
+        Retrieve all properties values at once using (prefix).property.GetAll
+        method. If it succeed, save retrieved values in the properties cache.
+        If the request fails (for example because of qrexec policy), do nothing.
+        Exceptions when parsing received value are not handled.
+
+        :return: None
+        """
+
+        def unescape(line):
+            """Handle \\-escaped values, generates a list of character codes"""
+            escaped = False
+            for char in line:
+                if escaped:
+                    assert char in (ord('n'), ord('\\'))
+                    if char == ord('n'):
+                        yield ord('\n')
+                    elif char == ord('\\'):
+                        yield char
+                    escaped = False
+                elif char == ord('\\'):
+                    escaped = True
+                else:
+                    yield char
+            assert not escaped
+
+        try:
+            properties_str = self.qubesd_call(
+                self._method_dest,
+                self._method_prefix + 'GetAll',
+                None,
+                None)
+        except qubesadmin.exc.QubesDaemonNoResponseError:
+            return
+        for line in properties_str.splitlines():
+            # decode newlines
+            line = bytes(unescape(line))
+            name, property_str = line.split(b' ', 1)
+            name = name.decode()
+            is_default, value = self._deserialize_property(property_str)
+            self._properties_cache[name] = (is_default, value)
+        self._properties = list(self._properties_cache.keys())
 
     @classmethod
     def _local_properties(cls):

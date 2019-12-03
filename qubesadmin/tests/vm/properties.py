@@ -188,6 +188,37 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
             self.vm.property_get_default('prop1')
         self.assertAllCalled()
 
+    def test_050_get_all(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.GetAll', None, None)] = [
+            b'0\x00name default=False type=str test-vm\n'
+            b'debug default=True type=bool False\n'
+            b'backup_timestamp default=True type=int \n'
+            b'kernel default=True type=str 1.0\n'
+            b'qid default=True type=int 3\n'
+            b'kernelopts default=False type=str opt1\\nopt2\\nopt3\\\\opt4\n'
+            b'klass default=True type=str AppVM\n', ]
+        self.app.cache_enabled = True
+        self.assertEqual(self.vm.name, 'test-vm')
+        with self.assertRaises(AttributeError):
+            self.vm.backup_timestamp
+        self.assertEqual(self.vm.debug, False)
+        self.assertEqual(self.vm.qid, 3)
+        self.assertEqual(self.vm.kernelopts, 'opt1\nopt2\nopt3\\opt4')
+        self.assertTrue(self.vm.property_is_default('kernel'))
+
+    def test_051_get_all_fallback(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.GetAll', None, None)] = [b'', ]
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'qid', None)] = \
+            b'0\x00default=True type=int 3'
+        self.app.cache_enabled = True
+        self.assertEqual(self.vm.qid, 3)
+        # check if cached
+        self.assertEqual(self.vm.qid, 3)
+        self.assertAllCalled()
+
 
 class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
     def test_000_get_name(self):
