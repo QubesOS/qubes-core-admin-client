@@ -188,7 +188,8 @@ class EventsDispatcher(object):
         return some_event_received
 
     def handle(self, subject, event, **kwargs):
-        '''Call handlers for given event'''
+        """Call handlers for given event"""
+        # pylint: disable=protected-access
         if subject:
             if event in ['property-set:name']:
                 self.app.domains.clear_cache()
@@ -210,6 +211,12 @@ class EventsDispatcher(object):
                     .devices[devclass][ident]
             except (KeyError, ValueError):
                 pass
+        # invalidate cache if needed; call it before other handlers
+        # as those may want to use cached value
+        if event.startswith('property-set:') or \
+                event.startswith('property-reset:'):
+            self.app._invalidate_cache(subject, event, **kwargs)
+
         handlers = [h_func for h_name, h_func_set in self.handlers.items()
             for h_func in h_func_set
             if fnmatch.fnmatch(event, h_name)]

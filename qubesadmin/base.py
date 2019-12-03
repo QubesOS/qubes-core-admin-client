@@ -44,6 +44,7 @@ class PropertyHolder(object):
         self._method_dest = method_dest
         self._properties = None
         self._properties_help = None
+        self._properties_cache = {}
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
@@ -141,16 +142,20 @@ class PropertyHolder(object):
         '''
         if item.startswith('_'):
             raise AttributeError(item)
+        # cached value
+        if item in self._properties_cache:
+            return self._properties_cache[item][0]
+        # cached properties list
+        if self._properties is not None and item not in self._properties:
+            raise AttributeError(item)
         property_str = self.qubesd_call(
             self._method_dest,
             self._method_prefix + 'Get',
             item,
             None)
-        (default, _value) = property_str.split(b' ', 1)
-        assert default.startswith(b'default=')
-        is_default_str = default.split(b'=')[1]
-        is_default = is_default_str.decode('ascii') == "True"
-        assert isinstance(is_default, bool)
+        is_default, value = self._deserialize_property(property_str)
+        if self.app.cache_enabled:
+            self._properties_cache[item] = (is_default, value)
         return is_default
 
     def property_get_default(self, item):
@@ -192,6 +197,15 @@ class PropertyHolder(object):
     def __getattr__(self, item):
         if item.startswith('_'):
             raise AttributeError(item)
+        # cached value
+        if item in self._properties_cache:
+            value = self._properties_cache[item][1]
+            if value is AttributeError:
+                raise AttributeError(item)
+            return value
+        # cached properties list
+        if self._properties is not None and item not in self._properties:
+            raise AttributeError(item)
         try:
             property_str = self.qubesd_call(
                 self._method_dest,
@@ -200,8 +214,25 @@ class PropertyHolder(object):
                 None)
         except qubesadmin.exc.QubesDaemonNoResponseError:
             raise qubesadmin.exc.QubesPropertyAccessError(item)
-        (_default, prop_type, value) = property_str.split(b' ', 2)
-        return self._parse_type_value(prop_type, value)
+        is_default, value = self._deserialize_property(property_str)
+        if self.app.cache_enabled:
+            self._properties_cache[item] = (is_default, value)
+        if value is AttributeError:
+            raise AttributeError(item)
+        return value
+
+    def _deserialize_property(self, api_response):
+        """
+        Deserialize property.Get response format
+        :param api_response: bytes, as retrieved from qubesd
+        :return: tuple(is_default, value)
+        """
+        (default, prop_type, value) = api_response.split(b' ', 2)
+        assert default.startswith(b'default=')
+        is_default_str = default.split(b'=')[1]
+        is_default = is_default_str.decode('ascii') == "True"
+        value = self._parse_type_value(prop_type, value)
+        return is_default, value
 
     def _parse_type_value(self, prop_type, value):
         '''
@@ -224,11 +255,11 @@ class PropertyHolder(object):
             return str(value)
         if prop_type == 'bool':
             if value == '':
-                raise AttributeError
+                return AttributeError
             return value == "True"
         if prop_type == 'int':
             if value == '':
-                raise AttributeError
+                return AttributeError
             return int(value)
         if prop_type == 'vm':
             if value == '':

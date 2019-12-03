@@ -153,6 +153,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     log = None
     #: do not check for object (VM, label etc) existence before really needed
     blind_mode = False
+    #: cache retrieved properties values
+    cache_enabled = False
 
     def __init__(self):
         super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')
@@ -575,6 +577,35 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         payload_stream.close()
         stdout, stderr = proc.communicate()
         return proc, stdout, stderr
+
+    def _invalidate_cache(self, subject, event, name, **kwargs):
+        """Invalidate cached value of a property.
+
+        This method is designed to be hooked as an event handler for:
+        - property-set:*
+        - property-del:*
+
+        This is done in :py:class:`qubesadmin.events.EventsDispatcher` class
+        directly, before calling other handlers.
+
+        It handles both VM and global properties.
+        Note: even if the new value is given in the event arguments, it is
+        ignored because it comes without type information.
+
+        :param subject: either VM object or None
+        :param event: name of the event
+        :param name: name of the property
+        :param kwargs: other arguments
+        :return: none
+        """ # pylint: disable=unused-argument
+        if subject is None:
+            subject = self
+
+        try:
+            # pylint: disable=protected-access
+            del subject._properties_cache[name]
+        except KeyError:
+            pass
 
 
 class QubesLocal(QubesBase):
