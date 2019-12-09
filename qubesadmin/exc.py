@@ -33,6 +33,10 @@ class QubesException(Exception):
 class QubesVMNotFoundError(QubesException, KeyError):
     '''Domain cannot be found in the system'''
 
+    def __str__(self):
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
+
 
 class QubesVMError(QubesException):
     '''Some problem with domain state.'''
@@ -122,10 +126,16 @@ class QubesMemoryError(QubesException, MemoryError):
 
 class QubesFeatureNotFoundError(QubesException, KeyError):
     '''Feature not set for a given domain'''
+    def __str__(self):
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
 
 
 class QubesTagNotFoundError(QubesException, KeyError):
     '''Tag not set for a given domain'''
+    def __str__(self):
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
 
 
 class StoragePoolException(QubesException):
@@ -139,6 +149,9 @@ class QubesDaemonCommunicationError(QubesException, IOError):
 
 class DeviceAlreadyAttached(QubesException, KeyError):
     '''Trying to attach already attached device'''
+    def __str__(self):
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
 
 
 # pylint: disable=too-many-ancestors
