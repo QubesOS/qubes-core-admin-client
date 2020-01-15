@@ -1,6 +1,6 @@
 #!/bin/sh
 
-: "${PYTHON:=python}"
+: "${PYTHON:=python3}"
 : "${ROOTDIR:=.}"
 : "${TESTPYTHONPATH:=$ROOTDIR/test-packages}"
 
