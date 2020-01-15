@@ -5,8 +5,7 @@ Maintainer: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 Build-Depends:
  debhelper (>= 9),
  dh-python,
- python-all,
- python-setuptools,
+ python3-all,
  python3-all,
  python3-setuptools,
  python3-sphinx,
@@ -29,17 +28,6 @@ Depends:
  ${misc:Depends}
 Description: Qubes administrative tools
  Tools to manage Qubes system using Admin API
-
-Package: python-qubesadmin
-Architecture: any
-Depends:
- python-docutils,
- python-lxml,
- ${python:Depends},
-Provides:
- ${python:Provides},
-Description: Python 2 bindings for Qubes Admin API
- Python 2 client side module for Qubes Admin API
 
 Package: python3-qubesadmin
 Architecture: any

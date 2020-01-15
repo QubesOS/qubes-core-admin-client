@@ -7,8 +7,6 @@ Group:		Qubes
 License:	LGPLv2.1+
 URL:		https://www.qubes-os.org
 
-BuildRequires:	python2-setuptools
-BuildRequires:	python2-devel
 BuildRequires:	python%{python3_pkgversion}-setuptools
 BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
@@ -21,22 +19,9 @@ Source0: %{name}-%{version}.tar.gz
 %description
 This package include managemt tools, like qvm-*.
 
-%package -n python2-qubesadmin
-Summary:    Python2 module qubesadmin
-Requires:   python-daemon
-Requires:   python-docutils
-Requires:   python2-lxml
-
-%description -n python2-qubesadmin
-Python2 module qubesadmin.
-
 %package -n python%{python3_pkgversion}-qubesadmin
 Summary:    Python%{python3_pkgversion} module qubesadmin
-%if 0%{?rhel} >= 7
-Requires:   python-daemon
-%else
-Requires:   python3-daemon
-%endif
+Requires:   python%{python3_pkgversion}-daemon
 Requires:   python%{python3_pkgversion}-docutils
 Requires:   python%{python3_pkgversion}-lxml
 Requires:   python%{python3_pkgversion}-xcffib
@@ -55,8 +40,6 @@ make -C doc PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} man
 
 %install
 rm -rf build
-%make_install PYTHON=%{__python2}
-rm -rf build
 %make_install PYTHON=%{__python3}
 
 make -C doc DESTDIR=$RPM_BUILD_ROOT \
@@ -72,10 +55,6 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %{_bindir}/qvm-*
 %{_mandir}/man1/qvm-*.1*
 %{_mandir}/man1/qubes*.1*
-
-%files -n python2-qubesadmin
-%{python2_sitelib}/qubesadmin-*egg-info
-%{python2_sitelib}/qubesadmin
 
 %files -n python%{python3_pkgversion}-qubesadmin
 %{python3_sitelib}/qubesadmin-*egg-info
