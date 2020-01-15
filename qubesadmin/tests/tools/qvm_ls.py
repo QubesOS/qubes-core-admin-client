@@ -120,7 +120,16 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'dom0\n'
             'test-vm\n')
 
-    def test_103_network_tree(self):
+    def test_103_list_all(self):
+        app = TestApp()
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--all'], app=app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'dom0     Running  TestVM  -      -         -\n'
+            'test-vm  Running  TestVM  -      -         -\n')
+
+    def test_110_network_tree(self):
         app = TestApp()
         app.domains = TestVMCollection(
             [
