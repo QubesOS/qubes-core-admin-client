@@ -22,6 +22,7 @@
 """
 Main Qubes() class and related classes.
 """
+import grp
 import os
 import shlex
 import socket
@@ -699,6 +700,37 @@ class QubesLocal(QubesBase):
         elif not self.domains.get_blind(dest).is_running():
             raise qubesadmin.exc.QubesVMNotRunningError(
                 '%s is not running', dest)
+        if dest == 'dom0':
+            # can't make real dom0->dom0 call
+            if filter_esc:
+                raise NotImplementedError(
+                    'filter_esc=True not implemented in dom0->dom0 calls')
+            if localcmd:
+                raise NotImplementedError(
+                    'localcmd not implemented in dom0->dom0 calls')
+            if not wait:
+                raise NotImplementedError(
+                    'wait=False not implemented in dom0->dom0 calls')
+            if user is None:
+                user = grp.getgrnam('qubes').gr_mem[0]
+
+            kwargs.setdefault('stdin', subprocess.PIPE)
+            kwargs.setdefault('stdout', subprocess.PIPE)
+            kwargs.setdefault('stderr', subprocess.PIPE)
+            # Set default locale to C in order to prevent error msg
+            # in subprocess call related to falling back to C locale
+            env = os.environ.copy()
+            env['LC_ALL'] = 'C'
+            cmd = '/etc/qubes-rpc/' + service
+            arg = ''
+            if not os.path.exists(cmd) and '+' in service:
+                cmd, arg = cmd.split('+', 1)
+            p = subprocess.Popen(
+                ['sudo', '-u', user, cmd, arg],
+                **kwargs,
+                env=env,
+            )
+            return p
         qrexec_opts = ['-d', dest]
         if filter_esc:
             qrexec_opts.extend(['-t'])
