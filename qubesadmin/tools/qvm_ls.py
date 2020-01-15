@@ -690,6 +690,14 @@ def main(args=None, app=None):
     else:
         domains = args.app.domains
 
+    if args.all_domains:
+        # Normally, --all means "all domains except for AdminVM".
+        # However, in the case of qvm-ls it does not make sense to exclude
+        # AdminVMs, so we override the list from parser.
+        domains = [
+            vm for vm in args.app.domains if vm.name not in args.exclude
+        ]
+
     if args.tags:
         # filter only VMs having at least one of the specified tags
         domains = [dom for dom in domains
