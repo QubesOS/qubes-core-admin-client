@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -71,8 +71,8 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Running\n'
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         with self.assertLogs() as logger:
             self.assertEqual(
                 qubesadmin.tools.qvm_check.main(['--running', 'some-vm'],
@@ -87,11 +87,11 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Running\n'
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('some-vm2', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm2 class=AppVM state=Running\n'
+            ('some-vm2', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         with self.assertLogs() as logger:
             self.assertEqual(qubesadmin.tools.qvm_check.main(
                 ['--running', 'some-vm', 'some-vm2'], app=self.app), 0)
@@ -107,14 +107,14 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Running\n'
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('some-vm2', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm2 class=AppVM state=Running\n'
+            ('some-vm2', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('some-vm3', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm3 class=AppVM state=Halted\n'
+            ('some-vm3', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         with self.assertLogs() as logger:
             self.assertEqual(
                 qubesadmin.tools.qvm_check.main(['--running', '--all'],
@@ -131,8 +131,8 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'some-vm2 class=AppVM state=Running\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm3', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm3 class=AppVM state=Halted\n'
+            ('some-vm3', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         with self.assertLogs() as logger:
             self.assertEqual(
                 qubesadmin.tools.qvm_check.main(['--running', 'some-vm3'],
@@ -148,8 +148,8 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm2', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm2 class=AppVM state=Paused\n'
+            ('some-vm2', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Paused'
         with self.assertLogs() as logger:
             self.assertEqual(
                 qubesadmin.tools.qvm_check.main(['--paused', 'some-vm2'],
@@ -164,11 +164,11 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             b'some-vm2 class=AppVM state=Paused\n' \
             b'some-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('some-vm2', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm2 class=AppVM state=Paused\n'
+            ('some-vm2', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Paused'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Running\n'
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         with self.assertLogs() as logger:
             self.assertEqual(qubesadmin.tools.qvm_check.main(
                 ['--paused', 'some-vm2', 'some-vm'], app=self.app), 3)

@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -69,14 +69,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b'test-vm2 class=AppVM state=Running\n' \
             b'test-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('test-vm2', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm2 class=AppVM state=Running\n'
+            ('test-vm2', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('test-vm3', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm3 class=AppVM state=Halted\n'
+            ('test-vm3', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
@@ -445,11 +445,11 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b'test-vm2 class=AppVM state=Running\n' \
             b'test-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('test-vm3', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm3 class=AppVM state=Halted\n'
+            ('test-vm3', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
@@ -474,8 +474,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b'test-vm2 class=AppVM state=Running\n' \
             b'test-vm3 class=AppVM state=Halted\n'
         self.app.expected_calls[
-            ('test-vm3', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm3 class=AppVM state=Halted\n'
+            ('test-vm3', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         ret = qubesadmin.tools.qvm_run.main(
             ['--no-gui', '--no-autostart', 'test-vm3', 'command'],
             app=self.app)
