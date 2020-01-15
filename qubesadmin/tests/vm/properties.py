@@ -243,3 +243,8 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
+
+    def test_015_mem(self):
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00mem=1234'
+        self.assertEqual(self.vm.get_mem(), 1234)
