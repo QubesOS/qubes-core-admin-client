@@ -408,12 +408,12 @@ class QubesArgumentParser(argparse.ArgumentParser):
         return namespace
 
 
-    def error_runtime(self, message):
+    def error_runtime(self, message, exit_code=1):
         '''Runtime error, without showing usage.
 
         :param str message: message to show
         '''
-        self.exit(1, '{}: error: {}\n'.format(self.prog, message))
+        self.exit(exit_code, '{}: error: {}\n'.format(self.prog, message))
 
 
     @staticmethod

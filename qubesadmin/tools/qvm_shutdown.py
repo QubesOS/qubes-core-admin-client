@@ -73,7 +73,12 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 else:
                     remaining_domains.add(vm)
         if not args.wait:
-            return len(remaining_domains)
+            if remaining_domains:
+                parser.error_runtime(
+                    'Failed to shut down: ' +
+                    ', '.join(vm.name for vm in remaining_domains),
+                    len(remaining_domains))
+            return
         this_round_domains.difference_update(remaining_domains)
         if not this_round_domains:
             # no VM shutdown request succeed, no sense to try again
@@ -122,8 +127,20 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     if args.wait:
         if have_events:
             loop.close()
-        return len([vm for vm in args.domains
-            if vm.get_power_state() != 'Halted'])
+        failed = []
+        for vm in args.domains:
+            power_state = vm.get_power_state()
+            # DispVM might have been deleted before we check them,
+            # so NA is acceptable.
+            if not (power_state == 'Halted' or
+                    (vm.klass == 'DispVM' and power_state == 'NA')):
+                failed.append(vm)
+        if failed:
+            parser.error_runtime(
+                'Failed to shut down: ' +
+                ', '.join(vm.name for vm in failed),
+                len(failed))
+
 
 if __name__ == '__main__':
     sys.exit(main())
