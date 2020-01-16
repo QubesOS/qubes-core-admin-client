@@ -187,9 +187,13 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             return 'NA'
 
     def get_mem(self):
+        '''Get current memory usage from VM.'''
+
         return int(self._get_current_state()['mem'])
 
     def _get_current_state(self):
+        '''Call admin.vm.CurrentState, and return the result as a dict.'''
+
         state = {}
         response = self.qubesd_call(self._method_dest, 'admin.vm.CurrentState')
         for part in response.decode('ascii').split():
