@@ -293,6 +293,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('sys-net', 'admin.vm.List', None, None)] = \
             b'0\x00sys-net class=AppVM state=Halted\n'
-        qubesadmin.tools.qvm_shutdown.main(
-            ['--wait', '--all', '--timeout=1'], app=self.app)
+        with self.assertRaisesRegexp(SystemExit, '2'):
+            qubesadmin.tools.qvm_shutdown.main(
+                ['--wait', '--all', '--timeout=1'], app=self.app)
         self.assertAllCalled()
