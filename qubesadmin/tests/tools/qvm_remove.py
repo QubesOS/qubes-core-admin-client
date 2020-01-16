@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -35,19 +35,15 @@ class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):
         qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
         self.assertAllCalled()
 
-    @unittest.mock.patch('qubesadmin.utils.vm_dependencies')
-    def test_100_dependencies(self, mock_dependencies):
+    def test_100_error(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Remove', None, None)] = \
             b'2\x00QubesVMInUseError\x00\x00An error occurred\x00'
-
-        mock_dependencies.return_value = \
-            [(None, 'default_template'), (self.app.domains['some-vm'], 'netvm')]
-
-        qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
-
-        self.assertTrue(mock_dependencies.called,
-                        "Dependencies check not called.")
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
+        self.assertAllCalled()
+        self.assertIn('error: An error occurred', stderr.getvalue())

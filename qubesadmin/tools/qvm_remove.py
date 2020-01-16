@@ -48,15 +48,6 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         for vm in args.domains:
             try:
                 del args.app.domains[vm.name]
-            except qubesadmin.exc.QubesVMInUseError:
-                dependencies = qubesadmin.utils.vm_dependencies(vm.app, vm)
-                print("VM {} cannot be removed. It is in use as:".format(
-                    vm.name))
-                for (holder, prop) in dependencies:
-                    if holder:
-                        print(" - {} for {}".format(prop, holder.name))
-                    else:
-                        print(" - global property {}".format(prop))
             except qubesadmin.exc.QubesException as e:
                 parser.error_runtime(e)
         retcode = 0
