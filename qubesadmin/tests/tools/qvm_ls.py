@@ -279,14 +279,14 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             b'template1 class=TemplateVM state=Halted\n' \
             b'sys-net class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('vm1', 'admin.vm.List', None, None)] = \
-            b'0\x00vm1 class=AppVM state=Running\n'
+            ('vm1', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.List', None, None)] = \
-            b'0\x00sys-net class=AppVM state=Running\n'
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('template1', 'admin.vm.List', None, None)] = \
-            b'0\x00template1 class=TemplateVM state=Halted\n'
+            ('template1', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         props = {
             'label': b'type=label green',
             'template': b'type=vm template1',
@@ -331,11 +331,11 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             b'template1 class=TemplateVM state=Halted\n' \
             b'sys-net class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('vm1', 'admin.vm.List', None, None)] = \
-            b'0\x00vm1 class=AppVM state=Running\n'
+            ('vm1', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.List', None, None)] = \
-            b'0\x00sys-net class=AppVM state=Running\n'
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         props = {
             'label': b'type=label green',
             'template': b'type=vm template1',

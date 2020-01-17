@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -213,33 +213,38 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertAllCalled()
 
     def test_010_power_state_running(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
         self.assertEqual(self.vm.get_power_state(), 'Running')
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
 
     def test_011_power_state_paused(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Paused\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Paused'
         self.assertEqual(self.vm.get_power_state(), 'Paused')
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertTrue(self.vm.is_paused())
 
     def test_012_power_state_halted(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.assertEqual(self.vm.get_power_state(), 'Halted')
         self.assertFalse(self.vm.is_running())
         self.assertTrue(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
 
     def test_012_power_state_transient(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Transient\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Transient'
         self.assertEqual(self.vm.get_power_state(), 'Transient')
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
+
+    def test_015_mem(self):
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00mem=1234'
+        self.assertEqual(self.vm.get_mem(), 1234)

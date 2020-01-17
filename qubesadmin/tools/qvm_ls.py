@@ -349,7 +349,7 @@ Column('GATEWAY',
     doc='Network gateway.')
 
 Column('MEMORY',
-    attr=(lambda vm: vm.get_mem() / 1024 if vm.is_running() else None),
+    attr=(lambda vm: vm.get_mem() // 1024 if vm.is_running() else None),
     doc='Memory currently used by VM')
 
 Column('DISK',

@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -182,19 +182,24 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''
 
         try:
-            vm_list_info = [line
-                for line in self.qubesd_call(
-                    self._method_dest, 'admin.vm.List', None, None
-                ).decode('ascii').split('\n')
-                if line.startswith(self._method_dest+' ')]
+            return self._get_current_state()['power_state']
         except qubesadmin.exc.QubesDaemonNoResponseError:
             return 'NA'
-        assert len(vm_list_info) == 1
-        #  name class=... state=... other=...
-        # NOTE: when querying dom0, we get whole list
-        vm_state = vm_list_info[0].strip().partition('state=')[2].split(' ')[0]
-        return vm_state
 
+    def get_mem(self):
+        '''Get current memory usage from VM.'''
+
+        return int(self._get_current_state()['mem'])
+
+    def _get_current_state(self):
+        '''Call admin.vm.CurrentState, and return the result as a dict.'''
+
+        state = {}
+        response = self.qubesd_call(self._method_dest, 'admin.vm.CurrentState')
+        for part in response.decode('ascii').split():
+            name, value = part.split('=', 1)
+            state[name] = value
+        return state
 
     def is_halted(self):
         ''' Check whether this domain's state is 'Halted'

@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -101,9 +101,9 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            [b'0\x00some-vm class=AppVM state=Running\n'] + \
-            [b'0\x00some-vm class=AppVM state=Halted\n']
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            [b'0\x00power_state=Running'] + \
+            [b'0\x00power_state=Halted']
         qubesadmin.tools.qvm_shutdown.main(['--wait', 'some-vm'], app=self.app)
         self.assertAllCalled()
 
@@ -141,14 +141,14 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Halted\n'
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00other-vm class=AppVM state=Halted\n'
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.List', None, None)] = \
-            b'0\x00sys-net class=AppVM state=Halted\n'
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
         self.assertAllCalled()
 
@@ -189,14 +189,14 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Halted\n'
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.List', None, None)] = \
-            b'0\x00other-vm class=AppVM state=Halted\n'
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.List', None, None)] = \
-            b'0\x00sys-net class=AppVM state=Halted\n'
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
         self.assertAllCalled()
 
@@ -222,20 +222,20 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = \
-            [b'0\x00some-vm class=AppVM state=Running\n',
-            b'0\x00some-vm class=AppVM state=Halted\n',
-            b'0\x00some-vm class=AppVM state=Halted\n']
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            [b'0\x00power_state=Running',
+            b'0\x00power_state=Halted',
+            b'0\x00power_state=Halted']
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.List', None, None)] = \
-            [b'0\x00other-vm class=AppVM state=Running\n',
-            b'0\x00other-vm class=AppVM state=Halted\n',
-            b'0\x00other-vm class=AppVM state=Halted\n']
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
+            [b'0\x00power_state=Running',
+            b'0\x00power_state=Halted',
+            b'0\x00power_state=Halted']
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.List', None, None)] = \
-            [b'0\x00sys-net class=AppVM state=Running\n',
-            b'0\x00sys-net class=AppVM state=Halted\n',
-            b'0\x00sys-net class=AppVM state=Halted\n']
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
+            [b'0\x00power_state=Running',
+            b'0\x00power_state=Halted',
+            b'0\x00power_state=Halted']
         with unittest.mock.patch('qubesadmin.tools.qvm_shutdown.have_events',
                 False):
             qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
@@ -282,17 +282,17 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.List', None, None)] = [
-            b'0\x00some-vm class=AppVM state=Running\n',
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = [
+            b'0\x00power_state=Running',
         ]
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.List', None, None)] = [
-            b'0\x00other-vm class=AppVM state=Running\n',
-            b'0\x00other-vm class=AppVM state=Running\n',
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = [
+            b'0\x00power_state=Running',
+            b'0\x00power_state=Running',
         ]
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.List', None, None)] = \
-            b'0\x00sys-net class=AppVM state=Halted\n'
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
         qubesadmin.tools.qvm_shutdown.main(
             ['--wait', '--all', '--timeout=1'], app=self.app)
         self.assertAllCalled()
