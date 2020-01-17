@@ -26,6 +26,7 @@ import subprocess
 import asyncio
 import re
 import functools
+import sys
 import xcffib
 import xcffib.xproto  # pylint: disable=unused-import
 
@@ -460,10 +461,20 @@ parser.add_argument('--pidfile', action='store', default=pidfile_path,
 parser.add_argument('--notify-monitor-layout', action='store_true',
                     help='Notify running instance in --watch mode'
                          ' about changed monitor layout')
+# Add it for the help only
+parser.add_argument('--force', action='store_true', default=False,
+                    help='Force running daemon without enabled services'
+                         ' \'guivm-gui-agent\' or \'audiovm-audio-agent\'')
 
 
 def main(args=None):
     """ Main function of qvm-start-daemon tool"""
+    only_if_service_enabled = ['guivm-gui-agent', 'audiovm-audio-agent']
+    enabled_services = [service for service in only_if_service_enabled if
+                        os.path.exists('/var/run/qubes-service/%s' % service)]
+    if not enabled_services and '--force' not in sys.argv:
+        print(parser.format_help())
+        return
     args = parser.parse_args(args)
     if args.watch and not args.all_domains:
         parser.error('--watch option must be used with --all')
