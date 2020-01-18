@@ -382,21 +382,17 @@ class DAEMONLauncher:
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM """
         try:
-            if getattr(vm, 'guivm', None) != vm.app.local_name:
-                return
-            if not vm.features.check_with_template('gui', True):
-                return
-            if kwargs.get('start_guid', 'True') == 'True':
+            if getattr(vm, 'guivm', None) == vm.app.local_name and \
+                    vm.features.check_with_template('gui', True) and \
+                    kwargs.get('start_guid', 'True') == 'True':
                 asyncio.ensure_future(self.start_gui_for_vm(vm))
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
         try:
-            if getattr(vm, 'audiovm', None) != vm.app.local_name:
-                return
-            if not vm.features.check_with_template('audio', True):
-                return
-            if kwargs.get('start_audio', 'True') == 'True':
+            if getattr(vm, 'audiovm', None) == vm.app.local_name and \
+                    vm.features.check_with_template('audio', True) and \
+                    kwargs.get('start_audio', 'True') == 'True':
                 asyncio.ensure_future(self.start_audio_for_vm(vm))
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start AUDIO for %s: %s', vm.name, str(e))
