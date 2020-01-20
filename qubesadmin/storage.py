@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -19,7 +19,6 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''Storage subsystem.'''
-
 
 class Volume(object):
     '''Storage volume.'''
@@ -217,11 +216,25 @@ class Volume(object):
     def import_data(self, stream):
         ''' Import volume data from a given file-like object.
 
-        This function override existing volume content
+        This function overrides existing volume content.
 
         :param stream: file-like object, must support fileno()
         '''
         self._qubesd_call('Import', payload_stream=stream)
+
+    def import_data_with_size(self, stream, size):
+        ''' Import volume data from a given file-like object, informing qubesd
+        that data has a specific size.
+
+        This function overrides existing volume content.
+
+        :param stream: file-like object, must support fileno()
+        :param size: size of data in bytes
+        '''
+        size_line = str(size) + '\n'
+        self._qubesd_call(
+            'ImportWithSize', payload=size_line.encode(),
+            payload_stream=stream)
 
     def clone(self, source):
         ''' Clone data from sane volume of another VM.

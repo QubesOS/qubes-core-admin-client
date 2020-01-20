@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -508,10 +508,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'revisions_to_keep=0\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Resize', 'private', b'9')] = \
-            b'0\x00'
-        self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
@@ -541,10 +538,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'revisions_to_keep=0\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Resize', 'private', b'9')] = \
-            b'0\x00'
-        self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
@@ -575,10 +569,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'revisions_to_keep=0\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Resize', 'private', b'512')] = \
-            b'0\x00'
-        self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'512\ntest-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
@@ -638,7 +629,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'revisions_to_keep=0\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')

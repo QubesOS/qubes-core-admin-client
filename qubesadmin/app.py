@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -25,6 +25,7 @@ Main Qubes() class and related classes.
 import os
 import shlex
 import socket
+import shutil
 import subprocess
 import sys
 
@@ -37,8 +38,6 @@ import qubesadmin.storage
 import qubesadmin.utils
 import qubesadmin.vm
 import qubesadmin.config
-
-BUF_SIZE = 4096
 
 
 class VMCollection(object):
@@ -480,7 +479,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         """
         Execute Admin API method.
 
-        Only one of `payload` and `payload_stream` can be specified.
+        If `payload` and `payload_stream` are both specified, they will be sent
+        in that order.
 
         :param dest: Destination VM name
         :param method: Full API method name ('admin...')
@@ -516,6 +516,46 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             'run_service not implemented in QubesBase class; use specialized '
             'class: qubesadmin.Qubes()')
 
+    @staticmethod
+    def _call_with_stream(command, payload, payload_stream):
+        """Helper method to pass data to qubesd. Calls a command with
+        payload and payload_stream as input.
+
+        :param command: command to run
+        :param payload: Initial payload, or None
+        :param payload_stream: File-like object with the rest of data
+        :return: (process, stdout, stderr)
+        """
+
+        if payload:
+            # It's not strictly correct to write data to stdin in this way,
+            # because the process can get blocked on stdout or stderr pipe.
+            # However, in practice the output should be always smaller than 4K.
+            proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            proc.stdin.write(payload)
+            try:
+                shutil.copyfileobj(payload_stream, proc.stdin)
+            except BrokenPipeError:
+                # We might receive an error from qubesd before we sent
+                # everything (for instance, because we are sending too much
+                # data).
+                pass
+        else:
+            # Connect the stream directly.
+            proc = subprocess.Popen(
+                command,
+                stdin=payload_stream,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+
+        payload_stream.close()
+        stdout, stderr = proc.communicate()
+        return proc, stdout, stderr
+
 
 class QubesLocal(QubesBase):
     """Application object communicating through local socket.
@@ -530,7 +570,8 @@ class QubesLocal(QubesBase):
         """
         Execute Admin API method.
 
-        Only one of `payload` and `payload_stream` can be specified.
+        If `payload` and `payload_stream` are both specified, they will be sent
+        in that order.
 
         :param dest: Destination VM name
         :param method: Full API method name ('admin...')
@@ -541,9 +582,6 @@ class QubesLocal(QubesBase):
 
         .. warning:: *payload_stream* will get closed by this function
         """
-        if payload and payload_stream:
-            raise ValueError(
-                'Only one of payload and payload_stream can be used')
         if payload_stream:
             # payload_stream can be used for large amount of data,
             # so optimize for throughput, not latency: spawn actual qrexec
@@ -558,11 +596,9 @@ class QubesLocal(QubesBase):
                        'QREXEC_REQUESTED_TARGET=' + dest, method_path, arg]
             if os.getuid() != 0:
                 command.insert(0, 'sudo')
-            proc = subprocess.Popen(command, stdin=payload_stream,
-                                    stdout=subprocess.PIPE)
-            payload_stream.close()
-            (return_data, _) = proc.communicate()
-            return self._parse_qubesd_response(return_data)
+            (_, stdout, _) = self._call_with_stream(
+                command, payload, payload_stream)
+            return self._parse_qubesd_response(stdout)
 
         try:
             client_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -647,7 +683,8 @@ class QubesRemote(QubesBase):
         """
         Execute Admin API method.
 
-        Only one of `payload` and `payload_stream` can be specified.
+        If `payload` and `payload_stream` are both specified, they will be sent
+        in that order.
 
         :param dest: Destination VM name
         :param method: Full API method name ('admin...')
@@ -658,20 +695,20 @@ class QubesRemote(QubesBase):
 
         .. warning:: *payload_stream* will get closed by this function
         """
-        if payload and payload_stream:
-            raise ValueError(
-                'Only one of payload and payload_stream can be used')
         service_name = method
         if arg is not None:
             service_name += '+' + arg
-        p = subprocess.Popen([qubesadmin.config.QREXEC_CLIENT_VM,
-                              dest, service_name],
-                             stdin=(payload_stream or subprocess.PIPE),
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        if payload_stream is not None:
-            payload_stream.close()
-        (stdout, stderr) = p.communicate(payload)
+        command = [qubesadmin.config.QREXEC_CLIENT_VM,
+                   dest, service_name]
+        if payload_stream:
+            (p, stdout, stderr) = self._call_with_stream(
+                command, payload, payload_stream)
+        else:
+            p = subprocess.Popen(command,
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
             raise qubesadmin.exc.QubesDaemonNoResponseError(
                 'Service call error: %s', stderr.decode())

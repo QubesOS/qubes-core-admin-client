@@ -144,7 +144,9 @@ def import_volume(args):
     else:
         input_file = open(input_path, 'rb')
     try:
-        if not args.no_resize:
+        if args.no_resize:
+            volume.import_data(stream=input_file)
+        else:
             if args.size:
                 size = args.size
             else:
@@ -155,11 +157,7 @@ def import_volume(args):
                         'Failed to get %s file size, '
                         'specify it explicitly with --size, '
                         'or use --no-resize option', str(e))
-            if size > old_size:
-                volume.resize(size)
-        volume.import_data(stream=input_file)
-        if not args.no_resize and size < old_size:
-            volume.resize(size)
+            volume.import_data_with_size(stream=input_file, size=size)
     finally:
         if input_path != '-':
             input_file.close()

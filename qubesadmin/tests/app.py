@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -642,6 +642,8 @@ class TC_20_QubesLocal(unittest.TestCase):
         qubesadmin.config.QUBESD_SOCKET = os.path.join(self.socket_dir, 'sock')
         self.proc = None
         self.app = qubesadmin.app.QubesLocal()
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir)
 
     def listen_and_send(self, send_data):
         '''Listen on socket and send data in response.
@@ -696,69 +698,58 @@ class TC_20_QubesLocal(unittest.TestCase):
             b'dom0\0some.method\0test-vm\0\0')
 
     def test_003_qubesd_call_payload_stream(self):
-        # this should really be in setUp()...
-        tmpdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tmpdir)
-
-        service_path = os.path.join(tmpdir, 'test.service')
-        payload_input = os.path.join(tmpdir, 'payload-input')
-        with open(service_path, 'w') as f:
-            f.write('#!/bin/bash\n'
-                    'env > {dir}/env\n'
-                    'echo "$@" > {dir}/args\n'
-                    'cat > {dir}/payload\n'
-                    'echo -en \'0\\0return-value\'\n'.format(dir=tmpdir))
-        os.chmod(service_path, 0o755)
-        with open(payload_input, 'w+') as payload_file:
-            payload_file.write('some payload\n')
+        payload_input = os.path.join(self.tmpdir, 'payload-input')
+        with open(payload_input, 'w+b') as payload_file:
+            payload_file.write(b'some payload\n')
             payload_file.seek(0)
-            with mock.patch('qubesadmin.config.QREXEC_SERVICES_DIR',
-                    tmpdir):
-                value = self.app.qubesd_call('test-vm', 'test.service',
-                    'some-arg', payload_stream=payload_file)
-        self.assertEqual(value, b'return-value')
-        self.assertTrue(os.path.exists(tmpdir + '/env'))
-        with open(tmpdir + '/env') as env:
-            self.assertIn('QREXEC_REMOTE_DOMAIN=dom0\n', env)
-            self.assertIn('QREXEC_REQUESTED_TARGET=test-vm\n', env)
-        self.assertTrue(os.path.exists(tmpdir + '/args'))
-        with open(tmpdir + '/args') as args:
-            self.assertEqual(args.read(), 'some-arg\n')
-        self.assertTrue(os.path.exists(tmpdir + '/payload'))
-        with open(tmpdir + '/payload') as payload:
-            self.assertEqual(payload.read(), 'some payload\n')
+
+            self._call_test_service_with_payload_stream(
+                payload_file, expected=b'some payload\n')
 
     def test_004_qubesd_call_payload_stream_proc(self):
-        # this should really be in setUp()...
-        tmpdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tmpdir)
-
-        service_path = os.path.join(tmpdir, 'test.service')
+        service_path = os.path.join(self.tmpdir, 'test.service')
         echo = subprocess.Popen(['echo', 'some payload'],
             stdout=subprocess.PIPE)
+        self._call_test_service_with_payload_stream(
+            echo.stdout, expected=b'some payload\n')
+
+    def test_005_qubesd_call_payload_stream_with_prefix(self):
+        payload_input = os.path.join(self.tmpdir, 'payload-input')
+        with open(payload_input, 'w+b') as payload_file:
+            payload_file.write(b'some payload\n')
+            payload_file.seek(0)
+
+            self._call_test_service_with_payload_stream(
+                payload_file, payload=b'first line\n',
+                expected=b'first line\nsome payload\n')
+
+    def _call_test_service_with_payload_stream(
+            self, payload_stream, payload=None, expected=b''):
+        service_path = os.path.join(self.tmpdir, 'test.service')
         with open(service_path, 'w') as f:
             f.write('#!/bin/bash\n'
                     'env > {dir}/env\n'
                     'echo "$@" > {dir}/args\n'
                     'cat > {dir}/payload\n'
-                    'echo -en \'0\\0return-value\'\n'.format(dir=tmpdir))
+                    'echo -en \'0\\0return-value\'\n'.format(dir=self.tmpdir))
         os.chmod(service_path, 0o755)
+
         with mock.patch('qubesadmin.config.QREXEC_SERVICES_DIR',
-                tmpdir):
-            value = self.app.qubesd_call('test-vm', 'test.service',
-                'some-arg', payload_stream=echo.stdout)
-        echo.stdout.close()
+                        self.tmpdir):
+            value = self.app.qubesd_call(
+                'test-vm', 'test.service',
+                'some-arg', payload=payload, payload_stream=payload_stream)
         self.assertEqual(value, b'return-value')
-        self.assertTrue(os.path.exists(tmpdir + '/env'))
-        with open(tmpdir + '/env') as env:
+        self.assertTrue(os.path.exists(self.tmpdir + '/env'))
+        with open(self.tmpdir + '/env') as env:
             self.assertIn('QREXEC_REMOTE_DOMAIN=dom0\n', env)
             self.assertIn('QREXEC_REQUESTED_TARGET=test-vm\n', env)
-        self.assertTrue(os.path.exists(tmpdir + '/args'))
-        with open(tmpdir + '/args') as args:
+        self.assertTrue(os.path.exists(self.tmpdir + '/args'))
+        with open(self.tmpdir + '/args') as args:
             self.assertEqual(args.read(), 'some-arg\n')
-        self.assertTrue(os.path.exists(tmpdir + '/payload'))
-        with open(tmpdir + '/payload') as payload:
-            self.assertEqual(payload.read(), 'some payload\n')
+        self.assertTrue(os.path.exists(self.tmpdir + '/payload'))
+        with open(self.tmpdir + '/payload', 'rb') as payload_f:
+            self.assertEqual(payload_f.read(), expected)
 
     @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_010_run_service(self):
@@ -867,18 +858,43 @@ class TC_30_QubesRemote(unittest.TestCase):
         self.addCleanup(shutil.rmtree, tmpdir)
 
         payload_input = os.path.join(tmpdir, 'payload-input')
-        with open(payload_input, 'w+') as payload_file:
-            payload_file.write('some payload\n')
+        with open(payload_input, 'w+b') as payload_file:
+            payload_file.write(b'some payload\n')
             payload_file.seek(0)
 
             value = self.app.qubesd_call('test-vm', 'some.method',
                 'some-arg', payload_stream=payload_file)
-        self.assertEqual(self.proc_mock.mock_calls, [
+        self.assertListEqual(self.proc_mock.mock_calls, [
+            mock.call(
+                [qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
+                 'some.method+some-arg'],
+                stdin=payload_file,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE),
+            mock.call().communicate()
+        ])
+        self.assertEqual(value, b'return-value')
+
+    def test_004_qubesd_call_payload_stream_with_prefix(self):
+        self.set_proc_stdout(b'0\0return-value')
+        tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmpdir)
+
+        payload_input = os.path.join(tmpdir, 'payload-input')
+        with open(payload_input, 'w+b') as payload_file:
+            payload_file.write(b'some payload\n')
+            payload_file.seek(0)
+
+            value = self.app.qubesd_call('test-vm', 'some.method',
+                'some-arg', payload=b'first line\n', payload_stream=payload_file)
+        self.assertListEqual(self.proc_mock.mock_calls, [
             mock.call([qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
                 'some.method+some-arg'],
-                stdin=payload_file, stdout=subprocess.PIPE,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE),
-            mock.call().communicate(None)
+            mock.call().stdin.write(b'first line\n'),
+            mock.call().stdin.write(b'some payload\n'),
+            mock.call().communicate()
         ])
         self.assertEqual(value, b'return-value')
 
