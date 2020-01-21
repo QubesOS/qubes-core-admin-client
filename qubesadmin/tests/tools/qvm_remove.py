@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -47,7 +47,8 @@ class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):
         mock_dependencies.return_value = \
             [(None, 'default_template'), (self.app.domains['some-vm'], 'netvm')]
 
-        qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
 
         self.assertTrue(mock_dependencies.called,
                         "Dependencies check not called.")
