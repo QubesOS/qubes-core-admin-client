@@ -113,8 +113,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         # TODO: force parameter
         # TODO: wait parameter (using event?)
         if force:
-            raise NotImplementedError
-        self.qubesd_call(self._method_dest, 'admin.vm.Shutdown')
+            self.qubesd_call(self._method_dest, 'admin.vm.Shutdown', 'force')
+        else:
+            self.qubesd_call(self._method_dest, 'admin.vm.Shutdown')
 
     def kill(self):
         '''
