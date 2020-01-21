@@ -54,6 +54,8 @@ parser.add_argument('--timeout',
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
 
+    force = bool(args.all_domains)
+
     if have_events:
         loop = asyncio.get_event_loop()
     remaining_domains = args.domains
@@ -64,7 +66,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         remaining_domains = set()
         for vm in this_round_domains:
             try:
-                vm.shutdown()
+                vm.shutdown(force=force)
             except qubesadmin.exc.QubesVMNotRunningError:
                 pass
             except qubesadmin.exc.QubesException as e:
