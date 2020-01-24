@@ -24,6 +24,7 @@
 
 """Various utility functions."""
 import os
+import re
 
 import qubesadmin.exc
 
@@ -146,3 +147,20 @@ def vm_dependencies(app, reference_vm):
                 result.append((vm, prop))
 
     return result
+
+
+def encode_for_vmexec(args):
+    """
+    Encode an argument list for qubes.VMExec call.
+    """
+
+    def encode(part):
+        if part.group(0) == b'-':
+            return b'--'
+        return '-{:02X}'.format(ord(part.group(0))).encode('ascii')
+
+    parts = []
+    for arg in args:
+        part = re.sub(br'[^a-zA-Z0-9_.+]', encode, arg.encode('utf-8'))
+        parts.append(part)
+    return b'+'.join(parts).decode('ascii')

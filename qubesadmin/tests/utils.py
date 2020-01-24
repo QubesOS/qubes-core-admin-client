@@ -110,3 +110,14 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                                                   self.app.domains['sys-net'])
 
         self.assertListEqual(result, [(self.app.domains['vm1'], 'netvm')])
+
+
+class TestVMExecEncode(qubesadmin.tests.QubesTestCase):
+    def test_00_encode(self):
+        self.assertEqual(
+            qubesadmin.utils.encode_for_vmexec(['ls', '-a']),
+            'ls+--a')
+        self.assertEqual(
+            qubesadmin.utils.encode_for_vmexec(
+                ['touch', '/home/user/.profile']),
+            'touch+-2Fhome-2Fuser-2F.profile')

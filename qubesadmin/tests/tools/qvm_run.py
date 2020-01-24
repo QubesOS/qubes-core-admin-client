@@ -561,3 +561,55 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'qubes.VMShell', b'command& exit\n')
         ])
         self.assertAllCalled()
+
+    def test_020_run_exec_with_vmexec_not_supported(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'vmexec', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'vmexec\' not set\x00'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
+        #     b'0\x00test-vm class=AppVM state=Running\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', 'test-vm', 'command', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMShell', b'command arg; exit\n')
+        ])
+        self.assertAllCalled()
+
+    def test_020_run_exec_with_vmexec_supported(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        # self.app.expected_calls[
+        #     ('test-vm', 'admin.vm.List', None, None)] = \
+        #     b'0\x00test-vm class=AppVM state=Running\n'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', 'test-vm', 'command', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMExec+command+arg', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMExec+command+arg', b'')
+        ])
+        self.assertAllCalled()

@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -21,6 +21,7 @@
 ''' qvm-run tool'''
 import contextlib
 import os
+import shlex
 import signal
 import subprocess
 import sys
@@ -31,6 +32,7 @@ import select
 
 import qubesadmin.tools
 import qubesadmin.exc
+import qubesadmin.utils
 
 parser = qubesadmin.tools.QubesArgumentParser()
 
@@ -90,6 +92,9 @@ parser.add_argument('--service',
     action='store_true', dest='service',
     help='run a qrexec service (named by COMMAND) instead of shell command')
 
+parser.add_argument('--no-shell', action='store_true',
+    help='treat COMMAND as a simple executable, not a shell command')
+
 target_parser = parser.add_mutually_exclusive_group()
 
 target_parser.add_argument('--dispvm', action='store', nargs='?',
@@ -110,6 +115,9 @@ parser.add_argument('--exclude', action='append', default=[],
 
 parser.add_argument('cmd', metavar='COMMAND',
     help='command or service to run')
+
+parser.add_argument('cmd_args', nargs='*', metavar='ARG',
+    help='command arguments (implies --no-shell)')
 
 def copy_stdin(stream):
     '''Copy stdin to *stream*'''
@@ -164,19 +172,36 @@ def run_command_single(args, vm):
         # simultaneous vchan connections
         run_kwargs['wait'] = False
 
+    use_exec = len(args.cmd_args) > 0 or args.no_shell
+
     copy_proc = None
     local_proc = None
+    shell_cmd = None
     if args.service:
         service = args.cmd
+    elif use_exec:
+        all_args = [args.cmd] + args.cmd_args
+        if vm.features.check_with_template('vmexec', False):
+            service = 'qubes.VMExec'
+            if args.gui and args.dispvm:
+                service = 'qubes.VMExecGUI'
+            service += '+' + qubesadmin.utils.encode_for_vmexec(all_args)
+        else:
+            service = 'qubes.VMShell'
+            if args.gui and args.dispvm:
+                service += '+WaitForSession'
+            shell_cmd = ' '.join(shlex.quote(arg) for arg in all_args)
     else:
         service = 'qubes.VMShell'
         if args.gui and args.dispvm:
             service += '+WaitForSession'
+        shell_cmd = args.cmd
+
     proc = vm.run_service(service,
         user=args.user,
         **run_kwargs)
-    if not args.service:
-        proc.stdin.write(vm.prepare_input_for_vmshell(args.cmd))
+    if shell_cmd:
+        proc.stdin.write(vm.prepare_input_for_vmshell(shell_cmd))
         proc.stdin.flush()
     if args.localcmd:
         local_proc = subprocess.Popen(args.localcmd,
@@ -211,6 +236,8 @@ def main(args=None, app=None):
         parser.error('--localcmd have no effect without --pass-io')
     if args.color_output and not args.filter_esc:
         parser.error('--color-output must be used with --filter-escape-chars')
+    if args.service and args.no_shell:
+        parser.error('--no-shell does not apply to --service')
 
     retcode = 0
 
