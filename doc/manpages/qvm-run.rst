@@ -6,9 +6,28 @@
 Synopsis
 --------
 
-:command:`qvm-run` [options] *VMNAME* *COMMAND*
-:command:`qvm-run` [options] --all [--exclude *EXCLUDE*]  *COMMAND*
-:command:`qvm-run` [options] --dispvm [*BASE_APPVM*] *COMMAND*
+:command:`qvm-run` [options] *VMNAME* *COMMAND* [*ARGS*]
+:command:`qvm-run` [options] --all [--exclude *EXCLUDE*]  *COMMAND* [*ARGS*]
+:command:`qvm-run` [options] --dispvm [*BASE_APPVM*] *COMMAND* [*ARGS*]
+
+Execution mode
+--------------
+
+When executing a command, it is recommended to pass the arguments directly to
+`qvm-run`, for example:
+
+    qvm-run --pass-io personal -- ls -a
+
+(Note the `--` used to ensure that `-a` is not treated as option of `qvm-run`).
+
+If no arguments are specified, *COMMAND* will be interpreted as a shell
+command, for example:
+
+    qvm-run --pass-io personal 'ls -a'
+
+This is more flexible but also less safe, because care must be taken to quote
+or escape special characters. Use the :option:`--no-shell` option to ensure
+that a command without arguments is not interpreted as a shell command.
 
 Options
 -------
@@ -103,7 +122,7 @@ Options
 .. option:: --filter-escape-chars
 
    Filter terminal escape sequences (default if output is terminal).
-   
+
    Terminal control characters are a security issue, which in worst case amount
    to arbitrary command execution. In the simplest case this requires two often
    found codes: terminal title setting (which puts arbitrary string in the
@@ -114,6 +133,11 @@ Options
 
    Do not filter terminal escape sequences. This is DANGEROUS when output is
    a terminal emulator. See :option:`--filter-escape-chars` for explanation.
+
+.. option:: --no-shell
+
+   Treat *COMMAND* as a command to be executed directly, not passed to a
+   shell. This is default if there are additional arguments to `qvm-run`.
 
 Authors
 -------
