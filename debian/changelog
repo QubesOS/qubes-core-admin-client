@@ -1,3 +1,31 @@
+qubes-core-admin-client (4.1.3-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Fixed Exceptions inferiting from KeyError
+
+  [ Marek Marczykowski-Górecki ]
+  * Drop Python2 support
+
+  [ tetrahedras ]
+  * add --wait documentation for qvm-shutdown
+
+  [ Pawel Marczewski ]
+  * qvm-ls: don't exclude dom0 when using --all
+  * Add test for qvm-ls --all
+  * Use admin.vm.CurrentState method for power state and memory
+  * qvm-ls: display memory as integer number
+  * Update tests to mock admin.vm.CurrentState
+  * Add a test for vm.get_mem()
+  * Add missing docstrings
+  * qvm-shutdown: report errors, don't crash on DispVMs
+  * qvm-remove: improve error message
+  * Import data using ImportWithSize call, not manual resizing
+  * qvm-run: use qubes.VMExec, if available
+  * Document the new behaviour of qvm-run with arguments
+  * Use qubes.VMExec in run_with_args()
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 27 Jan 2020 19:33:19 +0100
+
 qubes-core-admin-client (4.1.2-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
