@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -94,7 +94,10 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'qubes.VMShell', b'some command& exit\n'),
         ])
 
-    def test_015_run_with_args(self):
+    def test_015_run_with_args_shell(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'vmexec', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'vmexec\' not set\x00'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
@@ -105,4 +108,19 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'qubes.VMShell',
                 b'some \'argument with spaces\' \'and $pecial; chars\'; '
                 b'exit\n'),
+        ])
+
+    def test_016_run_with_args_exec(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'vmexec', None)] = \
+            b'0\x001'
+        self.vm.run_with_args('some', 'argument with spaces',
+            'and $pecial; chars')
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm',
+             'qubes.VMExec+some+argument-20with-20spaces+and-20-24pecial-3B-20chars',
+             {}),
+            ('test-vm',
+             'qubes.VMExec+some+argument-20with-20spaces+and-20-24pecial-3B-20chars',
+             b''),
         ])

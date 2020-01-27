@@ -316,12 +316,22 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             raise e
 
     def run_with_args(self, *args, **kwargs):
-        '''Run a single command inside the domain using qubes.VMShell qrexec.
+        '''Run a single command inside the domain. Use the qubes.VMExec qrexec,
+        if available.
 
         This method execute a single command, without interpreting any shell
         special characters.
 
         '''  # pylint: disable=redefined-builtin
+        if self.features.check_with_template('vmexec', False):
+            try:
+                return self.run_service_for_stdio(
+                    'qubes.VMExec+' + qubesadmin.utils.encode_for_vmexec(args),
+                **kwargs)
+            except subprocess.CalledProcessError as e:
+                e.cmd = str(args)
+                raise e
+
         return self.run(' '.join(shlex.quote(arg) for arg in args), **kwargs)
 
     @property

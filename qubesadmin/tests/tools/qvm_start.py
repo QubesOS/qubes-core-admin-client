@@ -189,6 +189,10 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.device.block.Set.persistent',
             'other-vm+loop7',
             b'False')] = b'0\x00'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.feature.CheckWithTemplate', 'vmexec',
+             None)] = b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'vmexec\' not set\x00'
+
         with unittest.mock.patch.object(self.app.domains['other-vm'], 'run') \
                 as mock_run:
             mock_run.return_value = (b'/dev/loop7', b'')
