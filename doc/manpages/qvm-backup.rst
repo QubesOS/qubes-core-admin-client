@@ -72,7 +72,8 @@ Arguments
 
 The first positional parameter is the backup location (absolute directory path,
 or command to pipe backup to). After that you may specify the qubes you'd
-like to backup. If not specified, all qubes are included.
+like to backup. If not specified, the default list based on the VM's "include 
+in backups" property will be used.
 
 Authors
 -------
