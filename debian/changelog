@@ -1,3 +1,24 @@
+qubes-core-admin-client (4.0.29-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * travis: switch to bionic
+
+  [ Marta Marczykowska-Górecka ]
+  * Fixed error with import
+  * Added an exception for backup already in progress
+  * Fixed Exceptions inferiting from KeyError
+
+  [ tetrahedras ]
+  * add --wait documentation for qvm-shutdown
+
+  [ Pawel Marczewski ]
+  * qvm-ls: don't exclude dom0 when using --all
+  * Add test for qvm-ls --all
+  * qvm-shutdown: report errors, don't crash on DispVMs
+  * qvm-remove: improve error message
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 29 Jan 2020 06:13:11 +0100
+
 qubes-core-admin-client (4.0.28-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
