@@ -25,7 +25,7 @@ Options
 
 .. option:: --all
 
-   perform the action on all qubes
+   perform the action on all qubes; implies :option:`--force`
 
 .. option:: --exclude=EXCLUDE
 
@@ -35,11 +35,17 @@ Options
 
    wait for the VMs to shut down. If some domains are providing network to other
    domains, wait for those domains to shut down before shutting down their
-   dependents.
+   dependents, unless :option:`--all` was specified
 
 .. option:: --timeout
 
    timeout after which domains are killed when using :option:`--wait`
+
+.. option:: --force
+
+   force qube shutdown, regardless of whether there exist any connected domains
+   (such as those using it as network VM)
+
 
 Authors
 -------
