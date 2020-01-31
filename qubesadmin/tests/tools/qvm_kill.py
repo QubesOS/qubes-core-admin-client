@@ -64,3 +64,17 @@ class TC_00_qvm_kill(qubesadmin.tests.QubesTestCase):
             0)
         self.assertAllCalled()
 
+    def test_004_other_error(self):
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Kill', None, None)] = \
+            b'2\x00QubesVMError\x00\x00Error message\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            self.assertEqual(
+                qubesadmin.tools.qvm_kill.main(['some-vm'], app=self.app),
+                1)
+        self.assertAllCalled()
+        self.assertIn("Failed to kill 'some-vm': Error message",
+                      stderr.getvalue())

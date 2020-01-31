@@ -45,7 +45,8 @@ def main(args=None, app=None):
             pass
         except (IOError, OSError, qubesadmin.exc.QubesException) as e:
             exit_code = 1
-            parser.print_error(str(e))
+            parser.print_error("Failed to kill '{}': {}".format(
+                domain.name, e))
 
     return exit_code
 
