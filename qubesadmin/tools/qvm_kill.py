@@ -28,7 +28,6 @@ import qubesadmin.tools
 parser = qubesadmin.tools.QubesArgumentParser(
     description='forceful shutdown of a domain', vmname_nargs='+')
 
-
 def main(args=None, app=None):
     '''Main routine of :program:`qvm-kill`.
 
@@ -42,6 +41,8 @@ def main(args=None, app=None):
     for domain in args.domains:
         try:
             domain.kill()
+        except qubesadmin.exc.QubesVMNotStartedError:
+            pass
         except (IOError, OSError, qubesadmin.exc.QubesException) as e:
             exit_code = 1
             parser.print_error(str(e))
