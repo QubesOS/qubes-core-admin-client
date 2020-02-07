@@ -110,7 +110,6 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         :return:
         '''
-        # TODO: force parameter
         # TODO: wait parameter (using event?)
         if force:
             self.qubesd_call(self._method_dest, 'admin.vm.Shutdown', 'force')
