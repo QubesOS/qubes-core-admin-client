@@ -15,6 +15,7 @@ Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
+Conflicts:  qubes-core-agent < 4.1.9
 
 %description
 This package include managemt tools, like qvm-*.
