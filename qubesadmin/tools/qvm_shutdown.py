@@ -50,9 +50,16 @@ parser.add_argument('--timeout',
     help='timeout after which domains are killed when using --wait'
         ' (default: %(default)d)')
 
+parser.add_argument(
+    '--force',
+    action='store_true', default=False,
+    help='force shutdown regardless of connected domains; use with caution')
+
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
+
+    force = args.force or bool(args.all_domains)
 
     if have_events:
         loop = asyncio.get_event_loop()
@@ -64,7 +71,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         remaining_domains = set()
         for vm in this_round_domains:
             try:
-                vm.shutdown()
+                vm.shutdown(force=force)
             except qubesadmin.exc.QubesVMNotRunningError:
                 pass
             except qubesadmin.exc.QubesException as e:
