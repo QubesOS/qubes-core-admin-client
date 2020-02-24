@@ -243,3 +243,15 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             ['test-vm', 'del', 'drop', 'proto=icmp'],
             app=self.app
         )
+
+    def test_030_reset(self):
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Get',
+                None, None)] = \
+            b'0\0action=accept dsthost=qubes-os.org\n' \
+            b'action=drop proto=icmp\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.firewall.Set', None,
+            b'action=accept\n')] = b'0\0'
+        qubesadmin.tools.qvm_firewall.main(
+            ['test-vm', 'reset'],
+            app=self.app
+        )

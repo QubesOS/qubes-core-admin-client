@@ -125,6 +125,11 @@ action_del.add_argument('rule', metavar='match', nargs='*', action=RuleAction,
 
 action_list = action.add_parser('list', help='list rules')
 
+action_reset = action.add_parser(
+    'reset',
+    help='remove all firewall rules and reset to default '
+         '(accept all connections)')
+
 parser.add_argument('--reload', '-r', action='store_true',
     help='force reload of rules even when unchanged')
 
@@ -193,6 +198,10 @@ def main(args=None, app=None):
             rules_add(vm, args)
         elif args.command == 'del':
             rules_del(vm, args)
+        elif args.command == 'reset':
+            vm.firewall.rules.clear()
+            vm.firewall.rules.append(qubesadmin.firewall.Rule('action=accept'))
+            vm.firewall.save_rules()
         else:
             if args.raw:
                 rules_list_raw(vm)
