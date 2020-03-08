@@ -293,7 +293,7 @@ class TC_06_Expire(qubesadmin.tests.QubesTestCase):
             instance = qubesadmin.firewall.Expire('1463292452')
         self.assertTrue(instance.expired)
         with self.assertNotRaises(ValueError):
-            instance = qubesadmin.firewall.Expire('1583292452')
+            instance = qubesadmin.firewall.Expire('2583292452')
         self.assertFalse(instance.expired)
 
 
