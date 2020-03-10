@@ -12,6 +12,8 @@ Synopsis
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* list [--raw]
 
+:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* reset
+
 Options
 -------
 
@@ -47,6 +49,8 @@ Available actions:
   or by specifying the rule itself using the same syntax used for adding it.
 
 * list - list all the rules for a given VM.
+
+* reset - remove all firewall rules and reset to default (accept all connections)
 
 
 Rule syntax
