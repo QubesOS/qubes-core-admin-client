@@ -114,6 +114,26 @@ def get_monitor_layout():
     return outputs
 
 
+def set_keyboard_layout(vm):
+    """Set layout configuration into features for Gui admin extension"""
+    try:
+        # Example of 'xprop -root _XKB_RULES_NAMES' output:
+        # _XKB_RULES_NAMES(STRING) = "evdev", "pc105", "fr", "oss", ""
+        xkb_rules_names = subprocess.check_output(
+            ['xprop', '-root', '_XKB_RULES_NAMES']).decode()
+        xkb_rules_names = xkb_rules_names. \
+            replace('"', '').replace('\n', '')
+        keyboard_layout = '+'.join(xkb_rules_names.split(', ')[2:])
+        vm.features['keyboard-layout'] = keyboard_layout
+
+        # Legacy
+        xkbmap = subprocess.check_output(['setxkbmap', '-print'])
+        vm.features['qubes-keyboard'] = xkbmap
+
+    except subprocess.CalledProcessError as e:
+        vm.log.warning('Failed to set layout for %s: %s', vm, str(e))
+
+
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
@@ -457,6 +477,8 @@ parser.add_argument('--pidfile', action='store', default=pidfile_path,
 parser.add_argument('--notify-monitor-layout', action='store_true',
                     help='Notify running instance in --watch mode'
                          ' about changed monitor layout')
+parser.add_argument('--set-keyboard-layout', action='store_true',
+                    help='Set keyboard layout values into GuiVM features')
 # Add it for the help only
 parser.add_argument('--force', action='store_true', default=False,
                     help='Force running daemon without enabled services'
@@ -477,6 +499,11 @@ def main(args=None):
         parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
+    if not args.set_keyboard_layout:
+        args.set_keyboard_layout = args.watch
+    if args.set_keyboard_layout or os.path.exists('/etc/qubes-release'):
+        guivm = args.app.domains[args.app.local_name]
+        set_keyboard_layout(guivm)
     launcher = DAEMONLauncher(args.app)
     if args.watch:
         if not have_events:
