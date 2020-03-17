@@ -478,7 +478,8 @@ parser.add_argument('--notify-monitor-layout', action='store_true',
                     help='Notify running instance in --watch mode'
                          ' about changed monitor layout')
 parser.add_argument('--set-keyboard-layout', action='store_true',
-                    help='Set keyboard layout values into GuiVM features')
+                    help='Set keyboard layout values into GuiVM features.'
+                         'This option is implied by --watch')
 # Add it for the help only
 parser.add_argument('--force', action='store_true', default=False,
                     help='Force running daemon without enabled services'
@@ -499,8 +500,8 @@ def main(args=None):
         parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    if not args.set_keyboard_layout:
-        args.set_keyboard_layout = args.watch
+    if args.watch and 'guivm-gui-agent' in enabled_services:
+        args.set_keyboard_layout = True
     if args.set_keyboard_layout or os.path.exists('/etc/qubes-release'):
         guivm = args.app.domains[args.app.local_name]
         set_keyboard_layout(guivm)
