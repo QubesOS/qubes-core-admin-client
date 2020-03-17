@@ -117,19 +117,19 @@ def get_monitor_layout():
 def set_keyboard_layout(vm):
     """Set layout configuration into features for Gui admin extension"""
     try:
-        # Example of 'xprop -root _XKB_RULES_NAMES' output:
-        # _XKB_RULES_NAMES(STRING) = "evdev", "pc105", "fr", "oss", ""
+        # Examples of 'xprop -root _XKB_RULES_NAMES' output values:
+        # "evdev", "pc105", "fr", "oss", ""
+        # "evdev", "pc105", "pl,us", ",", "grp:win_switch,compose:caps"
+
+        # We use the first layout provided
+        xkb_re = r'_XKB_RULES_NAMES\(STRING\) = ' \
+                 r'\"(.*)\", \"(.*)\", \"(.*)\", \"(.*)\", \"(.*)\"\n'
         xkb_rules_names = subprocess.check_output(
             ['xprop', '-root', '_XKB_RULES_NAMES']).decode()
-        xkb_rules_names = xkb_rules_names. \
-            replace('"', '').replace('\n', '')
-        keyboard_layout = '+'.join(xkb_rules_names.split(', ')[2:])
+        xkb_parsed = re.match(xkb_re, xkb_rules_names)
+        xkb_layout = [x.split(',')[0] for x in xkb_parsed.groups()[2:5]]
+        keyboard_layout = '+'.join(xkb_layout)
         vm.features['keyboard-layout'] = keyboard_layout
-
-        # Legacy
-        xkbmap = subprocess.check_output(['setxkbmap', '-print'])
-        vm.features['qubes-keyboard'] = xkbmap
-
     except subprocess.CalledProcessError as e:
         vm.log.warning('Failed to set layout for %s: %s', vm, str(e))
 
