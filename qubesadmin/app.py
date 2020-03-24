@@ -38,6 +38,7 @@ import qubesadmin.storage
 import qubesadmin.utils
 import qubesadmin.vm
 import qubesadmin.config
+import qubesadmin.devices
 
 
 class VMCollection(object):
@@ -316,7 +317,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         return self.domains[name]
 
     def clone_vm(self, src_vm, new_name, new_cls=None, pool=None, pools=None,
-                 ignore_errors=False, ignore_volumes=None):
+                 ignore_errors=False, ignore_volumes=None,
+                 ignore_devices=False):
+        # pylint: disable=too-many-statements
         """Clone Virtual Machine
 
         Example usage with custom storage pools:
@@ -337,6 +340,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             logged, or abort the whole operation?
         :param list ignore_volumes: do not clone volumes on this list,
             like 'private' or 'root'
+        :param bool ignore_devices: if True, do not copy device assignments
 
         :return new VM object
         """
@@ -471,6 +475,22 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         except qubesadmin.exc.QubesException:
             del self.domains[dst_vm.name]
             raise
+
+        if not ignore_devices:
+            try:
+                for devclass in src_vm.devices:
+                    for assignment in src_vm.devices[devclass].assignments(
+                            persistent=True):
+                        new_assignment = qubesadmin.devices.DeviceAssignment(
+                            backend_domain=assignment.backend_domain,
+                            ident=assignment.ident,
+                            options=assignment.options,
+                            persistent=assignment.persistent)
+                        dst_vm.devices[devclass].attach(new_assignment)
+            except qubesadmin.exc.QubesException:
+                if not ignore_errors:
+                    del self.domains[dst_vm.name]
+                    raise
 
         return dst_vm
 
