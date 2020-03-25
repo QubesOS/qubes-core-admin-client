@@ -25,12 +25,8 @@ import unittest
 
 import multiprocessing
 
-try:
-    import unittest.mock as mock
-    from unittest.mock import call
-except ImportError:
-    import mock
-    from mock import call
+import unittest.mock as mock
+from unittest.mock import call
 
 import tempfile
 
