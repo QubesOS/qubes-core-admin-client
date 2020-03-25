@@ -310,6 +310,8 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('new-vm', 'admin.vm.volume.CloneTo', 'root', b'clone-cookie')] = \
             b'0\0'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         qubesadmin.tools.qvm_create.main(['-C', 'StandaloneVM',
             '-t', 'template', '-l', 'red', 'new-vm'],
             app=self.app)
