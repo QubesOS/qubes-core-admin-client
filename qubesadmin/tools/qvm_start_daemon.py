@@ -127,11 +127,14 @@ def set_keyboard_layout(vm):
         xkb_rules_names = subprocess.check_output(
             ['xprop', '-root', '_XKB_RULES_NAMES']).decode()
         xkb_parsed = re.match(xkb_re, xkb_rules_names)
-        xkb_layout = [x.split(',')[0] for x in xkb_parsed.groups()[2:4]]
-        # We keep all options
-        xkb_layout.append(xkb_parsed.group(5))
-        keyboard_layout = '+'.join(xkb_layout)
-        vm.features['keyboard-layout'] = keyboard_layout
+        if xkb_parsed:
+            xkb_layout = [x.split(',')[0] for x in xkb_parsed.groups()[2:4]]
+            # We keep all options
+            xkb_layout.append(xkb_parsed.group(5))
+            keyboard_layout = '+'.join(xkb_layout)
+            vm.features['keyboard-layout'] = keyboard_layout
+        else:
+            vm.log.warning('Failed to parse layout for %s', vm)
     except subprocess.CalledProcessError as e:
         vm.log.warning('Failed to set layout for %s: %s', vm, str(e))
 
