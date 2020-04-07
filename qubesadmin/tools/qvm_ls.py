@@ -29,7 +29,7 @@
 from __future__ import print_function
 
 import argparse
-import collections
+import collections.abc
 import sys
 import textwrap
 
@@ -107,7 +107,7 @@ class Column(object):
                 ret = vm
                 for attrseg in self._attr.split('.'):
                     ret = getattr(ret, attrseg)
-            elif isinstance(self._attr, collections.Callable):
+            elif isinstance(self._attr, collections.abc.Callable):
                 ret = self._attr(vm)
 
         except (AttributeError, ZeroDivisionError):
