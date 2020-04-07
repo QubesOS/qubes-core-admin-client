@@ -273,7 +273,7 @@ class DAEMONLauncher:
     @staticmethod
     def pacat_pidfile(xid):
         """Helper function to construct an AUDIO pidfile path"""
-        return '/var/run/qubes/pacat-running.{}'.format(xid)
+        return '/var/run/qubes/pacat.{}'.format(xid)
 
     @asyncio.coroutine
     def start_gui_for_vm(self, vm, monitor_layout=None):
