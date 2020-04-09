@@ -25,12 +25,8 @@ import unittest
 
 import multiprocessing
 
-try:
-    import unittest.mock as mock
-    from unittest.mock import call
-except ImportError:
-    import mock
-    from mock import call
+import unittest.mock as mock
+from unittest.mock import call
 
 import tempfile
 
@@ -364,6 +360,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'test-vm class=AppVM state=Halted\n' \
             b'test-template class=TemplateVM state=Halted\n' \
             b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             'test-template', b'name=new-name label=red')] = b'0\x00'
         new_vm = self.app.clone_vm('test-vm', 'new-name')
@@ -384,6 +382,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'test-net class=AppVM state=Halted\n'
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
             'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm(self.app.domains['test-vm'], 'new-name')
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
@@ -403,6 +403,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'test-vm class=AppVM state=Halted\n' \
             b'test-template class=TemplateVM state=Halted\n' \
             b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name', pool='some-pool')
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
@@ -423,6 +425,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             b'test-vm class=AppVM state=Halted\n' \
             b'test-template class=TemplateVM state=Halted\n' \
             b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name',
             pools={'private': 'some-pool', 'volatile': 'other-pool'})
         self.assertEqual(new_vm.name, 'new-name')
@@ -454,6 +458,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('new-name', 'admin.vm.volume.CloneTo', 'root', b'token-root')] = \
             b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name',
             new_cls='StandaloneVM')
         self.assertEqual(new_vm.name, 'new-name')
@@ -505,6 +511,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('new-name', 'admin.vm.property.Set', 'memory', b'400')] = \
             b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
@@ -521,6 +529,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('new-name', 'admin.vm.feature.Set', 'feat2', b'1')] = \
             b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
@@ -537,6 +547,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('new-name', 'admin.vm.tag.Set', 'tag1', None)] = \
             b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
@@ -554,6 +566,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             ('new-name', 'admin.vm.firewall.Set', None,
             b'action=drop dst4=192.168.0.0/24\naction=accept\n')] = \
             b'2\0QubesException\0\0something happened\0'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name', ignore_errors=True)
         self.assertEqual(new_vm.name, 'new-name')
         self.assertAllCalled()
@@ -624,6 +638,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             'test-template', b'name=new-name label=red pool:private=another')]\
             = b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = b'0\0'
         new_vm = self.app.clone_vm('test-vm', 'new-name')
         self.assertEqual(new_vm.name, 'new-name')
         self.check_output_mock.assert_called_once_with(
@@ -631,6 +647,78 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
                 '--source', 'test-vm', 'new-name'],
             stderr=subprocess.STDOUT
         )
+        self.assertAllCalled()
+
+    def test_043_clone_devices(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-vm2 class=AppVM state=Halted\n' \
+            b'test-vm3 class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\0pci\n'
+
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.pci.List', None, None)] = \
+            b'0\0test-vm2+dev1 ro=True\n' \
+            b'test-vm3+dev2 persistent=True\n'
+
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.device.pci.Attach', 'test-vm3+dev2',
+             b'persistent=True')] = b'0\0'
+
+        new_vm = self.app.clone_vm('test-vm', 'new-name')
+        self.assertEqual(new_vm.name, 'new-name')
+        self.check_output_mock.assert_called_once_with(
+            ['qvm-appmenus', '--init', '--update',
+                '--source', 'test-vm', 'new-name'],
+            stderr=subprocess.STDOUT
+        )
+        self.assertAllCalled()
+
+    def test_044_clone_devices_fail(self):
+        self.clone_setup_common_calls('test-vm', 'new-name')
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-vm2 class=AppVM state=Halted\n' \
+            b'test-vm3 class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\0pci\n'
+
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.pci.List', None, None)] = \
+            b'0\0test-vm2+dev1 ro=True\n' \
+            b'test-vm3+dev2 persistent=True\n'
+
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.device.pci.Attach', 'test-vm3+dev2',
+             b'persistent=True')] = \
+            b'2\0QubesException\0\0something happened\0'
+
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.Remove', None, None)] = b'0\0'
+
+        with self.assertRaises(qubesadmin.exc.QubesException):
+            new_vm = self.app.clone_vm('test-vm', 'new-name')
+
         self.assertAllCalled()
 
 
