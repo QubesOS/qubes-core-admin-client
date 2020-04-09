@@ -26,14 +26,15 @@ import unittest.mock
 import asyncio
 
 import qubesadmin.tests
-import qubesadmin.tools.qvm_start_gui
+import qubesadmin.tools.qvm_start_daemon
 import qubesadmin.vm
 
 
 class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super(TC_00_qvm_start_gui, self).setUp()
-        self.launcher = qubesadmin.tools.qvm_start_gui.GUILauncher(self.app)
+        self.launcher = \
+            qubesadmin.tools.qvm_start_daemon.DAEMONLauncher(self.app)
 
     @unittest.mock.patch('subprocess.check_output')
     def test_000_kde_args(self, proc_mock):
@@ -449,7 +450,7 @@ HDMI2 disconnected (normal left inverted right x axis y axis)
 VGA1 disconnected (normal left inverted right x axis y axis)
 VIRTUAL1 disconnected (normal left inverted right x axis y axis)
 '''.splitlines()
-        self.assertEqual(qubesadmin.tools.qvm_start_gui.get_monitor_layout(),
+        self.assertEqual(qubesadmin.tools.qvm_start_daemon.get_monitor_layout(),
                          ['1920 1200 0 0\n'])
 
     @unittest.mock.patch('subprocess.Popen')
@@ -458,7 +459,7 @@ VIRTUAL1 disconnected (normal left inverted right x axis y axis)
 LVDS1 connected 1600x900+0+0 (normal left inverted right x axis y axis)
 VGA1 connected 1280x1024+1600+0 (normal left inverted right x axis y axis)
 '''.splitlines()
-        self.assertEqual(qubesadmin.tools.qvm_start_gui.get_monitor_layout(),
+        self.assertEqual(qubesadmin.tools.qvm_start_daemon.get_monitor_layout(),
                          ['1600 900 0 0\n', '1280 1024 1600 0\n'])
 
     @unittest.mock.patch('subprocess.Popen')
@@ -468,7 +469,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 372mm x
    1920x1200     60.00*+
 '''.splitlines()
         dpi = 150
-        self.assertEqual(qubesadmin.tools.qvm_start_gui.get_monitor_layout(),
+        self.assertEqual(qubesadmin.tools.qvm_start_daemon.get_monitor_layout(),
                          ['2560 1920 0 0 {} {}\n'.format(
                              int(2560 / dpi * 254 / 10),
                              int(1920 / dpi * 254 / 10))])
@@ -480,7 +481,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 310mm x
    1920x1200     60.00*+
 '''.splitlines()
         dpi = 200
-        self.assertEqual(qubesadmin.tools.qvm_start_gui.get_monitor_layout(),
+        self.assertEqual(qubesadmin.tools.qvm_start_daemon.get_monitor_layout(),
                          ['2560 1920 0 0 {} {}\n'.format(
                              int(2560 / dpi * 254 / 10),
                              int(1920 / dpi * 254 / 10))])
@@ -492,7 +493,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
    1920x1200     60.00*+
 '''.splitlines()
         dpi = 300
-        self.assertEqual(qubesadmin.tools.qvm_start_gui.get_monitor_layout(),
+        self.assertEqual(qubesadmin.tools.qvm_start_daemon.get_monitor_layout(),
                          ['2560 1920 0 0 {} {}\n'.format(
                              int(2560 / dpi * 254 / 10),
                              int(1920 / dpi * 254 / 10))])
@@ -695,7 +696,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
         patch_send_monitor_layout.start()
         monitor_layout = ['1920 1080 0 0\n']
         mock_get_monior_layout = unittest.mock.patch(
-            'qubesadmin.tools.qvm_start_gui.get_monitor_layout').start()
+            'qubesadmin.tools.qvm_start_daemon.get_monitor_layout').start()
         mock_get_monior_layout.return_value = monitor_layout
 
         self.launcher.send_monitor_layout_all()

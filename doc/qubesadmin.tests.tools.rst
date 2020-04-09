@@ -164,10 +164,10 @@ qubesadmin\.tests\.tools\.qvm\_start module
     :undoc-members:
     :show-inheritance:
 
-qubesadmin\.tests\.tools\.qvm\_start\_gui module
+qubesadmin\.tests\.tools\.qvm\_start\_daemon module
 ------------------------------------------------
 
-.. automodule:: qubesadmin.tests.tools.qvm_start_gui
+.. automodule:: qubesadmin.tests.tools.qvm_start_daemon
     :members:
     :undoc-members:
     :show-inheritance:
