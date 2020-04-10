@@ -1,3 +1,55 @@
+qubes-core-admin-client (4.1.5-1) unstable; urgency=medium
+
+  [ Pawel Marczewski ]
+  * qvm-kill: ignore already off domains
+  * qvm-kill: make error message more clear
+
+  [ marmot1791 ]
+  * Correct default VMs behavior to match current code
+
+  [ Amadeusz Piotr Żołnowski ]
+  * Move qvm-console from qubes-core-agent-linux
+
+  [ Marta Marczykowska-Górecka ]
+  * Added force shutdown option to vm.shutdown
+  * Added explicit 'force' option to qvm-shutdown
+
+  [ Marek Marczykowski-Górecki ]
+  * Remove no longer relevant TODO comment
+  * rpm, deb: declare conflict with qubes-core-agent shipping qvm-
+    console
+  * tests/firewall: update future time to be really in the future
+
+  [ Marta Marczykowska-Górecka ]
+  * Added an option to qvm-firewall to reset all rules
+
+  [ Marek Marczykowski-Górecki ]
+  * Add qvm-firewall reset action to the man page
+
+  [ Rusty Bird ]
+  * collections.Callable -> collections.abc.Callable
+
+  [ Marta Marczykowska-Górecka ]
+  * Cloning a vm now clones persistent PCI device assignments
+  * Remove Python 2 workarounds
+  * Added tests for cloning VMs with persistent devices
+
+  [ Frédéric Pierret (fepitre) ]
+  * Support for AudioVM
+  * Change qvm-start-gui to qvm-start-daemon for handling audio too
+  * Fix and improvements from Marek's comments
+  * qvm-start-daemon: allow starting only if service enabled
+  * qvm-start-daemon: ensure separate task between GUI/AUDIO
+  * daemon: start it for dom0 unconditionnaly
+  * gui: set keyboard layout when starting daemon
+  * qvm-start-daemon: set keyboard-layout only for the first set layout
+  * qvm-start-daemon: improve parsing args for setting keyboard layout
+  * qvm-start-daemon: allow multiple options in keyboard layout
+  * qvm-start-daemon: check if layout is parsed
+  * qvm-start-daemon: adjust pacat pid file path
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 10 Apr 2020 05:40:18 +0200
+
 qubes-core-admin-client (4.1.4-1) unstable; urgency=medium
 
   * debian: really drop python2 build
