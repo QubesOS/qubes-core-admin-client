@@ -771,19 +771,19 @@ class TC_20_QubesLocal(unittest.TestCase):
         self.listen_and_send(b'0\0')
         self.app.qubesd_call('test-vm', 'some.method', 'arg1', b'payload')
         self.assertEqual(self.get_request(),
-            b'dom0\0some.method\0test-vm\0arg1\0payload')
+            b'some.method+arg1 dom0 name test-vm\0payload')
 
     def test_001_qubesd_call_none_arg(self):
         self.listen_and_send(b'0\0')
         self.app.qubesd_call('test-vm', 'some.method', None, b'payload')
         self.assertEqual(self.get_request(),
-            b'dom0\0some.method\0test-vm\0\0payload')
+            b'some.method+ dom0 name test-vm\0payload')
 
     def test_002_qubesd_call_none_payload(self):
         self.listen_and_send(b'0\0')
         self.app.qubesd_call('test-vm', 'some.method', None, None)
         self.assertEqual(self.get_request(),
-            b'dom0\0some.method\0test-vm\0\0')
+            b'some.method+ dom0 name test-vm\0')
 
     def test_003_qubesd_call_payload_stream(self):
         payload_input = os.path.join(self.tmpdir, 'payload-input')
@@ -851,7 +851,7 @@ class TC_20_QubesLocal(unittest.TestCase):
                 stderr=subprocess.PIPE)
 
         self.assertEqual(self.get_request(),
-            b'dom0\0admin.vm.Start\0some-vm\0\0')
+            b'admin.vm.Start+ dom0 name some-vm\0')
 
     def test_011_run_service_filter_esc(self):
         self.listen_and_send(b'0\0')
@@ -865,7 +865,7 @@ class TC_20_QubesLocal(unittest.TestCase):
                 stderr=subprocess.PIPE)
 
         self.assertEqual(self.get_request(),
-            b'dom0\0admin.vm.Start\0some-vm\0\0')
+            b'admin.vm.Start+ dom0 name some-vm\0')
 
     @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_012_run_service_user(self):
@@ -880,7 +880,7 @@ class TC_20_QubesLocal(unittest.TestCase):
                 stderr=subprocess.PIPE)
 
         self.assertEqual(self.get_request(),
-            b'dom0\0admin.vm.Start\0some-vm\0\0')
+            b'admin.vm.Start+ dom0 name some-vm\0')
 
     def test_013_run_service_default_target(self):
         with self.assertRaises(ValueError):

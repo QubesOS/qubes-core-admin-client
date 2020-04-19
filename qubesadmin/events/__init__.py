@@ -79,10 +79,9 @@ class EventsDispatcher(object):
         if self.app.qubesd_connection_type == 'socket':
             reader, writer = yield from asyncio.open_unix_connection(
                 qubesadmin.config.QUBESD_SOCKET)
-            writer.write(b'dom0\0')  # source
-            writer.write(self._api_method.encode() + b'\0')  # method
-            writer.write(dest.encode('ascii') + b'\0')  # dest
-            writer.write(b'\0')  # arg
+            writer.write(self._api_method.encode() + b'+ ')  # method+arg
+            writer.write(b'dom0 ')  # source
+            writer.write(b'name ' + dest.encode('ascii') + b'\0')  # dest
             writer.write_eof()
 
             def cleanup_func():
