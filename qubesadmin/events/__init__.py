@@ -215,6 +215,9 @@ class EventsDispatcher(object):
         if event.startswith('property-set:') or \
                 event.startswith('property-reset:'):
             self.app._invalidate_cache(subject, event, **kwargs)
+        elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
+                       'domain-paused', 'domain-unpaused'):
+            self.app._update_power_state_cache(subject, event, **kwargs)
 
         handlers = [h_func for h_name, h_func_set in self.handlers.items()
             for h_func in h_func_set

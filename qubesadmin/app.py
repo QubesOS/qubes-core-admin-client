@@ -70,6 +70,12 @@ class VMCollection(object):
             props = props.split(' ')
             new_vm_list[vm_name] = dict(
                 [vm_prop.split('=', 1) for vm_prop in props])
+            # if cache not enabled, drop power state
+            if not self.app.cache_enabled:
+                try:
+                    del new_vm_list[vm_name]['state']
+                except KeyError:
+                    pass
 
         self._vm_list = new_vm_list
         for name, vm in list(self._vm_objects.items()):
@@ -103,9 +109,12 @@ class VMCollection(object):
             # done by 'item not in self' check above, unless blind_mode is
             # enabled
             klass = None
+            power_state = None
             if self._vm_list and item in self._vm_list:
                 klass = self._vm_list[item]['class']
-            self._vm_objects[item] = cls(self.app, item, klass=klass)
+                power_state = self._vm_list[item].get('state')
+            self._vm_objects[item] = cls(self.app, item, klass=klass,
+                                         power_state=power_state)
         return self._vm_objects[item]
 
     def __contains__(self, item):
@@ -598,7 +607,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param name: name of the property
         :param kwargs: other arguments
         :return: none
-        """ # pylint: disable=unused-argument
+        """  # pylint: disable=unused-argument
         if subject is None:
             subject = self
 
@@ -607,6 +616,45 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             del subject._properties_cache[name]
         except KeyError:
             pass
+
+    def _update_power_state_cache(self, subject, event, **kwargs):
+        """ Update cached VM power state.
+
+        This method is designed to be hooed as an event handler for:
+        - domain-pre-start
+        - domain-start
+        - domain-shutdown
+        - domain-paused
+        - domain-unpaused
+
+        This is done in :py:class:`qubesadmin.events.EventsDispatcher` class
+        directly, before calling other handlers.
+
+        :param subject: a VM object
+        :param event: name of the event
+        :param kwargs: other arguments
+        :return:
+        """  # pylint: disable=unused-argument,no-self-use
+
+        if not self.app.cache_enabled:
+            return
+
+        if event == 'domain-pre-start':
+            power_state = 'Transient'
+        elif event == 'domain-start':
+            power_state = 'Running'
+        elif event == 'domain-shutdown':
+            power_state = 'Halted'
+        elif event == 'domain-paused':
+            power_state = 'Paused'
+        elif event == 'domain-unpaused':
+            power_state = 'Running'
+        else:
+            # unknown power state change, drop cached power state
+            power_state = None
+
+        # pylint: disable=protected-access
+        subject._power_state_cache = power_state
 
 
 class QubesLocal(QubesBase):

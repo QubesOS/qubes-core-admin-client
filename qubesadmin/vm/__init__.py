@@ -52,10 +52,11 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     firewall = None
 
-    def __init__(self, app, name, klass=None):
+    def __init__(self, app, name, klass=None, power_state=None):
         super(QubesVM, self).__init__(app, 'admin.vm.property.', name)
         self._volumes = None
         self._klass = klass
+        self._power_state_cache = power_state
         self.log = logging.getLogger(name)
         self.tags = qubesadmin.tags.Tags(self)
         self.features = qubesadmin.features.Features(self)
@@ -181,8 +182,13 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         '''
 
+        if self._power_state_cache is not None:
+            return self._power_state_cache
         try:
-            return self._get_current_state()['power_state']
+            power_state = self._get_current_state()['power_state']
+            if self.app.cache_enabled:
+                self._power_state_cache = power_state
+            return power_state
         except qubesadmin.exc.QubesDaemonNoResponseError:
             return 'NA'
 

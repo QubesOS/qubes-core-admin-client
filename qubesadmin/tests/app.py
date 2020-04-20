@@ -131,6 +131,33 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
             self.fail('VM not found in collection')
         self.assertAllCalled()
 
+    def test_010_getitem_cache_power_state(self):
+        self.app.cache_enabled = True
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        try:
+            vm = self.app.domains['test-vm']
+            self.assertEqual(vm.name, 'test-vm')
+            self.assertEqual(vm.klass, 'AppVM')
+            self.assertEqual(vm.get_power_state(), 'Running')
+        except KeyError:
+            self.fail('VM not found in collection')
+        self.assertAllCalled()
+
+    def test_011_getitem_non_cache_power_state(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running mem=1024'
+        try:
+            vm = self.app.domains['test-vm']
+            self.assertEqual(vm.name, 'test-vm')
+            self.assertEqual(vm.klass, 'AppVM')
+            self.assertEqual(vm.get_power_state(), 'Running')
+        except KeyError:
+            self.fail('VM not found in collection')
+        self.assertAllCalled()
+
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
     def setUp(self):
