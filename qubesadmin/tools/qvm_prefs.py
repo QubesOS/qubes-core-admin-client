@@ -93,6 +93,9 @@ def process_actions(parser, args, target):
         return 0
 
     if args.property is None:
+        # fetch all the properties with one Admin API call, instead of issuing
+        # one call per property
+        args.app.cache_enabled = True
         properties = target.property_list()
         width = max(len(prop) for prop in properties)
 

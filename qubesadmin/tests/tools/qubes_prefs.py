@@ -29,11 +29,9 @@ class TC_00_qubes_prefs(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.property.List', None, None)] = \
             b'0\x00prop1\nprop2\n'
         self.app.expected_calls[
-            ('dom0', 'admin.property.Get', 'prop1', None)] = \
-            b'0\x00default=True type=str value1'
-        self.app.expected_calls[
-            ('dom0', 'admin.property.Get', 'prop2', None)] = \
-            b'0\x00default=False type=str value2'
+            ('dom0', 'admin.property.GetAll', None, None)] = \
+            b'0\x00prop1 default=True type=str value1\n' \
+            b'prop2 default=False type=str value2\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0, qubesadmin.tools.qubes_prefs.main([], app=self.app))
         self.assertEqual(stdout.getvalue(),

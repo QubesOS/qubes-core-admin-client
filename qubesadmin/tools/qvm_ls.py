@@ -664,6 +664,10 @@ def main(args=None, app=None):
         parser.print_error(str(e))
         return 1
 
+    # fetch all the properties with one Admin API call, instead of issuing
+    # one call per property
+    args.app.cache_enabled = True
+
     if args.raw_list:
         args.raw_data = True
         args.fields = 'name'

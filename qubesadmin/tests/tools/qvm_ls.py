@@ -278,42 +278,34 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             b'0\x00vm1 class=AppVM state=Running\n' \
             b'template1 class=TemplateVM state=Halted\n' \
             b'sys-net class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('vm1', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Running'
-        self.app.expected_calls[
-            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Running'
-        self.app.expected_calls[
-            ('template1', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Halted'
         props = {
-            'label': b'type=label green',
-            'template': b'type=vm template1',
-            'netvm': b'type=vm sys-net',
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
 #           'virt_mode': b'type=str pv',
         }
-        for key, value in props.items():
-            self.app.expected_calls[
-                ('vm1', 'admin.vm.property.Get', key, None)] = \
-                b'0\x00default=True ' + value
-
-        # setup template1
-        props['label'] = b'type=label black'
-        for key, value in props.items():
-            self.app.expected_calls[
-                ('template1', 'admin.vm.property.Get', key, None)] = \
-                b'0\x00default=True ' + value
         self.app.expected_calls[
-            ('template1', 'admin.vm.property.Get', 'template', None)] = \
-            b''  # request refused - no such property
+            ('vm1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
 
         # setup sys-net
-        props['label'] = b'type=label red'
-        for key, value in props.items():
-            self.app.expected_calls[
-                ('sys-net', 'admin.vm.property.Get', key, None)] = \
-                b'0\x00default=True ' + value
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        # setup template1
+        props['label'] = 'type=label black'
+        del props['template']
+        self.app.expected_calls[
+            ('template1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main([], app=self.app)
@@ -337,22 +329,24 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             ('sys-net', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Running'
         props = {
-            'label': b'type=label green',
-            'template': b'type=vm template1',
-            'netvm': b'type=vm sys-net',
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
 #           'virt_mode': b'type=str pv',
         }
-        for key, value in props.items():
-            self.app.expected_calls[
-                ('vm1', 'admin.vm.property.Get', key, None)] = \
-                b'0\x00default=True ' + value
+        self.app.expected_calls[
+            ('vm1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
 
         # setup sys-net
-        props['label'] = b'type=label red'
-        for key, value in props.items():
-            self.app.expected_calls[
-                ('sys-net', 'admin.vm.property.Get', key, None)] = \
-                b'0\x00default=True ' + value
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['vm1', 'sys-net'], app=self.app)
