@@ -370,6 +370,21 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             self._klass = super(QubesVM, self).klass
         return self._klass
 
+    @property
+    def icon(self):
+        '''freedesktop icon name, suitable for use in
+        :py:meth:`PyQt4.QtGui.QIcon.fromTheme`'''
+        raw_icon_name = self.label.name
+        if self.klass == 'TemplateVM':
+            return 'templatevm-' + raw_icon_name
+        if self.klass == 'DispVM':
+            return 'dispvm-' + raw_icon_name
+        # if self.features.get('servicevm'):
+        if self.provides_network:
+            return 'servicevm-' + raw_icon_name
+        return 'appvm-' + raw_icon_name
+
+
 class DispVMWrapper(QubesVM):
     '''Wrapper class for new DispVM, supporting only service call
 
