@@ -137,7 +137,6 @@ def import_volume(args):
     ''' Import a file into volume '''
 
     volume = args.volume
-    old_size = volume.size
     input_path = args.input_path
     if input_path == '-':
         input_file = sys.stdin.buffer

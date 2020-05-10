@@ -497,17 +497,6 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-testvm-private\n' \
-            b'size=2147483648\n' \
-            b'usage=10000000\n' \
-            b'rw=True\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=0\n' \
-            b'is_outdated=False\n'
-        self.app.expected_calls[
             ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
@@ -526,17 +515,6 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
-        self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-testvm-private\n' \
-            b'size=2147483648\n' \
-            b'usage=10000000\n' \
-            b'rw=True\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=0\n' \
-            b'is_outdated=False\n'
         self.app.expected_calls[
             ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
             b'0\x00'
@@ -558,17 +536,6 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-testvm-private\n' \
-            b'size=2147483648\n' \
-            b'usage=10000000\n' \
-            b'rw=True\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=0\n' \
-            b'is_outdated=False\n'
-        self.app.expected_calls[
             ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'512\ntest-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
@@ -588,17 +555,6 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-testvm-private\n' \
-            b'size=2147483648\n' \
-            b'usage=10000000\n' \
-            b'rw=True\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=0\n' \
-            b'is_outdated=False\n'
-        self.app.expected_calls[
             ('testvm', 'admin.vm.volume.Import', 'private', b'test-data')] = \
             b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
@@ -617,17 +573,6 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
-        self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-testvm-private\n' \
-            b'size=9\n' \
-            b'usage=1\n' \
-            b'rw=True\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=0\n' \
-            b'is_outdated=False\n'
         self.app.expected_calls[
             ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
             b'0\x00'
