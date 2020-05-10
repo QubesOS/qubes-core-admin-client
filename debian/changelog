@@ -1,3 +1,32 @@
+qubes-core-admin-client (4.0.30-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Added force shutdown option to vm.shutdown
+  * Added explicit 'force' option to qvm-shutdown
+
+  [ Marek Marczykowski-Górecki ]
+  * tests/firewall: update future time to be really in the future
+
+  [ Pawel Marczewski ]
+  * qvm-kill: ignore already off domains
+
+  [ Marta Marczykowska-Górecka ]
+  * Cloning a vm now clones persistent PCI device assignments
+  * Added tests for cloning VMs with persistent devices
+  * Added an option to qvm-firewall to reset all rules
+
+  [ marmot1791 ]
+  * Correct default VMs behavior to match current code
+
+  [ Pawel Marczewski ]
+  * qvm-kill: make error message more clear
+
+  [ Marek Marczykowski-Górecki ]
+  * Remove no longer relevant TODO comment
+  * Make pylint happy
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 10 May 2020 04:49:54 +0200
+
 qubes-core-admin-client (4.0.29-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
