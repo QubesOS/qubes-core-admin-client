@@ -378,7 +378,8 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
         self.set_defaults(verbose=1, quiet=0)
 
-    def parse_args(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def parse_args(self, *args, **kwargs):
+        # pylint: disable=arguments-differ,signature-differs
         # hack for tests
         app = kwargs.pop('app', None)
         namespace = super(QubesArgumentParser, self).parse_args(*args, **kwargs)
