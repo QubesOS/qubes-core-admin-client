@@ -48,6 +48,9 @@ class RuleAction(argparse.Action):
         allowed_opts = assumed_order + ['specialtarget', 'comment', 'expire']
         kwargs = {}
         for opt in values:
+            if opt[-1] == '=':
+                raise argparse.ArgumentError(
+                    None, 'invalid rule description: {}'.format(opt))
             opt_elements = opt.split('=')
             if len(opt_elements) == 2:
                 key, value = opt_elements
