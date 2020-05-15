@@ -96,6 +96,17 @@ class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
                 qubesadmin.firewall.Rule(
                     None, action='accept', dsthost='127.0.0.1/32'))
 
+    def test_007_none_errors(self):
+        ns = argparse.Namespace()
+        with self.assertRaises(argparse.ArgumentError):
+            self.action(None, ns, ['dsthost=', 'action=accept'])
+        with self.assertRaises(argparse.ArgumentError):
+            self.action(None, ns, ['dsthost=127.0.0.1', 'dstports=',
+                                   'action=accept'])
+        with self.assertRaises(argparse.ArgumentError):
+            self.action(None, ns, ['dsthost=127.0.0.1', 'icmptype=',
+                                   'action=accept'])
+
 
 class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
     def setUp(self):
