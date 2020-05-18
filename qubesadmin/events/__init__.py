@@ -31,8 +31,19 @@ import qubesadmin.exc
 class EventsDispatcher(object):
     ''' Events dispatcher, responsible for receiving events and calling
     appropriate handlers'''
-    def __init__(self, app, api_method='admin.Events'):
-        '''Initialize EventsDispatcher'''
+    def __init__(self, app, api_method='admin.Events', enable_cache=True):
+        """Initialize EventsDispatcher
+
+        :param app :py:class:`qubesadmin.Qubes` object
+        :param api_method Admin API method producing events
+        :param enable_cache Enable caching (see below)
+
+        Connecting :py:class:`EventsDispatcher` object to a
+        :py:class:`qubesadmin.Qubes` implicitly enables caching. It is important
+        to actually run the dispatcher (:py:meth:`listen_for_events`), otherwise
+        the cache won't be updated. Alternatively, disable caching by setting
+        :py:attr:`qubesadmin.Qubes.cache_enabled` property to `False`.
+        """
         #: Qubes() object
         self.app = app
 
@@ -40,6 +51,9 @@ class EventsDispatcher(object):
 
         #: event handlers - dict of event -> handlers
         self.handlers = {}
+
+        if enable_cache:
+            self.app.cache_enabled = True
 
     def add_handler(self, event, handler):
         '''Register handler for event

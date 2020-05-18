@@ -57,7 +57,7 @@ def wait_for_domain_shutdown(vms):
         return
     app = list(vms)[0].app
     vms = set(vms)
-    events = qubesadmin.events.EventsDispatcher(app)
+    events = qubesadmin.events.EventsDispatcher(app, enable_cache=False)
     events.add_handler('domain-shutdown',
         functools.partial(interrupt_on_vm_shutdown, vms))
     events.add_handler('connection-established',
