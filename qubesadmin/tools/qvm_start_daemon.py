@@ -341,7 +341,10 @@ class DAEMONLauncher:
         :param vm: VM for which start AUDIO daemon
         """
         # pylint: disable=no-self-use
-        pacat_cmd = [PACAT_DAEMON_PATH, vm.xid, vm.name]
+        xid = vm.stubdom_xid if vm.features.check_with_template('audio-model', False) \
+                and vm.virt_mode == 'hvm' else vm.xid
+
+        pacat_cmd = [PACAT_DAEMON_PATH, '-l', xid, vm.name]
         vm.log.info('Starting AUDIO')
 
         yield from asyncio.create_subprocess_exec(*pacat_cmd)
@@ -387,7 +390,10 @@ class DAEMONLauncher:
         if not vm.features.check_with_template('audio', True):
             return
 
-        if not os.path.exists(self.pacat_pidfile(vm.xid)):
+        xid = vm.stubdom_xid if vm.features.check_with_template('audio-model', False) \
+                and vm.virt_mode == 'hvm' else vm.xid
+
+        if not os.path.exists(self.pacat_pidfile(xid)):
             yield from self.start_audio_for_vm(vm)
 
     def on_domain_spawn(self, vm, _event, **kwargs):
