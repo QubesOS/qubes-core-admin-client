@@ -275,6 +275,15 @@ class DAEMONLauncher:
         """Helper function to construct an AUDIO pidfile path"""
         return '/var/run/qubes/pacat.{}'.format(xid)
 
+    @staticmethod
+    def pacat_domid(vm):
+        """Determine target domid for an AUDIO daemon"""
+        xid = vm.stubdom_xid \
+                if vm.features.check_with_template('audio-model', False) \
+                and vm.virt_mode == 'hvm' \
+                else vm.xid
+        return xid
+
     @asyncio.coroutine
     def start_gui_for_vm(self, vm, monitor_layout=None):
         """Start GUI daemon (qubes-guid) connected directly to a VM
@@ -341,10 +350,7 @@ class DAEMONLauncher:
         :param vm: VM for which start AUDIO daemon
         """
         # pylint: disable=no-self-use
-        xid = vm.stubdom_xid if vm.features.check_with_template('audio-model', False) \
-                and vm.virt_mode == 'hvm' else vm.xid
-
-        pacat_cmd = [PACAT_DAEMON_PATH, '-l', xid, vm.name]
+        pacat_cmd = [PACAT_DAEMON_PATH, '-l', self.pacat_domid(vm), vm.name]
         vm.log.info('Starting AUDIO')
 
         yield from asyncio.create_subprocess_exec(*pacat_cmd)
@@ -390,9 +396,7 @@ class DAEMONLauncher:
         if not vm.features.check_with_template('audio', True):
             return
 
-        xid = vm.stubdom_xid if vm.features.check_with_template('audio-model', False) \
-                and vm.virt_mode == 'hvm' else vm.xid
-
+        xid = self.pacat_domid(vm)
         if not os.path.exists(self.pacat_pidfile(xid)):
             yield from self.start_audio_for_vm(vm)
 
