@@ -508,7 +508,7 @@ def main(args=None):
     if args.watch and 'guivm-gui-agent' in enabled_services:
         args.set_keyboard_layout = True
     if args.set_keyboard_layout or os.path.exists('/etc/qubes-release'):
-        guivm = args.app.domains[args.app.local_name]
+        guivm = args.app.domains.get_blind(args.app.local_name)
         set_keyboard_layout(guivm)
     launcher = DAEMONLauncher(args.app)
     if args.watch:
