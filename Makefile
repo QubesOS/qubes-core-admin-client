@@ -20,3 +20,5 @@ clean:
 	rm -rf qubesadmin/*/__pycache__ qubesadmin/tests/*/__pycache__
 	rm -rf test-packages/*.egg-info
 	rm -f .coverage
+	rm -rf debian/changelog.*
+	rm -rf pkgs
