@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Qubes Guid/Pacat
+Comment=Starts GUI/AUDIO daemon for Qubes VMs in KDE
+Icon=qubes
+Exec=qvm-start-daemon --all --watch --kde
+Terminal=false
+Type=Application
+OnlyShowIn=KDE

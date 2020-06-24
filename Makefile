@@ -12,6 +12,7 @@ install:
 	$(PYTHON) setup.py install -O1 $(PYTHON_PREFIX_ARG) --root $(DESTDIR)
 	install -d $(DESTDIR)/etc/xdg/autostart
 	install -m 0644 etc/qvm-start-daemon.desktop $(DESTDIR)/etc/xdg/autostart/
+	install -m 0644 etc/qvm-start-daemon-kde.desktop $(DESTDIR)/etc/xdg/autostart/
 	install -d $(DESTDIR)/usr/bin
 	ln -sf qvm-start-daemon $(DESTDIR)/usr/bin/qvm-start-gui
 
