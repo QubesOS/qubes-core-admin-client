@@ -5,4 +5,5 @@ Icon=qubes
 Exec=qvm-start-daemon --all --watch --kde
 Terminal=false
 Type=Application
-OnlyShowIn=KDE
+OnlyShowIn=KDE;
+
