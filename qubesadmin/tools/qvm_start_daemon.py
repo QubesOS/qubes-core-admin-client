@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -48,6 +48,109 @@ except ImportError:
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
+
+GUI_DAEMON_OPTIONS = [
+    ('allow_fullscreen', 'bool'),
+    ('override_redirect_protection', 'bool'),
+    ('allow_utf8_titles', 'bool'),
+    ('secure_copy_sequence', 'str'),
+    ('secure_paste_sequence', 'str'),
+    ('windows_count_limit', 'int'),
+    ('trayicon_mode', 'str'),
+    ('startup_timeout', 'int'),
+]
+
+
+def retrieve_gui_daemon_options(vm, guivm):
+    '''
+    Construct a list of GUI daemon options based on VM features.
+
+    This checks 'gui-*' features on the VM, and if they're absent,
+    'gui-default-*' features on the GuiVM.
+    '''
+
+    options = {}
+
+    for name, kind in GUI_DAEMON_OPTIONS:
+        feature_value = vm.features.get(
+            'gui-' + name.replace('_', '-'), None)
+        if feature_value is None:
+            feature_value = guivm.features.get(
+                'gui-default-' + name.replace('_', '-'), None)
+        if feature_value is None:
+            continue
+
+        if kind == 'bool':
+            value = bool(feature_value)
+        elif kind == 'int':
+            value = int(feature_value)
+        elif kind == 'str':
+            value = feature_value
+        else:
+            assert False, kind
+
+        options[name] = value
+    return options
+
+
+def serialize_gui_daemon_options(options):
+    '''
+    Prepare configuration file content for GUI daemon. Currently uses libconfig
+    format.
+    '''
+
+    lines = [
+        '# Auto-generated file, do not edit!',
+        '',
+        'global: {',
+    ]
+    for name, kind in GUI_DAEMON_OPTIONS:
+        if name in options:
+            value = options[name]
+            if kind == 'bool':
+                serialized = 'true' if value else 'false'
+            elif kind == 'int':
+                serialized = str(value)
+            elif kind == 'str':
+                serialized = escape_config_string(value)
+            else:
+                assert False, kind
+
+            lines.append('  {} = {};'.format(name, serialized))
+    lines.append('}')
+    lines.append('')
+    return '\n'.join(lines)
+
+
+NON_ASCII_RE = re.compile(r'[^\x00-\x7F]')
+UNPRINTABLE_CHARACTER_RE = re.compile(r'[\x00-\x1F\x7F]')
+
+def escape_config_string(value):
+    '''
+    Convert a string to libconfig format.
+
+    Format specification:
+    http://www.hyperrealm.com/libconfig/libconfig_manual.html#String-Values
+
+    See dump_string() for python-libconf:
+    https://github.com/Grk0/python-libconf/blob/master/libconf.py
+    '''
+
+    assert not NON_ASCII_RE.match(value), 'expected an ASCII string: {!r}'.format(value)
+
+    value = (
+        value.replace('\\', '\\\\')
+             .replace('"', '\\"')
+             .replace('\f', r'\f')
+             .replace('\n', r'\n')
+             .replace('\r', r'\r')
+             .replace('\t', r'\t')
+    )
+    value = UNPRINTABLE_CHARACTER_RE.sub(
+          lambda m: r'\x{:02x}'.format(ord(m.group(0))),
+        value)
+    return '"' + value + '"'
+
 
 # "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
 REGEX_OUTPUT = re.compile(r"""
@@ -262,13 +365,31 @@ class DAEMONLauncher:
         if vm.features.check_with_template('rpc-clipboard', False):
             guid_cmd.extend(['-Q'])
 
+        guivm = self.app.domains[vm.guivm]
+        options = retrieve_gui_daemon_options(vm, guivm)
+        config = serialize_gui_daemon_options(options)
+        config_path = self.guid_config_file(vm.xid)
+        self.write_guid_config(config_path, config)
+        guid_cmd.extend(['-C', config_path])
+
         guid_cmd += self.kde_guid_args(vm)
         return guid_cmd
+
+    @staticmethod
+    def write_guid_config(config_path, config):
+        """Write guid configuration to a file"""
+        with open(config_path, 'w') as config_file:
+            config_file.write(config)
 
     @staticmethod
     def guid_pidfile(xid):
         """Helper function to construct a GUI pidfile path"""
         return '/var/run/qubes/guid-running.{}'.format(xid)
+
+    @staticmethod
+    def guid_config_file(xid):
+        """Helper function to construct a GUI configuration file path"""
+        return '/var/run/qubes/guid-conf.{}'.format(xid)
 
     @staticmethod
     def pacat_pidfile(xid):
