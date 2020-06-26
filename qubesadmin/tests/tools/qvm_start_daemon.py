@@ -53,23 +53,11 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
         ]
 
         args = self.launcher.kde_guid_args(self.app.domains['test-vm'])
+        self.launcher.kde = True
         self.assertEqual(args, ['-T', '-p',
                                 '_KDE_NET_WM_COLOR_SCHEME=s:' +
                                 os.path.expanduser(
                                     '~/.local/share/qubes-kde/red.colors')])
-
-        self.assertAllCalled()
-
-    @unittest.mock.patch('subprocess.check_output')
-    def test_001_kde_args_none(self, proc_mock):
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
-
-        proc_mock.side_effect = [b'']
-
-        args = self.launcher.kde_guid_args(self.app.domains['test-vm'])
-        self.assertEqual(args, [])
 
         self.assertAllCalled()
 
