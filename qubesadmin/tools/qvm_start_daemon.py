@@ -240,7 +240,8 @@ class DAEMONLauncher:
                                         vm.label.name + '.colors'))]
         return guid_cmd
 
-    def common_guid_args(self, vm):
+    @staticmethod
+    def common_guid_args(vm):
         """Common qubes-guid arguments for PV(H), HVM and Stubdomain"""
 
         guid_cmd = [GUI_DAEMON_PATH,
