@@ -49,6 +49,10 @@ parser.add_argument('--skip-start', action='store_true',
     help='Do not start the VM - do not retrieve menu entries etc.')
 parser.add_argument('--keep-source', action='store_true',
     help='Do not remove source data (*dir* directory) after import')
+parser.add_argument('--no-installed-by-rpm', action='store_true',
+    help='Do not set installed_by_rpm')
+parser.add_argument('--allow-pv', action='store_true',
+    help='Allow setting virt_mode to pv in configuration file.')
 parser.add_argument('action', choices=['post-install', 'pre-remove'],
     help='Action to perform')
 parser.add_argument('name', action='store',
@@ -60,9 +64,13 @@ parser.add_argument('dir', action='store',
 def get_root_img_size(source_dir):
     '''Extract size of root.img to be imported'''
     root_path = os.path.join(source_dir, 'root.img')
-    if os.path.exists(root_path + '.part.00'):
+    # deal with both cases: split tar and non-split tar
+    part_path = root_path + '.part.00'
+    tar_path = root_path + '.tar'
+    if os.path.exists(part_path) or os.path.exists(tar_path):
         # get just file root_size from the tar header
-        p = subprocess.Popen(['tar', 'tvf', root_path + '.part.00'],
+        path = part_path if os.path.exists(part_path) else tar_path
+        p = subprocess.Popen(['tar', 'tvf', path],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         (stdout, _) = p.communicate()
         # -rw-r--r-- 0/0      1073741824 1970-01-01 01:00 root.img
@@ -97,6 +105,12 @@ def import_root_img(vm, source_dir):
         if tar.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
         if cat.wait() != 0:
+            raise qubesadmin.exc.QubesException('root.img extraction failed')
+    elif os.path.exists(root_path + '.tar'):
+        tar = subprocess.Popen(['tar', 'xSOf', root_path + '.tar'],
+            stdout=subprocess.PIPE)
+        vm.volumes['root'].import_data(stream=tar.stdout)
+        if tar.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
     elif os.path.exists(root_path):
         if vm.app.qubesd_connection_type == 'socket':
@@ -141,6 +155,17 @@ def import_appmenus(vm, source_dir):
     else:
         cmd_prefix = []
 
+    with open(os.path.join(source_dir, 'vm-whitelisted-appmenus.list'), 'r') \
+            as f:
+        vm.features['default-whitelist'] = f.read()
+    with open(os.path.join(source_dir, 'whitelisted-appmenus.list'), 'r') \
+            as f:
+        vm.features['whitelist'] = f.read()
+    with open(
+            os.path.join(source_dir, 'netvm-whitelisted-appmenus.list'), 'r') \
+            as f:
+        vm.features['netvm-whitelist'] = f.read()
+
     # TODO: change this to qrexec calls to GUI VM, when GUI VM will be
     # implemented
     try:
@@ -152,6 +177,11 @@ def import_appmenus(vm, source_dir):
                 'whitelisted-appmenus.list')), vm.name])
     except subprocess.CalledProcessError as e:
         vm.log.warning('Failed to set default application list: %s', e)
+
+def parse_template_config(path):
+    '''Parse template.conf from template package. (KEY=VALUE format)'''
+    with open(path, 'r') as f:
+        return dict(line.rstrip('\n').split('=', 1) for line in f)
 
 @asyncio.coroutine
 def call_postinstall_service(vm):
@@ -240,8 +270,37 @@ def post_install(args):
     if not vm_created:
         vm.log.info('Clearing private volume')
         reset_private_img(vm)
-    vm.installed_by_rpm = True
+    vm.installed_by_rpm = not args.no_installed_by_rpm
     import_appmenus(vm, args.dir)
+
+    conf_path = os.path.join(args.dir, 'template.conf')
+    if os.path.exists(conf_path):
+        conf = parse_template_config(conf_path)
+        # Import qvm-feature tags
+        for key in (
+                'no-monitor-layout',
+                'net.fake-ip',
+                'net.fake-gateway',
+                'net.fake-netmask',
+                'pci-e820-host',
+                'linux-stubdom',
+                'gui',
+                'gui-emulated'
+                'qrexec'):
+            if key in conf:
+                vm.features[key] = conf[key]
+        if 'virt-mode' in conf:
+            if conf['virt-mode'] == 'pv' and args.allow_pv:
+                vm.virt_mode = 'pv'
+            else:
+                vm.log.warning(
+                    '--allow-pv not set, ignoring request to change virt-mode')
+        if 'kernel' in conf:
+            if conf['kernel'] == '':
+                vm.kernel = ''
+            else:
+                vm.log.warning(
+                    'Currently only supports setting kernel to (none)')
 
     if not args.skip_start:
         yield from call_postinstall_service(vm)
