@@ -575,12 +575,29 @@ class DAEMONLauncher:
                     asyncio.ensure_future(
                         self.start_gui_for_stubdomain(vm))
 
+    def on_domain_stopped(self, vm, _event, **_kwargs):
+        """Handler of 'domain-stopped' event, cleans up"""
+        self.cleanup_guid(vm.xid)
+        if vm.virt_mode == 'hvm':
+            self.cleanup_guid(vm.stubdom_xid)
+
+    def cleanup_guid(self, xid):
+        """
+        Clean up after qubes-guid. Removes the auto-generated configuration
+        file, if any.
+        """
+
+        config_path = self.guid_config_file(xid)
+        if os.path.exists(config_path):
+            os.unlink(config_path)
+
     def register_events(self, events):
         """Register domain startup events in app.events dispatcher"""
         events.add_handler('domain-spawn', self.on_domain_spawn)
         events.add_handler('domain-start', self.on_domain_start)
         events.add_handler('connection-established',
                            self.on_connection_established)
+        events.add_handler('domain-stopped', self.on_domain_stopped)
 
 
 def x_reader(conn, callback):
