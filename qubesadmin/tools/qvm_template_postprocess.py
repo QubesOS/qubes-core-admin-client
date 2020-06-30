@@ -282,14 +282,21 @@ def post_install(args):
         # Import qvm-feature tags
         for key in (
                 'no-monitor-layout',
-                'net.fake-ip',
-                'net.fake-gateway',
-                'net.fake-netmask',
                 'pci-e820-host',
                 'linux-stubdom',
                 'gui',
                 'gui-emulated'
                 'qrexec'):
+            if key in conf:
+                if conf[key] == '1':
+                    vm.features[key] = conf[key]
+                else:
+                    vm.log.warning(
+                        'ignoring boolean config flags that are not \'1\'')
+        for key in (
+                'net.fake-ip',
+                'net.fake-gateway',
+                'net.fake-netmask'):
             if key in conf:
                 vm.features[key] = conf[key]
         if 'virt-mode' in conf:
