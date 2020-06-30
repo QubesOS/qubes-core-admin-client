@@ -302,9 +302,12 @@ def post_install(args):
         if 'virt-mode' in conf:
             if conf['virt-mode'] == 'pv' and args.allow_pv:
                 vm.virt_mode = 'pv'
-            else:
+            elif conf['virt-mode'] == 'pv':
                 vm.log.warning(
                     '--allow-pv not set, ignoring request to change virt-mode')
+            elif conf['virt-mode'] in ('pvh', 'hvm'):
+                vm.virt_mode = conf['virt-mode']
+
         if 'kernel' in conf:
             if conf['kernel'] == '':
                 vm.kernel = ''
