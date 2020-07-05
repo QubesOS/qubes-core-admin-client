@@ -160,14 +160,14 @@ def import_appmenus(vm, source_dir):
     # name according to the FreeDesktop spec
     with open(os.path.join(source_dir, 'vm-whitelisted-appmenus.list'), 'r') \
             as f:
-        vm.features['default-whitelist'] = ' '.join([x.rstrip() for x in f])
+        vm.features['default-menu-items'] = ' '.join([x.rstrip() for x in f])
     with open(os.path.join(source_dir, 'whitelisted-appmenus.list'), 'r') \
             as f:
-        vm.features['whitelist'] = ' '.join([x.rstrip() for x in f])
+        vm.features['menu-items'] = ' '.join([x.rstrip() for x in f])
     with open(
             os.path.join(source_dir, 'netvm-whitelisted-appmenus.list'), 'r') \
             as f:
-        vm.features['netvm-whitelist'] = ' '.join([x.rstrip() for x in f])
+        vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in f])
 
     # TODO: change this to qrexec calls to GUI VM, when GUI VM will be
     # implemented
