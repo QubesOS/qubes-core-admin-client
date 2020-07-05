@@ -120,7 +120,6 @@ Comment[sv]=Surfa på webben
 Exec=qvm-run -q --tray -a %VMNAME% '{command} %u'
 Categories=Network;WebBrowser;
 X-Qubes-VmName=%VMNAME%
-Icon=%VMDIR%/icon.png
 '''
 
 QUBESXML_R1 = '''<?xml version='1.0' encoding='UTF-8'?>
@@ -865,8 +864,6 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         os.mkdir(self.fullpath("appvms/test-work"))
         self.create_whitelisted_appmenus(self.fullpath(
             "appvms/test-work/whitelisted-appmenus.list"))
-        os.symlink("/usr/share/qubes/icons/green.png",
-                   self.fullpath("appvms/test-work/icon.png"))
         self.create_private_img(self.fullpath("appvms/test-work/private.img"))
         with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
                 f_firewall:
@@ -877,8 +874,6 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         os.mkdir(self.fullpath("appvms/test-standalonevm"))
         self.create_whitelisted_appmenus(self.fullpath(
             "appvms/test-standalonevm/whitelisted-appmenus.list"))
-        os.symlink("/usr/share/qubes/icons/blue.png",
-                   self.fullpath("appvms/test-standalonevm/icon.png"))
         self.create_private_img(self.fullpath(
             "appvms/test-standalonevm/private.img"))
         self.create_sparse(
@@ -957,8 +952,6 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             self.create_whitelisted_appmenus(self.fullpath(
                 "vm-templates/test-template-clone/netvm-whitelisted-appmenus"
                 ".list"))
-        os.symlink("/usr/share/qubes/icons/green.png",
-                   self.fullpath("vm-templates/test-template-clone/icon.png"))
         os.mkdir(
             self.fullpath("vm-templates/test-template-clone/apps.templates"))
         self.create_appmenus(
