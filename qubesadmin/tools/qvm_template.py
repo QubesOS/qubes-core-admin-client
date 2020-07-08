@@ -20,17 +20,12 @@ PACKAGE_NAME_PREFIX = 'qubes-template-'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 
 def qubes_release():
-    try:
-        os_id = subprocess.check_output(['lsb_release', '-si'],
-            encoding='UTF-8').strip()
-        if os_id == 'Qubes':
-            return subprocess.check_output(['lsb_release', '-sr'],
-                encoding='UTF-8').strip()
-    except:
-        pass
-    with open('/usr/share/qubes/marker-vm', 'r') as f:
-        # Get last line (in the format `x.x`)
-        return f.readlines[-1].strip()
+    if os.path.exists('/usr/share/qubes/marker-vm'):
+        with open('/usr/share/qubes/marker-vm', 'r') as f:
+            # Get last line (in the format `x.x`)
+            return f.readlines()[-1].strip()
+    return subprocess.check_output(['lsb_release', '-sr'],
+        encoding='UTF-8').strip()
 
 parser = argparse.ArgumentParser(description='Qubes Template Manager')
 parser.add_argument('operation', type=str) 
