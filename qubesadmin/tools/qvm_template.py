@@ -2,6 +2,8 @@
 
 import argparse
 import datetime
+import enum
+import math
 import os
 import shutil
 import subprocess
@@ -11,6 +13,7 @@ import time
 
 import dnf
 import qubesadmin
+import qubesadmin.tools
 import rpm
 import xdg.BaseDirectory
 
@@ -63,6 +66,12 @@ parser.add_argument('--available', action='store_true')
 parser.add_argument('--extras', action='store_true')
 parser.add_argument('--upgrades', action='store_true')
 
+class TemplateState(enum.Enum):
+    INSTALLED = 'installed'
+    AVAILABLE = 'available'
+    EXTRA = 'extra'
+    UPGRADABLE = 'upgradable'
+
 # NOTE: Verifying RPMs this way is prone to TOCTOU. This is okay for local
 # files, but may create problems if multiple instances of `qvm-template` are
 # downloading the same file, so a lock is needed in that case.
@@ -91,17 +100,16 @@ def get_package_hdr(path, transaction_set=None):
         return hdr
 
 def extract_rpm(name, path, target):
-    with open(path, 'rb') as in_file:
-        rpm2cpio = subprocess.Popen(['rpm2cpio', path], stdout=subprocess.PIPE)
-        # `-D` is GNUism
-        cpio = subprocess.Popen([
-                'cpio',
-                '-idm',
-                '-D',
-                target,
-                '.%s/%s/*' % (PATH_PREFIX, name)
-            ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL)
-        return rpm2cpio.wait() == 0 and cpio.wait() == 0
+    rpm2cpio = subprocess.Popen(['rpm2cpio', path], stdout=subprocess.PIPE)
+    # `-D` is GNUism
+    cpio = subprocess.Popen([
+            'cpio',
+            '-idm',
+            '-D',
+            target,
+            '.%s/%s/*' % (PATH_PREFIX, name)
+        ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL)
+    return rpm2cpio.wait() == 0 and cpio.wait() == 0
 
 def parse_config(path):
     with open(path, 'r') as f:
@@ -123,7 +131,7 @@ def install(args, app):
     dl_list = get_dl_list(args, app)
     dl_list_copy = dl_list.copy()
     # Verify that the templates are not yet installed
-    for name, ver in dl_list.items():
+    for name, (ver, _) in dl_list.items():
         if name in app.domains:
             print(('Template \'%s\' already installed, skipping...'
                 ' (You may want to use the {reinstall,upgrade,downgrade}'
@@ -163,7 +171,6 @@ def install(args, app):
             extract_rpm(name, rpmfile, target)
             cmdline = [
                 'qvm-template-postprocess',
-                '--keep-source',
                 '--really',
                 '--no-installed-by-rpm',
             ]
@@ -188,35 +195,19 @@ def install(args, app):
             tpl.features['template-name'] = name
             # TODO: Store source repo
 
-def qrexec_popen(args, app, service, stdout=subprocess.PIPE, encoding='UTF-8'):
+def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
     if args.updatevm:
-        from_vm = shutil.which('qrexec-client-vm') is not None
-        if from_vm:
-            return subprocess.Popen(
-                ['qrexec-client-vm', args.updatevm, service],
-                stdin=subprocess.PIPE,
-                stdout=stdout,
-                stderr=subprocess.PIPE,
-                encoding=encoding)
-        else:
-            return subprocess.Popen([
-                    'qrexec-client',
-                    '-d',
-                    args.updatevm,
-                    'user:/etc/qubes-rpc/%s' % service
-                ],
-                stdin=subprocess.PIPE,
-                stdout=stdout,
-                stderr=subprocess.PIPE,
-                encoding=encoding)
+        return app.domains[args.updatevm].run_service(
+            service,
+            filter_esc=filter_esc,
+            stdout=stdout)
     else:
         return subprocess.Popen([
                 '/etc/qubes-rpc/%s' % service,
             ],
             stdin=subprocess.PIPE,
             stdout=stdout,
-            stderr=subprocess.PIPE,
-            encoding=encoding)
+            stderr=subprocess.PIPE)
 
 def qrexec_payload(args, app, spec):
     payload = ''
@@ -237,7 +228,8 @@ def qrexec_payload(args, app, spec):
 def qrexec_repoquery(args, app, spec='*'):
     proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
     payload = qrexec_payload(args, app, spec)
-    stdout, stderr = proc.communicate(payload)
+    stdout, stderr = proc.communicate(payload.encode('UTF-8'))
+    stdout = stdout.decode('ASCII')
     if proc.wait() != 0:
         return None
     result = []
@@ -249,36 +241,39 @@ def qrexec_repoquery(args, app, spec='*'):
         result.append(entry)
     return result
 
-def qrexec_download(args, app, spec, path):
+def qrexec_download(args, app, spec, path, dlsize=None):
     with open(path, 'wb') as f:
+        # Don't filter ESCs for binary files
         proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
-            stdout=f, encoding=None)
+            stdout=f, filter_esc=False)
         payload = qrexec_payload(args, app, spec)
         proc.stdin.write(payload.encode('UTF-8'))
         proc.stdin.close()
-        while True:
-            c = proc.stderr.read(1)
-            if not c:
-                break
-            # Write raw byte w/o decoding
-            sys.stdout.buffer.write(c)
-            sys.stdout.flush()
+        while proc.poll() == None:
+            width = shutil.get_terminal_size((80, 20)).columns
+            pct = '%5.f%% ' % math.floor(f.tell() / dlsize * 100)
+            bar_len = width - len(pct) - 2
+            num_hash = math.floor(f.tell() / dlsize * bar_len)
+            num_space = bar_len - num_hash
+            # Clear previous bar
+            print(u'\u001b[1000D', end='', file=sys.stderr)
+            print(pct + '[' + ('#' * num_hash) + (' ' * num_space) + ']',
+                end='', file=sys.stderr)
+            sys.stderr.flush()
+            time.sleep(0.1)
+        #while True:
+        #    c = proc.stderr.read(1)
+        #    if not c:
+        #        break
+        #    # Write raw byte w/o decoding
+        #    sys.stdout.buffer.write(c)
+        #    sys.stdout.flush()
         if proc.wait() != 0:
             return False
         return True
 
 def build_version_str(evr):
     return '%s:%s-%s' % evr
-
-def pretty_print_table(table):
-    if len(table) != 0:
-        widths = []
-        for i in range(len(table[0])):
-            widths.append(max(len(s[i]) for s in table))
-        for row in sorted(table):
-            cols = ['{key:{width}s}'.format(
-                key=row[i], width=widths[i]) for i in range(len(row))]
-            print(' '.join(cols))
 
 def do_list(args, app):
     # TODO: Check local template name actually matches to account for renames
@@ -288,6 +283,9 @@ def do_list(args, app):
     if not (args.installed or args.available or args.extras or args.upgrades):
         args.all = True
 
+    if args.all or args.available or args.extras or args.upgrades:
+        query_res = qrexec_repoquery(args, app)
+
     if args.installed or args.all:
         for vm in app.domains:
             if 'template-install-date' in vm.features:
@@ -295,17 +293,16 @@ def do_list(args, app):
                     vm.features['template-epoch'],
                     vm.features['template-version'],
                     vm.features['template-release']))
-                tpl_list.append((vm.name, version_str))
+                tpl_list.append(
+                    (vm.name, version_str, TemplateState.INSTALLED.value))
 
     if args.available or args.all:
-        query_res = qrexec_repoquery(args, app)
         for name, epoch, version, release, reponame, dlsize, summary \
                 in query_res:
             version_str = build_version_str((epoch, version, release))
-            tpl_list.append((name, version_str))
+            tpl_list.append((name, version_str, TemplateState.AVAILABLE.value))
 
     if args.extras:
-        query_res = qrexec_repoquery(args, app)
         remote = set()
         for name, epoch, version, release, reponame, dlsize, summary \
                 in query_res:
@@ -317,10 +314,10 @@ def do_list(args, app):
                     vm.features['template-epoch'],
                     vm.features['template-version'],
                     vm.features['template-release']))
-                tpl_list.append((vm.name, version_str))
+                tpl_list.append(
+                    (vm.name, version_str, TemplateState.EXTRA.value))
 
     if args.upgrades:
-        query_res = qrexec_repoquery(args, app)
         local = {}
         for vm in app.domains:
             if 'template-name' in vm.features:
@@ -333,9 +330,10 @@ def do_list(args, app):
             if name in local:
                 if rpm.labelCompare(local[name], (epoch, version, release)) < 0:
                     version_str = build_version_str((epoch, version, release))
-                    tpl_list.append((name, version_str))
+                    tpl_list.append(
+                        (name, version_str, TemplateState.UPGRADABLE.value))
 
-    pretty_print_table(tpl_list)
+    qubesadmin.tools.print_table(tpl_list)
 
 def get_dl_list(args, app):
     candid = {}
@@ -353,7 +351,7 @@ def get_dl_list(args, app):
                 in query_res:
             ver = (epoch, version, release)
             if name not in candid or rpm.labelCompare(candid[name], ver) < 0:
-                candid[name] = ver
+                candid[name] = (ver, int(dlsize))
     return candid
 
 def download(args, app, path_override=None, dl_list=None):
@@ -361,7 +359,7 @@ def download(args, app, path_override=None, dl_list=None):
         dl_list = get_dl_list(args, app)
 
     path = path_override if path_override != None else args.downloaddir
-    for name, ver in dl_list.items():
+    for name, (ver, dlsize) in dl_list.items():
         version_str = build_version_str(ver)
         spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
         target = os.path.join(path, '%s.rpm' % spec)
@@ -370,7 +368,7 @@ def download(args, app, path_override=None, dl_list=None):
                 file=sys.stderr)
         else:
             print('Downloading \'%s\'...' % spec, file=sys.stderr)
-            ret = qrexec_download(args, app, spec, target)
+            ret = qrexec_download(args, app, spec, target, dlsize)
             if not ret:
                 # TODO: Retry?
                 print('\'%s\' download failed.' % spec, file=sys.stderr)
