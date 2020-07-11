@@ -15,6 +15,7 @@ import dnf
 import qubesadmin
 import qubesadmin.tools
 import rpm
+import tqdm
 import xdg.BaseDirectory
 
 PATH_PREFIX = '/var/lib/qubes/vm-templates'
@@ -249,25 +250,14 @@ def qrexec_download(args, app, spec, path, dlsize=None):
         payload = qrexec_payload(args, app, spec)
         proc.stdin.write(payload.encode('UTF-8'))
         proc.stdin.close()
-        while proc.poll() == None:
-            width = shutil.get_terminal_size((80, 20)).columns
-            pct = '%5.f%% ' % math.floor(f.tell() / dlsize * 100)
-            bar_len = width - len(pct) - 2
-            num_hash = math.floor(f.tell() / dlsize * bar_len)
-            num_space = bar_len - num_hash
-            # Clear previous bar
-            print(u'\u001b[1000D', end='', file=sys.stderr)
-            print(pct + '[' + ('#' * num_hash) + (' ' * num_space) + ']',
-                end='', file=sys.stderr)
-            sys.stderr.flush()
-            time.sleep(0.1)
-        #while True:
-        #    c = proc.stderr.read(1)
-        #    if not c:
-        #        break
-        #    # Write raw byte w/o decoding
-        #    sys.stdout.buffer.write(c)
-        #    sys.stdout.flush()
+        with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
+                unit_divisor=1000, unit='B') as pbar:
+            last = 0
+            while proc.poll() == None:
+                cur = f.tell()
+                pbar.update(cur - last)
+                last = cur
+                time.sleep(0.1)
         if proc.wait() != 0:
             return False
         return True
