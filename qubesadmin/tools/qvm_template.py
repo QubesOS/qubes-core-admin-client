@@ -60,6 +60,8 @@ parser.add_argument('--allow-pv', action='store_true',
 # qvm-template download
 parser.add_argument('--downloaddir', default='.',
     help='Override download directory.')
+parser.add_argument('--retries', default=5, type=int,
+    help='Override number of retries for downloads.')
 # qvm-template list
 parser.add_argument('--all', action='store_true')
 parser.add_argument('--installed', action='store_true')
@@ -211,14 +213,24 @@ def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
             stderr=subprocess.PIPE)
 
 def qrexec_payload(args, app, spec):
+    def check_newline(string, name):
+        if '\n' in string:
+            parser.error(f"Malformed {name}:" +
+                " argument should not contain '\\n'.")
+
     payload = ''
     for r in args.enablerepo if args.enablerepo else []:
+        check_newline(r, '--enablerepo')
         payload += '--enablerepo=%s\n' % r
     for r in args.disablerepo if args.disablerepo else []:
+        check_newline(r, '--disablerepo')
         payload += '--disablerepo=%s\n' % r
     for r in args.repoid if args.repoid else []:
+        check_newline(r, '--repoid')
         payload += '--repoid=%s\n' % r
+    check_newline(args.releasever, '--releasever')
     payload += '--releasever=%s\n' % args.releasever
+    check_newline(spec, 'template name')
     payload += spec + '\n'
     payload += '---\n'
     for fn in args.repo_files:
@@ -232,7 +244,7 @@ def qrexec_repoquery(args, app, spec='*'):
     stdout, stderr = proc.communicate(payload.encode('UTF-8'))
     stdout = stdout.decode('ASCII')
     if proc.wait() != 0:
-        return None
+        raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
     result = []
     for line in stdout.strip().split('\n'):
         entry = line.split(':')
@@ -259,7 +271,8 @@ def qrexec_download(args, app, spec, path, dlsize=None):
                 last = cur
                 time.sleep(0.1)
         if proc.wait() != 0:
-            return False
+            raise ConnectionError(
+                "qrexec call 'qubes.TemplateDownload' failed.")
         return True
 
 def build_version_str(evr):
@@ -334,7 +347,6 @@ def get_dl_list(args, app):
         query_res = qrexec_repoquery(args, app, PACKAGE_NAME_PREFIX + template)
         if len(query_res) == 0:
             parser.error('Package \'%s\' not found.' % template)
-            # TODO: Better error handling
             sys.exit(1)
         # We only select one (latest) package for each distinct package name
         for name, epoch, version, release, reponame, dlsize, summary \
@@ -358,10 +370,19 @@ def download(args, app, path_override=None, dl_list=None):
                 file=sys.stderr)
         else:
             print('Downloading \'%s\'...' % spec, file=sys.stderr)
-            ret = qrexec_download(args, app, spec, target, dlsize)
-            if not ret:
-                # TODO: Retry?
+            ok = False
+            for attempt in range(args.retries):
+                try:
+                    qrexec_download(args, app, spec, target, dlsize)
+                    ok = True
+                    break
+                except ConnectionError:
+                    if attempt + 1 < args.retries:
+                        print('\'%s\' download failed, retrying...' % spec,
+                            file=sys.stderr)
+            if not ok:
                 print('\'%s\' download failed.' % spec, file=sys.stderr)
+                os.remove(target)
                 sys.exit(1)
 
 def remove(args, app):
