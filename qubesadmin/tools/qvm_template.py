@@ -22,6 +22,7 @@ PATH_PREFIX = '/var/lib/qubes/vm-templates'
 TEMP_DIR = '/var/tmp'
 PACKAGE_NAME_PREFIX = 'qubes-template-'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
+UNVERIFIED_SUFFIX = '.unverified'
 
 def qubes_release():
     if os.path.exists('/usr/share/qubes/marker-vm'):
@@ -147,11 +148,14 @@ def install(args, app):
             rpm_list.append(os.path.join(args.cachedir, target_file))
     dl_list = dl_list_copy
 
-    download(args, app, path_override=args.cachedir, dl_list=dl_list)
+    download(args, app, path_override=args.cachedir,
+        dl_list=dl_list, suffix=UNVERIFIED_SUFFIX)
 
-    for rpmfile in rpm_list:
-        if not verify_rpm(rpmfile, args.nogpgcheck, transaction_set):
+    for idx, rpmfile in enumerate(rpm_list):
+        path = rpmfile + UNVERIFIED_SUFFIX
+        if not verify_rpm(path, args.nogpgcheck, transaction_set):
             parser.error('Package \'%s\' verification failed.' % template)
+        os.rename(path, rpmfile)
 
     for rpmfile in rpm_list:
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
@@ -356,7 +360,7 @@ def get_dl_list(args, app):
                 candid[name] = (ver, int(dlsize))
     return candid
 
-def download(args, app, path_override=None, dl_list=None):
+def download(args, app, path_override=None, dl_list=None, suffix=''):
     if dl_list is None:
         dl_list = get_dl_list(args, app)
 
@@ -365,15 +369,21 @@ def download(args, app, path_override=None, dl_list=None):
         version_str = build_version_str(ver)
         spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
         target = os.path.join(path, '%s.rpm' % spec)
+        target_suffix = target + suffix
+        if suffix != '' and os.path.exists(target_suffix):
+            print('\'%s\' already exists, skipping...' % target,
+                file=sys.stderr)
         if os.path.exists(target):
             print('\'%s\' already exists, skipping...' % target,
                 file=sys.stderr)
+            if suffix != '':
+                os.rename(target, target_suffix)
         else:
             print('Downloading \'%s\'...' % spec, file=sys.stderr)
             ok = False
             for attempt in range(args.retries):
                 try:
-                    qrexec_download(args, app, spec, target, dlsize)
+                    qrexec_download(args, app, spec, target_suffix, dlsize)
                     ok = True
                     break
                 except ConnectionError:
@@ -382,7 +392,7 @@ def download(args, app, path_override=None, dl_list=None):
                             file=sys.stderr)
             if not ok:
                 print('\'%s\' download failed.' % spec, file=sys.stderr)
-                os.remove(target)
+                os.remove(target_suffix)
                 sys.exit(1)
 
 def remove(args, app):
