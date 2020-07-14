@@ -23,6 +23,8 @@
 
 import datetime
 import socket
+import string
+
 
 class RuleOption(object):
     '''Base class for a single rule element'''
@@ -120,6 +122,9 @@ class DstHost(RuleOption):
                 except socket.error:
                     self.type = 'dsthost'
                     self.prefixlen = 0
+                    safe_set = string.ascii_lowercase + string.digits + '-._'
+                    if not all(c in safe_set for c in value):
+                        raise ValueError('Invalid hostname')
         else:
             host, prefixlen = value.split('/', 1)
             prefixlen = int(prefixlen)
