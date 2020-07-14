@@ -82,7 +82,7 @@ class VMCollection(object):
             if vm.name not in self._vm_list:
                 # VM no longer exists
                 del self._vm_objects[name]
-            elif vm.__class__.__name__ != self._vm_list[vm.name]['class']:
+            elif vm.klass != self._vm_list[vm.name]['class']:
                 # VM class have changed
                 del self._vm_objects[name]
             # TODO: some generation ID, to detect VM re-creation

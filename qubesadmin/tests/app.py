@@ -158,6 +158,30 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
             self.fail('VM not found in collection')
         self.assertAllCalled()
 
+    def test_012_getitem_cached_object(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        try:
+            vm1 = self.app.domains['test-vm']
+            vm2 = self.app.domains['test-vm']
+            self.assertIs(vm1, vm2)
+        except KeyError:
+            self.fail('VM not found in collection')
+        self.app.domains.clear_cache()
+        # even after clearing the cache, the same instance should be returned
+        # if the class haven't changed
+        vm3 = self.app.domains['test-vm']
+        self.assertIs(vm1, vm3)
+
+        # change the class and expected different object
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=StandaloneVM state=Running\n'
+        self.app.domains.clear_cache()
+        vm4 = self.app.domains['test-vm']
+        self.assertIsNot(vm1, vm4)
+        self.assertAllCalled()
+
+
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
     def setUp(self):
