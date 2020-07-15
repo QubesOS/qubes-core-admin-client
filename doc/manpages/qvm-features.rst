@@ -82,6 +82,19 @@ See also `gui` feature.
 If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
 applicable for given VM virtualization mode).
 
+gui-\*, gui-default-\*
+^^^^^^^^^^^^^^^^^^^^^^
+
+GUI daemon configuration. See `/etc/qubes/guid.conf` for a list of supported
+options.
+
+To change a given GUI option for a specific qube, set the `gui-{option}`
+feature (with underscores replaced with dashes). For example, to enable
+`allow_utf8_titles` for a qube, set `gui-allow-utf8-titles` to `True`.
+
+To change a given GUI option globally, set the `gui-default-{option}` feature
+on the GuiVM for that qube.
+
 qrexec
 ^^^^^^
 

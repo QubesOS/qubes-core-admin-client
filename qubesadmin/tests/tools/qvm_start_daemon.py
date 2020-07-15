@@ -22,11 +22,13 @@ import os
 import signal
 import tempfile
 import unittest.mock
+import re
 
 import asyncio
 
 import qubesadmin.tests
 import qubesadmin.tools.qvm_start_daemon
+from  qubesadmin.tools.qvm_start_daemon import GUI_DAEMON_OPTIONS
 import qubesadmin.vm
 
 
@@ -61,16 +63,20 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
 
         self.assertAllCalled()
 
-    def test_010_common_args(self):
+    def setup_common_args(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
+            b'0\x00test-vm class=AppVM state=Running\n' \
+            b'gui-vm class=AppVM state=Running'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
             b'0\x00default=False type=label red'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
             b'0\x00default=False type=bool False'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
         self.app.expected_calls[
             ('dom0', 'admin.label.Get', 'red', None)] = \
             b'0\x000xff0000'
@@ -82,86 +88,124 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
              'rpc-clipboard', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
 
-        with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
-                kde_mock:
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
+            b'0\x00default=99 type=int 99'
+
+        for name, _kind in GUI_DAEMON_OPTIONS:
+            self.app.expected_calls[
+                ('test-vm', 'admin.vm.feature.Get',
+                 'gui-' + name.replace('_', '-'), None)] = \
+                b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+
+            self.app.expected_calls[
+                ('gui-vm', 'admin.vm.feature.Get',
+                 'gui-default-' + name.replace('_', '-'), None)] = \
+                b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+
+    def run_common_args(self):
+        with unittest.mock.patch.object(
+                self.launcher, 'kde_guid_args') as kde_mock, \
+             unittest.mock.patch.object(
+                 self.launcher, 'write_guid_config') as write_config_mock:
             kde_mock.return_value = []
 
             args = self.launcher.common_guid_args(self.app.domains['test-vm'])
-            self.assertEqual(args, [
-                '/usr/bin/qubes-guid', '-N', 'test-vm',
-                '-c', '0xff0000',
-                '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
-                '-l', '1', '-q'])
+
+        self.assertEqual(len(write_config_mock.mock_calls), 1)
+
+        config_args = write_config_mock.mock_calls[0][1]
+        self.assertEqual(config_args[0], '/var/run/qubes/guid-conf.99')
+        config = config_args[1]
+
+        # Strip comments and empty lines
+        config = re.sub(r'^#.*\n', '', config)
+        config = re.sub(r'^\n', '', config)
 
         self.assertAllCalled()
+        return args, config
+
+    def test_010_common_args(self):
+        self.setup_common_args()
+
+        args, config = self.run_common_args()
+        self.assertEqual(args, [
+            '/usr/bin/qubes-guid', '-N', 'test-vm',
+            '-c', '0xff0000',
+            '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
+            '-l', '1', '-q',
+            '-C', '/var/run/qubes/guid-conf.99',
+        ])
+
+        self.assertEqual(config, '''\
+global: {
+}
+''')
 
     def test_011_common_args_debug(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
-            b'0\x00default=False type=label red'
+        self.setup_common_args()
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
             b'0\x00default=False type=bool True'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.Get', 'red', None)] = \
-            b'0\x000xff0000'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.Index', 'red', None)] = \
-            b'0\x001'
-        self.app.expected_calls[
-            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
-             'rpc-clipboard', None)] = \
-            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
 
-        with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
-                kde_mock:
-            kde_mock.return_value = []
-
-            args = self.launcher.common_guid_args(self.app.domains['test-vm'])
-            self.assertEqual(args, [
-                '/usr/bin/qubes-guid', '-N', 'test-vm',
-                '-c', '0xff0000',
-                '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
-                '-l', '1', '-v', '-v'])
-
-        self.assertAllCalled()
+        args, config = self.run_common_args()
+        self.assertEqual(args, [
+            '/usr/bin/qubes-guid', '-N', 'test-vm',
+            '-c', '0xff0000',
+            '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
+            '-l', '1', '-v', '-v',
+            '-C', '/var/run/qubes/guid-conf.99',
+        ])
+        self.assertEqual(config, '''\
+global: {
+}
+''')
 
     def test_012_common_args_rpc_clipboard(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00test-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
-            b'0\x00default=False type=label red'
-        self.app.expected_calls[
-            ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
-            b'0\x00default=False type=bool False'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.Get', 'red', None)] = \
-            b'0\x000xff0000'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.Index', 'red', None)] = \
-            b'0\x001'
+        self.setup_common_args()
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'rpc-clipboard', None)] = \
             b'0\x001'
 
-        with unittest.mock.patch.object(self.launcher, 'kde_guid_args') as \
-                kde_mock:
-            kde_mock.return_value = []
+        args, config = self.run_common_args()
 
-            args = self.launcher.common_guid_args(self.app.domains['test-vm'])
-            self.assertEqual(args, [
-                '/usr/bin/qubes-guid', '-N', 'test-vm',
-                '-c', '0xff0000',
-                '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
-                '-l', '1', '-q', '-Q'])
+        self.assertEqual(args,  [
+            '/usr/bin/qubes-guid', '-N', 'test-vm',
+            '-c', '0xff0000',
+            '-i', '/usr/share/icons/hicolor/128x128/devices/appvm-red.png',
+            '-l', '1', '-q', '-Q',
+            '-C', '/var/run/qubes/guid-conf.99',
+        ])
+        self.assertEqual(config, '''\
+global: {
+}
+''')
 
-        self.assertAllCalled()
+    def test_013_common_args_guid_config(self):
+        self.setup_common_args()
+
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.Get',
+             'gui-allow-fullscreen', None)] = \
+                 b'0\x001'
+        # The template will not be asked for this feature
+        del self.app.expected_calls[
+            ('gui-vm', 'admin.vm.feature.Get',
+             'gui-default-allow-fullscreen', None)]
+
+        self.app.expected_calls[
+            ('gui-vm', 'admin.vm.feature.Get',
+             'gui-default-secure-copy-sequence', None)] = \
+                 b'0\x00Ctrl-Alt-Shift-c'
+
+        _args, config = self.run_common_args()
+        self.assertEqual(config, '''\
+global: {
+  allow_fullscreen = true;
+  secure_copy_sequence = "Ctrl-Alt-Shift-c";
+}
+''')
 
     @unittest.mock.patch('asyncio.create_subprocess_exec')
     def test_020_start_gui_for_vm(self, proc_mock):
