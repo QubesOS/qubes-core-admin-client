@@ -149,6 +149,7 @@ class DAEMONLauncher:
         """
         self.app = app
         self.started_processes = {}
+        self.kde = False
 
     @asyncio.coroutine
     def send_monitor_layout(self, vm, layout=None, startup=False):
@@ -215,36 +216,32 @@ class DAEMONLauncher:
         """Return KDE-specific arguments for gui-daemon, if applicable"""
 
         guid_cmd = []
-        # Avoid using environment variables for checking the current session,
-        #  because this script may be called with cleared env (like with sudo).
-        if subprocess.check_output(
-                ['xprop', '-root', '-notype', 'KWIN_RUNNING']) == \
-                b'KWIN_RUNNING = 0x1\n':
-            # native decoration plugins is used, so adjust window properties
-            # accordingly
-            guid_cmd += ['-T']  # prefix window titles with VM name
-            # get owner of X11 session
-            session_owner = None
-            for line in subprocess.check_output(['xhost']).splitlines():
-                if line == b'SI:localuser:root':
-                    pass
-                elif line.startswith(b'SI:localuser:'):
-                    session_owner = line.split(b':')[2].decode()
-            if session_owner is not None:
-                data_dir = os.path.expanduser(
-                    '~{}/.local/share'.format(session_owner))
-            else:
-                # fallback to current user
-                data_dir = os.path.expanduser('~/.local/share')
+        # native decoration plugins is used, so adjust window properties
+        # accordingly
+        guid_cmd += ['-T']  # prefix window titles with VM name
+        # get owner of X11 session
+        session_owner = None
+        for line in subprocess.check_output(['xhost']).splitlines():
+            if line == b'SI:localuser:root':
+                pass
+            elif line.startswith(b'SI:localuser:'):
+                session_owner = line.split(b':')[2].decode()
+        if session_owner is not None:
+            data_dir = os.path.expanduser(
+                '~{}/.local/share'.format(session_owner))
+        else:
+            # fallback to current user
+            data_dir = os.path.expanduser('~/.local/share')
 
-            guid_cmd += ['-p',
-                         '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
-                             os.path.join(data_dir,
-                                          'qubes-kde',
-                                          vm.label.name + '.colors'))]
+        guid_cmd += ['-p',
+                        '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
+                            os.path.join(data_dir,
+                                        'qubes-kde',
+                                        vm.label.name + '.colors'))]
         return guid_cmd
 
-    def common_guid_args(self, vm):
+    @staticmethod
+    def common_guid_args(vm):
         """Common qubes-guid arguments for PV(H), HVM and Stubdomain"""
 
         guid_cmd = [GUI_DAEMON_PATH,
@@ -262,7 +259,6 @@ class DAEMONLauncher:
         if vm.features.check_with_template('rpc-clipboard', False):
             guid_cmd.extend(['-Q'])
 
-        guid_cmd += self.kde_guid_args(vm)
         return guid_cmd
 
     @staticmethod
@@ -295,6 +291,8 @@ class DAEMONLauncher:
             local X server.
         """
         guid_cmd = self.common_guid_args(vm)
+        if self.kde:
+            guid_cmd.extend(self.kde_guid_args(vm))
         guid_cmd.extend(['-d', str(vm.xid)])
 
         if vm.virt_mode == 'hvm':
@@ -495,6 +493,8 @@ parser.add_argument('--notify-monitor-layout', action='store_true',
 parser.add_argument('--set-keyboard-layout', action='store_true',
                     help='Set keyboard layout values into GuiVM features.'
                          'This option is implied by --watch')
+parser.add_argument('--kde', action='store_true',
+                    help='Set KDE specific arguments to gui-daemon.')
 # Add it for the help only
 parser.add_argument('--force', action='store_true', default=False,
                     help='Force running daemon without enabled services'
@@ -521,6 +521,8 @@ def main(args=None):
         guivm = args.app.domains.get_blind(args.app.local_name)
         set_keyboard_layout(guivm)
     launcher = DAEMONLauncher(args.app)
+    if args.kde:
+        launcher.kde = True
     if args.watch:
         if not have_events:
             parser.error('--watch option require Python >= 3.5')
