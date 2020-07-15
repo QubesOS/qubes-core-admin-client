@@ -16,6 +16,8 @@ Requires:   python%{python3_pkgversion}-yaml
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 Conflicts:  qubes-core-agent < 4.1.9
+# qubes-guid -C option
+Conflicts:  qubes-gui-daemon < 4.1.7
 
 %description
 This package include managemt tools, like qvm-*.
