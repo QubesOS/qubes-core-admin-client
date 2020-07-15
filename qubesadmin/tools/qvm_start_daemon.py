@@ -136,7 +136,8 @@ def escape_config_string(value):
     https://github.com/Grk0/python-libconf/blob/master/libconf.py
     '''
 
-    assert not NON_ASCII_RE.match(value), 'expected an ASCII string: {!r}'.format(value)
+    assert not NON_ASCII_RE.match(value),\
+        'expected an ASCII string: {!r}'.format(value)
 
     value = (
         value.replace('\\', '\\\\')
