@@ -35,6 +35,7 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
+from . import xcffibhelpers
 
 have_events = False
 try:
@@ -177,6 +178,106 @@ REGEX_OUTPUT = re.compile(r"""
         """)
 
 
+class KeyboardLayout:
+    """Class to store and parse X Keyboard layout data"""
+    # pylint: disable=too-few-public-methods
+    def __init__(self, binary_string):
+        split_string = binary_string.split(b'\0')
+        self.languages = split_string[2].decode().split(',')
+        self.variants = split_string[3].decode().split(',')
+        self.options = split_string[4].decode()
+
+    def get_property(self, layout_num):
+        """Return the selected keyboard layout as formatted for keyboard_layout
+        property."""
+        return '+'.join([self.languages[layout_num],
+                         self.variants[layout_num],
+                         self.options])
+
+
+class XWatcher:
+    """Watch and react for X events related to the keyboard layout changes."""
+    def __init__(self, conn, app):
+        self.app = app
+        self.current_vm = self.app.domains[self.app.local_name]
+
+        self.conn = conn
+        self.ext = self.initialize_extension()
+
+        # get root window
+        self.setup = self.conn.get_setup()
+        self.root = self.setup.roots[0].root
+
+        # atoms (strings) of events we need to watch
+        # keyboard layout was switched
+        self.atom_xklavier = self.conn.core.InternAtom(
+            False, len("XKLAVIER_ALLOW_SECONDARY"),
+            "XKLAVIER_ALLOW_SECONDARY").reply().atom
+        # keyboard layout was changed
+        self.atom_xkb_rules = self.conn.core.InternAtom(
+            False, len("_XKB_RULES_NAMES"),
+            "_XKB_RULES_NAMES").reply().atom
+
+        self.conn.core.ChangeWindowAttributesChecked(
+            self.root, xcffib.xproto.CW.EventMask,
+            [xcffib.xproto.EventMask.PropertyChange])
+        self.conn.flush()
+
+        # initialize state
+        self.keyboard_layout = KeyboardLayout(self.get_keyboard_layout())
+        self.selected_layout = self.get_selected_layout()
+
+    def initialize_extension(self):
+        """Initialize XKB extension (not supported by xcffib by default"""
+        ext = self.conn(xcffibhelpers.key)
+        ext.UseExtension()
+        return ext
+
+    def get_keyboard_layout(self):
+        """Check what is current keyboard layout definition"""
+        property_cookie = self.conn.core.GetProperty(
+            False,  # delete
+            self.root,  # window
+            self.atom_xkb_rules,
+            xcffib.xproto.Atom.STRING,
+            0, 1000
+        )
+        prop_reply = property_cookie.reply()
+        return prop_reply.value.buf()
+
+    def get_selected_layout(self):
+        """Check which keyboard layout is currently selected"""
+        state_reply = self.ext.GetState().reply()
+        return state_reply.lockedGroup[0]
+
+    def update_keyboard_layout(self):
+        """Update current vm's keyboard_layout property"""
+        new_property = self.keyboard_layout.get_property(
+            self.selected_layout)
+
+        current_property = self.current_vm.keyboard_layout
+
+        if new_property != current_property:
+            self.current_vm.keyboard_layout = new_property
+
+    def event_reader(self, callback):
+        """Poll for X events related to keyboard layout"""
+        try:
+            for event in iter(self.conn.poll_for_event, None):
+                if isinstance(event, xcffib.xproto.PropertyNotifyEvent):
+                    if event.atom == self.atom_xklavier:
+                        self.selected_layout = self.get_selected_layout()
+                    elif event.atom == self.atom_xkb_rules:
+                        self.keyboard_layout = KeyboardLayout(
+                            self.get_keyboard_layout())
+                    else:
+                        continue
+
+                    self.update_keyboard_layout()
+        except xcffib.ConnectionException:
+            callback()
+
+
 def get_monitor_layout():
     """Get list of monitors and their size/position"""
     outputs = []
@@ -216,31 +317,6 @@ def get_monitor_layout():
                     phys_size,
                 ))
     return outputs
-
-
-def set_keyboard_layout(vm):
-    """Set layout configuration into features for Gui admin extension"""
-    try:
-        # Examples of 'xprop -root _XKB_RULES_NAMES' output values:
-        # "evdev", "pc105", "fr", "oss", ""
-        # "evdev", "pc105", "pl,us", ",", "grp:win_switch,compose:caps"
-
-        # We use the first layout provided
-        xkb_re = r'_XKB_RULES_NAMES\(STRING\) = ' \
-                 r'\"(.*)\", \"(.*)\", \"(.*)\", \"(.*)\", \"(.*)\"\n'
-        xkb_rules_names = subprocess.check_output(
-            ['xprop', '-root', '_XKB_RULES_NAMES']).decode()
-        xkb_parsed = re.match(xkb_re, xkb_rules_names)
-        if xkb_parsed:
-            xkb_layout = [x.split(',')[0] for x in xkb_parsed.groups()[2:4]]
-            # We keep all options
-            xkb_layout.append(xkb_parsed.group(5))
-            keyboard_layout = '+'.join(xkb_layout)
-            vm.features['keyboard-layout'] = keyboard_layout
-        else:
-            vm.log.warning('Failed to parse layout for %s', vm)
-    except subprocess.CalledProcessError as e:
-        vm.log.warning('Failed to set layout for %s: %s', vm, str(e))
 
 
 class DAEMONLauncher:
@@ -596,17 +672,6 @@ class DAEMONLauncher:
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
 
-
-def x_reader(conn, callback):
-    """Try reading something from X connection to check if it's still alive.
-    In case it isn't, call *callback*.
-    """
-    try:
-        conn.poll_for_event()
-    except xcffib.ConnectionException:
-        callback()
-
-
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
                                 'qvm-start-daemon.pid')
@@ -627,9 +692,6 @@ parser.add_argument('--pidfile', action='store', default=pidfile_path,
 parser.add_argument('--notify-monitor-layout', action='store_true',
                     help='Notify running instance in --watch mode'
                          ' about changed monitor layout')
-parser.add_argument('--set-keyboard-layout', action='store_true',
-                    help='Set keyboard layout values into GuiVM features.'
-                         'This option is implied by --watch')
 parser.add_argument('--kde', action='store_true',
                     help='Set KDE specific arguments to gui-daemon.')
 # Add it for the help only
@@ -652,11 +714,6 @@ def main(args=None):
         parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    if args.watch and 'guivm-gui-agent' in enabled_services:
-        args.set_keyboard_layout = True
-    if args.set_keyboard_layout or os.path.exists('/etc/qubes-release'):
-        guivm = args.app.domains.get_blind(args.app.local_name)
-        set_keyboard_layout(guivm)
     launcher = DAEMONLauncher(args.app)
     if args.kde:
         launcher.kde = True
@@ -680,8 +737,10 @@ def main(args=None):
                                     launcher.send_monitor_layout_all)
 
             conn = xcffib.connect()
+            x_watcher = XWatcher(conn, args.app)
             x_fd = conn.get_file_descriptor()
-            loop.add_reader(x_fd, x_reader, conn, events_listener.cancel)
+            loop.add_reader(x_fd, x_watcher.event_reader,
+                            events_listener.cancel)
 
             try:
                 loop.run_until_complete(events_listener)
