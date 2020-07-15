@@ -1,3 +1,49 @@
+qubes-core-admin-client (4.1.7-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Added a safeguard for invalid firewall rules
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-start-daemon: reduce required permissions to sys-gui
+    itself
+
+  [ Frédéric Pierret (fepitre) ]
+  * debian: add guivm related content
+  * Makefile: add clean of pkgs and debian changelog.*
+
+  [ Dmitry Fedorov ]
+  * connect to PA in stubdom if audio-model enabled run pacat in low
+    latency mode by default
+  * use function to determine pacat domid
+
+  [ Marta Marczykowska-Górecka ]
+  * Added better __eq__ method to Label class
+
+  [ Frédéric Pierret (fepitre) ]
+  * Handle KDE with specific arg/desktop file
+  * Fix missing semi-colon and new line
+  * tests: kde_args are passed with property of launcher
+  * qvm-start-daemon: common_guid_args is now a staticmethod
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix VM validity check for cached VM objects
+
+  [ Marta Marczykowska-Górecka ]
+  * Fixed inconsistent firewall address checking
+
+  [ Paweł Marczewski ]
+  * Generate qubes-guid options based on features
+  * Clean up the guid-conf file on domain stop
+
+  [ Marek Marczykowski-Górecki ]
+  * Wrap too long line
+  * rpm/deb: require new enough qubes-gui-daemon
+
+  [ Marta Marczykowska-Górecka ]
+  * Added dynamic X keyboard event monitoring to qvm_start_daemon.py
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 15 Jul 2020 16:18:20 +0200
+
 qubes-core-admin-client (4.1.6-1) unstable; urgency=medium
 
   * Make pylint happy
