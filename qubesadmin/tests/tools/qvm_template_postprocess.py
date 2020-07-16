@@ -168,8 +168,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.volume.List', None, None)] = \
             b'0\0root\nprivate\nvolatile\nkernel\n'
-        self.app.expected_calls[('test-vm', 'admin.vm.volume.Import', 'private',
-                                 b'')] = b'0\0'
+        self.app.expected_calls[('test-vm', 'admin.vm.volume.Clear', 'private',
+                                 None)] = b'0\0'
 
         vm = self.app.domains['test-vm']
         qubesadmin.tools.qvm_template_postprocess.reset_private_img(vm)
