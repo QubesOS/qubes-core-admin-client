@@ -236,6 +236,10 @@ class Volume(object):
             'ImportWithSize', payload=size_line.encode(),
             payload_stream=stream)
 
+    def clear_data(self):
+        ''' Clear existing volume content. '''
+        self._qubesd_call('Clear')
+
     def clone(self, source):
         ''' Clone data from sane volume of another VM.
 

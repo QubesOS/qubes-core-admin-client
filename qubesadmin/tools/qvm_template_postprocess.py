@@ -124,8 +124,7 @@ def import_root_img(vm, source_dir):
 
 def reset_private_img(vm):
     '''Clear private volume'''
-    with open('/dev/null', 'rb') as null:
-        vm.volumes['private'].import_data(stream=null)
+    vm.volumes['private'].clear_data()
 
 
 def import_appmenus(vm, source_dir):
