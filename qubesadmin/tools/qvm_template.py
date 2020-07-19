@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import enum
+import fnmatch
 import os
 import shutil
 import subprocess
@@ -262,7 +263,7 @@ def qrexec_repoquery(args, app, spec='*'):
         if not entry[0].startswith(PACKAGE_NAME_PREFIX):
             continue
         entry[0] = entry[0][len(PACKAGE_NAME_PREFIX):]
-        result.append(entry)
+        result.append(tuple(entry))
     return result
 
 def qrexec_download(args, app, spec, path, dlsize=None):
@@ -289,6 +290,28 @@ def qrexec_download(args, app, spec, path, dlsize=None):
 def build_version_str(evr):
     return '%s:%s-%s' % evr
 
+def is_match_spec(name, epoch, version, release, spec):
+    # Refer to "NEVRA Matching" in the DNF documentation
+    # NOTE: Currently "arch" is ignored as the templates should be of "noarch"
+    if epoch != 0:
+        targets = [
+            f'{name}-{epoch}:{version}-{release}',
+            f'{name}',
+            f'{name}-{epoch}:{version}'
+        ]
+    else:
+        targets = [
+            f'{name}-{epoch}:{version}-{release}',
+            f'{name}-{version}-{release}',
+            f'{name}',
+            f'{name}-{epoch}:{version}',
+            f'{name}-{version}'
+        ]
+    for prio, target in enumerate(targets):
+        if fnmatch.fnmatch(target, spec):
+            return True, prio
+    return False, float('inf')
+
 def do_list(args, app):
     # TODO: Check local template name actually matches to account for renames
     # TODO: Also display repo like `dnf list`
@@ -298,7 +321,13 @@ def do_list(args, app):
         args.all = True
 
     if args.all or args.available or args.extras or args.upgrades:
-        query_res = qrexec_repoquery(args, app)
+        if args.templates:
+            query_res = set()
+            for spec in args.templates:
+                query_res |= set(qrexec_repoquery(args, app, spec))
+            query_res = list(query_res)
+        else:
+            query_res = qrexec_repoquery(args, app)
 
     if args.installed or args.all:
         for vm in app.domains:
@@ -307,8 +336,16 @@ def do_list(args, app):
                     vm.features['template-epoch'],
                     vm.features['template-version'],
                     vm.features['template-release']))
-                tpl_list.append(
-                    (vm.name, version_str, TemplateState.INSTALLED.value))
+                if not args.templates or \
+                        any(is_match_spec(
+                            vm.name,
+                            vm.features['template-epoch'],
+                            vm.features['template-version'],
+                            vm.features['template-release'],
+                            spec)[0]
+                        for spec in args.templates):
+                    tpl_list.append(
+                        (vm.name, version_str, TemplateState.INSTALLED.value))
 
     if args.available or args.all:
         #pylint: disable=unused-variable
