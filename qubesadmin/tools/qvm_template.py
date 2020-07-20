@@ -4,6 +4,7 @@ import argparse
 import datetime
 import enum
 import fnmatch
+import itertools
 import os
 import shutil
 import subprocess
@@ -68,12 +69,24 @@ parser.add_argument('--installed', action='store_true')
 parser.add_argument('--available', action='store_true')
 parser.add_argument('--extras', action='store_true')
 parser.add_argument('--upgrades', action='store_true')
+# qvm-template search
+# Already defined above
+#parser.add_argument('--all', action='store_true')
 
 class TemplateState(enum.Enum):
     INSTALLED = 'installed'
     AVAILABLE = 'available'
     EXTRA = 'extra'
     UPGRADABLE = 'upgradable'
+
+    def title(self):
+        TEMPLATE_TITLES = {
+            TemplateState.INSTALLED: 'Installed Templates',
+            TemplateState.AVAILABLE: 'Available Templates',
+            TemplateState.EXTRA: 'Extra Templates',
+            TemplateState.UPGRADABLE: 'Available Upgrades'
+        }
+        return TEMPLATE_TITLES[self]
 
 class VersionSelector(enum.Enum):
     LATEST = enum.auto()
@@ -134,14 +147,15 @@ def install(args, app, version_selector=VersionSelector.LATEST,
         if template.endswith('.rpm'):
             if not os.path.exists(template):
                 parser.error('RPM file \'%s\' not found.' % template)
-            rpm_list.append(template)
+            size = os.path.getsize(template)
+            rpm_list.append((template, size, '@commandline'))
 
     os.makedirs(args.cachedir, exist_ok=True)
 
     dl_list = get_dl_list(args, app, version_selector=version_selector)
     dl_list_copy = dl_list.copy()
     # Verify that the templates are not yet installed
-    for name, (ver, _) in dl_list.items():
+    for name, (ver, dlsize, reponame) in dl_list.items():
         if not ignore_existing and name in app.domains:
             print(('Template \'%s\' already installed, skipping...'
                 ' (You may want to use the {reinstall,upgrade,downgrade}'
@@ -151,20 +165,26 @@ def install(args, app, version_selector=VersionSelector.LATEST,
             version_str = build_version_str(ver)
             target_file = \
                 '%s%s-%s.rpm' % (PACKAGE_NAME_PREFIX, name, version_str)
-            rpm_list.append(os.path.join(args.cachedir, target_file))
+            rpm_list.append((os.path.join(args.cachedir, target_file),
+                dlsize, reponame))
     dl_list = dl_list_copy
 
     download(args, app, path_override=args.cachedir,
         dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
         version_selector=version_selector)
 
-    for rpmfile in rpm_list:
-        path = rpmfile + UNVERIFIED_SUFFIX
+    # XXX: Verify if package name is what we want?
+    for rpmfile, dlsize, reponame in rpm_list:
+        if reponame != '@commandline':
+            path = rpmfile + UNVERIFIED_SUFFIX
+        else:
+            path = rpmfile
         if not verify_rpm(path, args.nogpgcheck, transaction_set):
             parser.error('Package \'%s\' verification failed.' % rpmfile)
-        os.rename(path, rpmfile)
+        if reponame != '@commandline':
+            os.rename(path, rpmfile)
 
-    for rpmfile in rpm_list:
+    for rpmfile, dlsize, reponame in rpm_list:
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
             package_hdr = get_package_hdr(rpmfile)
             package_name = package_hdr[rpm.RPMTAG_NAME]
@@ -207,7 +227,9 @@ def install(args, app, version_selector=VersionSelector.LATEST,
             tpl.features['template-install-date'] = \
                 str(datetime.datetime.today())
             tpl.features['template-name'] = name
-            # TODO: Store source repo
+            tpl.features['template-reponame'] = reponame
+            tpl.features['template-summary'] = \
+                package_hdr[rpm.RPMTAG_SUMMARY]
 
 def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
     if args.updatevm:
@@ -312,10 +334,43 @@ def is_match_spec(name, epoch, version, release, spec):
             return True, prio
     return False, float('inf')
 
-def do_list(args, app):
-    # TODO: Check local template name actually matches to account for renames
-    # TODO: Also display repo like `dnf list`
+def list_templates(args, app, operation):
     tpl_list = []
+
+    def append_list(data, status):
+        name, epoch, version, release, reponame, dlsize, summary = data
+        version_str = build_version_str((epoch, version, release))
+        tpl_list.append((status, name, version_str, reponame))
+
+    def append_info(data, status):
+        name, epoch, version, release, reponame, dlsize, summary = data
+        tpl_list.append((status, 'Name', ':', name))
+        tpl_list.append((status, 'Epoch', ':', epoch))
+        tpl_list.append((status, 'Version', ':', version))
+        tpl_list.append((status, 'Release', ':', release))
+        tpl_list.append((status, 'Size', ':',
+            qubesadmin.utils.size_to_human(int(dlsize))))
+        tpl_list.append((status, 'Repository', ':', reponame))
+        tpl_list.append((status, 'Summary', ':', summary))
+        tpl_list.append((status, ' ', ' ', ' ')) # empty line
+
+    if operation == 'list':
+        append = append_list
+    elif operation == 'info':
+        append = append_info
+    else:
+        assert False and 'Unknown operation'
+
+    def append_vm(vm, status):
+        if vm.name == vm.features['template-name']:
+            append((
+                vm.features['template-name'],
+                vm.features['template-epoch'],
+                vm.features['template-version'],
+                vm.features['template-release'],
+                vm.features['template-reponame'],
+                vm.get_disk_utilization(),
+                vm.features['template-summary']), status)
 
     if not (args.installed or args.available or args.extras or args.upgrades):
         args.all = True
@@ -332,27 +387,19 @@ def do_list(args, app):
     if args.installed or args.all:
         for vm in app.domains:
             if 'template-install-date' in vm.features:
-                version_str = build_version_str((
-                    vm.features['template-epoch'],
-                    vm.features['template-version'],
-                    vm.features['template-release']))
                 if not args.templates or \
                         any(is_match_spec(
-                            vm.name,
+                            vm.features['template-name'],
                             vm.features['template-epoch'],
                             vm.features['template-version'],
                             vm.features['template-release'],
                             spec)[0]
                         for spec in args.templates):
-                    tpl_list.append(
-                        (vm.name, version_str, TemplateState.INSTALLED.value))
+                    append_vm(vm, TemplateState.INSTALLED)
 
     if args.available or args.all:
-        #pylint: disable=unused-variable
-        for name, epoch, version, release, reponame, dlsize, summary \
-                in query_res:
-            version_str = build_version_str((epoch, version, release))
-            tpl_list.append((name, version_str, TemplateState.AVAILABLE.value))
+        for data in query_res:
+            append(data, TemplateState.AVAILABLE)
 
     if args.extras:
         remote = set()
@@ -362,12 +409,7 @@ def do_list(args, app):
         for vm in app.domains:
             if 'template-name' in vm.features and \
                     vm.features['template-name'] not in remote:
-                version_str = build_version_str((
-                    vm.features['template-epoch'],
-                    vm.features['template-version'],
-                    vm.features['template-release']))
-                tpl_list.append(
-                    (vm.name, version_str, TemplateState.EXTRA.value))
+                append_vm(vm, TemplateState.EXTRA)
 
     if args.upgrades:
         local = {}
@@ -377,15 +419,21 @@ def do_list(args, app):
                     vm.features['template-epoch'],
                     vm.features['template-version'],
                     vm.features['template-release'])
-        for name, epoch, version, release, reponame, dlsize, summary \
-                in query_res:
+        for data in query_res:
+            name, epoch, version, release, reponame, dlsize, summary = data
             if name in local:
                 if rpm.labelCompare(local[name], (epoch, version, release)) < 0:
-                    version_str = build_version_str((epoch, version, release))
-                    tpl_list.append(
-                        (name, version_str, TemplateState.UPGRADABLE.value))
+                    append(data, TemplateState.UPGRADABLE)
 
-    qubesadmin.tools.print_table(tpl_list)
+    if len(tpl_list) == 0:
+        parser.error('No matching templates to list')
+
+    for k, g in itertools.groupby(tpl_list, lambda x: x[0]):
+        print(k.title())
+        qubesadmin.tools.print_table(list(map(lambda x: x[1:], g)))
+
+def search(args, app):
+    raise NotImplementedError
 
 def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
     full_candid = {}
@@ -404,11 +452,12 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
         #pylint: disable=unused-variable
         for name, epoch, version, release, reponame, dlsize, summary \
                 in query_res:
+            assert reponame != '@commandline'
             ver = (epoch, version, release)
             if version_selector == VersionSelector.LATEST:
                 if name not in candid \
-                        or rpm.labelCompare(candid[name], ver) < 0:
-                    candid[name] = (ver, int(dlsize))
+                        or rpm.labelCompare(candid[name][0], ver) < 0:
+                    candid[name] = (ver, int(dlsize), reponame)
             elif version_selector == VersionSelector.REINSTALL:
                 if name not in app.domains:
                     parser.error("Template '%s' not installed." % name)
@@ -418,7 +467,7 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
                     vm.features['template-version'],
                     vm.features['template-release'])
                 if rpm.labelCompare(ver, cur_ver) == 0:
-                    candid[name] = (ver, int(dlsize))
+                    candid[name] = (ver, int(dlsize), reponame)
             elif version_selector in [VersionSelector.LATEST_LOWER,
                     VersionSelector.LATEST_HIGHER]:
                 if name not in app.domains:
@@ -433,8 +482,8 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
                         else 1
                 if rpm.labelCompare(ver, cur_ver) == cmp_res:
                     if name not in candid \
-                            or rpm.labelCompare(candid[name], ver) < 0:
-                        candid[name] = (ver, int(dlsize))
+                            or rpm.labelCompare(candid[name][0], ver) < 0:
+                        candid[name] = (ver, int(dlsize), reponame)
 
         if len(candid) == 0:
             if version_selector == VersionSelector.LATEST:
@@ -448,13 +497,12 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
             elif version_selector == VersionSelector.LATEST_HIGHER:
                 parser.error('Higher version of template \'%s\' not found.' \
                     % template)
-            sys.exit(1)
 
         # Merge & choose the template with the highest version
-        for name, (ver, dlsize) in candid.items():
+        for name, (ver, dlsize, reponame) in candid.items():
             if name not in full_candid \
-                    or rpm.labelCompare(full_candid[name], ver) < 0:
-                full_candid[name] = (ver, dlsize)
+                    or rpm.labelCompare(full_candid[name][0], ver) < 0:
+                full_candid[name] = (ver, dlsize, reponame)
 
     return candid
 
@@ -464,7 +512,7 @@ def download(args, app, path_override=None,
         dl_list = get_dl_list(args, app, version_selector=version_selector)
 
     path = path_override if path_override is not None else args.downloaddir
-    for name, (ver, dlsize) in dl_list.items():
+    for name, (ver, dlsize, reponame) in dl_list.items():
         version_str = build_version_str(ver)
         spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
         target = os.path.join(path, '%s.rpm' % spec)
@@ -497,8 +545,13 @@ def download(args, app, path_override=None,
 def remove(args, app):
     _ = app # unused
 
+    # Remove 'remove' entry from the args...
+    operation_idx = sys.argv.index('remove')
+    argv = sys.argv[1:operation_idx] + sys.argv[operation_idx+1:]
+
+    # ...then pass the args to qvm-remove
     # Use exec so stdio can be shared easily
-    os.execvp('qvm-remove', ['qvm-remove'] + args.templates)
+    os.execvp('qvm-remove', ['qvm-remove'] + argv)
 
 def clean(args, app):
     # TODO: More fine-grained options
@@ -507,7 +560,7 @@ def clean(args, app):
     shutil.rmtree(args.cachedir)
 
 def main(args=None, app=None):
-    args = parser.parse_args(args)
+    args, _ = parser.parse_known_args(args)
 
     if app is None:
         app = qubesadmin.Qubes()
@@ -524,7 +577,11 @@ def main(args=None, app=None):
         install(args, app, version_selector=VersionSelector.LATEST_HIGHER,
             ignore_existing=True)
     elif args.operation == 'list':
-        do_list(args, app)
+        list_templates(args, app, 'list')
+    elif args.operation == 'info':
+        list_templates(args, app, 'info')
+    elif args.operation == 'search':
+        search(args, app)
     elif args.operation == 'download':
         download(args, app)
     elif args.operation == 'remove':
