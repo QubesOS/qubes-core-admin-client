@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import collections
 import datetime
 import enum
 import fnmatch
+import functools
 import itertools
 import os
 import shutil
@@ -80,6 +82,7 @@ class TemplateState(enum.Enum):
     UPGRADABLE = 'upgradable'
 
     def title(self):
+        #pylint: disable=invalid-name
         TEMPLATE_TITLES = {
             TemplateState.INSTALLED: 'Installed Templates',
             TemplateState.AVAILABLE: 'Available Templates',
@@ -273,6 +276,8 @@ def qrexec_payload(args, app, spec):
     return payload
 
 def qrexec_repoquery(args, app, spec='*'):
+    # TODO: Perhaps expose stderr for error messages?
+    #       At least need to provide message that, e.g., repoid does not exist.
     proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
     payload = qrexec_payload(args, app, spec)
     stdout, _ = proc.communicate(payload.encode('UTF-8'))
@@ -338,6 +343,7 @@ def list_templates(args, app, operation):
     tpl_list = []
 
     def append_list(data, status):
+        #pylint: disable=unused-variable
         name, epoch, version, release, reponame, dlsize, summary = data
         version_str = build_version_str((epoch, version, release))
         tpl_list.append((status, name, version_str, reponame))
@@ -386,7 +392,7 @@ def list_templates(args, app, operation):
 
     if args.installed or args.all:
         for vm in app.domains:
-            if 'template-install-date' in vm.features:
+            if 'template-name' in vm.features:
                 if not args.templates or \
                         any(is_match_spec(
                             vm.features['template-name'],
@@ -403,6 +409,7 @@ def list_templates(args, app, operation):
 
     if args.extras:
         remote = set()
+        #pylint: disable=unused-variable
         for name, epoch, version, release, reponame, dlsize, summary \
                 in query_res:
             remote.add(name)
@@ -428,12 +435,88 @@ def list_templates(args, app, operation):
     if len(tpl_list) == 0:
         parser.error('No matching templates to list')
 
-    for k, g in itertools.groupby(tpl_list, lambda x: x[0]):
+    for k, grp in itertools.groupby(tpl_list, lambda x: x[0]):
         print(k.title())
-        qubesadmin.tools.print_table(list(map(lambda x: x[1:], g)))
+        qubesadmin.tools.print_table(list(map(lambda x: x[1:], grp)))
 
 def search(args, app):
-    raise NotImplementedError
+    # Search in both installed and available templates
+    query_res = qrexec_repoquery(args, app)
+    for vm in app.domains:
+        if 'template-name' in vm.features:
+            query_res.append((
+                vm.features['template-name'],
+                vm.features['template-epoch'],
+                vm.features['template-version'],
+                vm.features['template-release'],
+                vm.features['template-reponame'],
+                vm.get_disk_utilization(),
+                vm.features['template-summary']))
+
+    # Get latest version for each template
+    query_res_tmp = []
+    for name, grp in itertools.groupby(query_res, lambda x: x[0]):
+        def compare(lhs, rhs):
+            return lhs if rpm.labelCompare(lhs[1:4], rhs[1:4]) < 0 else rhs
+        query_res_tmp.append(functools.reduce(compare, grp))
+    query_res = query_res_tmp
+
+    #pylint: disable=invalid-name
+    WEIGHT_NAME_EXACT = 1 << 3
+    WEIGHT_NAME = 1 << 2
+    WEIGHT_SUMMARY = 1 << 1
+
+    search_res = collections.defaultdict(int)
+    first = True
+    for keyword in args.templates:
+        local_res = collections.defaultdict(int)
+        #pylint: disable=unused-variable
+        for idx, (name, epoch, version, release, reponame, dlsize, summary) \
+                in enumerate(query_res):
+            if fnmatch.fnmatch(name, '*' + keyword + '*'):
+                local_res[idx] += WEIGHT_NAME
+            if fnmatch.fnmatch(summary, '*' + keyword + '*'):
+                local_res[idx] += WEIGHT_SUMMARY
+            if keyword == name:
+                local_res[idx] += WEIGHT_NAME_EXACT
+        for key, val in local_res.items():
+            if args.all or first or key in search_res:
+                search_res[key] += val
+        first = False
+
+    def key_func(x):
+        # Order by weight DESC, name ASC
+        weight = x[1]
+        name = query_res[x[0]][0]
+        return (-weight, name)
+
+    search_res = sorted(search_res.items(), key=key_func)
+
+    def gen_header(idx, weight):
+        # FIXME: "Exactly Matched" is printed even if the summary is not
+        #        exactly matching
+        # TODO: Print matching keywords
+        #pylint: disable=unused-variable
+        name, epoch, version, release, reponame, dlsize, summary = \
+            query_res[idx]
+        keys = []
+        if weight & WEIGHT_NAME:
+            keys.append('Name')
+        if weight & WEIGHT_SUMMARY:
+            keys.append('Summary')
+        match = 'Exactly Matched' if weight & WEIGHT_NAME_EXACT else 'Matched'
+        return ' & '.join(keys) + ' ' + match
+
+    last_weight = -1
+    for idx, weight in search_res:
+        if last_weight != weight:
+            last_weight = weight
+            # Print headers
+            # XXX: The style is different from that of DNF
+            print(gen_header(idx, weight))
+        name, epoch, version, release, reponame, dlsize, summary = \
+            query_res[idx]
+        print(name, ':', summary)
 
 def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
     full_candid = {}
@@ -513,6 +596,7 @@ def download(args, app, path_override=None,
 
     path = path_override if path_override is not None else args.downloaddir
     for name, (ver, dlsize, reponame) in dl_list.items():
+        _ = reponame # unused
         version_str = build_version_str(ver)
         spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
         target = os.path.join(path, '%s.rpm' % spec)
@@ -543,7 +627,7 @@ def download(args, app, path_override=None,
                 sys.exit(1)
 
 def remove(args, app):
-    _ = app # unused
+    _ = args, app # unused
 
     # Remove 'remove' entry from the args...
     operation_idx = sys.argv.index('remove')
