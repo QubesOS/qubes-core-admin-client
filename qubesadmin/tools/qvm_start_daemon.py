@@ -27,6 +27,8 @@ import asyncio
 import re
 import functools
 import sys
+import logging
+
 import xcffib
 import xcffib.xproto  # pylint: disable=unused-import
 
@@ -45,6 +47,8 @@ try:
     have_events = True
 except ImportError:
     pass
+
+logger = logging.getLogger('qvm-start-daemon')
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
@@ -322,14 +326,24 @@ def get_monitor_layout():
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
-    def __init__(self, app: qubesadmin.app.QubesBase):
+    def __init__(self,
+                 app: qubesadmin.app.QubesBase,
+                 vms=None,
+                 exit_after_vms=False,
+                 kde=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
+        :param vms: VMs to watch for, or None if watching for all
+        :param exit_after_vms: exit when all VMs are finished
         """
         self.app = app
-        self.started_processes = {}
-        self.kde = False
+        self.vms = vms
+        self.exit_after_vms = exit_after_vms
+        self.kde = kde
+
+        self.started_vms = set()
+        self.cancel = None
 
     @asyncio.coroutine
     def send_monitor_layout(self, vm, layout=None, startup=False):
@@ -596,6 +610,9 @@ class DAEMONLauncher:
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
@@ -610,6 +627,11 @@ class DAEMONLauncher:
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM """
+        if not self.is_watched(vm):
+            return
+
+        self.started_vms.add(vm)
+
         try:
             if getattr(vm, 'guivm', None) == vm.app.local_name and \
                     vm.features.check_with_template('gui', True) and \
@@ -636,11 +658,15 @@ class DAEMONLauncher:
             if vm.klass == 'AdminVM':
                 continue
 
+            if not self.is_watched(vm):
+                continue
+
             power_state = vm.get_power_state()
             if power_state == 'Running':
                 asyncio.ensure_future(
                     self.start_gui(vm, monitor_layout=monitor_layout))
                 asyncio.ensure_future(self.start_audio(vm))
+                self.started_vms.add(vm)
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start'
                 # event when fully started
@@ -648,11 +674,25 @@ class DAEMONLauncher:
                     asyncio.ensure_future(
                         self.start_gui_for_stubdomain(vm))
 
+        if self.exit_after_vms and not self.started_vms:
+            logger.info('No VMs started yet, exiting')
+            self.cancel()
+
     def on_domain_stopped(self, vm, _event, **_kwargs):
         """Handler of 'domain-stopped' event, cleans up"""
+        if not self.is_watched(vm):
+            return
+
         self.cleanup_guid(vm.xid)
         if vm.virt_mode == 'hvm':
             self.cleanup_guid(vm.stubdom_xid)
+
+        if vm not in self.started_vms:
+            logger.warning('VM not in started_vms: %s', vm)
+        self.started_vms.remove(vm)
+        if self.exit_after_vms and not self.started_vms:
+            logger.info('All VMs stopped, exiting')
+            self.cancel()
 
     def cleanup_guid(self, xid):
         """
@@ -672,6 +712,20 @@ class DAEMONLauncher:
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
 
+    def set_cancel(self, cancel):
+        """Set a 'cancel' callback in case of early exit"""
+        self.cancel = cancel
+
+    def is_watched(self, vm):
+        '''
+        Should we watch this VM for changes
+        '''
+
+        if self.vms is None:
+            return True
+        return vm in self.vms
+
+
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
                                 'qvm-start-daemon.pid')
@@ -683,7 +737,9 @@ parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
                     help='Keep watching for further domains'
-                         ' startups, must be used with --all')
+                         ' startups')
+parser.add_argument('--exit', action='store_true',
+                    help='Exit when all domains exit')
 parser.add_argument('--force-stubdomain', action='store_true',
                     help='Start GUI to stubdomain-emulated VGA,'
                          ' even if gui-agent is running in the VM')
@@ -710,13 +766,15 @@ def main(args=None):
         print(parser.format_help())
         return
     args = parser.parse_args(args)
-    if args.watch and not args.all_domains:
-        parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    launcher = DAEMONLauncher(args.app)
-    if args.kde:
-        launcher.kde = True
+
+    launcher = DAEMONLauncher(
+        args.app,
+        vms=None if args.all_domains else args.domains,
+        exit_after_vms=args.exit,
+        kde=args.kde,
+    )
     if args.watch:
         if not have_events:
             parser.error('--watch option require Python >= 3.5')
@@ -728,6 +786,7 @@ def main(args=None):
             launcher.register_events(events)
 
             events_listener = asyncio.ensure_future(events.listen_for_events())
+            launcher.set_cancel(events_listener.cancel)
 
             for signame in ('SIGINT', 'SIGTERM'):
                 loop.add_signal_handler(getattr(signal, signame),

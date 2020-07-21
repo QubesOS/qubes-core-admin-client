@@ -1,0 +1,4 @@
+[Desktop Entry]
+Name=GUI Domain (sys-gui)
+Exec=qubes-gui-session
+Type=Application

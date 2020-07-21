@@ -47,7 +47,11 @@ Options
 
 .. option:: --watch
 
-   Keep watching for further domains startups, must be used with --all
+   Keep watching for further domains startups
+
+.. option:: --exit
+
+   Exit after all watched domains have exited
 
 .. option:: --force-stubdomain
 

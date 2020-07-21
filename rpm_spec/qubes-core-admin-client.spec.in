@@ -60,6 +60,7 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %{_bindir}/qvm-*
 %{_mandir}/man1/qvm-*.1*
 %{_mandir}/man1/qubes*.1*
+%{_datadir}/xsessions/sys-gui.desktop
 
 %files -n python%{python3_pkgversion}-qubesadmin
 %{python3_sitelib}/qubesadmin-*egg-info
