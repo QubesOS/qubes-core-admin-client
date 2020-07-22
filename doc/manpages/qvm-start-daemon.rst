@@ -76,6 +76,11 @@ Options
 
    Notify running instance in --watch mode about changed monitor layout
 
+.. option:: --gui-allow-fullscreen
+
+   Override ``allow_fullscreen`` GUI option to true. Intended for use with the
+   GUI domain.
+
 Authors
 -------
 

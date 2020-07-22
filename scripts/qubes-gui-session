@@ -14,4 +14,4 @@ if [ $# -lt 1 ] ; then
 fi
 
 qvm-start sys-gui
-exec qvm-start-daemon --watch --exit "$1"
+exec qvm-start-daemon --watch --exit --gui-allow-fullscreen "$1"

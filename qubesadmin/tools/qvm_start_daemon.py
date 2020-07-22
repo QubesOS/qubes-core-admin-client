@@ -330,17 +330,20 @@ class DAEMONLauncher:
                  app: qubesadmin.app.QubesBase,
                  vms=None,
                  exit_after_vms=False,
-                 kde=False):
+                 kde=False,
+                 gui_allow_fullscreen=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
         :param vms: VMs to watch for, or None if watching for all
         :param exit_after_vms: exit when all VMs are finished
+        :param gui_allow_fullscreen: override allow_fullscreen to true
         """
         self.app = app
         self.vms = vms
         self.exit_after_vms = exit_after_vms
         self.kde = kde
+        self.gui_allow_fullscreen = gui_allow_fullscreen
 
         self.started_vms = set()
         self.cancel = None
@@ -454,6 +457,8 @@ class DAEMONLauncher:
 
         guivm = self.app.domains[vm.guivm]
         options = retrieve_gui_daemon_options(vm, guivm)
+        if self.gui_allow_fullscreen:
+            options['allow_fullscreen'] = True
         config = serialize_gui_daemon_options(options)
         config_path = self.guid_config_file(vm.xid)
         self.write_guid_config(config_path, config)
@@ -630,7 +635,7 @@ class DAEMONLauncher:
         if not self.is_watched(vm):
             return
 
-        self.started_vms.add(vm)
+        self.started_vms.add(vm.xid)
 
         try:
             if getattr(vm, 'guivm', None) == vm.app.local_name and \
@@ -666,7 +671,7 @@ class DAEMONLauncher:
                 asyncio.ensure_future(
                     self.start_gui(vm, monitor_layout=monitor_layout))
                 asyncio.ensure_future(self.start_audio(vm))
-                self.started_vms.add(vm)
+                self.started_vms.add(vm.xid)
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start'
                 # event when fully started
@@ -687,9 +692,10 @@ class DAEMONLauncher:
         if vm.virt_mode == 'hvm':
             self.cleanup_guid(vm.stubdom_xid)
 
-        if vm not in self.started_vms:
-            logger.warning('VM not in started_vms: %s', vm)
-        self.started_vms.remove(vm)
+        if vm.xid in self.started_vms:
+            self.started_vms.remove(vm.xid)
+        else:
+            logger.warning('VM not in started_vms: %s (%s)', vm, vm.xid)
         if self.exit_after_vms and not self.started_vms:
             logger.info('All VMs stopped, exiting')
             self.cancel()
@@ -754,6 +760,8 @@ parser.add_argument('--kde', action='store_true',
 parser.add_argument('--force', action='store_true', default=False,
                     help='Force running daemon without enabled services'
                          ' \'guivm-gui-agent\' or \'audiovm-audio-agent\'')
+parser.add_argument('--gui-allow-fullscreen', action='store_true',
+                    help='Override allow_fullscreen GUI option to true')
 
 
 def main(args=None):
@@ -774,6 +782,7 @@ def main(args=None):
         vms=None if args.all_domains else args.domains,
         exit_after_vms=args.exit,
         kde=args.kde,
+        gui_allow_fullscreen=args.gui_allow_fullscreen,
     )
     if args.watch:
         if not have_events:
