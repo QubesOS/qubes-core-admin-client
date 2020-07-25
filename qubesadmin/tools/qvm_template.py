@@ -260,6 +260,7 @@ def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
         stderr=subprocess.PIPE)
 
 def qrexec_payload(args, app, spec):
+    # TODO: Support for force-refresh
     _ = app # unused
 
     def check_newline(string, name):
@@ -288,13 +289,13 @@ def qrexec_payload(args, app, spec):
     return payload
 
 def qrexec_repoquery(args, app, spec='*'):
-    # TODO: Perhaps expose stderr for error messages?
-    #       At least need to provide message that, e.g., repoid does not exist.
     proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
     payload = qrexec_payload(args, app, spec)
-    stdout, _ = proc.communicate(payload.encode('UTF-8'))
+    stdout, stderr = proc.communicate(payload.encode('UTF-8'))
     stdout = stdout.decode('ASCII')
     if proc.wait() != 0:
+        for line in stderr.decode('ASCII').rstrip().split('\n'):
+            print('[Qrexec] %s' % line, file=sys.stderr)
         raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
     result = []
     for line in stdout.strip().split('\n'):
