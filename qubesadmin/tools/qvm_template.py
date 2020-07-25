@@ -479,54 +479,60 @@ def search(args, app):
     WEIGHT_NAME = 1 << 2
     WEIGHT_SUMMARY = 1 << 1
 
-    search_res = collections.defaultdict(int)
-    first = True
+    search_res = collections.defaultdict(list)
     for keyword in args.templates:
-        local_res = collections.defaultdict(int)
         #pylint: disable=unused-variable
         for idx, (name, epoch, version, release, reponame, dlsize, summary) \
                 in enumerate(query_res):
             if fnmatch.fnmatch(name, '*' + keyword + '*'):
-                local_res[idx] += WEIGHT_NAME
+                exact = keyword == name
+                weight = WEIGHT_NAME_EXACT if exact else WEIGHT_NAME
+                search_res[idx].append((weight, keyword, exact))
             if fnmatch.fnmatch(summary, '*' + keyword + '*'):
-                local_res[idx] += WEIGHT_SUMMARY
-            if keyword == name:
-                local_res[idx] += WEIGHT_NAME_EXACT
-        for key, val in local_res.items():
-            if args.all or first or key in search_res:
-                search_res[key] += val
-        first = False
+                search_res[idx].append(
+                    (WEIGHT_SUMMARY, keyword, keyword == summary))
+
+    # TODO: Search in description and URL for --all?
+    # Requires changes to the qrexec call qubes.TemplateSearch
+    if not args.all:
+        keywords = set(args.templates)
+        idxs = list(search_res.keys())
+        for idx in idxs:
+            if keywords != set(x[1] for x in search_res[idx]):
+                del search_res[idx]
 
     def key_func(x):
-        # Order by weight DESC, name ASC
-        weight = x[1]
-        name = query_res[x[0]][0]
-        return (-weight, name)
+        # ORDER BY weight DESC, list_of_needles ASC, name ASC
+        idx, needles = x
+        weight = sum(t[0] for t in needles)
+        name = query_res[idx][0]
+        return (-weight, needles, name)
 
     search_res = sorted(search_res.items(), key=key_func)
 
-    def gen_header(idx, weight):
-        # FIXME: "Exactly Matched" is printed even if the summary is not
-        #        exactly matching
-        # TODO: Print matching keywords
+    def gen_header(idx, needles):
         #pylint: disable=unused-variable
         name, epoch, version, release, reponame, dlsize, summary = \
             query_res[idx]
-        keys = []
-        if weight & WEIGHT_NAME:
-            keys.append('Name')
-        if weight & WEIGHT_SUMMARY:
-            keys.append('Summary')
-        match = 'Exactly Matched' if weight & WEIGHT_NAME_EXACT else 'Matched'
-        return ' & '.join(keys) + ' ' + match
+        fields = []
+        weight_types = set(x[0] for x in needles)
+        if WEIGHT_NAME in weight_types:
+            fields.append('Name')
+        if WEIGHT_SUMMARY in weight_types:
+            fields.append('Summary')
+        exact = all(x[-1] for x in needles)
+        match = 'Exactly Matched' if exact else 'Matched'
+        keywords = sorted(list(set(x[1] for x in needles)))
+        return ' & '.join(fields) + ' ' + match + ': ' + ', '.join(keywords)
 
-    last_weight = -1
-    for idx, weight in search_res:
-        if last_weight != weight:
-            last_weight = weight
-            # Print headers
+    last_header = ''
+    for idx, needles in search_res:
+        # Print headers
+        cur_header = gen_header(idx, needles)
+        if last_header != cur_header:
+            last_header = cur_header
             # XXX: The style is different from that of DNF
-            print(gen_header(idx, weight))
+            print('===', cur_header, '===')
         name, epoch, version, release, reponame, dlsize, summary = \
             query_res[idx]
         print(name, ':', summary)
