@@ -25,6 +25,7 @@ TEMP_DIR = '/var/tmp'
 PACKAGE_NAME_PREFIX = 'qubes-template-'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
+LOCK_FILE = '/var/tmp/qvm-template.lck'
 
 def qubes_release():
     if os.path.exists('/usr/share/qubes/marker-vm'):
@@ -142,97 +143,108 @@ def parse_config(path):
 
 def install(args, app, version_selector=VersionSelector.LATEST,
         ignore_existing=False):
-    # TODO: Lock, mentioned in the note above
-    transaction_set = rpm.TransactionSet()
+    try:
+        with open(LOCK_FILE, 'x') as _:
+            pass
+    except FileExistsError:
+        parser.error(('%s already exists.'
+            ' Perhaps another instance of qvm-template is running?')
+            % LOCK_FILE)
 
-    rpm_list = []
-    for template in args.templates:
-        if template.endswith('.rpm'):
-            if not os.path.exists(template):
-                parser.error('RPM file \'%s\' not found.' % template)
-            size = os.path.getsize(template)
-            rpm_list.append((template, size, '@commandline'))
+    try:
+        transaction_set = rpm.TransactionSet()
 
-    os.makedirs(args.cachedir, exist_ok=True)
+        rpm_list = []
+        for template in args.templates:
+            if template.endswith('.rpm'):
+                if not os.path.exists(template):
+                    parser.error('RPM file \'%s\' not found.' % template)
+                size = os.path.getsize(template)
+                rpm_list.append((template, size, '@commandline'))
 
-    dl_list = get_dl_list(args, app, version_selector=version_selector)
-    dl_list_copy = dl_list.copy()
-    # Verify that the templates are not yet installed
-    for name, (ver, dlsize, reponame) in dl_list.items():
-        if not ignore_existing and name in app.domains:
-            print(('Template \'%s\' already installed, skipping...'
-                ' (You may want to use the {reinstall,upgrade,downgrade}'
-                ' operations.)') % name, file=sys.stderr)
-            del dl_list_copy[name]
-        else:
-            version_str = build_version_str(ver)
-            target_file = \
-                '%s%s-%s.rpm' % (PACKAGE_NAME_PREFIX, name, version_str)
-            rpm_list.append((os.path.join(args.cachedir, target_file),
-                dlsize, reponame))
-    dl_list = dl_list_copy
+        os.makedirs(args.cachedir, exist_ok=True)
 
-    download(args, app, path_override=args.cachedir,
-        dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
-        version_selector=version_selector)
-
-    # XXX: Verify if package name is what we want?
-    for rpmfile, dlsize, reponame in rpm_list:
-        if reponame != '@commandline':
-            path = rpmfile + UNVERIFIED_SUFFIX
-        else:
-            path = rpmfile
-        if not verify_rpm(path, args.nogpgcheck, transaction_set):
-            parser.error('Package \'%s\' verification failed.' % rpmfile)
-        if reponame != '@commandline':
-            os.rename(path, rpmfile)
-
-    for rpmfile, dlsize, reponame in rpm_list:
-        with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
-            package_hdr = get_package_hdr(rpmfile)
-            package_name = package_hdr[rpm.RPMTAG_NAME]
-            if not package_name.startswith(PACKAGE_NAME_PREFIX):
-                parser.error(
-                    'Illegal package name for package \'%s\'.' % rpmfile)
-            # Remove prefix to get the real template name
-            name = package_name[len(PACKAGE_NAME_PREFIX):]
-
-            # Another check for already-downloaded RPMs
+        dl_list = get_dl_list(args, app, version_selector=version_selector)
+        dl_list_copy = dl_list.copy()
+        # Verify that the templates are not yet installed
+        for name, (ver, dlsize, reponame) in dl_list.items():
             if not ignore_existing and name in app.domains:
                 print(('Template \'%s\' already installed, skipping...'
                     ' (You may want to use the {reinstall,upgrade,downgrade}'
                     ' operations.)') % name, file=sys.stderr)
-                continue
+                del dl_list_copy[name]
+            else:
+                version_str = build_version_str(ver)
+                target_file = \
+                    '%s%s-%s.rpm' % (PACKAGE_NAME_PREFIX, name, version_str)
+                rpm_list.append((os.path.join(args.cachedir, target_file),
+                    dlsize, reponame))
+        dl_list = dl_list_copy
 
-            print('Installing template \'%s\'...' % name, file=sys.stderr)
-            extract_rpm(name, rpmfile, target)
-            cmdline = [
-                'qvm-template-postprocess',
-                '--really',
-                '--no-installed-by-rpm',
-            ]
-            if args.allow_pv:
-                cmdline.append('--allow-pv')
-            subprocess.check_call(cmdline + [
-                'post-install',
-                name,
-                target + PATH_PREFIX + '/' + name])
+        download(args, app, path_override=args.cachedir,
+            dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
+            version_selector=version_selector)
 
-            app.domains.refresh_cache(force=True)
-            tpl = app.domains[name]
+        # XXX: Verify if package name is what we want?
+        for rpmfile, dlsize, reponame in rpm_list:
+            if reponame != '@commandline':
+                path = rpmfile + UNVERIFIED_SUFFIX
+            else:
+                path = rpmfile
+            if not verify_rpm(path, args.nogpgcheck, transaction_set):
+                parser.error('Package \'%s\' verification failed.' % rpmfile)
+            if reponame != '@commandline':
+                os.rename(path, rpmfile)
 
-            tpl.features['template-epoch'] = \
-                package_hdr[rpm.RPMTAG_EPOCHNUM]
-            tpl.features['template-version'] = \
-                package_hdr[rpm.RPMTAG_VERSION]
-            tpl.features['template-release'] = \
-                package_hdr[rpm.RPMTAG_RELEASE]
-            tpl.features['template-install-date'] = \
-                str(datetime.datetime.today())
-            tpl.features['template-name'] = name
-            tpl.features['template-reponame'] = reponame
-            tpl.features['template-summary'] = \
-                package_hdr[rpm.RPMTAG_SUMMARY]
+        for rpmfile, dlsize, reponame in rpm_list:
+            with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
+                package_hdr = get_package_hdr(rpmfile)
+                package_name = package_hdr[rpm.RPMTAG_NAME]
+                if not package_name.startswith(PACKAGE_NAME_PREFIX):
+                    parser.error(
+                        'Illegal package name for package \'%s\'.' % rpmfile)
+                # Remove prefix to get the real template name
+                name = package_name[len(PACKAGE_NAME_PREFIX):]
+
+                # Another check for already-downloaded RPMs
+                if not ignore_existing and name in app.domains:
+                    print(('Template \'%s\' already installed, skipping...'
+                        ' (You may want to use the'
+                        ' {reinstall,upgrade,downgrade}'
+                        ' operations.)') % name, file=sys.stderr)
+                    continue
+
+                print('Installing template \'%s\'...' % name, file=sys.stderr)
+                extract_rpm(name, rpmfile, target)
+                cmdline = [
+                    'qvm-template-postprocess',
+                    '--really',
+                    '--no-installed-by-rpm',
+                ]
+                if args.allow_pv:
+                    cmdline.append('--allow-pv')
+                subprocess.check_call(cmdline + [
+                    'post-install',
+                    name,
+                    target + PATH_PREFIX + '/' + name])
+
+                app.domains.refresh_cache(force=True)
+                tpl = app.domains[name]
+
+                tpl.features['template-epoch'] = \
+                    package_hdr[rpm.RPMTAG_EPOCHNUM]
+                tpl.features['template-version'] = \
+                    package_hdr[rpm.RPMTAG_VERSION]
+                tpl.features['template-release'] = \
+                    package_hdr[rpm.RPMTAG_RELEASE]
+                tpl.features['template-install-date'] = \
+                    str(datetime.datetime.today())
+                tpl.features['template-name'] = name
+                tpl.features['template-reponame'] = reponame
+                tpl.features['template-summary'] = \
+                    package_hdr[rpm.RPMTAG_SUMMARY]
+    finally:
+        os.remove(LOCK_FILE)
 
 def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
     if args.updatevm:
