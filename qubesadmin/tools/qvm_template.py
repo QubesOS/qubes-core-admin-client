@@ -299,7 +299,12 @@ def qrexec_repoquery(args, app, spec='*'):
         raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
     result = []
     for line in stdout.strip().split('\n'):
-        entry = line.split(':')
+        # Make sure that there are at most 7 fields
+        # As there may be colons in the summary
+        entry = line.split(':', 7 - 1)
+        # If there are not enough entries, raise an error
+        if len(entry) < 7:
+            raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
         if not entry[0].startswith(PACKAGE_NAME_PREFIX):
             continue
         entry[0] = entry[0][len(PACKAGE_NAME_PREFIX):]
