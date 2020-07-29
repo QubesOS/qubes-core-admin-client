@@ -634,7 +634,7 @@ class DAEMONLauncher:
                 continue
 
             if not self.is_watched(vm):
-                return
+                continue
 
             power_state = vm.get_power_state()
             if power_state == 'Running':
