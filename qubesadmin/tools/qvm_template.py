@@ -64,6 +64,8 @@ parser.add_argument('--nogpgcheck', action='store_true',
     help='Disable signature checks.')
 parser.add_argument('--allow-pv', action='store_true',
     help='Allow setting virt_mode to pv in configuration file.')
+parser.add_argument('--pool',
+    help='Specify pool to store created VMs in.')
 # qvm-template download
 parser.add_argument('--downloaddir', default='.',
     help='Override download directory.')
@@ -228,6 +230,8 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                 ]
                 if args.allow_pv:
                     cmdline.append('--allow-pv')
+                if args.pool:
+                    cmdline += ['--pool', args.pool]
                 subprocess.check_call(cmdline + [
                     'post-install',
                     name,

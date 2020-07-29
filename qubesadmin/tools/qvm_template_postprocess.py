@@ -53,6 +53,8 @@ parser.add_argument('--no-installed-by-rpm', action='store_true',
     help='Do not set installed_by_rpm')
 parser.add_argument('--allow-pv', action='store_true',
     help='Allow setting virt_mode to pv in configuration file.')
+parser.add_argument('--pool',
+    help='Specify pool to store created VMs in.')
 parser.add_argument('action', choices=['post-install', 'pre-remove'],
     help='Action to perform')
 parser.add_argument('name', action='store',
@@ -259,7 +261,8 @@ def post_install(args):
 
         vm = app.add_new_vm('TemplateVM',
             name=args.name,
-            label=qubesadmin.config.defaults['template_label'])
+            label=qubesadmin.config.defaults['template_label'],
+            pool=args.pool)
         vm_created = True
 
     vm.log.info('Importing data')
