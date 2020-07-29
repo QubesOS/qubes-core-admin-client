@@ -80,3 +80,6 @@ class Label(object):
         if isinstance(other, Label):
             return self.name == other.name
         return NotImplemented
+
+    def __hash__(self):
+        return hash(self.name)
