@@ -55,6 +55,8 @@ parser.add_argument('--repoid', action='append',
     help='Enable just specific repositories.')
 parser.add_argument('--releasever', default=qubes_release(),
     help='Override distro release version.')
+parser.add_argument('--refresh', action='store_true',
+    help='Set repository metadata as expired before running the command.')
 parser.add_argument('--cachedir', default=CACHE_DIR,
     help='Override cache directory.')
 # qvm-template install
@@ -271,7 +273,7 @@ def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
         stdout=stdout,
         stderr=subprocess.PIPE)
 
-def qrexec_payload(args, app, spec):
+def qrexec_payload(args, app, spec, refresh):
     # TODO: Support for force-refresh
     _ = app # unused
 
@@ -290,6 +292,8 @@ def qrexec_payload(args, app, spec):
     for repo in args.repoid if args.repoid else []:
         check_newline(repo, '--repoid')
         payload += '--repoid=%s\n' % repo
+    if refresh:
+        payload += '--refresh\n'
     check_newline(args.releasever, '--releasever')
     payload += '--releasever=%s\n' % args.releasever
     check_newline(spec, 'template name')
@@ -300,9 +304,9 @@ def qrexec_payload(args, app, spec):
             payload += fd.read() + '\n'
     return payload
 
-def qrexec_repoquery(args, app, spec='*'):
+def qrexec_repoquery(args, app, spec='*', refresh=False):
     proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
-    payload = qrexec_payload(args, app, spec)
+    payload = qrexec_payload(args, app, spec, refresh)
     stdout, stderr = proc.communicate(payload.encode('UTF-8'))
     stdout = stdout.decode('ASCII')
     if proc.wait() != 0:
@@ -357,12 +361,12 @@ def qrexec_repoquery(args, app, spec='*'):
                 " unexpected data format."))
     return result
 
-def qrexec_download(args, app, spec, path, dlsize=None):
+def qrexec_download(args, app, spec, path, dlsize=None, refresh=False):
     with open(path, 'wb') as fd:
         # Don't filter ESCs for binary files
         proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
             stdout=fd, filter_esc=False)
-        payload = qrexec_payload(args, app, spec)
+        payload = qrexec_payload(args, app, spec, refresh)
         proc.stdin.write(payload.encode('UTF-8'))
         proc.stdin.close()
         with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
@@ -758,6 +762,9 @@ def main(args=None, app=None):
 
     if app is None:
         app = qubesadmin.Qubes()
+
+    if args.refresh:
+        qrexec_repoquery(args, app, refresh=True)
 
     if args.operation == 'install':
         install(args, app)
