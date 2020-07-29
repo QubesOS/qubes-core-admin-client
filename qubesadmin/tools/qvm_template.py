@@ -724,12 +724,16 @@ def download(args, app, path_override=None,
                     done = True
                     break
                 except ConnectionError:
+                    os.remove(target_suffix)
                     if attempt + 1 < args.retries:
                         print('\'%s\' download failed, retrying...' % spec,
                             file=sys.stderr)
+                except:
+                    # Also remove file if interrupted by other means
+                    os.remove(target_suffix)
+                    raise
             if not done:
                 print('\'%s\' download failed.' % spec, file=sys.stderr)
-                os.remove(target_suffix)
                 sys.exit(1)
 
 def remove(args, app):
