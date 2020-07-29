@@ -314,14 +314,17 @@ def get_monitor_layout():
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
-    def __init__(self, app: qubesadmin.app.QubesBase):
+    def __init__(self, app: qubesadmin.app.QubesBase, vm_names=None, kde=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
+        :param vm_names: VM names to watch for, or None if watching for all
+        :param kde: add KDE-specific arguments for guid
         """
         self.app = app
         self.started_processes = {}
-        self.kde = False
+        self.vm_names = vm_names
+        self.kde = kde
 
     async def send_monitor_layout(self, vm, layout=None, startup=False):
         """Send monitor layout to a given VM
@@ -582,6 +585,10 @@ class DAEMONLauncher:
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
+
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
@@ -596,6 +603,10 @@ class DAEMONLauncher:
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM """
+
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) == vm.app.local_name and \
                     vm.features.check_with_template('gui', True) and \
@@ -622,6 +633,9 @@ class DAEMONLauncher:
             if vm.klass == 'AdminVM':
                 continue
 
+            if not self.is_watched(vm):
+                return
+
             power_state = vm.get_power_state()
             if power_state == 'Running':
                 asyncio.ensure_future(
@@ -636,6 +650,10 @@ class DAEMONLauncher:
 
     def on_domain_stopped(self, vm, _event, **_kwargs):
         """Handler of 'domain-stopped' event, cleans up"""
+
+        if not self.is_watched(vm):
+            return
+
         self.cleanup_guid(vm.xid)
         if vm.virt_mode == 'hvm':
             self.cleanup_guid(vm.stubdom_xid)
@@ -658,6 +676,16 @@ class DAEMONLauncher:
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
 
+    def is_watched(self, vm):
+        """
+        Should we watch this VM for changes
+        """
+
+        if self.vm_names is None:
+            return True
+        return vm.name in self.vm_names
+
+
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
                                 'qvm-start-daemon.pid')
@@ -668,8 +696,7 @@ else:
 parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
-                    help='Keep watching for further domains'
-                         ' startups, must be used with --all')
+                    help='Keep watching for further domain startups')
 parser.add_argument('--force-stubdomain', action='store_true',
                     help='Start GUI to stubdomain-emulated VGA,'
                          ' even if gui-agent is running in the VM')
@@ -696,13 +723,18 @@ def main(args=None):
         print(parser.format_help())
         return
     args = parser.parse_args(args)
-    if args.watch and not args.all_domains:
-        parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    launcher = DAEMONLauncher(args.app)
-    if args.kde:
-        launcher.kde = True
+
+    if args.all_domains:
+        vm_names = None
+    else:
+        vm_names = [vm.name for vm in args.domains]
+    launcher = DAEMONLauncher(
+        args.app,
+        vm_names=vm_names,
+        kde=args.kde)
+
     if args.watch:
         with daemon.pidfile.TimeoutPIDLockFile(args.pidfile):
             loop = asyncio.get_event_loop()

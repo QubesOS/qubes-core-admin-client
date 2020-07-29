@@ -47,7 +47,7 @@ Options
 
 .. option:: --watch
 
-   Keep watching for further domains startups, must be used with --all
+   Keep watching for further domain startups
 
 .. option:: --force-stubdomain
 
