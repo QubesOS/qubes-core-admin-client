@@ -316,7 +316,7 @@ def qrexec_repoquery(args, app, spec='*', refresh=False):
     name_re = re.compile(r'^[A-Za-z0-9._+\-]*$')
     evr_re = re.compile(r'^[A-Za-z0-9._+~]*$')
     date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
-    license_re = re.compile(r'^[A-Za-z0-9._+\-()]*$')
+    licence_re = re.compile(r'^[A-Za-z0-9._+\-()]*$')
     result = []
     for line in stdout.split('|\n'):
         # Note that there's an empty entry at the end as .strip() is not used.
@@ -327,7 +327,7 @@ def qrexec_repoquery(args, app, spec='*', refresh=False):
         try:
             # If there is an incorrect number of entries, raise an error
             name, epoch, version, release, reponame, dlsize, \
-                buildtime, license, url, summary, description = entry
+                buildtime, licence, url, summary, description = entry
 
             # Ignore packages that are not templates
             if not name.startswith(PACKAGE_NAME_PREFIX):
@@ -348,14 +348,14 @@ def qrexec_repoquery(args, app, spec='*', refresh=False):
                 raise ValueError
             buildtime = datetime.datetime.strptime(buildtime, '%Y-%m-%d %H:%M')
             # XXX: Perhaps whitelist licenses directly?
-            if not re.fullmatch(license_re, license):
+            if not re.fullmatch(licence_re, licence):
                 raise ValueError
             # Check name actually matches spec
             if not is_match_spec(name, epoch, version, release, spec):
                 continue
 
             result.append((name, epoch, version, release, reponame, dlsize,
-                buildtime, license, url, summary, description))
+                buildtime, licence, url, summary, description))
         except (TypeError, ValueError):
             raise ConnectionError(("qrexec call 'qubes.TemplateSearch' failed:"
                 " unexpected data format."))
@@ -414,13 +414,13 @@ def list_templates(args, app, operation):
         _ = install_time # unused
         #pylint: disable=unused-variable
         name, epoch, version, release, reponame, dlsize, \
-            buildtime, license, url, summary, description = data
+            buildtime, licence, url, summary, description = data
         version_str = build_version_str((epoch, version, release))
         tpl_list.append((status, name, version_str, reponame))
 
     def append_info(data, status, install_time=None):
         name, epoch, version, release, reponame, dlsize, \
-            buildtime, license, url, summary, description = data
+            buildtime, licence, url, summary, description = data
         tpl_list.append((status, 'Name', ':', name))
         tpl_list.append((status, 'Epoch', ':', epoch))
         tpl_list.append((status, 'Version', ':', version))
@@ -432,7 +432,7 @@ def list_templates(args, app, operation):
         if install_time:
             tpl_list.append((status, 'Install time', ':', str(install_time)))
         tpl_list.append((status, 'URL', ':', url))
-        tpl_list.append((status, 'License', ':', license))
+        tpl_list.append((status, 'License', ':', licence))
         tpl_list.append((status, 'Summary', ':', summary))
         # Only show "Description" for the first line
         title = 'Description'
@@ -499,7 +499,7 @@ def list_templates(args, app, operation):
         remote = set()
         #pylint: disable=unused-variable
         for name, epoch, version, release, reponame, dlsize, \
-                buildtime, license, url, summary, description in query_res:
+                buildtime, licence, url, summary, description in query_res:
             remote.add(name)
         for vm in app.domains:
             if 'template-name' in vm.features and \
@@ -516,7 +516,7 @@ def list_templates(args, app, operation):
                     vm.features['template-release'])
         for data in query_res:
             name, epoch, version, release, reponame, dlsize, \
-                buildtime, license, url, summary, description = data
+                buildtime, licence, url, summary, description = data
             if name in local:
                 if rpm.labelCompare(local[name], (epoch, version, release)) < 0:
                     append(data, TemplateState.UPGRADABLE)
@@ -573,7 +573,7 @@ def search(args, app):
     for keyword in args.templates:
         #pylint: disable=unused-variable
         for idx, (name, epoch, version, release, reponame, dlsize, \
-                buildtime, license, url, summary, description) \
+                buildtime, licence, url, summary, description) \
                 in enumerate(query_res):
             needles = [(name, WEIGHT_NAME), (summary, WEIGHT_SUMMARY)]
             if args.all:
@@ -606,7 +606,7 @@ def search(args, app):
     def gen_header(idx, needles):
         #pylint: disable=unused-variable
         name, epoch, version, release, reponame, dlsize, \
-            buildtime, license, url, summary, description = query_res[idx]
+            buildtime, licence, url, summary, description = query_res[idx]
         fields = []
         weight_types = set(x[0] for x in needles)
         for weight, field in WEIGHT_TO_FIELD:
@@ -626,7 +626,7 @@ def search(args, app):
             # XXX: The style is different from that of DNF
             print('===', cur_header, '===')
         name, epoch, version, release, reponame, dlsize, \
-            buildtime, license, url, summary, description = query_res[idx]
+            buildtime, licence, url, summary, description = query_res[idx]
         print(name, ':', summary)
 
 def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
@@ -645,7 +645,7 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
         # We only select one package for each distinct package name
         #pylint: disable=unused-variable
         for name, epoch, version, release, reponame, dlsize, \
-                buildtime, license, url, summary, description in query_res:
+                buildtime, licence, url, summary, description in query_res:
             ver = (epoch, version, release)
             if version_selector == VersionSelector.LATEST:
                 if name not in candid \
