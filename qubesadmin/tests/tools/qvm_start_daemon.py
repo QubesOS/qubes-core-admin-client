@@ -23,8 +23,9 @@ import signal
 import tempfile
 import unittest.mock
 import re
-
 import asyncio
+
+import asynctest
 
 import qubesadmin.tests
 import qubesadmin.tools.qvm_start_daemon
@@ -207,7 +208,7 @@ global: {
 }
 ''')
 
-    @unittest.mock.patch('asyncio.create_subprocess_exec')
+    @asynctest.patch('asyncio.create_subprocess_exec')
     def test_020_start_gui_for_vm(self, proc_mock):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -238,7 +239,7 @@ global: {
 
         self.assertAllCalled()
 
-    @unittest.mock.patch('asyncio.create_subprocess_exec')
+    @asynctest.patch('asyncio.create_subprocess_exec')
     def test_021_start_gui_for_vm_hvm(self, proc_mock):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -307,7 +308,7 @@ global: {
         pidfile.flush()
         self.addCleanup(pidfile.close)
 
-        patch_proc = unittest.mock.patch('asyncio.create_subprocess_exec')
+        patch_proc = asynctest.patch('asyncio.create_subprocess_exec')
         patch_args = unittest.mock.patch.object(self.launcher,
                                                 'common_guid_args',
                                                 lambda vm: [])
@@ -350,7 +351,7 @@ global: {
              None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         proc_mock = unittest.mock.Mock()
-        with unittest.mock.patch('asyncio.create_subprocess_exec',
+        with asynctest.patch('asyncio.create_subprocess_exec',
                                  lambda *args: self.mock_coroutine(proc_mock,
                                                                    *args)):
             with unittest.mock.patch.object(self.launcher,
@@ -384,7 +385,7 @@ global: {
              None)] = \
             b'0\x001'
         proc_mock = unittest.mock.Mock()
-        with unittest.mock.patch('asyncio.create_subprocess_exec',
+        with asynctest.patch('asyncio.create_subprocess_exec',
                                  lambda *args: self.mock_coroutine(proc_mock,
                                                                    *args)):
             with unittest.mock.patch.object(self.launcher,

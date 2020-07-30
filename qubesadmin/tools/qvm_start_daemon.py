@@ -32,19 +32,11 @@ import xcffib.xproto  # pylint: disable=unused-import
 
 import daemon.pidfile
 import qubesadmin
+import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
 from . import xcffibhelpers
-
-have_events = False
-try:
-    # pylint: disable=wrong-import-position
-    import qubesadmin.events
-
-    have_events = True
-except ImportError:
-    pass
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
@@ -322,17 +314,19 @@ def get_monitor_layout():
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
-    def __init__(self, app: qubesadmin.app.QubesBase):
+    def __init__(self, app: qubesadmin.app.QubesBase, vm_names=None, kde=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
+        :param vm_names: VM names to watch for, or None if watching for all
+        :param kde: add KDE-specific arguments for guid
         """
         self.app = app
         self.started_processes = {}
-        self.kde = False
+        self.vm_names = vm_names
+        self.kde = kde
 
-    @asyncio.coroutine
-    def send_monitor_layout(self, vm, layout=None, startup=False):
+    async def send_monitor_layout(self, vm, layout=None, startup=False):
         """Send monitor layout to a given VM
 
         This function is a coroutine.
@@ -367,7 +361,7 @@ class DAEMONLauncher:
                 pass
 
         try:
-            yield from asyncio.get_event_loop(). \
+            await asyncio.get_event_loop(). \
                 run_in_executor(None,
                                 functools.partial(
                                     vm.run_service_for_stdio,
@@ -476,8 +470,7 @@ class DAEMONLauncher:
                 else vm.xid
         return xid
 
-    @asyncio.coroutine
-    def start_gui_for_vm(self, vm, monitor_layout=None):
+    async def start_gui_for_vm(self, vm, monitor_layout=None):
         """Start GUI daemon (qubes-guid) connected directly to a VM
 
         This function is a coroutine.
@@ -503,13 +496,12 @@ class DAEMONLauncher:
 
         vm.log.info('Starting GUI')
 
-        yield from asyncio.create_subprocess_exec(*guid_cmd)
+        await asyncio.create_subprocess_exec(*guid_cmd)
 
-        yield from self.send_monitor_layout(vm, layout=monitor_layout,
+        await self.send_monitor_layout(vm, layout=monitor_layout,
                                             startup=True)
 
-    @asyncio.coroutine
-    def start_gui_for_stubdomain(self, vm, force=False):
+    async def start_gui_for_stubdomain(self, vm, force=False):
         """Start GUI daemon (qubes-guid) connected to a stubdomain
 
         This function is a coroutine.
@@ -533,10 +525,9 @@ class DAEMONLauncher:
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.stubdom_xid), '-t', str(vm.xid)])
 
-        yield from asyncio.create_subprocess_exec(*guid_cmd)
+        await asyncio.create_subprocess_exec(*guid_cmd)
 
-    @asyncio.coroutine
-    def start_audio_for_vm(self, vm):
+    async def start_audio_for_vm(self, vm):
         """Start AUDIO daemon (pacat-simple-vchan) connected directly to a VM
 
         This function is a coroutine.
@@ -547,10 +538,9 @@ class DAEMONLauncher:
         pacat_cmd = [PACAT_DAEMON_PATH, '-l', self.pacat_domid(vm), vm.name]
         vm.log.info('Starting AUDIO')
 
-        yield from asyncio.create_subprocess_exec(*pacat_cmd)
+        await asyncio.create_subprocess_exec(*pacat_cmd)
 
-    @asyncio.coroutine
-    def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
+    async def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
         """Start GUI daemon regardless of start event.
 
         This function is a coroutine.
@@ -566,16 +556,15 @@ class DAEMONLauncher:
             return
 
         if vm.virt_mode == 'hvm':
-            yield from self.start_gui_for_stubdomain(vm, force=force_stubdom)
+            await self.start_gui_for_stubdomain(vm, force=force_stubdom)
 
         if not vm.features.check_with_template('gui', True):
             return
 
         if not os.path.exists(self.guid_pidfile(vm.xid)):
-            yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
+            await self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
 
-    @asyncio.coroutine
-    def start_audio(self, vm):
+    async def start_audio(self, vm):
         """Start AUDIO daemon regardless of start event.
 
         This function is a coroutine.
@@ -592,10 +581,14 @@ class DAEMONLauncher:
 
         xid = self.pacat_domid(vm)
         if not os.path.exists(self.pacat_pidfile(xid)):
-            yield from self.start_audio_for_vm(vm)
+            await self.start_audio_for_vm(vm)
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
+
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
@@ -610,6 +603,10 @@ class DAEMONLauncher:
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM """
+
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) == vm.app.local_name and \
                     vm.features.check_with_template('gui', True) and \
@@ -636,6 +633,9 @@ class DAEMONLauncher:
             if vm.klass == 'AdminVM':
                 continue
 
+            if not self.is_watched(vm):
+                continue
+
             power_state = vm.get_power_state()
             if power_state == 'Running':
                 asyncio.ensure_future(
@@ -650,6 +650,10 @@ class DAEMONLauncher:
 
     def on_domain_stopped(self, vm, _event, **_kwargs):
         """Handler of 'domain-stopped' event, cleans up"""
+
+        if not self.is_watched(vm):
+            return
+
         self.cleanup_guid(vm.xid)
         if vm.virt_mode == 'hvm':
             self.cleanup_guid(vm.stubdom_xid)
@@ -672,6 +676,16 @@ class DAEMONLauncher:
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
 
+    def is_watched(self, vm):
+        """
+        Should we watch this VM for changes
+        """
+
+        if self.vm_names is None:
+            return True
+        return vm.name in self.vm_names
+
+
 if 'XDG_RUNTIME_DIR' in os.environ:
     pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
                                 'qvm-start-daemon.pid')
@@ -682,8 +696,7 @@ else:
 parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
-                    help='Keep watching for further domains'
-                         ' startups, must be used with --all')
+                    help='Keep watching for further domain startups')
 parser.add_argument('--force-stubdomain', action='store_true',
                     help='Start GUI to stubdomain-emulated VGA,'
                          ' even if gui-agent is running in the VM')
@@ -710,16 +723,19 @@ def main(args=None):
         print(parser.format_help())
         return
     args = parser.parse_args(args)
-    if args.watch and not args.all_domains:
-        parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    launcher = DAEMONLauncher(args.app)
-    if args.kde:
-        launcher.kde = True
+
+    if args.all_domains:
+        vm_names = None
+    else:
+        vm_names = [vm.name for vm in args.domains]
+    launcher = DAEMONLauncher(
+        args.app,
+        vm_names=vm_names,
+        kde=args.kde)
+
     if args.watch:
-        if not have_events:
-            parser.error('--watch option require Python >= 3.5')
         with daemon.pidfile.TimeoutPIDLockFile(args.pidfile):
             loop = asyncio.get_event_loop()
             # pylint: disable=no-member
