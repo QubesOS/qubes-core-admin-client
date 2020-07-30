@@ -147,7 +147,7 @@ def parse_config(path):
         return dict(line.rstrip('\n').split('=', 1) for line in fd)
 
 def install(args, app, version_selector=VersionSelector.LATEST,
-        ignore_existing=False):
+        override_existing=False):
     try:
         with open(LOCK_FILE, 'x') as _:
             pass
@@ -172,11 +172,9 @@ def install(args, app, version_selector=VersionSelector.LATEST,
         dl_list = get_dl_list(args, app, version_selector=version_selector)
         dl_list_copy = dl_list.copy()
         # Verify that the templates are not yet installed
-        # TODO: Check that installed versions satisfy
-        #       the {reinstall,{up,down}grade} requirements
         for name, (ver, dlsize, reponame) in dl_list.items():
             assert reponame != '@commandline'
-            if not ignore_existing and name in app.domains:
+            if not override_existing and name in app.domains:
                 print(('Template \'%s\' already installed, skipping...'
                     ' (You may want to use the {reinstall,upgrade,downgrade}'
                     ' operations.)') % name, file=sys.stderr)
@@ -214,12 +212,45 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                 name = package_name[len(PACKAGE_NAME_PREFIX):]
 
                 # Another check for already-downloaded RPMs
-                if not ignore_existing and name in app.domains:
+                if not override_existing and name in app.domains:
                     print(('Template \'%s\' already installed, skipping...'
                         ' (You may want to use the'
                         ' {reinstall,upgrade,downgrade}'
                         ' operations.)') % name, file=sys.stderr)
                     continue
+                # Check if local versus candidate version is in line with the
+                # operation
+                elif override_existing:
+                    if name not in app.domains:
+                        parser.error(
+                            "Template '%s' not already installed." % name)
+                    vm = app.domains[name]
+                    pkg_evr = (
+                        str(package_hdr[rpm.RPMTAG_EPOCHNUM]),
+                        package_hdr[rpm.RPMTAG_VERSION],
+                        package_hdr[rpm.RPMTAG_RELEASE])
+                    vm_evr = (
+                        vm.features['template-epoch'],
+                        vm.features['template-version'],
+                        vm.features['template-release'])
+                    cmp_res = rpm.labelCompare(pkg_evr, vm_evr)
+                    if version_selector == VersionSelector.REINSTALL \
+                            and cmp_res != 0:
+                        parser.error(
+                            'Same version of template \'%s\' not found.' \
+                            % name)
+                    elif version_selector == VersionSelector.LATEST_LOWER \
+                            and cmp_res != -1:
+                        print(("Template '%s' of lower version"
+                            " already installed, skipping..." % name),
+                            file=sys.stderr)
+                        continue
+                    elif version_selector == VersionSelector.LATEST_HIGHER \
+                            and cmp_res != 1:
+                        print(("Template '%s' of higher version"
+                            " already installed, skipping..." % name),
+                            file=sys.stderr)
+                        continue
 
                 print('Installing template \'%s\'...' % name, file=sys.stderr)
                 extract_rpm(name, rpmfile, target)
@@ -278,7 +309,6 @@ def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
         stderr=subprocess.PIPE)
 
 def qrexec_payload(args, app, spec, refresh):
-    # TODO: Support for force-refresh
     _ = app # unused
 
     def check_newline(string, name):
@@ -657,7 +687,7 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
                     candid[name] = (ver, dlsize, reponame)
             elif version_selector == VersionSelector.REINSTALL:
                 if name not in app.domains:
-                    parser.error("Template '%s' not installed." % name)
+                    parser.error("Template '%s' not already installed." % name)
                 vm = app.domains[name]
                 cur_ver = (
                     vm.features['template-epoch'],
@@ -668,7 +698,7 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
             elif version_selector in [VersionSelector.LATEST_LOWER,
                     VersionSelector.LATEST_HIGHER]:
                 if name not in app.domains:
-                    parser.error("Template '%s' not installed." % name)
+                    parser.error("Template '%s' not already installed." % name)
                 vm = app.domains[name]
                 cur_ver = (
                     vm.features['template-epoch'],
@@ -682,18 +712,23 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
                             or rpm.labelCompare(candid[name][0], ver) < 0:
                         candid[name] = (ver, dlsize, reponame)
 
+        # XXX: As it's possible to include version information in `template`
+        # Perhaps the messages can be improved
         if len(candid) == 0:
             if version_selector == VersionSelector.LATEST:
                 parser.error('Template \'%s\' not found.' % template)
             elif version_selector == VersionSelector.REINSTALL:
                 parser.error('Same version of template \'%s\' not found.' \
                     % template)
+            # Copy behavior of DNF and do nothing if version not found
             elif version_selector == VersionSelector.LATEST_LOWER:
-                parser.error('Lower version of template \'%s\' not found.' \
-                    % template)
+                print(("Template '%s' of lowest version"
+                    " already installed, skipping..." % template),
+                    file=sys.stderr)
             elif version_selector == VersionSelector.LATEST_HIGHER:
-                parser.error('Higher version of template \'%s\' not found.' \
-                    % template)
+                print(("Template '%s' of highest version"
+                    " already installed, skipping..." % template),
+                    file=sys.stderr)
 
         # Merge & choose the template with the highest version
         for name, (ver, dlsize, reponame) in candid.items():
@@ -774,13 +809,13 @@ def main(args=None, app=None):
         install(args, app)
     elif args.operation == 'reinstall':
         install(args, app, version_selector=VersionSelector.REINSTALL,
-            ignore_existing=True)
+            override_existing=True)
     elif args.operation == 'downgrade':
         install(args, app, version_selector=VersionSelector.LATEST_LOWER,
-            ignore_existing=True)
+            override_existing=True)
     elif args.operation == 'upgrade':
         install(args, app, version_selector=VersionSelector.LATEST_HIGHER,
-            ignore_existing=True)
+            override_existing=True)
     elif args.operation == 'list':
         list_templates(args, app, 'list')
     elif args.operation == 'info':
