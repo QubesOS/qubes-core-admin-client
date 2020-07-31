@@ -172,6 +172,14 @@ def is_managed_template(vm):
     return 'template-name' in vm.features \
         and vm.name == vm.features['template-name']
 
+def get_managed_template_vm(app, name):
+    if name not in app.domains:
+        parser.error("Template '%s' not already installed." % name)
+    vm = app.domains[name]
+    if not is_managed_template(vm):
+        parser.error("Template '%s' is not managed by qvm-template." % name)
+    return vm
+
 def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
     if args.updatevm:
         return app.domains[args.updatevm].run_service(
@@ -351,7 +359,6 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
         query_res = qrexec_repoquery(args, app, PACKAGE_NAME_PREFIX + template)
 
         # We only select one package for each distinct package name
-        # TODO: Check local VM is managed by qvm-template
         for entry in query_res:
             ver = (entry.epoch, entry.version, entry.release)
             insert = False
@@ -360,19 +367,13 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
                         or rpm.labelCompare(candid[entry.name][0], ver) < 0:
                     insert = True
             elif version_selector == VersionSelector.REINSTALL:
-                if entry.name not in app.domains:
-                    parser.error(
-                        "Template '%s' not already installed." % entry.name)
-                vm = app.domains[entry.name]
+                vm = get_managed_template_vm(app, entry.name)
                 cur_ver = query_local_evr(vm)
                 if rpm.labelCompare(ver, cur_ver) == 0:
                     insert = True
             elif version_selector in [VersionSelector.LATEST_LOWER,
                     VersionSelector.LATEST_HIGHER]:
-                if entry.name not in app.domains:
-                    parser.error(
-                        "Template '%s' not already installed." % entry.name)
-                vm = app.domains[entry.name]
+                vm = get_managed_template_vm(app, entry.name)
                 cur_ver = query_local_evr(vm)
                 cmp_res = -1 \
                     if version_selector == VersionSelector.LATEST_LOWER \
@@ -384,8 +385,8 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
             if insert:
                 candid[entry.name] = DlEntry(ver, entry.reponame, entry.dlsize)
 
-        # XXX: As it's possible to include version information in `template`
-        # Perhaps the messages can be improved
+        # XXX: As it's possible to include version information in `template`,
+        #      perhaps the messages can be improved
         if len(candid) == 0:
             if version_selector == VersionSelector.LATEST:
                 parser.error('Template \'%s\' not found.' % template)
@@ -481,7 +482,8 @@ def install(args, app, version_selector=VersionSelector.LATEST,
             assert entry.reponame != '@commandline'
             if not override_existing and name in app.domains:
                 print(('Template \'%s\' already installed, skipping...'
-                    ' (You may want to use the {reinstall,upgrade,downgrade}'
+                    ' (You may want to use the'
+                    ' {reinstall,upgrade,downgrade}'
                     ' operations.)') % name, file=sys.stderr)
                 del dl_list_copy[name]
             else:
@@ -529,10 +531,7 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                 # Check if local versus candidate version is in line with the
                 # operation
                 if override_existing:
-                    if name not in app.domains:
-                        parser.error(
-                            "Template '%s' not already installed." % name)
-                    vm = app.domains[name]
+                    vm = get_managed_template_vm(app, name)
                     pkg_evr = (
                         str(package_hdr[rpm.RPMTAG_EPOCHNUM]),
                         package_hdr[rpm.RPMTAG_VERSION],
@@ -657,7 +656,7 @@ def list_templates(args, app, operation):
             if is_managed_template(vm):
                 if not args.templates or \
                         any(is_match_spec(
-                                vm.features['template-name'],
+                                vm.name,
                                 *query_local_evr(vm),
                                 spec)[0]
                             for spec in args.templates):
@@ -672,15 +671,14 @@ def list_templates(args, app, operation):
         for data in query_res:
             remote.add(data.name)
         for vm in app.domains:
-            if is_managed_template(vm) and \
-                    vm.features['template-name'] not in remote:
+            if is_managed_template(vm) and vm.name not in remote:
                 append_vm(vm, TemplateState.EXTRA)
 
     if args.upgrades:
         local = {}
         for vm in app.domains:
             if is_managed_template(vm):
-                local[vm.features['template-name']] = query_local_evr(vm)
+                local[vm.name] = query_local_evr(vm)
         for entry in query_res:
             if entry.name in local:
                 if rpm.labelCompare(local[entry.name],
