@@ -188,7 +188,8 @@ def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
 def qrexec_payload(args, app, spec, refresh):
     _ = app # unused
 
-    # TODO: Check that spec != '---'
+    if spec == '---':
+        parser.error("Malformed template name: argument should not be '---'.")
 
     def check_newline(string, name):
         if '\n' in string:
