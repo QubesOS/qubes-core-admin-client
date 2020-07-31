@@ -408,7 +408,7 @@ def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
                     or rpm.labelCompare(full_candid[name].evr, entry.evr) < 0:
                 full_candid[name] = entry
 
-    return candid
+    return full_candid
 
 def download(args, app, path_override=None,
         dl_list=None, suffix='', version_selector=VersionSelector.LATEST):
