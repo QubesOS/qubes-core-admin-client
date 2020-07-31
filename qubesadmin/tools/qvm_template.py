@@ -463,13 +463,12 @@ def install(args, app, version_selector=VersionSelector.LATEST,
     try:
         transaction_set = rpm.TransactionSet()
 
-        rpm_list = [] # rpmfile, dlsize, reponame
+        rpm_list = [] # rpmfile, reponame
         for template in args.templates:
             if template.endswith('.rpm'):
                 if not os.path.exists(template):
                     parser.error('RPM file \'%s\' not found.' % template)
-                size = os.path.getsize(template)
-                rpm_list.append((template, size, '@commandline'))
+                rpm_list.append((template, '@commandline'))
 
         os.makedirs(args.cachedir, exist_ok=True)
 
@@ -488,8 +487,8 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                 version_str = build_version_str(entry.evr)
                 target_file = \
                     '%s%s-%s.rpm' % (PACKAGE_NAME_PREFIX, name, version_str)
-                rpm_list.append((os.path.join(args.cachedir, target_file),
-                    entry.dlsize, entry.reponame))
+                rpm_list.append(
+                    (os.path.join(args.cachedir, target_file), entry.reponame))
         dl_list = dl_list_copy
 
         download(args, app, path_override=args.cachedir,
@@ -497,7 +496,7 @@ def install(args, app, version_selector=VersionSelector.LATEST,
             version_selector=version_selector)
 
         # Verify package and remove unverified suffix
-        for rpmfile, dlsize, reponame in rpm_list:
+        for rpmfile, reponame in rpm_list:
             if reponame != '@commandline':
                 path = rpmfile + UNVERIFIED_SUFFIX
             else:
@@ -508,7 +507,7 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                 os.rename(path, rpmfile)
 
         # Unpack and install
-        for rpmfile, dlsize, reponame in rpm_list:
+        for rpmfile, reponame in rpm_list:
             with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
                 package_hdr = get_package_hdr(rpmfile)
                 package_name = package_hdr[rpm.RPMTAG_NAME]
@@ -525,9 +524,10 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                         ' {reinstall,upgrade,downgrade}'
                         ' operations.)') % name, file=sys.stderr)
                     continue
+
                 # Check if local versus candidate version is in line with the
                 # operation
-                elif override_existing:
+                if override_existing:
                     if name not in app.domains:
                         parser.error(
                             "Template '%s' not already installed." % name)
@@ -702,7 +702,7 @@ def search(args, app):
 
     # Get latest version for each template
     query_res_tmp = []
-    for name, grp in itertools.groupby(sorted(query_res), lambda x: x[0]):
+    for _, grp in itertools.groupby(sorted(query_res), lambda x: x[0]):
         def compare(lhs, rhs):
             return lhs if rpm.labelCompare(lhs[1:4], rhs[1:4]) < 0 else rhs
         query_res_tmp.append(functools.reduce(compare, grp))
@@ -753,7 +753,7 @@ def search(args, app):
 
     search_res = sorted(search_res.items(), key=key_func)
 
-    def gen_header(idx, needles):
+    def gen_header(needles):
         fields = []
         weight_types = set(x[0] for x in needles)
         for weight, field in WEIGHT_TO_FIELD:
@@ -767,7 +767,7 @@ def search(args, app):
     last_header = ''
     for idx, needles in search_res:
         # Print headers
-        cur_header = gen_header(idx, needles)
+        cur_header = gen_header(needles)
         if last_header != cur_header:
             last_header = cur_header
             # XXX: The style is different from that of DNF
