@@ -123,6 +123,31 @@ DlEntry = collections.namedtuple('DlEntry', [
     'dlsize'
 ])
 
+def build_version_str(evr):
+    return '%s:%s-%s' % evr
+
+def is_match_spec(name, epoch, version, release, spec):
+    # Refer to "NEVRA Matching" in the DNF documentation
+    # NOTE: Currently "arch" is ignored as the templates should be of "noarch"
+    if epoch != 0:
+        targets = [
+            f'{name}-{epoch}:{version}-{release}',
+            f'{name}',
+            f'{name}-{epoch}:{version}'
+        ]
+    else:
+        targets = [
+            f'{name}-{epoch}:{version}-{release}',
+            f'{name}-{version}-{release}',
+            f'{name}',
+            f'{name}-{epoch}:{version}',
+            f'{name}-{version}'
+        ]
+    for prio, target in enumerate(targets):
+        if fnmatch.fnmatch(target, spec):
+            return True, prio
+    return False, float('inf')
+
 def query_local(vm):
     return Template(
         vm.features['template-name'],
@@ -147,10 +172,135 @@ def is_managed_template(vm):
     return 'template-name' in vm.features \
         and vm.name == vm.features['template-name']
 
-# NOTE: Verifying RPMs this way is prone to TOCTOU. This is okay for local
-# files, but may create problems if multiple instances of `qvm-template` are
-# downloading the same file, so a lock is needed in that case.
+def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
+    if args.updatevm:
+        return app.domains[args.updatevm].run_service(
+            service,
+            filter_esc=filter_esc,
+            stdout=stdout)
+    return subprocess.Popen([
+            '/etc/qubes-rpc/%s' % service,
+        ],
+        stdin=subprocess.PIPE,
+        stdout=stdout,
+        stderr=subprocess.PIPE)
+
+def qrexec_payload(args, app, spec, refresh):
+    _ = app # unused
+
+    # TODO: Check that spec != '---'
+
+    def check_newline(string, name):
+        if '\n' in string:
+            parser.error(f"Malformed {name}:" +
+                " argument should not contain '\\n'.")
+
+    payload = ''
+    for repo in args.enablerepo if args.enablerepo else []:
+        check_newline(repo, '--enablerepo')
+        payload += '--enablerepo=%s\n' % repo
+    for repo in args.disablerepo if args.disablerepo else []:
+        check_newline(repo, '--disablerepo')
+        payload += '--disablerepo=%s\n' % repo
+    for repo in args.repoid if args.repoid else []:
+        check_newline(repo, '--repoid')
+        payload += '--repoid=%s\n' % repo
+    if refresh:
+        payload += '--refresh\n'
+    check_newline(args.releasever, '--releasever')
+    payload += '--releasever=%s\n' % args.releasever
+    check_newline(spec, 'template name')
+    payload += spec + '\n'
+    payload += '---\n'
+    for path in args.repo_files:
+        with open(path, 'r') as fd:
+            payload += fd.read() + '\n'
+    return payload
+
+def qrexec_repoquery(args, app, spec='*', refresh=False):
+    proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
+    payload = qrexec_payload(args, app, spec, refresh)
+    stdout, stderr = proc.communicate(payload.encode('UTF-8'))
+    stdout = stdout.decode('ASCII')
+    if proc.wait() != 0:
+        for line in stderr.decode('ASCII').rstrip().split('\n'):
+            print('[Qrexec] %s' % line, file=sys.stderr)
+        raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
+    name_re = re.compile(r'^[A-Za-z0-9._+\-]*$')
+    evr_re = re.compile(r'^[A-Za-z0-9._+~]*$')
+    date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
+    licence_re = re.compile(r'^[A-Za-z0-9._+\-()]*$')
+    result = []
+    for line in stdout.split('|\n'):
+        # Note that there's an empty entry at the end as .strip() is not used.
+        # This is because if .strip() is used, the .split() will not work.
+        if line == '':
+            continue
+        entry = line.split('|')
+        try:
+            # If there is an incorrect number of entries, raise an error
+            # Unpack manually instead of stuffing into `Template` right away
+            # so that it's easier to mutate stuff.
+            name, epoch, version, release, reponame, dlsize, \
+                buildtime, licence, url, summary, description = entry
+
+            # Ignore packages that are not templates
+            if not name.startswith(PACKAGE_NAME_PREFIX):
+                continue
+            name = name[len(PACKAGE_NAME_PREFIX):]
+
+            # Check that the values make sense
+            if not re.fullmatch(name_re, name):
+                raise ValueError
+            for val in [epoch, version, release]:
+                if not re.fullmatch(evr_re, val):
+                    raise ValueError
+            if not re.fullmatch(name_re, reponame):
+                raise ValueError
+            dlsize = int(dlsize)
+            # First verify that the date does not look weird, then parse it
+            if not re.fullmatch(date_re, buildtime):
+                raise ValueError
+            buildtime = datetime.datetime.strptime(buildtime, '%Y-%m-%d %H:%M')
+            # XXX: Perhaps whitelist licenses directly?
+            if not re.fullmatch(licence_re, licence):
+                raise ValueError
+            # Check name actually matches spec
+            if not is_match_spec(name, epoch, version, release, spec):
+                continue
+
+            result.append(Template(name, epoch, version, release, reponame,
+                dlsize, buildtime, licence, url, summary, description))
+        except (TypeError, ValueError):
+            raise ConnectionError(("qrexec call 'qubes.TemplateSearch' failed:"
+                " unexpected data format."))
+    return result
+
+def qrexec_download(args, app, spec, path, dlsize=None, refresh=False):
+    with open(path, 'wb') as fd:
+        # Don't filter ESCs for binary files
+        proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
+            stdout=fd, filter_esc=False)
+        payload = qrexec_payload(args, app, spec, refresh)
+        proc.stdin.write(payload.encode('UTF-8'))
+        proc.stdin.close()
+        with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
+                unit_divisor=1000, unit='B') as pbar:
+            last = 0
+            while proc.poll() is None:
+                cur = fd.tell()
+                pbar.update(cur - last)
+                last = cur
+                time.sleep(0.1)
+        if proc.wait() != 0:
+            raise ConnectionError(
+                "qrexec call 'qubes.TemplateDownload' failed.")
+        return True
+
 def verify_rpm(path, nogpgcheck=False, transaction_set=None):
+    # NOTE: Verifying RPMs this way is prone to TOCTOU. This is okay for local
+    # files, but may create problems if multiple instances of `qvm-template`
+    # are downloading the same file, so a lock is needed in that case.
     if transaction_set is None:
         transaction_set = rpm.TransactionSet()
     with open(path, 'rb') as fd:
@@ -186,9 +336,119 @@ def extract_rpm(name, path, target):
         ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL)
     return rpm2cpio.wait() == 0 and cpio.wait() == 0
 
-def parse_config(path):
-    with open(path, 'r') as fd:
-        return dict(line.rstrip('\n').split('=', 1) for line in fd)
+def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
+    full_candid = {}
+    for template in args.templates:
+        # This will be merged into `full_candid` later.
+        # It is separated so that we can check whether it is empty.
+        candid = {}
+
+        # Skip local RPMs
+        if template.endswith('.rpm'):
+            continue
+
+        query_res = qrexec_repoquery(args, app, PACKAGE_NAME_PREFIX + template)
+
+        # We only select one package for each distinct package name
+        # TODO: Check local VM is managed by qvm-template
+        for entry in query_res:
+            ver = (entry.epoch, entry.version, entry.release)
+            insert = False
+            if version_selector == VersionSelector.LATEST:
+                if entry.name not in candid \
+                        or rpm.labelCompare(candid[entry.name][0], ver) < 0:
+                    insert = True
+            elif version_selector == VersionSelector.REINSTALL:
+                if entry.name not in app.domains:
+                    parser.error(
+                        "Template '%s' not already installed." % entry.name)
+                vm = app.domains[entry.name]
+                cur_ver = query_local_evr(vm)
+                if rpm.labelCompare(ver, cur_ver) == 0:
+                    insert = True
+            elif version_selector in [VersionSelector.LATEST_LOWER,
+                    VersionSelector.LATEST_HIGHER]:
+                if entry.name not in app.domains:
+                    parser.error(
+                        "Template '%s' not already installed." % entry.name)
+                vm = app.domains[entry.name]
+                cur_ver = query_local_evr(vm)
+                cmp_res = -1 \
+                    if version_selector == VersionSelector.LATEST_LOWER \
+                    else 1
+                if rpm.labelCompare(ver, cur_ver) == cmp_res:
+                    if entry.name not in candid \
+                            or rpm.labelCompare(candid[entry.name][0], ver) < 0:
+                        insert = True
+            if insert:
+                candid[entry.name] = DlEntry(ver, entry.reponame, entry.dlsize)
+
+        # XXX: As it's possible to include version information in `template`
+        # Perhaps the messages can be improved
+        if len(candid) == 0:
+            if version_selector == VersionSelector.LATEST:
+                parser.error('Template \'%s\' not found.' % template)
+            elif version_selector == VersionSelector.REINSTALL:
+                parser.error('Same version of template \'%s\' not found.' \
+                    % template)
+            # Copy behavior of DNF and do nothing if version not found
+            elif version_selector == VersionSelector.LATEST_LOWER:
+                print(("Template '%s' of lowest version"
+                    " already installed, skipping..." % template),
+                    file=sys.stderr)
+            elif version_selector == VersionSelector.LATEST_HIGHER:
+                print(("Template '%s' of highest version"
+                    " already installed, skipping..." % template),
+                    file=sys.stderr)
+
+        # Merge & choose the template with the highest version
+        for name, entry in candid.items():
+            if name not in full_candid \
+                    or rpm.labelCompare(full_candid[name].evr, entry.evr) < 0:
+                full_candid[name] = entry
+
+    return candid
+
+def download(args, app, path_override=None,
+        dl_list=None, suffix='', version_selector=VersionSelector.LATEST):
+    if dl_list is None:
+        dl_list = get_dl_list(args, app, version_selector=version_selector)
+
+    path = path_override if path_override is not None else args.downloaddir
+    for name, entry in dl_list.items():
+        version_str = build_version_str(entry.evr)
+        spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
+        target = os.path.join(path, '%s.rpm' % spec)
+        target_suffix = target + suffix
+        if suffix != '' and os.path.exists(target_suffix):
+            print('\'%s\' already exists, skipping...' % target,
+                file=sys.stderr)
+        if os.path.exists(target):
+            print('\'%s\' already exists, skipping...' % target,
+                file=sys.stderr)
+            if suffix != '':
+                os.rename(target, target_suffix)
+        else:
+            print('Downloading \'%s\'...' % spec, file=sys.stderr)
+            done = False
+            for attempt in range(args.retries):
+                try:
+                    qrexec_download(args, app, spec, target_suffix,
+                        entry.dlsize)
+                    done = True
+                    break
+                except ConnectionError:
+                    os.remove(target_suffix)
+                    if attempt + 1 < args.retries:
+                        print('\'%s\' download failed, retrying...' % spec,
+                            file=sys.stderr)
+                except:
+                    # Also remove file if interrupted by other means
+                    os.remove(target_suffix)
+                    raise
+            if not done:
+                print('\'%s\' download failed.' % spec, file=sys.stderr)
+                sys.exit(1)
 
 def install(args, app, version_selector=VersionSelector.LATEST,
         override_existing=False):
@@ -338,156 +598,6 @@ def install(args, app, version_selector=VersionSelector.LATEST,
                     package_hdr[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
     finally:
         os.remove(LOCK_FILE)
-
-def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
-    if args.updatevm:
-        return app.domains[args.updatevm].run_service(
-            service,
-            filter_esc=filter_esc,
-            stdout=stdout)
-    return subprocess.Popen([
-            '/etc/qubes-rpc/%s' % service,
-        ],
-        stdin=subprocess.PIPE,
-        stdout=stdout,
-        stderr=subprocess.PIPE)
-
-def qrexec_payload(args, app, spec, refresh):
-    _ = app # unused
-
-    # TODO: Check that spec != '---'
-
-    def check_newline(string, name):
-        if '\n' in string:
-            parser.error(f"Malformed {name}:" +
-                " argument should not contain '\\n'.")
-
-    payload = ''
-    for repo in args.enablerepo if args.enablerepo else []:
-        check_newline(repo, '--enablerepo')
-        payload += '--enablerepo=%s\n' % repo
-    for repo in args.disablerepo if args.disablerepo else []:
-        check_newline(repo, '--disablerepo')
-        payload += '--disablerepo=%s\n' % repo
-    for repo in args.repoid if args.repoid else []:
-        check_newline(repo, '--repoid')
-        payload += '--repoid=%s\n' % repo
-    if refresh:
-        payload += '--refresh\n'
-    check_newline(args.releasever, '--releasever')
-    payload += '--releasever=%s\n' % args.releasever
-    check_newline(spec, 'template name')
-    payload += spec + '\n'
-    payload += '---\n'
-    for path in args.repo_files:
-        with open(path, 'r') as fd:
-            payload += fd.read() + '\n'
-    return payload
-
-def qrexec_repoquery(args, app, spec='*', refresh=False):
-    proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
-    payload = qrexec_payload(args, app, spec, refresh)
-    stdout, stderr = proc.communicate(payload.encode('UTF-8'))
-    stdout = stdout.decode('ASCII')
-    if proc.wait() != 0:
-        for line in stderr.decode('ASCII').rstrip().split('\n'):
-            print('[Qrexec] %s' % line, file=sys.stderr)
-        raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
-    name_re = re.compile(r'^[A-Za-z0-9._+\-]*$')
-    evr_re = re.compile(r'^[A-Za-z0-9._+~]*$')
-    date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
-    licence_re = re.compile(r'^[A-Za-z0-9._+\-()]*$')
-    result = []
-    for line in stdout.split('|\n'):
-        # Note that there's an empty entry at the end as .strip() is not used.
-        # This is because if .strip() is used, the .split() will not work.
-        if line == '':
-            continue
-        entry = line.split('|')
-        try:
-            # If there is an incorrect number of entries, raise an error
-            # Unpack manually instead of stuffing into `Template` right away
-            # so that it's easier to mutate stuff.
-            name, epoch, version, release, reponame, dlsize, \
-                buildtime, licence, url, summary, description = entry
-
-            # Ignore packages that are not templates
-            if not name.startswith(PACKAGE_NAME_PREFIX):
-                continue
-            name = name[len(PACKAGE_NAME_PREFIX):]
-
-            # Check that the values make sense
-            if not re.fullmatch(name_re, name):
-                raise ValueError
-            for val in [epoch, version, release]:
-                if not re.fullmatch(evr_re, val):
-                    raise ValueError
-            if not re.fullmatch(name_re, reponame):
-                raise ValueError
-            dlsize = int(dlsize)
-            # First verify that the date does not look weird, then parse it
-            if not re.fullmatch(date_re, buildtime):
-                raise ValueError
-            buildtime = datetime.datetime.strptime(buildtime, '%Y-%m-%d %H:%M')
-            # XXX: Perhaps whitelist licenses directly?
-            if not re.fullmatch(licence_re, licence):
-                raise ValueError
-            # Check name actually matches spec
-            if not is_match_spec(name, epoch, version, release, spec):
-                continue
-
-            result.append(Template(name, epoch, version, release, reponame,
-                dlsize, buildtime, licence, url, summary, description))
-        except (TypeError, ValueError):
-            raise ConnectionError(("qrexec call 'qubes.TemplateSearch' failed:"
-                " unexpected data format."))
-    return result
-
-def qrexec_download(args, app, spec, path, dlsize=None, refresh=False):
-    with open(path, 'wb') as fd:
-        # Don't filter ESCs for binary files
-        proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
-            stdout=fd, filter_esc=False)
-        payload = qrexec_payload(args, app, spec, refresh)
-        proc.stdin.write(payload.encode('UTF-8'))
-        proc.stdin.close()
-        with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
-                unit_divisor=1000, unit='B') as pbar:
-            last = 0
-            while proc.poll() is None:
-                cur = fd.tell()
-                pbar.update(cur - last)
-                last = cur
-                time.sleep(0.1)
-        if proc.wait() != 0:
-            raise ConnectionError(
-                "qrexec call 'qubes.TemplateDownload' failed.")
-        return True
-
-def build_version_str(evr):
-    return '%s:%s-%s' % evr
-
-def is_match_spec(name, epoch, version, release, spec):
-    # Refer to "NEVRA Matching" in the DNF documentation
-    # NOTE: Currently "arch" is ignored as the templates should be of "noarch"
-    if epoch != 0:
-        targets = [
-            f'{name}-{epoch}:{version}-{release}',
-            f'{name}',
-            f'{name}-{epoch}:{version}'
-        ]
-    else:
-        targets = [
-            f'{name}-{epoch}:{version}-{release}',
-            f'{name}-{version}-{release}',
-            f'{name}',
-            f'{name}-{epoch}:{version}',
-            f'{name}-{version}'
-        ]
-    for prio, target in enumerate(targets):
-        if fnmatch.fnmatch(target, spec):
-            return True, prio
-    return False, float('inf')
 
 def list_templates(args, app, operation):
     tpl_list = []
@@ -664,120 +774,6 @@ def search(args, app):
             print('===', cur_header, '===')
         print(query_res[idx].name, ':', query_res[idx].summary)
 
-def get_dl_list(args, app, version_selector=VersionSelector.LATEST):
-    full_candid = {}
-    for template in args.templates:
-        # This will be merged into `full_candid` later.
-        # It is separated so that we can check whether it is empty.
-        candid = {}
-
-        # Skip local RPMs
-        if template.endswith('.rpm'):
-            continue
-
-        query_res = qrexec_repoquery(args, app, PACKAGE_NAME_PREFIX + template)
-
-        # We only select one package for each distinct package name
-        # TODO: Check local VM is managed by qvm-template
-        for entry in query_res:
-            ver = (entry.epoch, entry.version, entry.release)
-            insert = False
-            if version_selector == VersionSelector.LATEST:
-                if entry.name not in candid \
-                        or rpm.labelCompare(candid[entry.name][0], ver) < 0:
-                    insert = True
-            elif version_selector == VersionSelector.REINSTALL:
-                if entry.name not in app.domains:
-                    parser.error(
-                        "Template '%s' not already installed." % entry.name)
-                vm = app.domains[entry.name]
-                cur_ver = query_local_evr(vm)
-                if rpm.labelCompare(ver, cur_ver) == 0:
-                    insert = True
-            elif version_selector in [VersionSelector.LATEST_LOWER,
-                    VersionSelector.LATEST_HIGHER]:
-                if entry.name not in app.domains:
-                    parser.error(
-                        "Template '%s' not already installed." % entry.name)
-                vm = app.domains[entry.name]
-                cur_ver = query_local_evr(vm)
-                cmp_res = -1 \
-                    if version_selector == VersionSelector.LATEST_LOWER \
-                    else 1
-                if rpm.labelCompare(ver, cur_ver) == cmp_res:
-                    if entry.name not in candid \
-                            or rpm.labelCompare(candid[entry.name][0], ver) < 0:
-                        insert = True
-            if insert:
-                candid[entry.name] = DlEntry(ver, entry.reponame, entry.dlsize)
-
-        # XXX: As it's possible to include version information in `template`
-        # Perhaps the messages can be improved
-        if len(candid) == 0:
-            if version_selector == VersionSelector.LATEST:
-                parser.error('Template \'%s\' not found.' % template)
-            elif version_selector == VersionSelector.REINSTALL:
-                parser.error('Same version of template \'%s\' not found.' \
-                    % template)
-            # Copy behavior of DNF and do nothing if version not found
-            elif version_selector == VersionSelector.LATEST_LOWER:
-                print(("Template '%s' of lowest version"
-                    " already installed, skipping..." % template),
-                    file=sys.stderr)
-            elif version_selector == VersionSelector.LATEST_HIGHER:
-                print(("Template '%s' of highest version"
-                    " already installed, skipping..." % template),
-                    file=sys.stderr)
-
-        # Merge & choose the template with the highest version
-        for name, entry in candid.items():
-            if name not in full_candid \
-                    or rpm.labelCompare(full_candid[name].evr, entry.evr) < 0:
-                full_candid[name] = entry
-
-    return candid
-
-def download(args, app, path_override=None,
-        dl_list=None, suffix='', version_selector=VersionSelector.LATEST):
-    if dl_list is None:
-        dl_list = get_dl_list(args, app, version_selector=version_selector)
-
-    path = path_override if path_override is not None else args.downloaddir
-    for name, entry in dl_list.items():
-        version_str = build_version_str(entry.evr)
-        spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
-        target = os.path.join(path, '%s.rpm' % spec)
-        target_suffix = target + suffix
-        if suffix != '' and os.path.exists(target_suffix):
-            print('\'%s\' already exists, skipping...' % target,
-                file=sys.stderr)
-        if os.path.exists(target):
-            print('\'%s\' already exists, skipping...' % target,
-                file=sys.stderr)
-            if suffix != '':
-                os.rename(target, target_suffix)
-        else:
-            print('Downloading \'%s\'...' % spec, file=sys.stderr)
-            done = False
-            for attempt in range(args.retries):
-                try:
-                    qrexec_download(args, app, spec, target_suffix,
-                        entry.dlsize)
-                    done = True
-                    break
-                except ConnectionError:
-                    os.remove(target_suffix)
-                    if attempt + 1 < args.retries:
-                        print('\'%s\' download failed, retrying...' % spec,
-                            file=sys.stderr)
-                except:
-                    # Also remove file if interrupted by other means
-                    os.remove(target_suffix)
-                    raise
-            if not done:
-                print('\'%s\' download failed.' % spec, file=sys.stderr)
-                sys.exit(1)
-
 def remove(args, app):
     _ = args, app # unused
 
@@ -804,7 +800,9 @@ def main(args=None, app=None):
     if args.refresh:
         qrexec_repoquery(args, app, refresh=True)
 
-    if args.operation == 'install':
+    if args.operation == 'download':
+        download(args, app)
+    elif args.operation == 'install':
         install(args, app)
     elif args.operation == 'reinstall':
         install(args, app, version_selector=VersionSelector.REINSTALL,
@@ -821,8 +819,6 @@ def main(args=None, app=None):
         list_templates(args, app, 'info')
     elif args.operation == 'search':
         search(args, app)
-    elif args.operation == 'download':
-        download(args, app)
     elif args.operation == 'remove':
         remove(args, app)
     elif args.operation == 'clean':
