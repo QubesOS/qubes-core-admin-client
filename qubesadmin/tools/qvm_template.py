@@ -275,8 +275,8 @@ def qrexec_payload(args, app, spec, refresh):
     return payload
 
 def qrexec_repoquery(args, app, spec='*', refresh=False):
-    proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
     payload = qrexec_payload(args, app, spec, refresh)
+    proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
     stdout, stderr = proc.communicate(payload.encode('UTF-8'))
     stdout = stdout.decode('ASCII')
     if proc.wait() != 0:
@@ -335,10 +335,10 @@ def qrexec_repoquery(args, app, spec='*', refresh=False):
 
 def qrexec_download(args, app, spec, path, dlsize=None, refresh=False):
     with open(path, 'wb') as fd:
+        payload = qrexec_payload(args, app, spec, refresh)
         # Don't filter ESCs for binary files
         proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
             stdout=fd, filter_esc=False)
-        payload = qrexec_payload(args, app, spec, refresh)
         proc.stdin.write(payload.encode('UTF-8'))
         proc.stdin.close()
         with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
