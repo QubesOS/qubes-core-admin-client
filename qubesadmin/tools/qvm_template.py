@@ -218,8 +218,7 @@ def query_local_evr(vm):
         vm.features['template-release'])
 
 def is_managed_template(vm):
-    return 'template-name' in vm.features \
-        and vm.name == vm.features['template-name']
+    return vm.features.get('template-name', None) == vm.name
 
 def get_managed_template_vm(app, name):
     if name not in app.domains:
