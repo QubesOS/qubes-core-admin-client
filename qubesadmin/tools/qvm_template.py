@@ -36,50 +36,99 @@ def qubes_release():
     return subprocess.check_output(['lsb_release', '-sr'],
         encoding='UTF-8').strip()
 
-parser = argparse.ArgumentParser(description='Qubes Template Manager')
-parser.add_argument('operation', type=str)
-parser.add_argument('templates', nargs='*')
+def parser_gen():
+    formatter = argparse.ArgumentDefaultsHelpFormatter
+    parser_main = argparse.ArgumentParser(description='Qubes Template Manager',
+        formatter_class=formatter)
+    subparsers = parser_main.add_subparsers(dest='operation', required=True,
+        description='Command to run.')
 
-# qrexec related
-parser.add_argument('--repo-files', action='append',
-    default=['/etc/yum.repos.d/qubes-templates.repo'],
-    help='Specify files containing DNF repository configuration.')
-parser.add_argument('--updatevm', default='sys-firewall',
-    help='Specify VM to download updates from.')
-# DNF-related options
-parser.add_argument('--enablerepo', action='append',
-    help='Enable additional repositories.')
-parser.add_argument('--disablerepo', action='append',
-    help='Disable certain repositories.')
-parser.add_argument('--repoid', action='append',
-    help='Enable just specific repositories.')
-parser.add_argument('--releasever', default=qubes_release(),
-    help='Override distro release version.')
-parser.add_argument('--refresh', action='store_true',
-    help='Set repository metadata as expired before running the command.')
-parser.add_argument('--cachedir', default=CACHE_DIR,
-    help='Override cache directory.')
-# qvm-template install
-parser.add_argument('--nogpgcheck', action='store_true',
-    help='Disable signature checks.')
-parser.add_argument('--allow-pv', action='store_true',
-    help='Allow setting virt_mode to pv in configuration file.')
-parser.add_argument('--pool',
-    help='Specify pool to store created VMs in.')
-# qvm-template download
-parser.add_argument('--downloaddir', default='.',
-    help='Override download directory.')
-parser.add_argument('--retries', default=5, type=int,
-    help='Override number of retries for downloads.')
-# qvm-template list
-parser.add_argument('--all', action='store_true')
-parser.add_argument('--installed', action='store_true')
-parser.add_argument('--available', action='store_true')
-parser.add_argument('--extras', action='store_true')
-parser.add_argument('--upgrades', action='store_true')
-# qvm-template search
-# Already defined above
-#parser.add_argument('--all', action='store_true')
+    def parser_add_command(cmd, help_str, add_help=True):
+        return subparsers.add_parser(cmd, formatter_class=formatter,
+            help=help_str, description=help_str, add_help=add_help)
+
+    # qrexec/DNF related
+    parser_main.add_argument('--repo-files', action='append',
+        default=['/etc/yum.repos.d/qubes-templates.repo'],
+        help='Specify files containing DNF repository configuration.')
+    parser_main.add_argument('--updatevm', default='sys-firewall',
+        help='Specify VM to download updates from.')
+    parser_main.add_argument('--enablerepo', action='append', default=[],
+        help='Enable additional repositories.')
+    parser_main.add_argument('--disablerepo', action='append', default=[],
+        help='Disable certain repositories.')
+    parser_main.add_argument('--repoid', action='append', default=[],
+        help='Enable just specific repositories.')
+    parser_main.add_argument('--releasever', default=qubes_release(),
+        help='Override distro release version.')
+    parser_main.add_argument('--refresh', action='store_true',
+        help='Set repository metadata as expired before running the command.')
+    parser_main.add_argument('--cachedir', default=CACHE_DIR,
+        help='Specify cache directory.')
+    # qvm-template download
+    parser_download = parser_add_command('download',
+        help_str='Download template package.')
+    parser_download.add_argument('--downloaddir', default='.',
+        help='Specify download directory.')
+    parser_download.add_argument('--retries', default=5, type=int,
+        help='Specify number of retries for downloads.')
+    parser_download.add_argument('templates', nargs='*', metavar='TEMPLATE')
+    # qvm-template {install,reinstall,downgrade,upgrade}
+    parser_install = parser_add_command('install',
+        help_str='Install template packages.')
+    parser_install.add_argument('--pool',
+        help='Specify pool to store created VMs in.')
+    parser_reinstall = parser_add_command('reinstall',
+        help_str='Reinstall template packages.')
+    parser_downgrade = parser_add_command('downgrade',
+        help_str='Downgrade template packages.')
+    parser_upgrade = parser_add_command('upgrade',
+        help_str='Upgrade template packages.')
+    for parser_x in [parser_install, parser_reinstall,
+            parser_downgrade, parser_upgrade]:
+        parser_x.add_argument('--nogpgcheck', action='store_true',
+            help='Disable signature checks.')
+        parser_x.add_argument('--allow-pv', action='store_true',
+            help='Allow setting virt_mode to pv in configuration file.')
+        parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
+    # qvm-template {list,info}
+    parser_list = parser_add_command('list',
+        help_str='List templates.')
+    parser_info = parser_add_command('info',
+        help_str='Display details about templates.')
+    for parser_x in [parser_list, parser_info]:
+        parser_x.add_argument('--all', action='store_true',
+            help='Show all templates (default).')
+        parser_x.add_argument('--installed', action='store_true',
+            help='Show installed templates.')
+        parser_x.add_argument('--available', action='store_true',
+            help='Show available templates.')
+        parser_x.add_argument('--extras', action='store_true',
+            help=('Show extras (e.g., ones that exists'
+                ' locally but not in repos) templates.'))
+        parser_x.add_argument('--upgrades', action='store_true',
+            help='Show upgradable templates.')
+        parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
+    # qvm-template search
+    parser_search = parser_add_command('search',
+        help_str='Search template details for the given string.')
+    parser_search.add_argument('--all', action='store_true',
+        help=('Search also in template description and URL. In addition,'
+            ' the criterion are evaluated with OR instead of AND.'))
+    parser_search.add_argument('templates', nargs='*', metavar='PATTERN')
+    # qvm-template remove
+    parser_remove = parser_add_command('remove',
+        help_str='Remove installed templates.',
+        add_help=False) # Forward --help to qvm-remove
+    _ = parser_remove # unused
+    # qvm-template clean
+    parser_clean = parser_add_command('clean',
+        help_str='Remove cached data.')
+    _ = parser_clean # unused
+
+    return parser_main
+
+parser = parser_gen()
 
 class TemplateState(enum.Enum):
     INSTALLED = 'installed'
@@ -205,13 +254,13 @@ def qrexec_payload(args, app, spec, refresh):
                 " argument should not contain '\\n'.")
 
     payload = ''
-    for repo in args.enablerepo if args.enablerepo else []:
+    for repo in args.enablerepo:
         check_newline(repo, '--enablerepo')
         payload += '--enablerepo=%s\n' % repo
-    for repo in args.disablerepo if args.disablerepo else []:
+    for repo in args.disablerepo:
         check_newline(repo, '--disablerepo')
         payload += '--disablerepo=%s\n' % repo
-    for repo in args.repoid if args.repoid else []:
+    for repo in args.repoid:
         check_newline(repo, '--repoid')
         payload += '--repoid=%s\n' % repo
     if refresh:
@@ -791,7 +840,16 @@ def clean(args, app):
     shutil.rmtree(args.cachedir)
 
 def main(args=None, app=None):
-    args, _ = parser.parse_known_args(args)
+    raw_args = args
+    args, unk_args = parser.parse_known_args(raw_args)
+    if args.operation != 'remove' and unk_args:
+        args = parser.parse_args(raw_args) # this should result in an error
+        assert False and 'This line should not be executed.'
+        # FIXME: Currently doing things this way as we have to forward
+        # arguments to qvm-remove. While argparse.REMAINDER should be able to
+        # solve this, there's a bug (issue 17050) that prevents it from working
+        # on inputs where the first argument is an option, like 'qvm-template
+        # remove --help'. The bug should be fixed in Python 3.9.
 
     if app is None:
         app = qubesadmin.Qubes()
