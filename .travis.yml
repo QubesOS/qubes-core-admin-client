@@ -24,6 +24,7 @@ jobs:
       python: '3.5'
       install:
        - pip install --quiet -r ci/requirements.txt
+       - pip install --quiet asynctest
       script:
        - python setup.py build
        - cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../.pylintrc qubesadmin
@@ -36,6 +37,7 @@ jobs:
       python: '3.6'
       install:
        - pip install --quiet -r ci/requirements.txt
+       - pip install --quiet asynctest
       script:
        - python setup.py build
        - cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../.pylintrc qubesadmin
@@ -48,6 +50,7 @@ jobs:
       python: '3.7'
       install:
        - pip install --quiet -r ci/requirements.txt
+       - pip install --quiet asynctest
       script:
        - python setup.py build
        - cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../.pylintrc qubesadmin
@@ -60,6 +63,7 @@ jobs:
       python: '3.8'
       install:
        - pip install --quiet -r ci/requirements.txt
+       - pip install --quiet asynctest
       script:
        - python setup.py build
        - cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../.pylintrc qubesadmin

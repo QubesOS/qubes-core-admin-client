@@ -22,6 +22,7 @@ import os
 import unittest.mock as mock
 
 import asyncio
+import asynctest
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
@@ -177,9 +178,11 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                 None)] = \
             b'0\0'
         try:
+            mock_events = asynctest.CoroutineMock()
             patch = mock.patch(
-                'qubesadmin.events.EventsDispatcher._get_events_reader')
-            mock_events = patch.start()
+                'qubesadmin.events.EventsDispatcher._get_events_reader',
+                mock_events)
+            patch.start()
             self.addCleanup(patch.stop)
             mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
                 b'1\0\0connection-established\0\0',
