@@ -1,51 +1,72 @@
-sudo: required
-dist: bionic
-language: python
-python:
-  - '2.7'
-  - '3.5'
-  - '3.6'
-  - '3.7'
-install:
-  - pip install --quiet docutils
-  - pip install --quiet -r ci/requirements.txt
-  - git clone https://github.com/"${TRAVIS_REPO_SLUG%%/*}"/qubes-builder ~/qubes-builder
-script:
-  - test -z "$TESTS_ONLY" || python setup.py build
-  - test -z "$TESTS_ONLY" || { cd build/lib; PYTHONPATH=../../test-packages pylint --rcfile=../../.pylintrc qubesadmin; }
-  - test -z "$TESTS_ONLY" || { cd build/lib; ROOTDIR=../.. ../../run-tests; }
-  - test -n "$TESTS_ONLY" ||  ~/qubes-builder/scripts/travis-build
-env:
- - TESTS_ONLY=1 ENABLE_SLOW_TESTS=1
-
-after_success:
-  - codecov  
+import:
+  - source: QubesOS/qubes-continuous-integration:R4.0/travis-base-r4.0.yml
+    mode: deep_merge_prepend
+  - source: QubesOS/qubes-continuous-integration:R4.0/travis-dom0-r4.0.yml
+  - source: QubesOS/qubes-continuous-integration:R4.0/travis-vms-r4.0.yml
 
 jobs:
   include:
-    - env: DIST_DOM0=fc25 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
+    - env:
+       - ENABLE_SLOW_TESTS=1
+      language: python
+      python: '2.7'
+      install:
+       - pip install --quiet -r ci/requirements.txt
+      script:
+       - python setup.py build
+       - PYTHONPATH=test-packages pylint qubesadmin
+       - ./run-tests
+      after_success:
+       - codecov
+    - env:
+       - ENABLE_SLOW_TESTS=1
+      language: python
       python: '3.5'
-    - env: DISTS_VM=fc29 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
-      python: '3.5'
-    - env: DISTS_VM=fc30 USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
-      python: '3.5'
-    - env: DISTS_VM=stretch USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
-      python: '3.5'
-    - env: DISTS_VM=buster USE_QUBES_REPO_VERSION=4.0 USE_QUBES_REPO_TESTING=1 TESTS_ONLY=
-      python: '3.5'
+      install:
+       - pip install --quiet -r ci/requirements.txt
+      script:
+       - python setup.py build
+       - PYTHONPATH=test-packages pylint qubesadmin
+       - ./run-tests
+      after_success:
+       - codecov
+    - env:
+       - ENABLE_SLOW_TESTS=1
+      language: python
+      python: '3.6'
+      install:
+       - pip install --quiet -r ci/requirements.txt
+      script:
+       - python setup.py build
+       - PYTHONPATH=test-packages pylint qubesadmin
+       - ./run-tests
+      after_success:
+       - codecov
+    - env:
+       - ENABLE_SLOW_TESTS=1
+      language: python
+      python: '3.7'
+      install:
+       - pip install --quiet -r ci/requirements.txt
+      script:
+       - python setup.py build
+       - PYTHONPATH=test-packages pylint qubesadmin
+       - ./run-tests
+      after_success:
+       - codecov
+    - env:
+       - ENABLE_SLOW_TESTS=1
+      language: python
+      python: '3.8'
+      install:
+       - pip install --quiet -r ci/requirements.txt
+      script:
+       - python setup.py build
+       - PYTHONPATH=test-packages pylint qubesadmin
+       - ./run-tests
+      after_success:
+       - codecov
     - stage: deploy
-      python: '3.5'
-      env: DIST_DOM0=fc25 TESTS_ONLY=
-      script: ~/qubes-builder/scripts/travis-deploy
-
-# don't build tags which are meant for code signing only
-branches:
-  except:
-    - /.*_.*/
-
-addons:
-  apt:
-    packages:
-      - debootstrap
-
-# vim: ts=2 sts=2 sw=2 et
+      env: DIST_DOM0=fc25
+      script:
+       - ~/qubes-builder/scripts/travis-deploy
