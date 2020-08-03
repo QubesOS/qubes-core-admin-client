@@ -49,7 +49,7 @@ def parser_gen():
 
     # qrexec/DNF related
     parser_main.add_argument('--repo-files', action='append',
-        default=['/etc/yum.repos.d/qubes-templates.repo'],
+        default=['/usr/share/qubes/repo-templates/qubes-templates.repo'],
         help='Specify files containing DNF repository configuration.')
     parser_main.add_argument('--updatevm', default='sys-firewall',
         help='Specify VM to download updates from.')
