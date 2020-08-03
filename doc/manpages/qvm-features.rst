@@ -218,6 +218,13 @@ other modes it is ignored.
 
 Default: True
 
+tag-created-vm-with
+^^^^^^^^^^^^^^^^^^^
+
+When a qube with this feature create a new VM, it gets extra tags listed in this
+feature value (separated with space) automatically. Tags are added before qube
+creation finishes.
+
 Authors
 -------
 
