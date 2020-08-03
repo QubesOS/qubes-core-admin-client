@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import typing
 
 import qubesadmin
 import qubesadmin.tools
@@ -28,7 +29,8 @@ CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/var/tmp/qvm-template.lck'
 
-def qubes_release():
+def qubes_release() -> str:
+    """Return the Qubes release."""
     if os.path.exists('/usr/share/qubes/marker-vm'):
         with open('/usr/share/qubes/marker-vm', 'r') as fd:
             # Get last line (in the format `x.x`)
@@ -36,7 +38,8 @@ def qubes_release():
     return subprocess.check_output(['lsb_release', '-sr'],
         encoding='UTF-8').strip()
 
-def parser_gen():
+def parser_gen() -> argparse.ArgumentParser:
+    """Generate argument parser for the application."""
     formatter = argparse.ArgumentDefaultsHelpFormatter
     parser_main = argparse.ArgumentParser(description='Qubes Template Manager',
         formatter_class=formatter)
@@ -131,12 +134,14 @@ def parser_gen():
 parser = parser_gen()
 
 class TemplateState(enum.Enum):
+    """Enum representing the state of a template."""
     INSTALLED = 'installed'
     AVAILABLE = 'available'
     EXTRA = 'extra'
     UPGRADABLE = 'upgradable'
 
-    def title(self):
+    def title(self) -> str:
+        """Return a long description of the state. Can be used as headings."""
         #pylint: disable=invalid-name
         TEMPLATE_TITLES = {
             TemplateState.INSTALLED: 'Installed Templates',
@@ -147,11 +152,13 @@ class TemplateState(enum.Enum):
         return TEMPLATE_TITLES[self]
 
 class VersionSelector(enum.Enum):
+    """Enum representing how the candidate template version is chosen."""
     LATEST = enum.auto()
     REINSTALL = enum.auto()
     LATEST_LOWER = enum.auto()
     LATEST_HIGHER = enum.auto()
 
+# TODO: Docstrings and type hints for Template and DlEntry
 Template = collections.namedtuple('Template', [
     'name',
     'epoch',
@@ -172,12 +179,24 @@ DlEntry = collections.namedtuple('DlEntry', [
     'dlsize'
 ])
 
-def build_version_str(evr):
+def build_version_str(evr: typing.Tuple[str, str, str]) -> str:
+    """Return version string described by ``evr`` in (epoch, version, release)
+    format."""
     return '%s:%s-%s' % evr
 
-def is_match_spec(name, epoch, version, release, spec):
-    # Refer to "NEVRA Matching" in the DNF documentation
-    # NOTE: Currently "arch" is ignored as the templates should be of "noarch"
+def is_match_spec(name: str, epoch: str, version: str, release: str, spec: str
+        ) -> typing.Tuple[bool, float]:
+    """Check whether (name, epoch, version, release) matches the spec string.
+
+    For the algorithm, refer to section "NEVRA Matching" in the DNF
+    documentation.
+
+    NOTE: Currently ``arch`` is ignored as the templates should be of
+    ``noarch``.
+
+    :return: the first element indicates whether there is a match; the second
+        element represents the priority of the match (lower is better).
+    """
     if epoch != 0:
         targets = [
             f'{name}-{epoch}:{version}-{release}',
@@ -197,7 +216,11 @@ def is_match_spec(name, epoch, version, release, spec):
             return True, prio
     return False, float('inf')
 
-def query_local(vm):
+def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
+    """Return Template object associated with ``vm``.
+
+    Requires the VM to be managed by qvm-template.
+    """
     return Template(
         vm.features['template-name'],
         vm.features['template-epoch'],
@@ -211,16 +234,24 @@ def query_local(vm):
         vm.features['template-summary'],
         vm.features['template-description'].replace('|', '\n'))
 
-def query_local_evr(vm):
+def query_local_evr(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[str, str, str]:
+    """Return the (epoch, version, release) of ``vm``.
+
+    Requires the VM to be managed by qvm-template.
+    """
     return (
         vm.features['template-epoch'],
         vm.features['template-version'],
         vm.features['template-release'])
 
-def is_managed_template(vm):
+def is_managed_template(vm: qubesadmin.vm.QubesVM) -> bool:
+    """Return whether the VM is managed by qvm-template."""
     return vm.features.get('template-name', None) == vm.name
 
-def get_managed_template_vm(app, name):
+def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
+        ) -> qubesadmin.vm.QubesVM:
+    """Return the QubesVM object associated with the given name if it exists
+    and is managed by qvm-template, otherwise raise a parser error."""
     if name not in app.domains:
         parser.error("Template '%s' not already installed." % name)
     vm = app.domains[name]
@@ -228,7 +259,29 @@ def get_managed_template_vm(app, name):
         parser.error("Template '%s' is not managed by qvm-template." % name)
     return vm
 
-def qrexec_popen(args, app, service, stdout=subprocess.PIPE, filter_esc=True):
+def qrexec_popen(
+        args: argparse.Namespace,
+        app: qubesadmin.app.QubesBase,
+        service: str,
+        stdout: int = subprocess.PIPE,
+        filter_esc: bool = True) -> subprocess.Popen:
+    """Return Popen object that communicates with the given qrexec call.
+
+    Note that this falls back to invoking /etc/qubes-rpc/* directly if
+    args.updatevm is None.
+
+    :param args: arguments received by the application
+    :param app: Qubes application object
+    :param service: the qrexec call to invoke
+    :param stdout: Where the process stdout points to. This is passed directly
+        to subprocess.Popen. Defaults to subprocess.PIPE.
+
+        Note that stderr is always set to subprocess.PIPE.
+    :param filter_esc: whether to filter out escape sequences from
+        stdout/stderr.  Defaults to True.
+
+    :returns: Popen object that communicates with the given qrexec call
+    """
     if args.updatevm:
         return app.domains[args.updatevm].run_service(
             service,
