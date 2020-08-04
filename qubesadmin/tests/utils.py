@@ -116,8 +116,8 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
 class TestVMExecEncode(qubesadmin.tests.QubesTestCase):
     def test_00_encode(self):
         self.assertEqual(
-            qubesadmin.utils.encode_for_vmexec(['ls', '-a']),
-            'ls+--a')
+            qubesadmin.utils.encode_for_vmexec(['ls', '-a', '+x']),
+            'ls+--a+-2Bx')
         self.assertEqual(
             qubesadmin.utils.encode_for_vmexec(
                 ['touch', '/home/user/.profile']),

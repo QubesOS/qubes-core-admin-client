@@ -161,6 +161,6 @@ def encode_for_vmexec(args):
 
     parts = []
     for arg in args:
-        part = re.sub(br'[^a-zA-Z0-9_.+]', encode, arg.encode('utf-8'))
+        part = re.sub(br'[^a-zA-Z0-9_.]', encode, arg.encode('utf-8'))
         parts.append(part)
     return b'+'.join(parts).decode('ascii')
