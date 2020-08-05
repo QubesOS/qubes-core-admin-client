@@ -142,8 +142,13 @@ def vm_dependencies(app, reference_vm):
         if vm == reference_vm:
             continue
         for prop in vm_properties:
-            if reference_vm == getattr(vm, prop, None) and \
-                    not vm.property_is_default(prop):
+            if not hasattr(vm, prop):
+                continue
+            try:
+                is_prop_default = vm.property_is_default(prop)
+            except qubesadmin.exc.QubesPropertyAccessError:
+                is_prop_default = False
+            if reference_vm == getattr(vm, prop, None) and not is_prop_default:
                 result.append((vm, prop))
 
     return result
