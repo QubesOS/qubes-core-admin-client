@@ -113,6 +113,8 @@ def parser_gen() -> argparse.ArgumentParser:
                 ' locally but not in repos) templates.'))
         parser_x.add_argument('--upgrades', action='store_true',
             help='Show upgradable templates.')
+        parser_x.add_argument('--machine-readable', action='store_true',
+            help='Enable machine-readable output.')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template search
     parser_search = parser_add_command('search',
@@ -861,25 +863,46 @@ def list_templates(args: argparse.Namespace,
         tpl_list.append((status, data.name, version_str, data.reponame))
 
     def append_info(data, status, install_time=None):
-        tpl_list.append((status, 'Name', ':', data.name))
-        tpl_list.append((status, 'Epoch', ':', data.epoch))
-        tpl_list.append((status, 'Version', ':', data.version))
-        tpl_list.append((status, 'Release', ':', data.release))
-        tpl_list.append((status, 'Size', ':',
-            qubesadmin.utils.size_to_human(data.dlsize)))
-        tpl_list.append((status, 'Repository', ':', data.reponame))
-        tpl_list.append((status, 'Buildtime', ':', str(data.buildtime)))
-        if install_time:
-            tpl_list.append((status, 'Install time', ':', str(install_time)))
-        tpl_list.append((status, 'URL', ':', data.url))
-        tpl_list.append((status, 'License', ':', data.licence))
-        tpl_list.append((status, 'Summary', ':', data.summary))
-        # Only show "Description" for the first line
-        title = 'Description'
-        for line in data.description.splitlines():
-            tpl_list.append((status, title, ':', line))
-            title = ''
-        tpl_list.append((status, ' ', ' ', ' ')) # empty line
+        tpl_list.append((status, data, install_time))
+
+    def info_to_human_output(tpls):
+        output = []
+        # TODO: Do groupby here to avoid including ``status`` in each row.
+        for status, data, install_time in tpls:
+            output.append((status, 'Name', ':', data.name))
+            output.append((status, 'Epoch', ':', data.epoch))
+            output.append((status, 'Version', ':', data.version))
+            output.append((status, 'Release', ':', data.release))
+            output.append((status, 'Size', ':',
+                qubesadmin.utils.size_to_human(data.dlsize)))
+            output.append((status, 'Repository', ':', data.reponame))
+            output.append((status, 'Buildtime', ':', str(data.buildtime)))
+            if install_time:
+                output.append((status, 'Install time', ':', str(install_time)))
+            output.append((status, 'URL', ':', data.url))
+            output.append((status, 'License', ':', data.licence))
+            output.append((status, 'Summary', ':', data.summary))
+            # Only show "Description" for the first line
+            title = 'Description'
+            for line in data.description.splitlines():
+                output.append((status, title, ':', line))
+                title = ''
+            output.append((status, ' ', ' ', ' ')) # empty line
+        return output
+
+    def info_to_machine_output(tpls):
+        output = []
+        for status, data, install_time in tpls:
+            name, epoch, version, release, reponame, dlsize, \
+                buildtime, licence, url, summary, description = data
+            dlsize = str(dlsize)
+            buildtime = str(buildtime)
+            install_time = str(install_time) if install_time else ''
+            # TODO: Escape newlines in description?
+            output.append((status, name, epoch, version, release, reponame,
+                dlsize, buildtime, install_time, licence, url, summary,
+                description))
+        return output
 
     if operation == 'list':
         append = append_list
@@ -940,9 +963,19 @@ def list_templates(args: argparse.Namespace,
     if len(tpl_list) == 0:
         parser.error('No matching templates to list')
 
-    for k, grp in itertools.groupby(tpl_list, lambda x: x[0]):
-        print(k.title())
-        qubesadmin.tools.print_table(list(map(lambda x: x[1:], grp)))
+    if not args.machine_readable:
+        if operation == 'info':
+            tpl_list = info_to_human_output(tpl_list)
+        for status, grp in itertools.groupby(tpl_list, lambda x: x[0]):
+            print(status.title())
+            qubesadmin.tools.print_table(list(map(lambda x: x[1:], grp)))
+    else:
+        if operation == 'info':
+            tpl_list = info_to_machine_output(tpl_list)
+        for status, grp in itertools.groupby(tpl_list, lambda x: x[0]):
+            print('|' + status.value)
+            for line in grp:
+                print('|'.join(line[1:]) + '|')
 
 def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that searches template details for given patterns.
