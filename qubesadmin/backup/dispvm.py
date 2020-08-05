@@ -135,8 +135,8 @@ class RestoreInDisposableVM:
         self.backup_log_path = '/var/tmp/backup-restore.log'
         self.terminal_app = ('xterm', '-hold', '-title', 'Backup restore', '-e',
                              '/bin/sh', '-c',
-                             'exec "$0" "$@" 2>&1 | tee {}'.format(
-                                 self.backup_log_path))
+                             '("$0" "$@" 2>&1; echo exit code: $?) | tee {}'.
+                             format(self.backup_log_path))
         if args.auto_close:
             # filter-out '-hold'
             self.terminal_app = tuple(a for a in self.terminal_app
@@ -285,17 +285,37 @@ class RestoreInDisposableVM:
                     self.args.pass_file)
             args = self.prepare_inner_args()
             self.dispvm.tags.add(self.dispvm_tag)
-            # TODO: better error detection
             self.dispvm.run_with_args(*self.terminal_app,
                                       'qvm-backup-restore', *args,
                                       stdout=subprocess.DEVNULL,
                                       stderr=subprocess.DEVNULL)
-            return self.extract_log()
+            backup_log = self.extract_log()
+            last_line = backup_log.splitlines()[-1]
+            if not last_line.startswith(b'exit code:'):
+                raise qubesadmin.exc.BackupRestoreError(
+                    'qvm-backup-restore did not reported exit code',
+                    backup_log=backup_log)
+            try:
+                exit_code = int(last_line.split()[-1])
+            except ValueError:
+                raise qubesadmin.exc.BackupRestoreError(
+                    'qvm-backup-restore reported unexpected exit code',
+                    backup_log=backup_log)
+            if exit_code == 127:
+                raise qubesadmin.exc.QubesException(
+                    'qvm-backup-restore tool '
+                    'missing in {} template, install qubes-core-admin-client '
+                    'package there'.format(self.dispvm.template.template.name)
+                )
+            if exit_code != 0:
+                raise qubesadmin.exc.BackupRestoreError(
+                    'qvm-backup-restore failed with {}'.format(exit_code),
+                    backup_log=backup_log)
+            return backup_log
         except subprocess.CalledProcessError as e:
             if e.returncode == 127:
                 raise qubesadmin.exc.QubesException(
-                    'qvm-backup-restore tool or {} '
-                    'missing in {} template, install qubes-core-admin-client '
+                    '{} missing in {} template, install it there '
                     'package there'.format(self.terminal_app[0],
                                            self.dispvm.template.template.name)
                 )
