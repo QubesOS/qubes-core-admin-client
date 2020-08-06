@@ -898,7 +898,7 @@ def list_templates(args: argparse.Namespace,
             outputs.append((status, output))
         return outputs
 
-    def info_to_machine_output(tpls):
+    def info_to_machine_output(tpls, replace_newline=True):
         outputs = []
         for status, grp in itertools.groupby(tpls, lambda x: x[0]):
             output = []
@@ -908,7 +908,8 @@ def list_templates(args: argparse.Namespace,
                 dlsize = str(dlsize)
                 buildtime = str(buildtime)
                 install_time = str(install_time) if install_time else ''
-                # TODO: Escape newlines in description?
+                if replace_newline:
+                    description = description.replace('\n', '|')
                 output.append((name, epoch, version, release, reponame,
                     dlsize, buildtime, install_time, licence, url, summary,
                     description))
