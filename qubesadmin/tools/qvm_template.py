@@ -865,44 +865,55 @@ def list_templates(args: argparse.Namespace,
     def append_info(data, status, install_time=None):
         tpl_list.append((status, data, install_time))
 
+    def list_to_output(tpls):
+        outputs = []
+        for status, grp in itertools.groupby(tpls, lambda x: x[0]):
+            outputs.append((status, list(map(lambda x: x[1:], grp))))
+        return outputs
+
     def info_to_human_output(tpls):
-        output = []
-        # TODO: Do groupby here to avoid including ``status`` in each row.
-        for status, data, install_time in tpls:
-            output.append((status, 'Name', ':', data.name))
-            output.append((status, 'Epoch', ':', data.epoch))
-            output.append((status, 'Version', ':', data.version))
-            output.append((status, 'Release', ':', data.release))
-            output.append((status, 'Size', ':',
-                qubesadmin.utils.size_to_human(data.dlsize)))
-            output.append((status, 'Repository', ':', data.reponame))
-            output.append((status, 'Buildtime', ':', str(data.buildtime)))
-            if install_time:
-                output.append((status, 'Install time', ':', str(install_time)))
-            output.append((status, 'URL', ':', data.url))
-            output.append((status, 'License', ':', data.licence))
-            output.append((status, 'Summary', ':', data.summary))
-            # Only show "Description" for the first line
-            title = 'Description'
-            for line in data.description.splitlines():
-                output.append((status, title, ':', line))
-                title = ''
-            output.append((status, ' ', ' ', ' ')) # empty line
-        return output
+        outputs = []
+        for status, grp in itertools.groupby(tpls, lambda x: x[0]):
+            output = []
+            for _, data, install_time in grp:
+                output.append(('Name', ':', data.name))
+                output.append(('Epoch', ':', data.epoch))
+                output.append(('Version', ':', data.version))
+                output.append(('Release', ':', data.release))
+                output.append(('Size', ':',
+                    qubesadmin.utils.size_to_human(data.dlsize)))
+                output.append(('Repository', ':', data.reponame))
+                output.append(('Buildtime', ':', str(data.buildtime)))
+                if install_time:
+                    output.append(('Install time', ':', str(install_time)))
+                output.append(('URL', ':', data.url))
+                output.append(('License', ':', data.licence))
+                output.append(('Summary', ':', data.summary))
+                # Only show "Description" for the first line
+                title = 'Description'
+                for line in data.description.splitlines():
+                    output.append((title, ':', line))
+                    title = ''
+                output.append((' ', ' ', ' ')) # empty line
+            outputs.append((status, output))
+        return outputs
 
     def info_to_machine_output(tpls):
-        output = []
-        for status, data, install_time in tpls:
-            name, epoch, version, release, reponame, dlsize, \
-                buildtime, licence, url, summary, description = data
-            dlsize = str(dlsize)
-            buildtime = str(buildtime)
-            install_time = str(install_time) if install_time else ''
-            # TODO: Escape newlines in description?
-            output.append((status, name, epoch, version, release, reponame,
-                dlsize, buildtime, install_time, licence, url, summary,
-                description))
-        return output
+        outputs = []
+        for status, grp in itertools.groupby(tpls, lambda x: x[0]):
+            output = []
+            for _, data, install_time in grp:
+                name, epoch, version, release, reponame, dlsize, \
+                    buildtime, licence, url, summary, description = data
+                dlsize = str(dlsize)
+                buildtime = str(buildtime)
+                install_time = str(install_time) if install_time else ''
+                # TODO: Escape newlines in description?
+                output.append((name, epoch, version, release, reponame,
+                    dlsize, buildtime, install_time, licence, url, summary,
+                    description))
+            outputs.append((status, output))
+        return outputs
 
     if operation == 'list':
         append = append_list
@@ -966,16 +977,20 @@ def list_templates(args: argparse.Namespace,
     if not args.machine_readable:
         if operation == 'info':
             tpl_list = info_to_human_output(tpl_list)
-        for status, grp in itertools.groupby(tpl_list, lambda x: x[0]):
+        elif operation == 'list':
+            tpl_list = list_to_output(tpl_list)
+        for status, grp in tpl_list:
             print(status.title())
-            qubesadmin.tools.print_table(list(map(lambda x: x[1:], grp)))
+            qubesadmin.tools.print_table(grp)
     else:
         if operation == 'info':
             tpl_list = info_to_machine_output(tpl_list)
-        for status, grp in itertools.groupby(tpl_list, lambda x: x[0]):
+        elif operation == 'list':
+            tpl_list = list_to_output(tpl_list)
+        for status, grp in tpl_list:
             print('|' + status.value)
             for line in grp:
-                print('|'.join(line[1:]) + '|')
+                print('|'.join(line) + '|')
 
 def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that searches template details for given patterns.
