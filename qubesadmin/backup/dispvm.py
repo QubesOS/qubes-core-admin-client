@@ -305,7 +305,10 @@ class RestoreInDisposableVM:
                 raise qubesadmin.exc.QubesException(
                     'qvm-backup-restore tool '
                     'missing in {} template, install qubes-core-admin-client '
-                    'package there'.format(self.dispvm.template.template.name)
+                    'package there'.format(
+                        getattr(self.dispvm.template,
+                                'template',
+                                self.dispvm.template).name)
                 )
             if exit_code != 0:
                 raise qubesadmin.exc.BackupRestoreError(
