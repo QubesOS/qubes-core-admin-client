@@ -9,6 +9,7 @@ import enum
 import fnmatch
 import functools
 import itertools
+import operator
 import os
 import re
 import shutil
@@ -132,6 +133,17 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_clean = parser_add_command('clean',
         help_str='Remove cached data.')
     _ = parser_clean # unused
+    # qvm-template repolist
+    parser_repolist = parser_add_command('repolist',
+        help_str='Show configured repositories.')
+    repolim = parser_repolist.add_mutually_exclusive_group()
+    repolim.add_argument('--all', action='store_true',
+        help='Show all repos.')
+    repolim.add_argument('--enabled', action='store_true',
+        help='Show enabled repos (default).')
+    repolim.add_argument('--disabled', action='store_true',
+        help='Show disabled repos.')
+    parser_repolist.add_argument('repos', nargs='*', metavar='REPOS')
 
     return parser_main
 
@@ -679,7 +691,7 @@ def download(
                     os.remove(target_suffix)
                     raise
             if not done:
-                print('\'%s\' download failed.' % spec, file=sys.stderr)
+                print('Error: \'%s\' download failed.' % spec, file=sys.stderr)
                 sys.exit(1)
 
 def install(
@@ -1108,6 +1120,65 @@ def clean(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
 
     shutil.rmtree(args.cachedir)
 
+def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
+    """Command that lists configured repositories.
+
+    :param args: Arguments received by the application.
+    :param app: Qubes application object
+    """
+    _ = app # unused
+
+    # python-dnf is not packaged on Debian
+    # As this is not an "essential operation", the module is imported here
+    # instead of top-level so that other operations still work.
+    try:
+        import dnf
+    except ModuleNotFoundError:
+        print("Error: Python module 'dnf' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.all and not args.disabled:
+        args.enabled = True
+
+    with tempfile.TemporaryDirectory(dir=TEMP_DIR) as reposdir:
+        for idx, path in enumerate(args.repo_files):
+            src = os.path.abspath(path)
+            # Use index as file name in case of collisions
+            dst = os.path.join(reposdir, '%d.repo' % idx)
+            os.symlink(src, dst)
+        conf = dnf.conf.Conf()
+        conf.substitutions['releasever'] = args.releasever
+        conf.reposdir = reposdir
+        base = dnf.Base(conf)
+        base.read_all_repos()
+        if args.repoid:
+            base.repos.get_matching('*').disable()
+            for repo in args.repoid:
+                base.repos.get_matching(repo).enable()
+        else:
+            for repo in args.enablerepo:
+                base.repos.get_matching(repo).enable()
+            for repo in args.disablerepo:
+                base.repos.get_matching(repo).disable()
+
+        if args.repos:
+            repos = []
+            for repo in args.repos:
+                repos += list(base.repos.get_matching(repo))
+            repos = list(set(repos))
+            repos.sort(key=operator.attrgetter('id'))
+        else:
+            repos = list(base.repos.values())
+            repos.sort(key=operator.attrgetter('id'))
+
+        table = []
+        for repo in repos:
+            if args.all or (args.enabled == repo.enabled):
+                state = 'enabled' if repo.enabled else 'disabled'
+                table.append((repo.id, repo.name, state))
+
+        qubesadmin.tools.print_table(table)
+
 def main(args: typing.Optional[typing.Sequence[str]] = None,
         app: typing.Optional[qubesadmin.app.QubesBase] = None) -> int:
     """Main routine of **qvm-template**.
@@ -1156,6 +1227,8 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
         remove(p_args, app)
     elif p_args.operation == 'clean':
         clean(p_args, app)
+    elif p_args.operation == 'repolist':
+        repolist(p_args, app)
     else:
         parser.error('Operation \'%s\' not supported.' % p_args.operation)
 
