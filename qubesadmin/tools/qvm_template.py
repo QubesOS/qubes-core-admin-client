@@ -1198,6 +1198,11 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
         # on inputs where the first argument is an option, like 'qvm-template
         # remove --help'. The bug should be fixed in Python 3.9.
 
+    # If the user specified other repo files...
+    if len(p_args.repo_files) > 1:
+        # ...remove the default entry
+        p_args.repo_files.pop(0)
+
     if app is None:
         app = qubesadmin.Qubes()
 
