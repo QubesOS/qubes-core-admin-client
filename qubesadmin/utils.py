@@ -23,6 +23,8 @@
 #
 
 """Various utility functions."""
+
+import fcntl
 import os
 import re
 
@@ -164,3 +166,29 @@ def encode_for_vmexec(args):
         part = re.sub(br'[^a-zA-Z0-9_.]', encode, arg.encode('utf-8'))
         parts.append(part)
     return b'+'.join(parts).decode('ascii')
+
+class LockFile(object):
+    """Simple locking context manager. It opens a file with an advisory lock
+    taken (fcntl.lockf)"""
+    def __init__(self, path, nonblock=False):
+        """Open the file. Call *acquire* or enter the context to lock
+        the file"""
+        self.file = open(path, "w")
+        self.nonblock = nonblock
+
+    def __enter__(self, *args, **kwargs):
+        self.acquire()
+        return self
+
+    def acquire(self):
+        """Lock the opened file"""
+        fcntl.lockf(self.file,
+                    fcntl.LOCK_EX | (fcntl.LOCK_NB if self.nonblock else 0))
+
+    def __exit__(self, exc_type=None, exc_value=None, traceback=None):
+        self.release()
+
+    def release(self):
+        """Unlock the file and close the file object"""
+        fcntl.lockf(self.file, fcntl.LOCK_UN)
+        self.file.close()

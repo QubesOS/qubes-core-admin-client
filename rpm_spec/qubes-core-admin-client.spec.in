@@ -11,8 +11,11 @@ BuildRequires:	python%{python3_pkgversion}-setuptools
 BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
 BuildRequires:	python%{python3_pkgversion}-dbus
+BuildRequires:	python%{python3_pkgversion}-lxml
+BuildRequires:	python%{python3_pkgversion}-xcffib
 Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
+Requires:   scrypt
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 Conflicts:  qubes-core-agent < 4.1.9

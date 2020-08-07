@@ -21,15 +21,21 @@
 '''Console frontend for backup restore code'''
 
 import getpass
+import os
 import sys
 
 from qubesadmin.backup.restore import BackupRestore
+from qubesadmin.backup.dispvm import RestoreInDisposableVM
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.utils
 
 parser = qubesadmin.tools.QubesArgumentParser()
 
+# WARNING:
+# When adding options, update/verify also
+# qubeadmin.restore.dispvm.RestoreInDisposableVM.arguments
+#
 parser.add_argument("--verify-only", action="store_true",
     dest="verify_only", default=False,
     help="Verify backup integrity without restoring any "
@@ -83,6 +89,18 @@ parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
 parser.add_argument("-p", "--passphrase-file", action="store",
     dest="pass_file", default=None,
     help="Read passphrase from file, or use '-' to read from stdin")
+
+parser.add_argument('--auto-close', action="store_true",
+    help="Auto-close restore window and display log on the stdout "
+         "(applies to --paranoid-mode)")
+
+parser.add_argument("--location-is-service", action="store_true",
+    help="Interpret backup location as a qrexec service name,"
+         "possibly with an argument separated by +.Requires -d option.")
+
+parser.add_argument('--paranoid-mode', '--plan-b', action="store_true",
+    help="Isolate restore process in a DispVM, defend against untrusted backup;"
+         "implies --skip-dom0-home")
 
 parser.add_argument('backup_location', action='store',
     help="Backup directory name, or command to pipe from")
@@ -193,6 +211,18 @@ def handle_broken(app, args, restore_info):
             "files should be copied or moved out of the new "
             "directory before using them.")
 
+
+def print_backup_log(backup_log):
+    """Print a log on stdout, coloring it red if it's a terminal"""
+    if os.isatty(sys.stdout.fileno()):
+        sys.stdout.write('\033[0;31m')
+        sys.stdout.flush()
+    sys.stdout.buffer.write(backup_log)
+    if os.isatty(sys.stdout.fileno()):
+        sys.stdout.write('\033[0m')
+        sys.stdout.flush()
+
+
 def main(args=None, app=None):
     '''Main function of qvm-backup-restore'''
     # pylint: disable=too-many-return-statements
@@ -204,6 +234,29 @@ def main(args=None, app=None):
             appvm = args.app.domains[args.appvm]
         except KeyError:
             parser.error('no such domain: {!r}'.format(args.appvm))
+
+    if args.location_is_service and not args.appvm:
+        parser.error('--location-is-service option requires -d')
+
+    if args.paranoid_mode:
+        args.dom0_home = False
+        args.app.log.info("Starting restore process in a DisposableVM...")
+        args.app.log.info("When operation completes, close its window "
+                          "manually.")
+        restore_in_dispvm = RestoreInDisposableVM(args.app, args)
+        try:
+            backup_log = restore_in_dispvm.run()
+            if args.auto_close:
+                print_backup_log(backup_log)
+        except qubesadmin.exc.BackupRestoreError as e:
+            if e.backup_log is not None:
+                print_backup_log(e.backup_log)
+            parser.error_runtime(str(e))
+            return 1
+        except qubesadmin.exc.QubesException as e:
+            parser.error_runtime(str(e))
+            return 1
+        return
 
     if args.pass_file is not None:
         pass_f = open(args.pass_file) if args.pass_file != "-" else sys.stdin
@@ -218,7 +271,7 @@ def main(args=None, app=None):
 
     try:
         backup = BackupRestore(args.app, args.backup_location,
-            appvm, passphrase,
+            appvm, passphrase, location_is_service=args.location_is_service,
             force_compression_filter=args.compression)
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(str(e))

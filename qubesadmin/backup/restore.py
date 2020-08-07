@@ -910,7 +910,7 @@ class BackupRestore(object):
                 self.username = os.path.basename(subdir)
 
     def __init__(self, app, backup_location, backup_vm, passphrase,
-                 force_compression_filter=None):
+                 location_is_service=False, force_compression_filter=None):
         super(BackupRestore, self).__init__()
 
         #: qubes.Qubes instance
@@ -921,11 +921,15 @@ class BackupRestore(object):
 
         #: VM from which backup should be retrieved
         self.backup_vm = backup_vm
-        if backup_vm and backup_vm.qid == 0:
+        if backup_vm and backup_vm.name == 'dom0':
             self.backup_vm = None
 
         #: backup path, inside VM pointed by :py:attr:`backup_vm`
         self.backup_location = backup_location
+
+        #: use alternative qrexec service to retrieve backup data, instead of
+        #: ``qubes.Restore`` with *backup_location* given on stdin
+        self.location_is_service = location_is_service
 
         #: force using specific application for (de)compression, instead of
         #: the one named in the backup header
@@ -973,11 +977,14 @@ class BackupRestore(object):
         vmproc = None
         if self.backup_vm is not None:
             # If APPVM, STDOUT is a PIPE
-            vmproc = self.backup_vm.run_service('qubes.Restore')
-            vmproc.stdin.write(
-                (self.backup_location.replace("\r", "").replace("\n",
-                    "") + "\n").encode())
-            vmproc.stdin.flush()
+            if self.location_is_service:
+                vmproc = self.backup_vm.run_service(self.backup_location)
+            else:
+                vmproc = self.backup_vm.run_service('qubes.Restore')
+                vmproc.stdin.write(
+                    (self.backup_location.replace("\r", "").replace("\n",
+                        "") + "\n").encode())
+                vmproc.stdin.flush()
 
             # Send to tar2qfile the VMs that should be extracted
             vmproc.stdin.write((" ".join(filelist) + "\n").encode())
@@ -985,9 +992,14 @@ class BackupRestore(object):
             self.processes_to_kill_on_cancel.append(vmproc)
 
             backup_stdin = vmproc.stdout
-            # FIXME use /usr/lib/qubes/qfile-unpacker in non-dom0
-            tar1_command = ['/usr/libexec/qubes/qfile-dom0-unpacker',
-                            str(os.getuid()), self.tmpdir, '-v']
+            if isinstance(self.app, qubesadmin.app.QubesRemote):
+                qfile_unpacker_path = '/usr/lib/qubes/qfile-unpacker'
+            else:
+                qfile_unpacker_path = '/usr/libexec/qubes/qfile-dom0-unpacker'
+            # keep at least 500M free for decryption of a previous chunk
+            tar1_command = [qfile_unpacker_path,
+                            str(os.getuid()), self.tmpdir, '-v',
+                            '-w', str(500 * 1024 * 1024)]
         else:
             backup_stdin = open(self.backup_location, 'rb')
 
@@ -2035,8 +2047,9 @@ class BackupRestore(object):
                 try:
                     new_vm.tags.add(tag)
                 except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error adding tag %s to %s: %s',
-                        tag, vm.name, err)
+                    if tag not in new_vm.tags:
+                        self.log.error('Error adding tag %s to %s: %s',
+                            tag, vm.name, err)
 
             for bus in vm.devices:
                 for backend_domain, ident in vm.devices[bus]:
