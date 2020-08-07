@@ -71,14 +71,6 @@ def parser_gen() -> argparse.ArgumentParser:
         help='Set repository metadata as expired before running the command.')
     parser_main.add_argument('--cachedir', default=CACHE_DIR,
         help='Specify cache directory.')
-    # qvm-template download
-    parser_download = parser_add_command('download',
-        help_str='Download template package.')
-    parser_download.add_argument('--downloaddir', default='.',
-        help='Specify download directory.')
-    parser_download.add_argument('--retries', default=5, type=int,
-        help='Specify number of retries for downloads.')
-    parser_download.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template {install,reinstall,downgrade,upgrade}
     parser_install = parser_add_command('install',
         help_str='Install template packages.')
@@ -97,6 +89,16 @@ def parser_gen() -> argparse.ArgumentParser:
         parser_x.add_argument('--allow-pv', action='store_true',
             help='Allow setting virt_mode to pv in configuration file.')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
+    # qvm-template download
+    parser_download = parser_add_command('download',
+        help_str='Download template package.')
+    for parser_x in [parser_install, parser_reinstall,
+            parser_downgrade, parser_upgrade, parser_download]:
+        parser_x.add_argument('--downloaddir', default='.',
+            help='Specify download directory.')
+        parser_x.add_argument('--retries', default=5, type=int,
+            help='Specify number of retries for downloads.')
+    parser_download.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template {list,info}
     parser_list = parser_add_command('list',
         help_str='List templates.')
