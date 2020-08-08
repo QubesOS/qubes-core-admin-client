@@ -161,15 +161,15 @@ def import_appmenus(vm, source_dir):
     # separated by spaces should be ok as there should be no spaces in the file
     # name according to the FreeDesktop spec
     with open(os.path.join(source_dir, 'vm-whitelisted-appmenus.list'), 'r') \
-            as f:
-        vm.features['default-menu-items'] = ' '.join([x.rstrip() for x in f])
+            as fd:
+        vm.features['default-menu-items'] = ' '.join([x.rstrip() for x in fd])
     with open(os.path.join(source_dir, 'whitelisted-appmenus.list'), 'r') \
-            as f:
-        vm.features['menu-items'] = ' '.join([x.rstrip() for x in f])
+            as fd:
+        vm.features['menu-items'] = ' '.join([x.rstrip() for x in fd])
     with open(
             os.path.join(source_dir, 'netvm-whitelisted-appmenus.list'), 'r') \
-            as f:
-        vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in f])
+            as fd:
+        vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
 
     # TODO: change this to qrexec calls to GUI VM, when GUI VM will be
     # implemented
@@ -185,8 +185,8 @@ def import_appmenus(vm, source_dir):
 
 def parse_template_config(path):
     '''Parse template.conf from template package. (KEY=VALUE format)'''
-    with open(path, 'r') as f:
-        return dict(line.rstrip('\n').split('=', 1) for line in f)
+    with open(path, 'r') as fd:
+        return dict(line.rstrip('\n').split('=', 1) for line in fd)
 
 @asyncio.coroutine
 def call_postinstall_service(vm):
