@@ -818,8 +818,8 @@ def install(
 
             print('This will override changes made in the following VMs:',
                 file=sys.stderr)
-            for tpl in override_tpls:
-                print('  %s' % tpl, file=sys.stderr)
+            for name in override_tpls:
+                print('  %s' % name, file=sys.stderr)
             confirm = ''
             while confirm != 'y':
                 confirm = input('Are you sure? [y/N] ').lower()
@@ -1186,6 +1186,7 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
             for repo in args.disablerepo:
                 base.repos.get_matching(repo).disable()
 
+        repos: typing.List[dnf.repo.Repo]
         if args.repos:
             repos = []
             for repo in args.repos:
