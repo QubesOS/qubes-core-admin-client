@@ -721,15 +721,15 @@ def install(
             if not package_hdr:
                 parser.error('Package \'%s\' verification failed.' % rpmfile)
 
-            if reponame != '@commandline':
-                os.rename(path, rpmfile)
-
             package_name = package_hdr[rpm.RPMTAG_NAME]
             if not package_name.startswith(PACKAGE_NAME_PREFIX):
                 parser.error(
                     'Illegal package name for package \'%s\'.' % rpmfile)
             # Remove prefix to get the real template name
             name = package_name[len(PACKAGE_NAME_PREFIX):]
+
+            if path != rpmfile:
+                os.rename(path, rpmfile)
 
             # Check if already installed
             if not override_existing and name in app.domains:
