@@ -161,13 +161,17 @@ class BackupRestoreError(QubesException):
         self.backup_log = backup_log
 
 # pylint: disable=too-many-ancestors
-class QubesDaemonNoResponseError(QubesDaemonCommunicationError):
-    '''Got empty response from qubesd'''
+class QubesDaemonAccessError(QubesDaemonCommunicationError):
+    '''Got empty response from qubesd. This can be lack of permission,
+    or some server-side issue.'''
 
 
-class QubesPropertyAccessError(QubesException, AttributeError):
+class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
     '''Failed to read/write property value, cause is unknown (insufficient
     permissions, no such property, invalid value, other)'''
     def __init__(self, prop):
         super(QubesPropertyAccessError, self).__init__(
             'Failed to access \'%s\' property' % prop)
+
+# legacy name
+QubesDaemonNoResponseError = QubesDaemonAccessError

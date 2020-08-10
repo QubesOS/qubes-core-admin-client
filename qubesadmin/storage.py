@@ -19,6 +19,7 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''Storage subsystem.'''
+import qubesadmin.exc
 
 class Volume(object):
     '''Storage volume.'''
@@ -112,7 +113,10 @@ class Volume(object):
         '''Storage volume pool name.'''
         if self._pool is not None:
             return self._pool
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('pool')
         return str(self._info['pool'])
 
     @property
@@ -120,25 +124,37 @@ class Volume(object):
         '''Storage volume id, unique within given pool.'''
         if self._vid is not None:
             return self._vid
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('vid')
         return str(self._info['vid'])
 
     @property
     def size(self):
         '''Size of volume, in bytes.'''
-        self._fetch_info(True)
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('size')
         return int(self._info['size'])
 
     @property
     def usage(self):
         '''Used volume space, in bytes.'''
-        self._fetch_info(True)
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('usage')
         return int(self._info['usage'])
 
     @property
     def rw(self):
         '''True if volume is read-write.'''
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('rw')
         return self._info['rw'] == 'True'
 
     @rw.setter
@@ -150,13 +166,19 @@ class Volume(object):
     @property
     def snap_on_start(self):
         '''Create a snapshot from source on VM start.'''
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('snap_on_start')
         return self._info['snap_on_start'] == 'True'
 
     @property
     def save_on_stop(self):
         '''Commit changes to original volume on VM stop.'''
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('save_on_stop')
         return self._info['save_on_stop'] == 'True'
 
     @property
@@ -165,7 +187,10 @@ class Volume(object):
 
         If None, this volume itself will be used.
         '''
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('source')
         if self._info['source']:
             return self._info['source']
         return None
@@ -173,7 +198,10 @@ class Volume(object):
     @property
     def revisions_to_keep(self):
         '''Number of revisions to keep around'''
-        self._fetch_info()
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('revisions_to_keep')
         return int(self._info['revisions_to_keep'])
 
     @revisions_to_keep.setter
@@ -186,7 +214,10 @@ class Volume(object):
         '''Returns `True` if this snapshot of a source volume (for
         `snap_on_start`=True) is outdated.
         '''
-        self._fetch_info(True)
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('is_outdated')
         return self._info.get('is_outdated', False) == 'True'
 
     def resize(self, size):
@@ -290,8 +321,11 @@ class Pool(object):
     @property
     def usage_details(self):
         ''' Storage pool usage details (current - not cached) '''
-        pool_usage_data = self.app.qubesd_call(
-            'dom0', 'admin.pool.UsageDetails', self.name, None)
+        try:
+            pool_usage_data = self.app.qubesd_call(
+                'dom0', 'admin.pool.UsageDetails', self.name, None)
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('usage_details')
         pool_usage_data = pool_usage_data.decode('utf-8')
         assert pool_usage_data.endswith('\n') or pool_usage_data == ''
         pool_usage_data = pool_usage_data[:-1]
@@ -306,8 +340,11 @@ class Pool(object):
     def config(self):
         ''' Storage pool config '''
         if self._config is None:
-            pool_info_data = self.app.qubesd_call(
-                'dom0', 'admin.pool.Info', self.name, None)
+            try:
+                pool_info_data = self.app.qubesd_call(
+                    'dom0', 'admin.pool.Info', self.name, None)
+            except qubesadmin.exc.QubesDaemonAccessError:
+                raise qubesadmin.exc.QubesPropertyAccessError('config')
             pool_info_data = pool_info_data.decode('utf-8')
             assert pool_info_data.endswith('\n')
             pool_info_data = pool_info_data[:-1]
@@ -355,8 +392,11 @@ class Pool(object):
     @property
     def volumes(self):
         ''' Volumes managed by this pool '''
-        volumes_data = self.app.qubesd_call(
-            'dom0', 'admin.pool.volume.List', self.name, None)
+        try:
+            volumes_data = self.app.qubesd_call(
+                'dom0', 'admin.pool.volume.List', self.name, None)
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('volumes')
         assert volumes_data.endswith(b'\n')
         volumes_data = volumes_data[:-1].decode('ascii')
         for vid in volumes_data.splitlines():

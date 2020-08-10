@@ -838,7 +838,7 @@ class QubesRemote(QubesBase):
                                  stderr=subprocess.PIPE)
             (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
-            raise qubesadmin.exc.QubesDaemonNoResponseError(
+            raise qubesadmin.exc.QubesDaemonAccessError(
                 'Service call error: %s', stderr.decode())
 
         return self._parse_qubesd_response(stdout)

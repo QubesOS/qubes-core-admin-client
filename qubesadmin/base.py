@@ -78,7 +78,7 @@ class PropertyHolder(object):
         '''
 
         if response_data == b'':
-            raise qubesadmin.exc.QubesDaemonNoResponseError(
+            raise qubesadmin.exc.QubesDaemonAccessError(
                 'Got empty response from qubesd. See journalctl in dom0 for '
                 'details.')
 
@@ -151,11 +151,14 @@ class PropertyHolder(object):
         # cached properties list
         if self._properties is not None and item not in self._properties:
             raise AttributeError(item)
-        property_str = self.qubesd_call(
-            self._method_dest,
-            self._method_prefix + 'Get',
-            item,
-            None)
+        try:
+            property_str = self.qubesd_call(
+                self._method_dest,
+                self._method_prefix + 'Get',
+                item,
+                None)
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError(item)
         is_default, value = self._deserialize_property(property_str)
         if self.app.cache_enabled:
             self._properties_cache[item] = (is_default, value)
@@ -170,11 +173,14 @@ class PropertyHolder(object):
         '''
         if item.startswith('_'):
             raise AttributeError(item)
-        property_str = self.qubesd_call(
-            self._method_dest,
-            self._method_prefix + 'GetDefault',
-            item,
-            None)
+        try:
+            property_str = self.qubesd_call(
+                self._method_dest,
+                self._method_prefix + 'GetDefault',
+                item,
+                None)
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError(item)
         if not property_str:
             raise AttributeError(item + ' has no default')
         (prop_type, value) = property_str.split(b' ', 1)
