@@ -1,3 +1,49 @@
+qubes-core-admin-client (4.1.8-1) unstable; urgency=medium
+
+  [ WillyPillow ]
+  * Add admin.vm.volume.Clear call (QubesOS/qubes-issues#5946)
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: update for admin.vm.volume.Clear usage in qvm-template-
+    postprocess
+  * doc: document qvm-start-daemon --force, --kde
+  * Make Label() object hashable
+
+  [ Paweł Marczewski ]
+  * qvm-start-daemon: convert to async/await syntax
+  * qvm-start-daemon: allow --watch without --all
+  * Add qubes-guivm-session utility
+
+  [ Marek Marczykowski-Górecki ]
+  * travis: use sourced config, switch to R4.1
+  * tests: use asynctest some more
+  * utils: fix encoding '+' for qubes.VMExec
+  * backup/restore: distinguish dom0 by name
+  * backup/restore: improve error message about restoring tags
+  * backup/restore: option for alternative qrexec service
+  * backup/restore: use qfile-unpacker in a VM, request disk space
+    monitoring
+  * utils: add simple locking primitive
+  * rpm/deb: add dependency on scrypt
+  * Add "paranoid restore" mode
+  * tools: remove obsolete _want_app argument
+  * backup/restore: add option for unattended restore and extracting log
+  * rpm: add BR: python3-lxml and python3-xcffib
+  * tests: extend run_service mockup for pre-recorded output
+  * tests: remove extra empty lines
+  * tests: add paranoid backup restore unit tests
+  * doc: document 'tag-created-vm-with' feature
+  * backup/restore: better error detection for --paranoid-mode
+  * backup/restore: make error reporting work also for StandaloneVM
+    based DispVM
+  * Cleanup Admin API denial reporting
+
+  [ Marta Marczykowska-Górecka ]
+  * Added more resilience to missing permissions to utils
+  * qvm-run will unpause paused VMs by defaults
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 11 Aug 2020 19:26:32 +0200
+
 qubes-core-admin-client (4.1.7-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
