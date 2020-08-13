@@ -138,6 +138,13 @@ class QubesTagNotFoundError(QubesException, KeyError):
         return QubesException.__str__(self)
 
 
+class QubesLabelNotFoundError(QubesException, KeyError):
+    """Label does not exists"""
+    def __str__(self):
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
+
+
 class StoragePoolException(QubesException):
     ''' A general storage exception '''
 

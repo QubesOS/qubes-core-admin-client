@@ -278,6 +278,13 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertEqual(label.name, 'red')
         self.assertAllCalled()
 
+    def test_021_get_nonexistant_label(self):
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+            b'0\x00red\nblue\n'
+        with self.assertRaises(qubesadmin.exc.QubesLabelNotFoundError):
+            self.app.get_label('green')
+        self.assertAllCalled()
+
     def clone_setup_common_calls(self, src, dst):
         # have each property type with default=no, each special-cased,
         # and some with default=yes

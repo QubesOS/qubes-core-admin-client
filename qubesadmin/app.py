@@ -250,7 +250,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     def get_label(self, label):
         """Get label as identified by index or name
 
-        :throws KeyError: when label is not found
+        :throws QubesLabelNotFoundError: when label is not found
         """
 
         # first search for name, verbatim
@@ -264,7 +264,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             for i in self.labels.values():
                 if i.index == int(label):
                     return i
-        raise KeyError(label)
+        raise qubesadmin.exc.QubesLabelNotFoundError(label)
 
     @staticmethod
     def get_vm_class(clsname):
