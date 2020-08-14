@@ -21,6 +21,8 @@ import typing
 
 import qubesadmin
 import qubesadmin.tools
+import qubesadmin.tools.qvm_kill
+import qubesadmin.tools.qvm_remove
 import rpm
 import tqdm
 import xdg.BaseDirectory
@@ -49,9 +51,12 @@ def parser_gen() -> argparse.ArgumentParser:
     subparsers = parser_main.add_subparsers(dest='operation', required=True,
         description='Command to run.')
 
-    def parser_add_command(cmd, help_str, add_help=True):
-        return subparsers.add_parser(cmd, formatter_class=formatter,
-            help=help_str, description=help_str, add_help=add_help)
+    def parser_add_command(cmd, help_str):
+        return subparsers.add_parser(
+            cmd,
+            formatter_class=formatter,
+            help=help_str,
+            description=help_str)
 
     # qrexec/DNF related
     parser_main.add_argument('--repo-files', action='append',
@@ -130,9 +135,14 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_search.add_argument('templates', nargs='*', metavar='PATTERN')
     # qvm-template remove
     parser_remove = parser_add_command('remove',
-        help_str='Remove installed templates.',
-        add_help=False) # Forward --help to qvm-remove
-    _ = parser_remove # unused
+        help_str='Remove installed templates.')
+    parser_remove.add_argument('--disassoc', action='store_true',
+            help='Also disassociate VMs from the templates to be removed.')
+    parser_remove.add_argument('templates', nargs='*', metavar='TEMPLATE')
+    # qvm-template purge
+    parser_purge = parser_add_command('purge',
+        help_str='Remove installed templates and associated VMs.')
+    parser_purge.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template clean
     parser_clean = parser_add_command('clean',
         help_str='Remove cached data.')
@@ -281,6 +291,19 @@ def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
     if not is_managed_template(vm):
         parser.error("Template '%s' is not managed by qvm-template." % name)
     return vm
+
+def confirm_action(msg: str, affected: typing.List[str]) -> None:
+    """Confirm user action."""
+    print(msg)
+    for name in affected:
+        print('  ' + name)
+
+    confirm = ''
+    while confirm != 'y':
+        confirm = input('Are you sure? [y/N] ').lower()
+        if confirm == 'n':
+            print('Operation cancelled.')
+            sys.exit(1)
 
 def qrexec_popen(
         args: argparse.Namespace,
@@ -816,15 +839,9 @@ def install(
             for name in dl_list:
                 override_tpls.append(name)
 
-            print('This will override changes made in the following VMs:',
-                file=sys.stderr)
-            for name in override_tpls:
-                print('  %s' % name, file=sys.stderr)
-            confirm = ''
-            while confirm != 'y':
-                confirm = input('Are you sure? [y/N] ').lower()
-                if confirm == 'n':
-                    sys.exit(1)
+            confirm_action(
+                'This will override changes made in the following VMs:',
+                override_tpls)
 
         download(args, app, path_override=args.cachedir,
             dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
@@ -1118,21 +1135,83 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
             print('===', cur_header, '===')
         print(query_res[idx].name, ':', query_res[idx].summary)
 
-def remove(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
+def remove(
+        args: argparse.Namespace,
+        app: qubesadmin.app.QubesBase,
+        disassoc: bool = False,
+        purge: bool = False,
+        dummy: str = 'dummy'
+        ) -> None:
     """Command that remove templates.
 
     :param args: Arguments received by the application.
     :param app: Qubes application object
+    :param disassoc: Whether to disassociate VMs from the templates
+    :param purge: Whether to remove VMs based on the templates
+    :param dummy: Name of dummy VM if disassoc is used
     """
-    _ = args, app # unused
+    # NOTE: While QubesArgumentParser provide similar functionality
+    #       it does not seem to work as a parent parser
+    for tpl in args.templates:
+        if tpl not in app.domains:
+            parser.error("no such domain: '%s'" % tpl)
 
-    # Remove 'remove' entry from the args...
-    operation_idx = sys.argv.index('remove')
-    argv = sys.argv[1:operation_idx] + sys.argv[operation_idx+1:]
+    remove_list = args.templates
+    if purge:
+        # Not disassociating first may result in dependency ordering issues
+        disassoc = True
+        # Remove recursively via BFS
+        remove_set = set(remove_list) # visited
+        idx = 0
+        while idx < len(remove_list):
+            tpl = remove_list[idx]
+            idx += 1
+            vm = app.domains[tpl]
+            for holder, prop in qubesadmin.utils.vm_dependencies(app, vm):
+                if holder is not None and holder.name not in remove_set:
+                    remove_list.append(holder.name)
+                    remove_set.add(holder.name)
 
-    # ...then pass the args to qvm-remove
-    # Use exec so stdio can be shared easily
-    os.execvp('qvm-remove', ['qvm-remove'] + argv)
+    if not args.yes:
+        repeat = 3 if purge else 1
+        for _ in range(repeat):
+            confirm_action(
+                'This will completely remove the selected VM(s)...',
+                remove_list)
+
+    if disassoc:
+        # Remove the dummy afterwards if we're purging
+        remove_dummy = purge
+        # Create dummy template; handle name collisions
+        orig_dummy = dummy
+        cnt = 1
+        while dummy in app.domains \
+                and not app.domains[dummy].features.get('template-dummy', 0):
+            dummy = '%s-%d' % (orig_dummy, cnt)
+            cnt += 1
+        if dummy not in app.domains:
+            dummy_vm = app.add_new_vm('TemplateVM', dummy, 'red')
+        else:
+            dummy_vm = app.domains[dummy]
+
+        for tpl in remove_list:
+            vm = app.domains[tpl]
+            for holder, prop in qubesadmin.utils.vm_dependencies(app, vm):
+                if holder:
+                    setattr(holder, prop, dummy_vm)
+                    holder.template = dummy_vm
+                    print("Property '%s' of '%s' set to '%s'." % (
+                        prop, holder.name, dummy), file=sys.stderr)
+                else:
+                    print("Global property '%s' set to ''." % prop,
+                        file=sys.stderr)
+                    setattr(app, prop, '')
+        if remove_dummy:
+            remove_list.append(dummy)
+
+    if disassoc or purge:
+        qubesadmin.tools.qvm_kill.main(['--'] + remove_list, app)
+    qubesadmin.tools.qvm_remove.main(['--force', '--'] + remove_list, app)
 
 def clean(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that cleans the local package cache.
@@ -1214,15 +1293,7 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
 
     :return: Return code of the application
     """
-    p_args, unk_args = parser.parse_known_args(args)
-    if p_args.operation != 'remove' and unk_args:
-        p_args = parser.parse_args(args) # this should result in an error
-        assert False and 'This line should not be executed.'
-        # FIXME: Currently doing things this way as we have to forward
-        # arguments to qvm-remove. While argparse.REMAINDER should be able to
-        # solve this, there's a bug (issue 17050) that prevents it from working
-        # on inputs where the first argument is an option, like 'qvm-template
-        # remove --help'. The bug should be fixed in Python 3.9.
+    p_args = parser.parse_args(args)
 
     # If the user specified other repo files...
     if len(p_args.repo_files) > 1:
@@ -1255,7 +1326,9 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
     elif p_args.operation == 'search':
         search(p_args, app)
     elif p_args.operation == 'remove':
-        remove(p_args, app)
+        remove(p_args, app, disassoc=p_args.disassoc)
+    elif p_args.operation == 'purge':
+        remove(p_args, app, purge=True)
     elif p_args.operation == 'clean':
         clean(p_args, app)
     elif p_args.operation == 'repolist':
