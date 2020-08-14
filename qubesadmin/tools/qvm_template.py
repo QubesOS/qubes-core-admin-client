@@ -62,6 +62,9 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_main.add_argument('--repo-files', action='append',
         default=['/usr/share/qubes/repo-templates/qubes-templates.repo'],
         help='Specify files containing DNF repository configuration.')
+    parser_main.add_argument('--keyring',
+        default='/usr/share/qubes/repo-templates/keys',
+        help='Specify directory containing RPM public keys.')
     parser_main.add_argument('--updatevm', default='sys-firewall',
         help='Specify VM to download updates from.')
     parser_main.add_argument('--enablerepo', action='append', default=[],
@@ -507,10 +510,22 @@ def qrexec_download(
             raise ConnectionError(
                 "qrexec call 'qubes.TemplateDownload' failed.")
 
+def rpm_transactionset(key_dir: str) -> rpm.transaction.TransactionSet:
+    """Create RPM TransactionSet using the keys in the given directory."""
+    tset = rpm.TransactionSet()
+    kring = rpm.keyring()
+    for name in os.listdir(key_dir):
+        path = os.path.join(key_dir, name)
+        if os.path.isfile(path):
+            with open(path, 'rb') as fd:
+                kring.addKey(rpm.pubkey(fd.read()))
+    tset.setKeyring(kring)
+    return tset
+
 def verify_rpm(
         path: str,
-        nogpgcheck: bool = False,
-        transaction_set: typing.Optional[rpm.transaction.TransactionSet] = None
+        transaction_set: rpm.transaction.TransactionSet,
+        nogpgcheck: bool = False
         ) -> rpm.hdr:
     """Verify the digest and signature of a RPM package and return the package
     header.
@@ -521,13 +536,11 @@ def verify_rpm(
     case.
 
     :param path: Location of the RPM package
+    :param transaction_set: RPM ``TransactionSet``
     :param nogpgcheck: Whether to allow invalid GPG signatures
-    :param transaction_set: Override RPM ``TransactionSet``. Optional
 
     :return: RPM package header. If verification fails, ``None`` is returned.
     """
-    if transaction_set is None:
-        transaction_set = rpm.TransactionSet()
     with open(path, 'rb') as fd:
         try:
             hdr = transaction_set.hdrFromFdno(fd)
@@ -728,7 +741,7 @@ def install(
             % LOCK_FILE)
 
     try:
-        transaction_set = rpm.TransactionSet()
+        transaction_set = rpm_transactionset(args.keyring)
 
         unverified_rpm_list = [] # rpmfile, reponame
         verified_rpm_list = []
@@ -740,7 +753,7 @@ def install(
             else:
                 path = rpmfile
 
-            package_hdr = verify_rpm(path, args.nogpgcheck, transaction_set)
+            package_hdr = verify_rpm(path, transaction_set, args.nogpgcheck)
             if not package_hdr:
                 parser.error('Package \'%s\' verification failed.' % rpmfile)
 
