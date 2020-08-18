@@ -81,6 +81,8 @@ def parser_gen() -> argparse.ArgumentParser:
         help='Specify cache directory.')
     parser_main.add_argument('--yes', action='store_true',
         help='Assume "yes" to questions.')
+    parser_main.add_argument('--quiet', action='store_true',
+        help='Reduce amount of output.')
     # qvm-template {install,reinstall,downgrade,upgrade}
     parser_install = parser_add_command('install',
         help_str='Install template packages.')
@@ -482,8 +484,8 @@ def qrexec_download(
     """Download a template from repositories.
 
     :param args: Arguments received by the application. Specifically,
-        ``args.{enablerepo,disablerepo,repoid,releasever,repo_files,updatevm}``
-        are used
+        ``args.{enablerepo,disablerepo,repoid,releasever,repo_files,updatevm,
+        quiet}`` are used
     :param app: Qubes application object
     :param spec: Package spec to query (refer to ``<package-name-spec>`` in the
         DNF documentation)
@@ -502,7 +504,7 @@ def qrexec_download(
         proc.stdin.write(payload.encode('UTF-8'))
         proc.stdin.close()
         with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
-                unit_divisor=1000, unit='B') as pbar:
+                unit_divisor=1000, unit='B', disable=args.quiet) as pbar:
             last = 0
             while proc.poll() is None:
                 cur = fd.tell()
