@@ -9,6 +9,7 @@ import enum
 import fnmatch
 import functools
 import itertools
+import json
 import operator
 import os
 import re
@@ -58,7 +59,6 @@ def parser_gen() -> argparse.ArgumentParser:
             help=help_str,
             description=help_str)
 
-    # qrexec/DNF related
     parser_main.add_argument('--repo-files', action='append',
         default=['/usr/share/qubes/repo-templates/qubes-templates.repo'],
         help='Specify files containing DNF repository configuration.')
@@ -126,8 +126,11 @@ def parser_gen() -> argparse.ArgumentParser:
                 ' locally but not in repos) templates.'))
         parser_x.add_argument('--upgrades', action='store_true',
             help='Show upgradable templates.')
-        parser_x.add_argument('--machine-readable', action='store_true',
+        readable = parser_x.add_mutually_exclusive_group()
+        readable.add_argument('--machine-readable', action='store_true',
             help='Enable machine-readable output.')
+        readable.add_argument('--machine-readable-json', action='store_true',
+            help='Enable machine-readable output (JSON).')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template search
     parser_search = parser_add_command('search',
@@ -932,10 +935,21 @@ def list_templates(args: argparse.Namespace,
     def append_info(data, status, install_time=None):
         tpl_list.append((status, data, install_time))
 
-    def list_to_output(tpls):
+    def list_to_human_output(tpls):
         outputs = []
         for status, grp in itertools.groupby(tpls, lambda x: x[0]):
-            outputs.append((status, list(map(lambda x: x[1:], grp))))
+            def convert(row):
+                return row[1:]
+            outputs.append((status, list(map(convert, grp))))
+        return outputs
+
+    def list_to_machine_output(tpls):
+        outputs = {}
+        for status, grp in itertools.groupby(tpls, lambda x: x[0]):
+            def convert(row):
+                _, name, evr, reponame = row
+                return {'name': name, 'evr': evr, 'reponame': reponame}
+            outputs[status.value] = list(map(convert, grp))
         return outputs
 
     def info_to_human_output(tpls):
@@ -966,7 +980,7 @@ def list_templates(args: argparse.Namespace,
         return outputs
 
     def info_to_machine_output(tpls, replace_newline=True):
-        outputs = []
+        outputs = {}
         for status, grp in itertools.groupby(tpls, lambda x: x[0]):
             output = []
             for _, data, install_time in grp:
@@ -977,10 +991,20 @@ def list_templates(args: argparse.Namespace,
                 install_time = str(install_time) if install_time else ''
                 if replace_newline:
                     description = description.replace('\n', '|')
-                output.append((name, epoch, version, release, reponame,
-                    dlsize, buildtime, install_time, licence, url, summary,
-                    description))
-            outputs.append((status, output))
+                output.append({
+                    'name': name,
+                    'epoch': epoch,
+                    'version': version,
+                    'release': release,
+                    'reponame': reponame,
+                    'size': dlsize,
+                    'buildtime': buildtime,
+                    'installtime': install_time,
+                    'license': licence,
+                    'url': url,
+                    'summary': summary,
+                    'description': description})
+            outputs[status.value] = output
         return outputs
 
     if operation == 'list':
@@ -1042,23 +1066,29 @@ def list_templates(args: argparse.Namespace,
     if len(tpl_list) == 0:
         parser.error('No matching templates to list')
 
-    if not args.machine_readable:
-        if operation == 'info':
-            tpl_list = info_to_human_output(tpl_list)
-        elif operation == 'list':
-            tpl_list = list_to_output(tpl_list)
-        for status, grp in tpl_list:
-            print(status.title())
-            qubesadmin.tools.print_table(grp)
-    else:
+    if args.machine_readable:
         if operation == 'info':
             tpl_list = info_to_machine_output(tpl_list)
         elif operation == 'list':
-            tpl_list = list_to_output(tpl_list)
-        for status, grp in tpl_list:
-            print('|' + status.value)
+            tpl_list = list_to_machine_output(tpl_list)
+        for status, grp in tpl_list.items():
+            print('|' + status)
             for line in grp:
-                print('|'.join(line) + '|')
+                print('|'.join(line.values()) + '|')
+    elif args.machine_readable_json:
+        if operation == 'info':
+            tpl_list = info_to_machine_output(tpl_list, replace_newline=False)
+        elif operation == 'list':
+            tpl_list = list_to_machine_output(tpl_list)
+        print(json.dumps(tpl_list))
+    else:
+        if operation == 'info':
+            tpl_list = info_to_human_output(tpl_list)
+        elif operation == 'list':
+            tpl_list = list_to_human_output(tpl_list)
+        for status, grp in tpl_list:
+            print(status.title())
+            qubesadmin.tools.print_table(grp)
 
 def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that searches template details for given patterns.
