@@ -136,9 +136,7 @@ class PropertyColumn(Column):
 
     def __init__(self, name):
         ls_head = name.replace('_', '-').upper()
-        super(PropertyColumn, self).__init__(
-            head=ls_head,
-            attr=name)
+        super().__init__(head=ls_head, attr=name)
 
     def __repr__(self):
         return '{}(head={!r}'.format(
@@ -196,9 +194,7 @@ class FlagsColumn(Column):
     # pylint: disable=no-self-use
 
     def __init__(self):
-        super(FlagsColumn, self).__init__(
-            head='FLAGS',
-            doc=self.__class__.__doc__)
+        super().__init__(head='FLAGS', doc=self.__class__.__doc__)
 
 
     @flag(1)
@@ -447,7 +443,7 @@ class _HelpColumnsAction(argparse.Action):
             dest=argparse.SUPPRESS,
             default=argparse.SUPPRESS,
             help='list all available columns with short descriptions and exit'):
-        super(_HelpColumnsAction, self).__init__(
+        super().__init__(
             option_strings=option_strings,
             dest=dest,
             default=default,
@@ -478,7 +474,7 @@ class _HelpFormatsAction(argparse.Action):
             dest=argparse.SUPPRESS,
             default=argparse.SUPPRESS,
             help='list all available formats with their definitions and exit'):
-        super(_HelpFormatsAction, self).__init__(
+        super().__init__(
             option_strings=option_strings,
             dest=dest,
             default=default,

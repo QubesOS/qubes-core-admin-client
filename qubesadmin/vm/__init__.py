@@ -53,7 +53,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
     firewall = None
 
     def __init__(self, app, name, klass=None):
-        super(QubesVM, self).__init__(app, 'admin.vm.property.', name)
+        super().__init__(app, 'admin.vm.property.', name)
         self._volumes = None
         self._klass = klass
         self.log = logging.getLogger(name)
@@ -352,7 +352,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         # use cached value if available
         if self._klass is None:
             # pylint: disable=no-member
-            self._klass = super(QubesVM, self).klass
+            self._klass = super().klass
         return self._klass
 
 class DispVMWrapper(QubesVM):
@@ -377,7 +377,7 @@ class DispVMWrapper(QubesVM):
                 # Service call may wait for session start, give it more time
                 # than default 5s
                 kwargs['connect_timeout'] = self.qrexec_timeout
-        return super(DispVMWrapper, self).run_service(service, **kwargs)
+        return super().run_service(service, **kwargs)
 
     def cleanup(self):
         '''Cleanup after DispVM usage'''

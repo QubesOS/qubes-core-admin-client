@@ -25,7 +25,7 @@ class QubesException(Exception):
     '''Base exception for all Qubes-related errors.'''
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
-        super(QubesException, self).__init__(
+        super().__init__(
             message_format % tuple(int(d) if d.isdigit() else d for d in args),
             **kwargs)
 
@@ -170,5 +170,5 @@ class QubesPropertyAccessError(QubesException, AttributeError):
     '''Failed to read/write property value, cause is unknown (insufficient
     permissions, no such property, invalid value, other)'''
     def __init__(self, prop):
-        super(QubesPropertyAccessError, self).__init__(
+        super().__init__(
             'Failed to access \'%s\' property' % prop)

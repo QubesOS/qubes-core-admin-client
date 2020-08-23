@@ -157,7 +157,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     blind_mode = False
 
     def __init__(self):
-        super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')
+        super().__init__(self, 'admin.property.', 'dom0')
         self.domains = VMCollection(self)
         self.labels = qubesadmin.base.WrapperObjectsCollection(
             self, 'admin.label.List', qubesadmin.label.Label)
@@ -435,19 +435,19 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                     ['qvm-appmenus', '--init', '--update',
                      '--source', src_vm.name, dst_vm.name]
                 subprocess.check_output(appmenus_cmd, stderr=subprocess.STDOUT)
-            except OSError:
+            except OSError as e:
                 # this file needs to be python 2.7 compatible,
                 # so no FileNotFoundError
                 self.log.error('Failed to clone appmenus, qvm-appmenus missing')
                 if not ignore_errors:
                     raise qubesadmin.exc.QubesException(
-                        'Failed to clone appmenus')
+                        'Failed to clone appmenus') from e
             except subprocess.CalledProcessError as e:
                 self.log.error('Failed to clone appmenus: %s',
                                e.output.decode())
                 if not ignore_errors:
                     raise qubesadmin.exc.QubesException(
-                        'Failed to clone appmenus')
+                        'Failed to clone appmenus') from e
 
         except qubesadmin.exc.QubesException:
             if not ignore_errors:

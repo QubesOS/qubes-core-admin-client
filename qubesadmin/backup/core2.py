@@ -38,7 +38,7 @@ class Core2VM(qubesadmin.backup.BackupVM):
     '''VM object'''
     # pylint: disable=too-few-public-methods
     def __init__(self):
-        super(Core2VM, self).__init__()
+        super().__init__()
         self.backup_content = False
 
     @property
@@ -148,7 +148,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             raise ValueError("store path required")
         self.qid_map = {}
         self.log = logging.getLogger('qubesadmin.backup.core2')
-        super(Core2Qubes, self).__init__(store)
+        super().__init__(store)
 
     def load_globals(self, element):
         '''Load global settings

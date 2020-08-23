@@ -82,7 +82,7 @@ _tar_file_size_re = re.compile(r"^[^ ]+ [^ ]+/[^ ]+ *([0-9]+) .*")
 class BackupCanceledError(QubesException):
     '''Exception raised when backup/restore was cancelled'''
     def __init__(self, msg, tmpdir=None):
-        super(BackupCanceledError, self).__init__(msg)
+        super().__init__(msg)
         self.tmpdir = tmpdir
 
 def init_supported_hmac_and_crypto():
@@ -361,7 +361,7 @@ class ExtractWorker3(Process):
         :param bool verify_only: only verify data integrity, do not extract
         :param dict handlers: handlers for actual data
         '''
-        super(ExtractWorker3, self).__init__()
+        super().__init__()
         #: queue with files to extract
         self.queue = queue
         #: paths on the queue are relative to this dir
@@ -904,14 +904,14 @@ class BackupRestore(object):
         USERNAME_MISMATCH = object()
 
         def __init__(self, vm, subdir=None):
-            super(BackupRestore.Dom0ToRestore, self).__init__(vm)
+            super().__init__(vm)
             if subdir:
                 self.subdir = subdir
                 self.username = os.path.basename(subdir)
 
     def __init__(self, app, backup_location, backup_vm, passphrase,
                  force_compression_filter=None):
-        super(BackupRestore, self).__init__()
+        super().__init__()
 
         #: qubes.Qubes instance
         self.app = app
