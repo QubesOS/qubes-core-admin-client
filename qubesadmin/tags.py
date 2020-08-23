@@ -31,7 +31,7 @@ class Tags(object):
     # pylint: disable=too-few-public-methods
 
     def __init__(self, vm):
-        super(Tags, self).__init__()
+        super().__init__()
         self.vm = vm
 
     def remove(self, elem):

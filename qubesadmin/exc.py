@@ -25,7 +25,7 @@ class QubesException(Exception):
     '''Base exception for all Qubes-related errors.'''
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
-        super(QubesException, self).__init__(
+        super().__init__(
             message_format % tuple(int(d) if d.isdigit() else d for d in args),
             **kwargs)
 
@@ -164,7 +164,7 @@ class DeviceAlreadyAttached(QubesException, KeyError):
 class BackupRestoreError(QubesException):
     '''Restoring a backup failed'''
     def __init__(self, msg, backup_log=None):
-        super(BackupRestoreError, self).__init__(msg)
+        super().__init__(msg)
         self.backup_log = backup_log
 
 # pylint: disable=too-many-ancestors
@@ -177,8 +177,7 @@ class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
     '''Failed to read/write property value, cause is unknown (insufficient
     permissions, no such property, invalid value, other)'''
     def __init__(self, prop):
-        super(QubesPropertyAccessError, self).__init__(
-            'Failed to access \'%s\' property' % prop)
+        super().__init__('Failed to access \'%s\' property' % prop)
 
 # legacy name
 QubesDaemonNoResponseError = QubesDaemonAccessError

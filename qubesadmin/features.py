@@ -35,7 +35,7 @@ class Features(object):
     # pylint: disable=too-few-public-methods
 
     def __init__(self, vm):
-        super(Features, self).__init__()
+        super().__init__()
         self.vm = vm
 
     def __delitem__(self, key):

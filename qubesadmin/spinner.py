@@ -91,7 +91,7 @@ class QubesSpinner(AbstractSpinner):
 
     This spinner uses standard ASCII control characters'''
     def __init__(self, *args, **kwargs):
-        super(QubesSpinner, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.hidelen = 0
         self.cub1 = '\b'
 
@@ -120,7 +120,7 @@ class QubesSpinnerEnterpriseEdition(QubesSpinner):
         if charset is None:
             charset = ENTERPRISE_CHARSET if self.stream_isatty else '.'
 
-        super(QubesSpinnerEnterpriseEdition, self).__init__(stream, charset)
+        super().__init__(stream, charset)
 
         if self.stream_isatty:
             try:

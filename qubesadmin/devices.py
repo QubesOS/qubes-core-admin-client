@@ -115,7 +115,7 @@ class UnknownDevice(DeviceInfo):
                  **kwargs):
         if description is None:
             description = "Unknown device"
-        super(UnknownDevice, self).__init__(backend_domain, devclass, ident,
+        super().__init__(backend_domain, devclass, ident,
                                             description, **kwargs)
 
 
@@ -295,7 +295,7 @@ class DeviceManager(dict):
     """
 
     def __init__(self, vm):
-        super(DeviceManager, self).__init__()
+        super().__init__()
         self._vm = vm
 
     def __missing__(self, key):

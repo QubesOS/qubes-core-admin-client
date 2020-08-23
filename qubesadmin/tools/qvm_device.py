@@ -163,7 +163,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                  required=True, allow_unknown=False, **kwargs):
         # pylint: disable=redefined-builtin
         self.allow_unknown = allow_unknown
-        super(DeviceAction, self).__init__(help=help, required=required,
+        super().__init__(help=help, required=required,
                                            **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):

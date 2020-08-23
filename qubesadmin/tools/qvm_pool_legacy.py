@@ -36,11 +36,11 @@ class _Info(qubesadmin.tools.PoolsAction):
     def __init__(self, option_strings, help='print pool info and exit',
                  **kwargs):
         # pylint: disable=redefined-builtin
-        super(_Info, self).__init__(option_strings, help=help, **kwargs)
+        super().__init__(option_strings, help=help, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, 'command', 'info')
-        super(_Info, self).__call__(parser, namespace, values, option_string)
+        super().__call__(parser, namespace, values, option_string)
 
 
 def pool_info(pool):
@@ -62,11 +62,11 @@ class _Remove(argparse.Action):
     ''' Action for argument parser that removes a pool '''
 
     def __init__(self, option_strings, dest=None, default=None, metavar=None):
-        super(_Remove, self).__init__(option_strings=option_strings,
-                                      dest=dest,
-                                      metavar=metavar,
-                                      default=default,
-                                      help='remove pool')
+        super().__init__(option_strings=option_strings,
+                         dest=dest,
+                         metavar=metavar,
+                         default=default,
+                         help='remove pool')
 
     def __call__(self, parser, namespace, name, option_string=None):
         setattr(namespace, 'command', 'remove')
@@ -77,12 +77,12 @@ class _Add(argparse.Action):
     ''' Action for argument parser that adds a pool. '''
 
     def __init__(self, option_strings, dest=None, default=None, metavar=None):
-        super(_Add, self).__init__(option_strings=option_strings,
-                                   dest=dest,
-                                   metavar=metavar,
-                                   default=default,
-                                   nargs=2,
-                                   help='add pool')
+        super().__init__(option_strings=option_strings,
+                         dest=dest,
+                         metavar=metavar,
+                         default=default,
+                         nargs=2,
+                         help='add pool')
 
     def __call__(self, parser, namespace, values, option_string=None):
         name, driver = values
@@ -95,23 +95,23 @@ class _Set(qubesadmin.tools.PoolsAction):
     ''' Action for argument parser that sets pool options. '''
 
     def __init__(self, option_strings, dest=None, default=None, metavar=None):
-        super(_Set, self).__init__(option_strings=option_strings,
-                                   dest=dest,
-                                   metavar=metavar,
-                                   default=default,
-                                   help='modify pool (use -o to specify '
-                                        'modifications)')
+        super().__init__(option_strings=option_strings,
+                         dest=dest,
+                         metavar=metavar,
+                         default=default,
+                         help='modify pool (use -o to specify '
+                              'modifications)')
 
     def __call__(self, parser, namespace, name, option_string=None):
         setattr(namespace, 'command', 'set')
-        super(_Set, self).__call__(parser, namespace, name, option_string)
+        super().__call__(parser, namespace, name, option_string)
 
 
 class _Options(argparse.Action):
     ''' Action for argument parser that parsers options. '''
 
     def __init__(self, option_strings, dest, default, metavar='options'):
-        super(_Options, self).__init__(
+        super().__init__(
             option_strings=option_strings,
             dest=dest,
             metavar=metavar,

@@ -46,7 +46,7 @@ class Label(object):
                 qubesd_response = self.app.qubesd_call(
                     'dom0', 'admin.label.Get', self._name, None)
             except qubesadmin.exc.QubesDaemonNoResponseError:
-                raise AttributeError
+                raise qubesadmin.exc.QubesPropertyAccessError('label.color')
             self._color = qubesd_response.decode()
         return self._color
 
@@ -63,13 +63,13 @@ class Label(object):
 
     @property
     def index(self):
-        '''color specification as in HTML (``#abcdef``)'''
+        '''label numeric identifier'''
         if self._index is None:
             try:
                 qubesd_response = self.app.qubesd_call(
                     'dom0', 'admin.label.Index', self._name, None)
             except qubesadmin.exc.QubesDaemonNoResponseError:
-                raise AttributeError
+                raise qubesadmin.exc.QubesPropertyAccessError('label.index')
             self._index = int(qubesd_response.decode())
         return self._index
 

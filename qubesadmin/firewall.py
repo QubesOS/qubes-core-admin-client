@@ -53,7 +53,7 @@ class RuleChoice(RuleOption):
     '''Base class for multiple-choices rule elements'''
     # pylint: disable=abstract-method
     def __init__(self, value):
-        super(RuleChoice, self).__init__(value)
+        super().__init__(value)
         self.allowed_values = \
             [v for k, v in self.__class__.__dict__.items()
                 if not k.startswith('__') and isinstance(v, str) and
@@ -148,7 +148,7 @@ class DstHost(RuleOption):
                 except socket.error:
                     raise ValueError('Invalid IP address: ' + host)
 
-        super(DstHost, self).__init__(value)
+        super().__init__(value)
 
     @property
     def rule(self):
@@ -175,7 +175,7 @@ class DstPorts(RuleOption):
             raise ValueError('Ports out of range')
         if self.range[0] > self.range[1]:
             raise ValueError('Invalid port range')
-        super(DstPorts, self).__init__(
+        super().__init__(
             str(self.range[0]) if self.range[0] == self.range[1]
             else '{!s}-{!s}'.format(*self.range))
 
@@ -188,7 +188,7 @@ class DstPorts(RuleOption):
 class IcmpType(RuleOption):
     '''ICMP packet type'''
     def __init__(self, value):
-        super(IcmpType, self).__init__(value)
+        super().__init__(value)
         value = int(value)
         if value < 0 or value > 255:
             raise ValueError('ICMP type out of range')
@@ -212,7 +212,7 @@ class SpecialTarget(RuleChoice):
 class Expire(RuleOption):
     '''Rule expire time'''
     def __init__(self, value):
-        super(Expire, self).__init__(value)
+        super().__init__(value)
         self.datetime = datetime.datetime.utcfromtimestamp(int(value))
 
     @property

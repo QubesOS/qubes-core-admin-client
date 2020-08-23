@@ -42,7 +42,7 @@ class DriveAction(argparse.Action):
             metavar='IMAGE',
             required=False,
             help='Attach drive'):
-        super(DriveAction, self).__init__(option_strings, dest,
+        super().__init__(option_strings, dest,
             metavar=metavar, help=help)
         self.prefix = prefix
 

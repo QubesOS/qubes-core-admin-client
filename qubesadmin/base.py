@@ -345,7 +345,7 @@ class PropertyHolder(object):
 
     def __setattr__(self, key, value):
         if key.startswith('_') or key in self._local_properties():
-            return super(PropertyHolder, self).__setattr__(key, value)
+            return super().__setattr__(key, value)
         if value is qubesadmin.DEFAULT:
             try:
                 self.qubesd_call(
@@ -371,7 +371,7 @@ class PropertyHolder(object):
 
     def __delattr__(self, name):
         if name.startswith('_') or name in self._local_properties():
-            return super(PropertyHolder, self).__delattr__(name)
+            return super().__delattr__(name)
         try:
             self.qubesd_call(
                 self._method_dest,
