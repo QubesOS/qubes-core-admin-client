@@ -1231,11 +1231,13 @@ def remove(
         orig_dummy = dummy
         cnt = 1
         while dummy in app.domains \
-                and not app.domains[dummy].features.get('template-dummy', 0):
+                and app.domains[dummy].features.get(
+                    'template-dummy', '0') == '0':
             dummy = '%s-%d' % (orig_dummy, cnt)
             cnt += 1
         if dummy not in app.domains:
             dummy_vm = app.add_new_vm('TemplateVM', dummy, 'red')
+            dummy_vm.features['template-dummy'] = 1
         else:
             dummy_vm = app.domains[dummy]
 
