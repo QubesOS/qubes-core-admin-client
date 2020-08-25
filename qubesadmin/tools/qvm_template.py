@@ -1082,9 +1082,8 @@ def list_templates(args: argparse.Namespace,
         elif operation == 'list':
             tpl_list = list_to_machine_output(tpl_list)
         for status, grp in tpl_list.items():
-            print('|' + status)
             for line in grp:
-                print('|'.join(line.values()) + '|')
+                print('|'.join([status] + list(line.values())))
     elif args.machine_readable_json:
         if operation == 'info':
             tpl_list = info_to_machine_output(tpl_list, replace_newline=False)

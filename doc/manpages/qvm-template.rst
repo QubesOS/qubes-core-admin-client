@@ -219,7 +219,7 @@ Options
 
        ::
 
-           |{status}|{name}|{evr}|{reponame}|
+           {status}|{name}|{evr}|{reponame}
 
        Where ``{status}`` can be one of ``installed``, ``available``,
        ``extra``, or ``upgradable``.
@@ -307,7 +307,7 @@ Options
 
        ::
 
-           |{status}|{name}|{epoch}|{version}|{release}|{reponame}|{size}|{buildtime}|{installtime}|{license}|{url}|{summary}|{description}|
+           {status}|{name}|{epoch}|{version}|{release}|{reponame}|{size}|{buildtime}|{installtime}|{license}|{url}|{summary}|{description}
 
        Where ``{status}`` can be one of ``installed``, ``available``,
        ``extra``, or ``upgradable``.
