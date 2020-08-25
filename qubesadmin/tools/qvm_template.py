@@ -61,20 +61,26 @@ def parser_gen() -> argparse.ArgumentParser:
 
     parser_main.add_argument('--repo-files', action='append',
         default=['/usr/share/qubes/repo-templates/qubes-templates.repo'],
-        help='Specify files containing DNF repository configuration.')
+        help=('Specify files containing DNF repository configuration.'
+            ' Can be used more than once.'))
     parser_main.add_argument('--keyring',
         default='/usr/share/qubes/repo-templates/keys',
         help='Specify directory containing RPM public keys.')
     parser_main.add_argument('--updatevm', default='sys-firewall',
         help='Specify VM to download updates from.')
     parser_main.add_argument('--enablerepo', action='append', default=[],
-        help='Enable additional repositories.')
+        metavar='REPOID',
+        help=('Enable additional repositories by an id or a glob.'
+            ' Can be used more than once.'))
     parser_main.add_argument('--disablerepo', action='append', default=[],
-        help='Disable certain repositories.')
+        metavar='REPOID',
+        help=('Disable certain repositories by an id or a glob.'
+            ' Can be used more than once.'))
     parser_main.add_argument('--repoid', action='append', default=[],
-        help='Enable just specific repositories.')
+        help=('Enable just specific repositories by an id or a glob.'
+            ' Can be used more than once.'))
     parser_main.add_argument('--releasever', default=qubes_release(),
-        help='Override distro release version.')
+        help='Override Qubes release version.')
     parser_main.add_argument('--refresh', action='store_true',
         help='Set repository metadata as expired before running the command.')
     parser_main.add_argument('--cachedir', default=CACHE_DIR,
@@ -82,7 +88,7 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_main.add_argument('--yes', action='store_true',
         help='Assume "yes" to questions.')
     parser_main.add_argument('--quiet', action='store_true',
-        help='Reduce amount of output.')
+        help='Decrease verbosity.')
     # qvm-template {install,reinstall,downgrade,upgrade}
     parser_install = parser_add_command('install',
         help_str='Install template packages.')
@@ -99,18 +105,19 @@ def parser_gen() -> argparse.ArgumentParser:
         parser_x.add_argument('--nogpgcheck', action='store_true',
             help='Disable signature checks.')
         parser_x.add_argument('--allow-pv', action='store_true',
-            help='Allow setting virt_mode to pv in configuration file.')
-        parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
+            help='Allow templates that set virt_mode to pv.')
+        parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
     # qvm-template download
     parser_download = parser_add_command('download',
-        help_str='Download template package.')
+        help_str='Download template packages.')
     for parser_x in [parser_install, parser_reinstall,
             parser_downgrade, parser_upgrade, parser_download]:
         parser_x.add_argument('--downloaddir', default='.',
             help='Specify download directory.')
         parser_x.add_argument('--retries', default=5, type=int,
-            help='Specify number of retries for downloads.')
-    parser_download.add_argument('templates', nargs='*', metavar='TEMPLATE')
+            help='Specify maximum number of retries for downloads.')
+    parser_download.add_argument('templates', nargs='*',
+        metavar='TEMPLATESPEC')
     # qvm-template {list,info}
     parser_list = parser_add_command('list',
         help_str='List templates.')
@@ -124,7 +131,7 @@ def parser_gen() -> argparse.ArgumentParser:
         parser_x.add_argument('--available', action='store_true',
             help='Show available templates.')
         parser_x.add_argument('--extras', action='store_true',
-            help=('Show extras (e.g., ones that exists'
+            help=('Show extras (e.g., ones that exist'
                 ' locally but not in repos) templates.'))
         parser_x.add_argument('--upgrades', action='store_true',
             help='Show upgradable templates.')
@@ -133,19 +140,20 @@ def parser_gen() -> argparse.ArgumentParser:
             help='Enable machine-readable output.')
         readable.add_argument('--machine-readable-json', action='store_true',
             help='Enable machine-readable output (JSON).')
-        parser_x.add_argument('templates', nargs='*', metavar='TEMPLATE')
+        parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
     # qvm-template search
     parser_search = parser_add_command('search',
         help_str='Search template details for the given string.')
     parser_search.add_argument('--all', action='store_true',
-        help=('Search also in template description and URL. In addition,'
+        help=('Search also in the template description and URL. In addition,'
             ' the criterion are evaluated with OR instead of AND.'))
     parser_search.add_argument('templates', nargs='*', metavar='PATTERN')
     # qvm-template remove
     parser_remove = parser_add_command('remove',
         help_str='Remove installed templates.')
     parser_remove.add_argument('--disassoc', action='store_true',
-            help='Also disassociate VMs from the templates to be removed.')
+            help=('Also disassociate VMs from the templates to be removed.'
+                ' This creates a dummy template for the VMs to link with.'))
     parser_remove.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template purge
     parser_purge = parser_add_command('purge',
@@ -153,7 +161,7 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_purge.add_argument('templates', nargs='*', metavar='TEMPLATE')
     # qvm-template clean
     parser_clean = parser_add_command('clean',
-        help_str='Remove cached data.')
+        help_str='Remove locally cached packages.')
     _ = parser_clean # unused
     # qvm-template repolist
     parser_repolist = parser_add_command('repolist',
@@ -162,9 +170,9 @@ def parser_gen() -> argparse.ArgumentParser:
     repolim.add_argument('--all', action='store_true',
         help='Show all repos.')
     repolim.add_argument('--enabled', action='store_true',
-        help='Show enabled repos (default).')
+        help='Show only enabled repos (default).')
     repolim.add_argument('--disabled', action='store_true',
-        help='Show disabled repos.')
+        help='Show only disabled repos.')
     parser_repolist.add_argument('repos', nargs='*', metavar='REPOS')
 
     return parser_main
