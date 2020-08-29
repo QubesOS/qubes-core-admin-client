@@ -142,7 +142,7 @@ def parser_gen() -> argparse.ArgumentParser:
             help=('Show extras (e.g., ones that exist'
                 ' locally but not in repos) templates.'))
         parser_x.add_argument('--upgrades', action='store_true',
-            help='Show upgradable templates.')
+            help='Show available upgrades.')
         readable = parser_x.add_mutually_exclusive_group()
         readable.add_argument('--machine-readable', action='store_true',
             help='Enable machine-readable output.')

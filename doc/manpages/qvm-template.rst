@@ -208,7 +208,7 @@ Options
 
 .. option:: --upgrades
 
-   Show upgradable templates.
+   Show available upgrades.
 
 .. option:: --machine-readable
 
@@ -296,7 +296,7 @@ Options
 
 .. option:: --upgrades
 
-   Show upgradable templates.
+   Show available upgrades.
 
 .. option:: --machine-readable
 
