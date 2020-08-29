@@ -919,7 +919,7 @@ def install(
                 tpl.features['template-buildtime'] = \
                     str(datetime.datetime.fromtimestamp(
                         int(package_hdr[rpm.RPMTAG_BUILDTIME])))
-                tpl.features['template-install-time'] = \
+                tpl.features['template-installtime'] = \
                     str(datetime.datetime.today())
                 tpl.features['template-license'] = \
                     package_hdr[rpm.RPMTAG_LICENSE]
@@ -1033,7 +1033,7 @@ def list_templates(args: argparse.Namespace,
         assert False and 'Unknown operation'
 
     def append_vm(vm, status):
-        append(query_local(vm), status, vm.features['template-install-time'])
+        append(query_local(vm), status, vm.features['template-installtime'])
 
     if not (args.installed or args.available or args.extras or args.upgrades):
         args.all = True
