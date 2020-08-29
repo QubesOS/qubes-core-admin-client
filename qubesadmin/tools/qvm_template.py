@@ -41,8 +41,16 @@ def qubes_release() -> str:
         with open('/usr/share/qubes/marker-vm', 'r') as fd:
             # Get last line (in the format `x.x`)
             return fd.readlines()[-1].strip()
-    return subprocess.check_output(['lsb_release', '-sr'],
-        encoding='UTF-8').strip()
+    with open('/etc/os-release', 'r') as fd:
+        for line in fd:
+            line = line.strip()
+            if not line or line[0] == '#':
+                continue
+            key, val = line.split('=', 1)
+            if key != 'VERSION_ID':
+                continue
+            val = val.strip('\'"') # strip possible quotes
+            return val
 
 def parser_gen() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
