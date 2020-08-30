@@ -87,7 +87,26 @@ Options
 
    Read passphrase from file, or use '-' to read from stdin
 
+.. option:: --location-is-service
 
+   Provided backup location is a qrexec service name (optionally with an
+   argument, separated by ``+``), instead of file path or a command.
+
+.. option:: --paranoid-mode, --plan-b
+
+  Isolate restore process in a DisposableVM, defend against potentially
+  compromised backup. In this mode some parts of the backup are skipped,
+  specifically:
+
+    - dom0 home directory (desktop environment settings)
+    - PCI devices assignments
+
+.. option:: --auto-close
+
+  When running with --paranoid-mode (see above), automatically close restore
+  progress window after the restore process is finished and display restore log
+  on the standard output. The log will be colored red if the standard output is
+  a terminal.
 
 Authors
 =======

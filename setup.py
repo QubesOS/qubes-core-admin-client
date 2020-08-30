@@ -17,9 +17,11 @@ def get_console_scripts():
     if sys.version_info[0:2] >= (3, 4):
         for filename in os.listdir('./qubesadmin/tools'):
             basename, ext = os.path.splitext(os.path.basename(filename))
-            if basename in ['__init__', 'dochelpers'] or ext != '.py':
+            if basename in ['__init__', 'dochelpers', 'xcffibhelpers']\
+                    or ext != '.py':
                 continue
-            yield basename.replace('_', '-'), 'qubesadmin.tools.{}'.format(basename)
+            yield basename.replace('_', '-'), 'qubesadmin.tools.{}'.format(
+                basename)
 
 # create simple scripts that run much faster than "console entry points"
 class CustomInstall(setuptools.command.install.install):

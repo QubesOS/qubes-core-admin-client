@@ -45,7 +45,7 @@ parser.add_argument('--autostart', '--auto', '-a',
 
 parser.add_argument('--no-autostart', '--no-auto', '-n',
     action='store_false', dest='autostart',
-    help='do not autostart qube')
+    help='do not autostart/unpause qube')
 
 parser.add_argument('--pass-io', '-p',
     action='store_true', dest='passio', default=False,
@@ -270,9 +270,27 @@ def main(args=None, app=None):
             if not args.autostart and not vm.is_running():
                 if verbose > 0:
                     print_no_color('Qube \'{}\' not started'.format(vm.name),
-                        file=sys.stderr, color=args.color_stderr)
+                                   file=sys.stderr, color=args.color_stderr)
                 retcode = max(retcode, 1)
                 continue
+            if vm.is_paused():
+                if not args.autostart:
+                    if verbose > 0:
+                        print_no_color(
+                            'Qube \'{}\' is paused'.format(vm.name),
+                            file=sys.stderr, color=args.color_stderr)
+                    retcode = max(retcode, 1)
+                    continue
+                try:
+                    vm.unpause()
+                except qubesadmin.exc.QubesException:
+                    if verbose > 0:
+                        print_no_color(
+                            'Qube \'{}\' cannot be unpaused'.format(
+                                vm.name),
+                            file=sys.stderr, color=args.color_stderr)
+                    retcode = max(retcode, 1)
+                    continue
             try:
                 if verbose > 0:
                     print_no_color(

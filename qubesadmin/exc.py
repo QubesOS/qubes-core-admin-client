@@ -25,7 +25,7 @@ class QubesException(Exception):
     '''Base exception for all Qubes-related errors.'''
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
-        super(QubesException, self).__init__(
+        super().__init__(
             message_format % tuple(int(d) if d.isdigit() else d for d in args),
             **kwargs)
 
@@ -138,6 +138,13 @@ class QubesTagNotFoundError(QubesException, KeyError):
         return QubesException.__str__(self)
 
 
+class QubesLabelNotFoundError(QubesException, KeyError):
+    """Label does not exists"""
+    def __str__(self):
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
+
+
 class StoragePoolException(QubesException):
     ''' A general storage exception '''
 
@@ -154,14 +161,23 @@ class DeviceAlreadyAttached(QubesException, KeyError):
         return QubesException.__str__(self)
 
 
+class BackupRestoreError(QubesException):
+    '''Restoring a backup failed'''
+    def __init__(self, msg, backup_log=None):
+        super().__init__(msg)
+        self.backup_log = backup_log
+
 # pylint: disable=too-many-ancestors
-class QubesDaemonNoResponseError(QubesDaemonCommunicationError):
-    '''Got empty response from qubesd'''
+class QubesDaemonAccessError(QubesDaemonCommunicationError):
+    '''Got empty response from qubesd. This can be lack of permission,
+    or some server-side issue.'''
 
 
-class QubesPropertyAccessError(QubesException, AttributeError):
+class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
     '''Failed to read/write property value, cause is unknown (insufficient
     permissions, no such property, invalid value, other)'''
     def __init__(self, prop):
-        super(QubesPropertyAccessError, self).__init__(
-            'Failed to access \'%s\' property' % prop)
+        super().__init__('Failed to access \'%s\' property' % prop)
+
+# legacy name
+QubesDaemonNoResponseError = QubesDaemonAccessError

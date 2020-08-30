@@ -23,10 +23,13 @@ Package: qubes-core-admin-client
 Architecture: any
 Depends:
  python3-qubesadmin,
+ scrypt,
  ${python:Depends},
  ${python3:Depends},
  ${misc:Depends}
-Conflicts: qubes-core-agent (<< 4.1.9)
+Conflicts:
+ qubes-core-agent (<< 4.1.9),
+ qubes-gui-daemon (<< 4.1.7)
 Description: Qubes administrative tools
  Tools to manage Qubes system using Admin API
 

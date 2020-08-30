@@ -11,11 +11,16 @@ BuildRequires:	python%{python3_pkgversion}-setuptools
 BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
 BuildRequires:	python%{python3_pkgversion}-dbus
+BuildRequires:	python%{python3_pkgversion}-lxml
+BuildRequires:	python%{python3_pkgversion}-xcffib
 Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
+Requires:   scrypt
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 Conflicts:  qubes-core-agent < 4.1.9
+# qubes-guid -C option
+Conflicts:  qubes-gui-daemon < 4.1.7
 
 %description
 This package include managemt tools, like qvm-*.
@@ -53,6 +58,7 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %defattr(-,root,root,-)
 %doc LICENSE
 %config /etc/xdg/autostart/qvm-start-daemon.desktop
+%config /etc/xdg/autostart/qvm-start-daemon-kde.desktop
 %{_bindir}/qubes-*
 %{_bindir}/qvm-*
 %{_mandir}/man1/qvm-*.1*

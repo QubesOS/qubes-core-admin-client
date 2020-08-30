@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -32,22 +32,119 @@ import xcffib.xproto  # pylint: disable=unused-import
 
 import daemon.pidfile
 import qubesadmin
+import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
-
-have_events = False
-try:
-    # pylint: disable=wrong-import-position
-    import qubesadmin.events
-
-    have_events = True
-except ImportError:
-    pass
+from . import xcffibhelpers
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
+
+GUI_DAEMON_OPTIONS = [
+    ('allow_fullscreen', 'bool'),
+    ('override_redirect_protection', 'bool'),
+    ('allow_utf8_titles', 'bool'),
+    ('secure_copy_sequence', 'str'),
+    ('secure_paste_sequence', 'str'),
+    ('windows_count_limit', 'int'),
+    ('trayicon_mode', 'str'),
+    ('startup_timeout', 'int'),
+]
+
+
+def retrieve_gui_daemon_options(vm, guivm):
+    '''
+    Construct a list of GUI daemon options based on VM features.
+
+    This checks 'gui-*' features on the VM, and if they're absent,
+    'gui-default-*' features on the GuiVM.
+    '''
+
+    options = {}
+
+    for name, kind in GUI_DAEMON_OPTIONS:
+        feature_value = vm.features.get(
+            'gui-' + name.replace('_', '-'), None)
+        if feature_value is None:
+            feature_value = guivm.features.get(
+                'gui-default-' + name.replace('_', '-'), None)
+        if feature_value is None:
+            continue
+
+        if kind == 'bool':
+            value = bool(feature_value)
+        elif kind == 'int':
+            value = int(feature_value)
+        elif kind == 'str':
+            value = feature_value
+        else:
+            assert False, kind
+
+        options[name] = value
+    return options
+
+
+def serialize_gui_daemon_options(options):
+    '''
+    Prepare configuration file content for GUI daemon. Currently uses libconfig
+    format.
+    '''
+
+    lines = [
+        '# Auto-generated file, do not edit!',
+        '',
+        'global: {',
+    ]
+    for name, kind in GUI_DAEMON_OPTIONS:
+        if name in options:
+            value = options[name]
+            if kind == 'bool':
+                serialized = 'true' if value else 'false'
+            elif kind == 'int':
+                serialized = str(value)
+            elif kind == 'str':
+                serialized = escape_config_string(value)
+            else:
+                assert False, kind
+
+            lines.append('  {} = {};'.format(name, serialized))
+    lines.append('}')
+    lines.append('')
+    return '\n'.join(lines)
+
+
+NON_ASCII_RE = re.compile(r'[^\x00-\x7F]')
+UNPRINTABLE_CHARACTER_RE = re.compile(r'[\x00-\x1F\x7F]')
+
+def escape_config_string(value):
+    '''
+    Convert a string to libconfig format.
+
+    Format specification:
+    http://www.hyperrealm.com/libconfig/libconfig_manual.html#String-Values
+
+    See dump_string() for python-libconf:
+    https://github.com/Grk0/python-libconf/blob/master/libconf.py
+    '''
+
+    assert not NON_ASCII_RE.match(value),\
+        'expected an ASCII string: {!r}'.format(value)
+
+    value = (
+        value.replace('\\', '\\\\')
+             .replace('"', '\\"')
+             .replace('\f', r'\f')
+             .replace('\n', r'\n')
+             .replace('\r', r'\r')
+             .replace('\t', r'\t')
+    )
+    value = UNPRINTABLE_CHARACTER_RE.sub(
+          lambda m: r'\x{:02x}'.format(ord(m.group(0))),
+        value)
+    return '"' + value + '"'
+
 
 # "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
 REGEX_OUTPUT = re.compile(r"""
@@ -71,6 +168,106 @@ REGEX_OUTPUT = re.compile(r"""
         .*                             # ignore rest of line
         )?                             # everything after (dis)connect is optional
         """)
+
+
+class KeyboardLayout:
+    """Class to store and parse X Keyboard layout data"""
+    # pylint: disable=too-few-public-methods
+    def __init__(self, binary_string):
+        split_string = binary_string.split(b'\0')
+        self.languages = split_string[2].decode().split(',')
+        self.variants = split_string[3].decode().split(',')
+        self.options = split_string[4].decode()
+
+    def get_property(self, layout_num):
+        """Return the selected keyboard layout as formatted for keyboard_layout
+        property."""
+        return '+'.join([self.languages[layout_num],
+                         self.variants[layout_num],
+                         self.options])
+
+
+class XWatcher:
+    """Watch and react for X events related to the keyboard layout changes."""
+    def __init__(self, conn, app):
+        self.app = app
+        self.current_vm = self.app.domains[self.app.local_name]
+
+        self.conn = conn
+        self.ext = self.initialize_extension()
+
+        # get root window
+        self.setup = self.conn.get_setup()
+        self.root = self.setup.roots[0].root
+
+        # atoms (strings) of events we need to watch
+        # keyboard layout was switched
+        self.atom_xklavier = self.conn.core.InternAtom(
+            False, len("XKLAVIER_ALLOW_SECONDARY"),
+            "XKLAVIER_ALLOW_SECONDARY").reply().atom
+        # keyboard layout was changed
+        self.atom_xkb_rules = self.conn.core.InternAtom(
+            False, len("_XKB_RULES_NAMES"),
+            "_XKB_RULES_NAMES").reply().atom
+
+        self.conn.core.ChangeWindowAttributesChecked(
+            self.root, xcffib.xproto.CW.EventMask,
+            [xcffib.xproto.EventMask.PropertyChange])
+        self.conn.flush()
+
+        # initialize state
+        self.keyboard_layout = KeyboardLayout(self.get_keyboard_layout())
+        self.selected_layout = self.get_selected_layout()
+
+    def initialize_extension(self):
+        """Initialize XKB extension (not supported by xcffib by default"""
+        ext = self.conn(xcffibhelpers.key)
+        ext.UseExtension()
+        return ext
+
+    def get_keyboard_layout(self):
+        """Check what is current keyboard layout definition"""
+        property_cookie = self.conn.core.GetProperty(
+            False,  # delete
+            self.root,  # window
+            self.atom_xkb_rules,
+            xcffib.xproto.Atom.STRING,
+            0, 1000
+        )
+        prop_reply = property_cookie.reply()
+        return prop_reply.value.buf()
+
+    def get_selected_layout(self):
+        """Check which keyboard layout is currently selected"""
+        state_reply = self.ext.GetState().reply()
+        return state_reply.lockedGroup[0]
+
+    def update_keyboard_layout(self):
+        """Update current vm's keyboard_layout property"""
+        new_property = self.keyboard_layout.get_property(
+            self.selected_layout)
+
+        current_property = self.current_vm.keyboard_layout
+
+        if new_property != current_property:
+            self.current_vm.keyboard_layout = new_property
+
+    def event_reader(self, callback):
+        """Poll for X events related to keyboard layout"""
+        try:
+            for event in iter(self.conn.poll_for_event, None):
+                if isinstance(event, xcffib.xproto.PropertyNotifyEvent):
+                    if event.atom == self.atom_xklavier:
+                        self.selected_layout = self.get_selected_layout()
+                    elif event.atom == self.atom_xkb_rules:
+                        self.keyboard_layout = KeyboardLayout(
+                            self.get_keyboard_layout())
+                    else:
+                        continue
+
+                    self.update_keyboard_layout()
+        except xcffib.ConnectionException:
+            callback()
 
 
 def get_monitor_layout():
@@ -114,44 +311,22 @@ def get_monitor_layout():
     return outputs
 
 
-def set_keyboard_layout(vm):
-    """Set layout configuration into features for Gui admin extension"""
-    try:
-        # Examples of 'xprop -root _XKB_RULES_NAMES' output values:
-        # "evdev", "pc105", "fr", "oss", ""
-        # "evdev", "pc105", "pl,us", ",", "grp:win_switch,compose:caps"
-
-        # We use the first layout provided
-        xkb_re = r'_XKB_RULES_NAMES\(STRING\) = ' \
-                 r'\"(.*)\", \"(.*)\", \"(.*)\", \"(.*)\", \"(.*)\"\n'
-        xkb_rules_names = subprocess.check_output(
-            ['xprop', '-root', '_XKB_RULES_NAMES']).decode()
-        xkb_parsed = re.match(xkb_re, xkb_rules_names)
-        if xkb_parsed:
-            xkb_layout = [x.split(',')[0] for x in xkb_parsed.groups()[2:4]]
-            # We keep all options
-            xkb_layout.append(xkb_parsed.group(5))
-            keyboard_layout = '+'.join(xkb_layout)
-            vm.features['keyboard-layout'] = keyboard_layout
-        else:
-            vm.log.warning('Failed to parse layout for %s', vm)
-    except subprocess.CalledProcessError as e:
-        vm.log.warning('Failed to set layout for %s: %s', vm, str(e))
-
-
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
-    def __init__(self, app: qubesadmin.app.QubesBase):
+    def __init__(self, app: qubesadmin.app.QubesBase, vm_names=None, kde=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
+        :param vm_names: VM names to watch for, or None if watching for all
+        :param kde: add KDE-specific arguments for guid
         """
         self.app = app
         self.started_processes = {}
+        self.vm_names = vm_names
+        self.kde = kde
 
-    @asyncio.coroutine
-    def send_monitor_layout(self, vm, layout=None, startup=False):
+    async def send_monitor_layout(self, vm, layout=None, startup=False):
         """Send monitor layout to a given VM
 
         This function is a coroutine.
@@ -186,7 +361,7 @@ class DAEMONLauncher:
                 pass
 
         try:
-            yield from asyncio.get_event_loop(). \
+            await asyncio.get_event_loop(). \
                 run_in_executor(None,
                                 functools.partial(
                                     vm.run_service_for_stdio,
@@ -215,33 +390,28 @@ class DAEMONLauncher:
         """Return KDE-specific arguments for gui-daemon, if applicable"""
 
         guid_cmd = []
-        # Avoid using environment variables for checking the current session,
-        #  because this script may be called with cleared env (like with sudo).
-        if subprocess.check_output(
-                ['xprop', '-root', '-notype', 'KWIN_RUNNING']) == \
-                b'KWIN_RUNNING = 0x1\n':
-            # native decoration plugins is used, so adjust window properties
-            # accordingly
-            guid_cmd += ['-T']  # prefix window titles with VM name
-            # get owner of X11 session
-            session_owner = None
-            for line in subprocess.check_output(['xhost']).splitlines():
-                if line == b'SI:localuser:root':
-                    pass
-                elif line.startswith(b'SI:localuser:'):
-                    session_owner = line.split(b':')[2].decode()
-            if session_owner is not None:
-                data_dir = os.path.expanduser(
-                    '~{}/.local/share'.format(session_owner))
-            else:
-                # fallback to current user
-                data_dir = os.path.expanduser('~/.local/share')
+        # native decoration plugins is used, so adjust window properties
+        # accordingly
+        guid_cmd += ['-T']  # prefix window titles with VM name
+        # get owner of X11 session
+        session_owner = None
+        for line in subprocess.check_output(['xhost']).splitlines():
+            if line == b'SI:localuser:root':
+                pass
+            elif line.startswith(b'SI:localuser:'):
+                session_owner = line.split(b':')[2].decode()
+        if session_owner is not None:
+            data_dir = os.path.expanduser(
+                '~{}/.local/share'.format(session_owner))
+        else:
+            # fallback to current user
+            data_dir = os.path.expanduser('~/.local/share')
 
-            guid_cmd += ['-p',
-                         '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
-                             os.path.join(data_dir,
-                                          'qubes-kde',
-                                          vm.label.name + '.colors'))]
+        guid_cmd += ['-p',
+                        '_KDE_NET_WM_COLOR_SCHEME=s:{}'.format(
+                            os.path.join(data_dir,
+                                        'qubes-kde',
+                                        vm.label.name + '.colors'))]
         return guid_cmd
 
     def common_guid_args(self, vm):
@@ -262,13 +432,29 @@ class DAEMONLauncher:
         if vm.features.check_with_template('rpc-clipboard', False):
             guid_cmd.extend(['-Q'])
 
-        guid_cmd += self.kde_guid_args(vm)
+        guivm = self.app.domains[vm.guivm]
+        options = retrieve_gui_daemon_options(vm, guivm)
+        config = serialize_gui_daemon_options(options)
+        config_path = self.guid_config_file(vm.xid)
+        self.write_guid_config(config_path, config)
+        guid_cmd.extend(['-C', config_path])
         return guid_cmd
+
+    @staticmethod
+    def write_guid_config(config_path, config):
+        """Write guid configuration to a file"""
+        with open(config_path, 'w') as config_file:
+            config_file.write(config)
 
     @staticmethod
     def guid_pidfile(xid):
         """Helper function to construct a GUI pidfile path"""
         return '/var/run/qubes/guid-running.{}'.format(xid)
+
+    @staticmethod
+    def guid_config_file(xid):
+        """Helper function to construct a GUI configuration file path"""
+        return '/var/run/qubes/guid-conf.{}'.format(xid)
 
     @staticmethod
     def pacat_pidfile(xid):
@@ -284,8 +470,7 @@ class DAEMONLauncher:
                 else vm.xid
         return xid
 
-    @asyncio.coroutine
-    def start_gui_for_vm(self, vm, monitor_layout=None):
+    async def start_gui_for_vm(self, vm, monitor_layout=None):
         """Start GUI daemon (qubes-guid) connected directly to a VM
 
         This function is a coroutine.
@@ -295,6 +480,8 @@ class DAEMONLauncher:
             local X server.
         """
         guid_cmd = self.common_guid_args(vm)
+        if self.kde:
+            guid_cmd.extend(self.kde_guid_args(vm))
         guid_cmd.extend(['-d', str(vm.xid)])
 
         if vm.virt_mode == 'hvm':
@@ -309,13 +496,12 @@ class DAEMONLauncher:
 
         vm.log.info('Starting GUI')
 
-        yield from asyncio.create_subprocess_exec(*guid_cmd)
+        await asyncio.create_subprocess_exec(*guid_cmd)
 
-        yield from self.send_monitor_layout(vm, layout=monitor_layout,
+        await self.send_monitor_layout(vm, layout=monitor_layout,
                                             startup=True)
 
-    @asyncio.coroutine
-    def start_gui_for_stubdomain(self, vm, force=False):
+    async def start_gui_for_stubdomain(self, vm, force=False):
         """Start GUI daemon (qubes-guid) connected to a stubdomain
 
         This function is a coroutine.
@@ -339,10 +525,9 @@ class DAEMONLauncher:
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(['-d', str(vm.stubdom_xid), '-t', str(vm.xid)])
 
-        yield from asyncio.create_subprocess_exec(*guid_cmd)
+        await asyncio.create_subprocess_exec(*guid_cmd)
 
-    @asyncio.coroutine
-    def start_audio_for_vm(self, vm):
+    async def start_audio_for_vm(self, vm):
         """Start AUDIO daemon (pacat-simple-vchan) connected directly to a VM
 
         This function is a coroutine.
@@ -353,10 +538,9 @@ class DAEMONLauncher:
         pacat_cmd = [PACAT_DAEMON_PATH, '-l', self.pacat_domid(vm), vm.name]
         vm.log.info('Starting AUDIO')
 
-        yield from asyncio.create_subprocess_exec(*pacat_cmd)
+        await asyncio.create_subprocess_exec(*pacat_cmd)
 
-    @asyncio.coroutine
-    def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
+    async def start_gui(self, vm, force_stubdom=False, monitor_layout=None):
         """Start GUI daemon regardless of start event.
 
         This function is a coroutine.
@@ -372,16 +556,15 @@ class DAEMONLauncher:
             return
 
         if vm.virt_mode == 'hvm':
-            yield from self.start_gui_for_stubdomain(vm, force=force_stubdom)
+            await self.start_gui_for_stubdomain(vm, force=force_stubdom)
 
         if not vm.features.check_with_template('gui', True):
             return
 
         if not os.path.exists(self.guid_pidfile(vm.xid)):
-            yield from self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
+            await self.start_gui_for_vm(vm, monitor_layout=monitor_layout)
 
-    @asyncio.coroutine
-    def start_audio(self, vm):
+    async def start_audio(self, vm):
         """Start AUDIO daemon regardless of start event.
 
         This function is a coroutine.
@@ -398,10 +581,14 @@ class DAEMONLauncher:
 
         xid = self.pacat_domid(vm)
         if not os.path.exists(self.pacat_pidfile(xid)):
-            yield from self.start_audio_for_vm(vm)
+            await self.start_audio_for_vm(vm)
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
+
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
@@ -416,6 +603,10 @@ class DAEMONLauncher:
     def on_domain_start(self, vm, _event, **kwargs):
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM """
+
+        if not self.is_watched(vm):
+            return
+
         try:
             if getattr(vm, 'guivm', None) == vm.app.local_name and \
                     vm.features.check_with_template('gui', True) and \
@@ -442,6 +633,9 @@ class DAEMONLauncher:
             if vm.klass == 'AdminVM':
                 continue
 
+            if not self.is_watched(vm):
+                continue
+
             power_state = vm.get_power_state()
             if power_state == 'Running':
                 asyncio.ensure_future(
@@ -454,22 +648,42 @@ class DAEMONLauncher:
                     asyncio.ensure_future(
                         self.start_gui_for_stubdomain(vm))
 
+    def on_domain_stopped(self, vm, _event, **_kwargs):
+        """Handler of 'domain-stopped' event, cleans up"""
+
+        if not self.is_watched(vm):
+            return
+
+        self.cleanup_guid(vm.xid)
+        if vm.virt_mode == 'hvm':
+            self.cleanup_guid(vm.stubdom_xid)
+
+    def cleanup_guid(self, xid):
+        """
+        Clean up after qubes-guid. Removes the auto-generated configuration
+        file, if any.
+        """
+
+        config_path = self.guid_config_file(xid)
+        if os.path.exists(config_path):
+            os.unlink(config_path)
+
     def register_events(self, events):
         """Register domain startup events in app.events dispatcher"""
         events.add_handler('domain-spawn', self.on_domain_spawn)
         events.add_handler('domain-start', self.on_domain_start)
         events.add_handler('connection-established',
                            self.on_connection_established)
+        events.add_handler('domain-stopped', self.on_domain_stopped)
 
+    def is_watched(self, vm):
+        """
+        Should we watch this VM for changes
+        """
 
-def x_reader(conn, callback):
-    """Try reading something from X connection to check if it's still alive.
-    In case it isn't, call *callback*.
-    """
-    try:
-        conn.poll_for_event()
-    except xcffib.ConnectionException:
-        callback()
+        if self.vm_names is None:
+            return True
+        return vm.name in self.vm_names
 
 
 if 'XDG_RUNTIME_DIR' in os.environ:
@@ -482,8 +696,7 @@ else:
 parser = qubesadmin.tools.QubesArgumentParser(
     description='start GUI for qube(s)', vmname_nargs='*')
 parser.add_argument('--watch', action='store_true',
-                    help='Keep watching for further domains'
-                         ' startups, must be used with --all')
+                    help='Keep watching for further domain startups')
 parser.add_argument('--force-stubdomain', action='store_true',
                     help='Start GUI to stubdomain-emulated VGA,'
                          ' even if gui-agent is running in the VM')
@@ -492,9 +705,8 @@ parser.add_argument('--pidfile', action='store', default=pidfile_path,
 parser.add_argument('--notify-monitor-layout', action='store_true',
                     help='Notify running instance in --watch mode'
                          ' about changed monitor layout')
-parser.add_argument('--set-keyboard-layout', action='store_true',
-                    help='Set keyboard layout values into GuiVM features.'
-                         'This option is implied by --watch')
+parser.add_argument('--kde', action='store_true',
+                    help='Set KDE specific arguments to gui-daemon.')
 # Add it for the help only
 parser.add_argument('--force', action='store_true', default=False,
                     help='Force running daemon without enabled services'
@@ -511,19 +723,19 @@ def main(args=None):
         print(parser.format_help())
         return
     args = parser.parse_args(args)
-    if args.watch and not args.all_domains:
-        parser.error('--watch option must be used with --all')
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
-    if args.watch and 'guivm-gui-agent' in enabled_services:
-        args.set_keyboard_layout = True
-    if args.set_keyboard_layout or os.path.exists('/etc/qubes-release'):
-        guivm = args.app.domains.get_blind(args.app.local_name)
-        set_keyboard_layout(guivm)
-    launcher = DAEMONLauncher(args.app)
+
+    if args.all_domains:
+        vm_names = None
+    else:
+        vm_names = [vm.name for vm in args.domains]
+    launcher = DAEMONLauncher(
+        args.app,
+        vm_names=vm_names,
+        kde=args.kde)
+
     if args.watch:
-        if not have_events:
-            parser.error('--watch option require Python >= 3.5')
         with daemon.pidfile.TimeoutPIDLockFile(args.pidfile):
             loop = asyncio.get_event_loop()
             # pylint: disable=no-member
@@ -541,8 +753,10 @@ def main(args=None):
                                     launcher.send_monitor_layout_all)
 
             conn = xcffib.connect()
+            x_watcher = XWatcher(conn, args.app)
             x_fd = conn.get_file_descriptor()
-            loop.add_reader(x_fd, x_reader, conn, events_listener.cancel)
+            loop.add_reader(x_fd, x_watcher.event_reader,
+                            events_listener.cancel)
 
             try:
                 loop.run_until_complete(events_listener)

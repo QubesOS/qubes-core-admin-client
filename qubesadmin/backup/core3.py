@@ -57,7 +57,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
             raise ValueError("store path required")
         self.log = logging.getLogger('qubesadmin.backup.core3')
         self.labels = {}
-        super(Core3Qubes, self).__init__(store)
+        super().__init__(store)
 
     @staticmethod
     def get_property(xml_obj, prop):

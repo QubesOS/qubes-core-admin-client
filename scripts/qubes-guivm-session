@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+print_usage() {
+cat >&2 <<USAGE
+Usage: $0 vmname
+Starts given VM and runs its associated GUI daemon. Used as X session for the
+GUI domain.
+USAGE
+}
+
+if [ $# -lt 1 ] ; then
+    print_usage
+    exit 1
+fi
+
+# Start VM, gui-daemon and audio
+qvm-start --skip-if-running "$1"
+qvm-start-daemon --watch "$1" &
+
+# Run the inner session (Xephyr) and wait until it exits
+exec qvm-run -p --no-gui --service "$1" qubes.GuiVMSession

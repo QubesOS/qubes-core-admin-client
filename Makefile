@@ -12,8 +12,10 @@ install:
 	$(PYTHON) setup.py install -O1 $(PYTHON_PREFIX_ARG) --root $(DESTDIR)
 	install -d $(DESTDIR)/etc/xdg/autostart
 	install -m 0644 etc/qvm-start-daemon.desktop $(DESTDIR)/etc/xdg/autostart/
+	install -m 0644 etc/qvm-start-daemon-kde.desktop $(DESTDIR)/etc/xdg/autostart/
 	install -d $(DESTDIR)/usr/bin
 	ln -sf qvm-start-daemon $(DESTDIR)/usr/bin/qvm-start-gui
+	install -m 0755 scripts/qubes-guivm-session $(DESTDIR)/usr/bin/
 
 clean:
 	rm -rf test-packages/__pycache__ qubesadmin/__pycache__

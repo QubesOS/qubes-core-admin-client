@@ -82,7 +82,7 @@ class VMCollection(object):
             if vm.name not in self._vm_list:
                 # VM no longer exists
                 del self._vm_objects[name]
-            elif vm.__class__.__name__ != self._vm_list[vm.name]['class']:
+            elif vm.klass != self._vm_list[vm.name]['class']:
                 # VM class have changed
                 del self._vm_objects[name]
             # TODO: some generation ID, to detect VM re-creation
@@ -167,7 +167,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     cache_enabled = False
 
     def __init__(self):
-        super(QubesBase, self).__init__(self, 'admin.property.', 'dom0')
+        super().__init__(self, 'admin.property.', 'dom0')
         self.domains = VMCollection(self)
         self.labels = qubesadmin.base.WrapperObjectsCollection(
             self, 'admin.label.List', qubesadmin.label.Label)
@@ -250,7 +250,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     def get_label(self, label):
         """Get label as identified by index or name
 
-        :throws KeyError: when label is not found
+        :throws QubesLabelNotFoundError: when label is not found
         """
 
         # first search for name, verbatim
@@ -264,7 +264,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             for i in self.labels.values():
                 if i.index == int(label):
                     return i
-        raise KeyError(label)
+        raise qubesadmin.exc.QubesLabelNotFoundError(label)
 
     @staticmethod
     def get_vm_class(clsname):
@@ -454,19 +454,19 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                     ['qvm-appmenus', '--init', '--update',
                      '--source', src_vm.name, dst_vm.name]
                 subprocess.check_output(appmenus_cmd, stderr=subprocess.STDOUT)
-            except OSError:
+            except OSError as e:
                 # this file needs to be python 2.7 compatible,
                 # so no FileNotFoundError
                 self.log.error('Failed to clone appmenus, qvm-appmenus missing')
                 if not ignore_errors:
                     raise qubesadmin.exc.QubesException(
-                        'Failed to clone appmenus')
+                        'Failed to clone appmenus') from e
             except subprocess.CalledProcessError as e:
                 self.log.error('Failed to clone appmenus: %s',
                                e.output.decode())
                 if not ignore_errors:
                     raise qubesadmin.exc.QubesException(
-                        'Failed to clone appmenus')
+                        'Failed to clone appmenus') from e
 
         except qubesadmin.exc.QubesException:
             if not ignore_errors:
@@ -838,7 +838,7 @@ class QubesRemote(QubesBase):
                                  stderr=subprocess.PIPE)
             (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
-            raise qubesadmin.exc.QubesDaemonNoResponseError(
+            raise qubesadmin.exc.QubesDaemonAccessError(
                 'Service call error: %s', stderr.decode())
 
         return self._parse_qubesd_response(stdout)

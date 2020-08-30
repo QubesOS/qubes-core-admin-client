@@ -20,7 +20,7 @@
 Synopsis
 --------
 
-:command:`qvm-start-daemon` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--watch] [--force-stubdomain] [--pidfile *PIDFILE*] [--notify-monitory-layout] [*VMNAME* [*VMNAME* ...]]
+:command:`qvm-start-daemon` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--watch] [--kde] [--force] [--force-stubdomain] [--pidfile *PIDFILE*] [--notify-monitory-layout] [*VMNAME* [*VMNAME* ...]]
 
 Options
 -------
@@ -47,11 +47,22 @@ Options
 
 .. option:: --watch
 
-   Keep watching for further domains startups, must be used with --all
+   Keep watching for further domain startups
 
 .. option:: --force-stubdomain
 
    Start GUI to stubdomain-emulated VGA, even if gui-agent is running in the VM
+
+.. option:: --force
+
+   Force running, even if this isn't GUI/Audio domain. GUI domain is a domain
+   with 'guivm-gui-agent' qvm-service enabled. Similarly for Audio domain it is
+   'audiovm-audio-agent' qvm-service.
+
+.. option:: --kde
+
+   Set KDE specific arguments to gui-daemon - required for proper windows
+   decoration on KDE.
 
 .. option:: --pidfile
 
