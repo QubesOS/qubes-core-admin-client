@@ -176,18 +176,46 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_010_import_appmenus(self):
+        default_menu_items = [
+            'org.gnome.Terminal.desktop',
+            'firefox.desktop']
+        menu_items = [
+            'org.gnome.Terminal.desktop',
+            'org.gnome.Software.desktop',
+            'gnome-control-center.desktop']
+        netvm_menu_items = [
+            'org.gnome.Terminal.desktop',
+            'nm-connection-editor.desktop']
         with open(os.path.join(self.source_dir.name,
                 'vm-whitelisted-appmenus.list'), 'w') as f:
-            f.write('org.gnome.Terminal.desktop\n')
-            f.write('firefox.desktop\n')
+            for entry in default_menu_items:
+                f.write(entry + '\n')
         with open(os.path.join(self.source_dir.name,
                 'whitelisted-appmenus.list'), 'w') as f:
-            f.write('org.gnome.Terminal.desktop\n')
-            f.write('org.gnome.Software.desktop\n')
-            f.write('gnome-control-center.desktop\n')
+            for entry in menu_items:
+                f.write(entry + '\n')
+        with open(os.path.join(self.source_dir.name,
+                'netvm-whitelisted-appmenus.list'), 'w') as f:
+            for entry in netvm_menu_items:
+                f.write(entry + '\n')
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_calls[(
+            'test-vm',
+            'admin.vm.feature.Set',
+            'default-menu-items',
+            ' '.join(default_menu_items).encode())] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm',
+            'admin.vm.feature.Set',
+            'menu-items',
+            ' '.join(menu_items).encode())] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm',
+            'admin.vm.feature.Set',
+            'netvm-menu-items',
+            ' '.join(netvm_menu_items).encode())] = b'0\0'
 
         vm = self.app.domains['test-vm']
         with mock.patch('subprocess.check_call') as mock_proc:
@@ -205,15 +233,43 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     @mock.patch('grp.getgrnam')
     @mock.patch('os.getuid')
     def test_011_import_appmenus_as_root(self, mock_getuid, mock_getgrnam):
+        default_menu_items = [
+            'org.gnome.Terminal.desktop',
+            'firefox.desktop']
+        menu_items = [
+            'org.gnome.Terminal.desktop',
+            'org.gnome.Software.desktop',
+            'gnome-control-center.desktop']
+        netvm_menu_items = [
+            'org.gnome.Terminal.desktop',
+            'nm-connection-editor.desktop']
         with open(os.path.join(self.source_dir.name,
                 'vm-whitelisted-appmenus.list'), 'w') as f:
-            f.write('org.gnome.Terminal.desktop\n')
-            f.write('firefox.desktop\n')
+            for entry in default_menu_items:
+                f.write(entry + '\n')
         with open(os.path.join(self.source_dir.name,
                 'whitelisted-appmenus.list'), 'w') as f:
-            f.write('org.gnome.Terminal.desktop\n')
-            f.write('org.gnome.Software.desktop\n')
-            f.write('gnome-control-center.desktop\n')
+            for entry in menu_items:
+                f.write(entry + '\n')
+        with open(os.path.join(self.source_dir.name,
+                'netvm-whitelisted-appmenus.list'), 'w') as f:
+            for entry in netvm_menu_items:
+                f.write(entry + '\n')
+        self.app.expected_calls[(
+            'test-vm',
+            'admin.vm.feature.Set',
+            'default-menu-items',
+            ' '.join(default_menu_items).encode())] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm',
+            'admin.vm.feature.Set',
+            'menu-items',
+            ' '.join(menu_items).encode())] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm',
+            'admin.vm.feature.Set',
+            'netvm-menu-items',
+            ' '.join(netvm_menu_items).encode())] = b'0\0'
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
@@ -313,7 +369,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             app=self.app)
         self.assertEqual(ret, 0)
         self.app.add_new_vm.assert_called_once_with('TemplateVM',
-            name='test-vm', label='black')
+            name='test-vm', label='black', pool=None)
         mock_import_root_img.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
         mock_import_appmenus.assert_called_once_with(self.app.domains[
