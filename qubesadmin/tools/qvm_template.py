@@ -20,13 +20,14 @@ import tempfile
 import time
 import typing
 
+import rpm
+import tqdm
+import xdg.BaseDirectory
+
 import qubesadmin
 import qubesadmin.tools
 import qubesadmin.tools.qvm_kill
 import qubesadmin.tools.qvm_remove
-import rpm
-import tqdm
-import xdg.BaseDirectory
 
 PATH_PREFIX = '/var/lib/qubes/vm-templates'
 TEMP_DIR = '/var/tmp'
