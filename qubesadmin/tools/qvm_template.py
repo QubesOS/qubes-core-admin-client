@@ -286,7 +286,7 @@ def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
         vm.features['template-release'],
         vm.features['template-reponame'],
         vm.get_disk_utilization(),
-        vm.features['template-buildtime'],
+        datetime.datetime.fromisoformat(vm.features['template-buildtime']),
         vm.features['template-license'],
         vm.features['template-url'],
         vm.features['template-summary'],
@@ -572,6 +572,8 @@ def verify_rpm(
         except rpm.error as e:
             if str(e) == 'public key not trusted' \
                     or str(e) == 'public key not available':
+                # TODO: This does not work
+                #       Should just tell TransactionSet not to verify sigs
                 return hdr if nogpgcheck else None
             return None
     return hdr
@@ -891,6 +893,7 @@ def install(
         for rpmfile, reponame, name, package_hdr in verified_rpm_list:
             with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
                 print('Installing template \'%s\'...' % name, file=sys.stderr)
+                # TODO: Handle return value
                 extract_rpm(name, rpmfile, target)
                 cmdline = [
                     'qvm-template-postprocess',

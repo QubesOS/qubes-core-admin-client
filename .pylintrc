@@ -148,7 +148,7 @@ ext-import-graph=
 # not be disabled)
 int-import-graph=
 
-ignored-modules=rpm,dnf
+ignored-modules=dnf
 
 
 [DESIGN]
