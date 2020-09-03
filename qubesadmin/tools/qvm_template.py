@@ -76,7 +76,8 @@ def parser_gen() -> argparse.ArgumentParser:
         default='/usr/share/qubes/repo-templates/keys',
         help='Specify directory containing RPM public keys.')
     parser_main.add_argument('--updatevm', default='sys-firewall',
-        help='Specify VM to download updates from.')
+        help=('Specify VM to download updates from.'
+            ' (Set to empty string to specify the current VM.)'))
     parser_main.add_argument('--enablerepo', action='append', default=[],
         metavar='REPOID',
         help=('Enable additional repositories by an id or a glob.'
@@ -340,7 +341,7 @@ def qrexec_popen(
     ``args.updatevm``.
 
     Note that this falls back to invoking ``/etc/qubes-rpc/*`` directly if
-    ``args.updatevm`` is None.
+    ``args.updatevm`` is empty string.
 
     :param args: Arguments received by the application. ``args.updatevm`` is
         used
