@@ -59,7 +59,7 @@ def parser_gen() -> argparse.ArgumentParser:
     formatter = argparse.ArgumentDefaultsHelpFormatter
     parser_main = argparse.ArgumentParser(description='Qubes Template Manager',
         formatter_class=formatter)
-    subparsers = parser_main.add_subparsers(dest='operation', required=True,
+    subparsers = parser_main.add_subparsers(dest='operation',
         description='Command to run.')
 
     def parser_add_command(cmd, help_str):
@@ -1366,6 +1366,9 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
     :return: Return code of the application
     """
     p_args = parser.parse_args(args)
+
+    if not p_args.operation:
+        parser.error('An operation needs to be specified.')
 
     # If the user specified other repo files...
     if len(p_args.repo_files) > 1:
