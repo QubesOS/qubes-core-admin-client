@@ -149,8 +149,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_rename,
             mock_remove):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
-        build_time = '2020-09-01 22:30:00' # 1598970600
-        install_time = '2020-09-01 23:30:00.508230'
+        build_time = '2020-09-01 14:30:00+00:00' # 1598970600
+        install_time = '2020-09-01 15:30:00.508230+00:00'
         for key, val in [
                 ('name', 'test-vm'),
                 ('epoch', '2'),
@@ -280,8 +280,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_rename,
             mock_remove):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
-        build_time = '2020-09-01 22:30:00' # 1598970600
-        install_time = '2020-09-01 23:30:00.508230'
+        build_time = '2020-09-01 14:30:00+00:00' # 1598970600
+        install_time = '2020-09-01 15:30:00.508230+00:00'
         for key, val in [
                 ('name', 'test-vm'),
                 ('epoch', '2'),

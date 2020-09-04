@@ -923,9 +923,10 @@ def install(
                 tpl.features['template-reponame'] = reponame
                 tpl.features['template-buildtime'] = \
                     str(datetime.datetime.fromtimestamp(
-                        int(package_hdr[rpm.RPMTAG_BUILDTIME])))
+                        int(package_hdr[rpm.RPMTAG_BUILDTIME]),
+                            tz=datetime.timezone.utc))
                 tpl.features['template-installtime'] = \
-                    str(datetime.datetime.today())
+                    str(datetime.datetime.today(tz=datetime.timezone.utc))
                 tpl.features['template-license'] = \
                     package_hdr[rpm.RPMTAG_LICENSE]
                 tpl.features['template-url'] = \
