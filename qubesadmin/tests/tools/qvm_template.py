@@ -183,7 +183,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.today.return_value = \
-            datetime.datetime.fromisoformat(install_time)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
         with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
@@ -314,7 +314,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.today.return_value = \
-            datetime.datetime.fromisoformat(install_time)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
         with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
