@@ -1059,3 +1059,205 @@ gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasev
                 self.assertTrue("argument should not be '---'"
                     in mock_err.getvalue())
         self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
+    def test_120_qrexec_repoquery_success(self, mock_payload):
+        args = argparse.Namespace(updatevm='test-vm')
+        mock_payload.return_value = 'str1\nstr2'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_service_calls[
+                ('test-vm', 'qubes.TemplateSearch')] = \
+b'''qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 04:56|GPL|https://qubes-os.org|Qubes template for fedora-32|Qubes template\n for fedora-32\n|
+qubes-template-fedora-32|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020-02-23 04:56|GPLv2|https://qubes-os.org/?|Qubes template for fedora-32 v2|Qubes template\n for fedora-32 v2\n|
+'''
+        res = qubesadmin.tools.qvm_template.qrexec_repoquery(args, self.app,
+            'qubes-template-fedora-32')
+        self.assertEqual(res, [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '1',
+                '4.2',
+                '20200201',
+                'qubes-templates-itl-testing',
+                2048576,
+                datetime.datetime(2020, 2, 23, 4, 56),
+                'GPLv2',
+                'https://qubes-os.org/?',
+                'Qubes template for fedora-32 v2',
+                'Qubes template\n for fedora-32 v2\n'
+            )
+        ])
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.TemplateSearch',
+                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+            ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
+        ])
+        self.assertEqual(mock_payload.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-fedora-32', False)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
+    def test_121_qrexec_repoquery_refresh_success(self, mock_payload):
+        args = argparse.Namespace(updatevm='test-vm')
+        mock_payload.return_value = 'str1\nstr2'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_service_calls[
+                ('test-vm', 'qubes.TemplateSearch')] = \
+b'''qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 04:56|GPL|https://qubes-os.org|Qubes template for fedora-32|Qubes template\n for fedora-32\n|
+qubes-template-fedora-32|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020-02-23 04:56|GPLv2|https://qubes-os.org/?|Qubes template for fedora-32 v2|Qubes template\n for fedora-32 v2\n|
+'''
+        res = qubesadmin.tools.qvm_template.qrexec_repoquery(args, self.app,
+            'qubes-template-fedora-32', True)
+        self.assertEqual(res, [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '1',
+                '4.2',
+                '20200201',
+                'qubes-templates-itl-testing',
+                2048576,
+                datetime.datetime(2020, 2, 23, 4, 56),
+                'GPLv2',
+                'https://qubes-os.org/?',
+                'Qubes template for fedora-32 v2',
+                'Qubes template\n for fedora-32 v2\n'
+            )
+        ])
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.TemplateSearch',
+                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+            ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
+        ])
+        self.assertEqual(mock_payload.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-fedora-32', True)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
+    def test_122_qrexec_repoquery_ignorenonspec_success(self, mock_payload):
+        args = argparse.Namespace(updatevm='test-vm')
+        mock_payload.return_value = 'str1\nstr2'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_service_calls[
+                ('test-vm', 'qubes.TemplateSearch')] = \
+b'''qubes-template-debian-10|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020-02-23 04:56|GPLv2|https://qubes-os.org/?|Qubes template for debian-10|Qubes template for debian-10\n|
+qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 04:56|GPL|https://qubes-os.org|Qubes template for fedora-32|Qubes template for fedora-32\n|
+'''
+        res = qubesadmin.tools.qvm_template.qrexec_repoquery(args, self.app,
+            'qubes-template-fedora-32')
+        self.assertEqual(res, [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template for fedora-32\n'
+            )
+        ])
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.TemplateSearch',
+                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+            ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
+        ])
+        self.assertEqual(mock_payload.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-fedora-32', False)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
+    def test_123_qrexec_repoquery_ignorebadname_success(self, mock_payload):
+        args = argparse.Namespace(updatevm='test-vm')
+        mock_payload.return_value = 'str1\nstr2'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        self.app.expected_service_calls[
+                ('test-vm', 'qubes.TemplateSearch')] = \
+b'''template-fedora-32|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020-02-23 04:56|GPLv2|https://qubes-os.org/?|Qubes template for fedora-32 v2|Qubes template\n for fedora-32 v2\n|
+qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 04:56|GPL|https://qubes-os.org|Qubes template for fedora-32|Qubes template for fedora-32\n|
+'''
+        res = qubesadmin.tools.qvm_template.qrexec_repoquery(args, self.app,
+            'qubes-template-fedora-32')
+        self.assertEqual(res, [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template for fedora-32\n'
+            )
+        ])
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.TemplateSearch',
+                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+            ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
+        ])
+        self.assertEqual(mock_payload.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-fedora-32', False)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
+    def test_124_qrexec_repoquery_searchfail_fail(self, mock_payload):
+        args = argparse.Namespace(updatevm='test-vm')
+        mock_payload.return_value = 'str1\nstr2'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Halted\n'
+        with mock.patch('qubesadmin.tests.TestProcess.wait') \
+                as mock_wait:
+            mock_wait.return_value = 1
+            with self.assertRaises(ConnectionError):
+                qubesadmin.tools.qvm_template.qrexec_repoquery(args, self.app,
+                    'qubes-template-fedora-32')
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.TemplateSearch',
+                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+            ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
+        ])
+        self.assertEqual(mock_payload.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-fedora-32', False)
+        ])
+        self.assertAllCalled()
+
+    # TODO: Also test feeding broken data to qrexec_repoquery

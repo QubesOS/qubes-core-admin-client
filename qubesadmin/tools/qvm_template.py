@@ -483,7 +483,8 @@ def qrexec_repoquery(
             if not re.fullmatch(licence_re, licence):
                 raise ValueError
             # Check name actually matches spec
-            if not is_match_spec(name, epoch, version, release, spec):
+            if not is_match_spec(PACKAGE_NAME_PREFIX + name,
+                    epoch, version, release, spec)[0]:
                 continue
 
             result.append(Template(name, epoch, version, release, reponame,
