@@ -35,6 +35,7 @@ PACKAGE_NAME_PREFIX = 'qubes-template-'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/var/tmp/qvm-template.lck'
+DATE_FMT = '%Y-%m-%d %H:%M:%S'
 
 def qubes_release() -> str:
     """Return the Qubes release."""
@@ -287,7 +288,7 @@ def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
         vm.features['template-release'],
         vm.features['template-reponame'],
         vm.get_disk_utilization(),
-        datetime.datetime.fromisoformat(vm.features['template-buildtime']),
+        datetime.datetime.strptime(vm.features['template-buildtime'], DATE_FMT),
         vm.features['template-license'],
         vm.features['template-url'],
         vm.features['template-summary'],
@@ -922,11 +923,13 @@ def install(
                     package_hdr[rpm.RPMTAG_RELEASE]
                 tpl.features['template-reponame'] = reponame
                 tpl.features['template-buildtime'] = \
-                    str(datetime.datetime.fromtimestamp(
-                        int(package_hdr[rpm.RPMTAG_BUILDTIME]),
-                            tz=datetime.timezone.utc))
+                    datetime.datetime.fromtimestamp(
+                            int(package_hdr[rpm.RPMTAG_BUILDTIME]),
+                            tz=datetime.timezone.utc) \
+                        .strftime(DATE_FMT)
                 tpl.features['template-installtime'] = \
-                    str(datetime.datetime.today(tz=datetime.timezone.utc))
+                    datetime.datetime.today(
+                        tz=datetime.timezone.utc).strftime(DATE_FMT)
                 tpl.features['template-license'] = \
                     package_hdr[rpm.RPMTAG_LICENSE]
                 tpl.features['template-url'] = \
@@ -1011,8 +1014,8 @@ def list_templates(args: argparse.Namespace,
                 name, epoch, version, release, reponame, dlsize, \
                     buildtime, licence, url, summary, description = data
                 dlsize = str(dlsize)
-                buildtime = str(buildtime)
-                install_time = str(install_time) if install_time else ''
+                buildtime = buildtime.strftime(DATE_FMT)
+                install_time = install_time.strftime(DATE_FMT) if install_time else ''
                 if replace_newline:
                     description = description.replace('\n', '|')
                 output.append({

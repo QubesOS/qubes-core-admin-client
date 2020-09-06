@@ -252,9 +252,8 @@ Options
        Where ``STATUS`` can be one of ``"installed"``, ``"available"``,
        ``"extra"``, or ``"upgradable"``.
 
-       The fields ``buildtime`` and ``installtime`` are in ISO 8601 format.
-       For example, one can parse them in Python with
-       ``datetime.fromisoformat()``.
+       The fields ``buildtime`` and ``installtime`` are in ``%Y-%m-%d
+       %H:%M:%S`` format in UTC.
 
        The field ``{evr}`` contains version information in the form of
        ``{epoch}:{version}-{release}``.
@@ -313,9 +312,8 @@ Options
        Where ``{status}`` can be one of ``installed``, ``available``,
        ``extra``, or ``upgradable``.
 
-       The fields ``{buildtime}`` and ``{installtime}`` are in ISO 8601 format.
-       For example, one can parse them in Python with
-       ``datetime.fromisoformat()``.
+       The fields ``buildtime`` and ``installtime`` are in ``%Y-%m-%d
+       %H:%M:%S`` format in UTC.
 
        Newlines in the ``{description}`` field are replaced with pipe
        characters (``|``) for easier processing.
@@ -353,9 +351,8 @@ Options
        Where ``STATUS`` can be one of ``"installed"``, ``"available"``,
        ``"extra"``, or ``"upgradable"``.
 
-       The fields ``buildtime`` and ``installtime`` are in ISO 8601 format.
-       For example, one can parse them in Python using
-       `datetime.fromisoformat()`.
+       The fields ``buildtime`` and ``installtime`` are in ``%Y-%m-%d
+       %H:%M:%S`` format in UTC.
 
 search
 ------
