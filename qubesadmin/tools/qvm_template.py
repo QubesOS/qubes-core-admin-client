@@ -1016,7 +1016,8 @@ def list_templates(args: argparse.Namespace,
                     buildtime, licence, url, summary, description = data
                 dlsize = str(dlsize)
                 buildtime = buildtime.strftime(DATE_FMT)
-                install_time = install_time.strftime(DATE_FMT) if install_time else ''
+                install_time = install_time.strftime(DATE_FMT) \
+                    if install_time else ''
                 if replace_newline:
                     description = description.replace('\n', '|')
                 output.append({
