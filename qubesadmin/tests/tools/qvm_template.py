@@ -769,3 +769,293 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call('/var/tmp/qvm-template.lck')
         ])
         self.assertAllCalled()
+
+    def test_110_qrexec_payload_refresh_success(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1, \
+                tempfile.NamedTemporaryFile() as repo_conf2:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_str2 = \
+'''[qubes-templates-itl-testing]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl-testing
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl-testing
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl-testing/repodata/repomd.xml.metalink
+enabled = 0
+fastestmirror = 1
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            repo_conf2.write(repo_str2.encode())
+            repo_conf2.flush()
+            args = argparse.Namespace(
+                enablerepo=['repo1', 'repo2'],
+                disablerepo=['repo3', 'repo4', 'repo5'],
+                repoid=[],
+                releasever='4.1',
+                repo_files=[repo_conf1.name, repo_conf2.name]
+            )
+            res = qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                'qubes-template-fedora-32', True)
+            self.assertEqual(res,
+'''--enablerepo=repo1
+--enablerepo=repo2
+--disablerepo=repo3
+--disablerepo=repo4
+--disablerepo=repo5
+--refresh
+--releasever=4.1
+qubes-template-fedora-32
+---
+''' + repo_str1 + '\n' + repo_str2 + '\n')
+        self.assertAllCalled()
+
+    def test_111_qrexec_payload_norefresh_success(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=[],
+                disablerepo=[],
+                repoid=['repo1', 'repo2'],
+                releasever='4.1',
+                repo_files=[repo_conf1.name]
+            )
+            res = qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                'qubes-template-fedora-32', False)
+            self.assertEqual(res,
+'''--repoid=repo1
+--repoid=repo2
+--releasever=4.1
+qubes-template-fedora-32
+---
+''' + repo_str1 + '\n')
+        self.assertAllCalled()
+
+    def test_112_qrexec_payload_specnewline_fail(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=[],
+                disablerepo=[],
+                repoid=['repo1', 'repo2'],
+                releasever='4.1',
+                repo_files=[repo_conf1.name]
+            )
+            with self.assertRaises(SystemExit), \
+                    mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                    'qubes-template-fedora\n-32', False)
+                # Check error message
+                self.assertTrue('Malformed template name'
+                    in mock_err.getvalue())
+                self.assertTrue("argument should not contain '\\n'"
+                    in mock_err.getvalue())
+        self.assertAllCalled()
+
+    def test_113_qrexec_payload_enablereponewline_fail(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=['repo\n0'],
+                disablerepo=[],
+                repoid=['repo1', 'repo2'],
+                releasever='4.1',
+                repo_files=[repo_conf1.name]
+            )
+            with self.assertRaises(SystemExit), \
+                    mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                    'qubes-template-fedora-32', False)
+                # Check error message
+                self.assertTrue('Malformed --enablerepo'
+                    in mock_err.getvalue())
+                self.assertTrue("argument should not contain '\\n'"
+                    in mock_err.getvalue())
+        self.assertAllCalled()
+
+    def test_114_qrexec_payload_disablereponewline_fail(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=[],
+                disablerepo=['repo\n0'],
+                repoid=['repo1', 'repo2'],
+                releasever='4.1',
+                repo_files=[repo_conf1.name]
+            )
+            with self.assertRaises(SystemExit), \
+                    mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                    'qubes-template-fedora-32', False)
+                # Check error message
+                self.assertTrue('Malformed --disablerepo'
+                    in mock_err.getvalue())
+                self.assertTrue("argument should not contain '\\n'"
+                    in mock_err.getvalue())
+        self.assertAllCalled()
+
+    def test_115_qrexec_payload_repoidnewline_fail(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=[],
+                disablerepo=[],
+                repoid=['repo\n1', 'repo2'],
+                releasever='4.1',
+                repo_files=[repo_conf1.name]
+            )
+            with self.assertRaises(SystemExit), \
+                    mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                    'qubes-template-fedora-32', False)
+                # Check error message
+                self.assertTrue('Malformed --repoid'
+                    in mock_err.getvalue())
+                self.assertTrue("argument should not contain '\\n'"
+                    in mock_err.getvalue())
+        self.assertAllCalled()
+
+    def test_116_qrexec_payload_releasevernewline_fail(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=[],
+                disablerepo=[],
+                repoid=['repo1', 'repo2'],
+                releasever='4\n.1',
+                repo_files=[repo_conf1.name]
+            )
+            with self.assertRaises(SystemExit), \
+                    mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                    'qubes-template-fedora-32', False)
+                # Check error message
+                self.assertTrue('Malformed --releasever'
+                    in mock_err.getvalue())
+                self.assertTrue("argument should not contain '\\n'"
+                    in mock_err.getvalue())
+        self.assertAllCalled()
+
+    def test_117_qrexec_payload_specdash_fail(self):
+        with tempfile.NamedTemporaryFile() as repo_conf1:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_conf1.write(repo_str1.encode())
+            repo_conf1.flush()
+            args = argparse.Namespace(
+                enablerepo=[],
+                disablerepo=[],
+                repoid=['repo1', 'repo2'],
+                releasever='4.1',
+                repo_files=[repo_conf1.name]
+            )
+            with self.assertRaises(SystemExit), \
+                    mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                qubesadmin.tools.qvm_template.qrexec_payload(args, self.app,
+                    '---', False)
+                # Check error message
+                self.assertTrue('Malformed template name'
+                    in mock_err.getvalue())
+                self.assertTrue("argument should not be '---'"
+                    in mock_err.getvalue())
+        self.assertAllCalled()
