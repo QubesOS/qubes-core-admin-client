@@ -60,11 +60,13 @@ class TestProcess(object):
         self.stdin_close = self.stdin.close
         self.stdin.close = self.store_input
         self.stdin.flush = self.store_input
-        if stdout == subprocess.PIPE:
+        if stdout == subprocess.PIPE or stdout == subprocess.DEVNULL \
+                or stdout is None:
             self.stdout = io.BytesIO()
         else:
             self.stdout = stdout
-        if stderr == subprocess.PIPE:
+        if stderr == subprocess.PIPE or stderr == subprocess.DEVNULL \
+                or stderr is None:
             self.stderr = io.BytesIO()
         else:
             self.stderr = stderr
@@ -82,7 +84,7 @@ class TestProcess(object):
             self.stdin.write(input)
         self.stdin.close()
         self.stdin_close()
-        return self.stdout, self.stderr
+        return self.stdout.read(), self.stderr.read()
 
     def wait(self):
         self.stdin_close()
