@@ -67,7 +67,7 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %files -n python%{python3_pkgversion}-qubesadmin
 %{python3_sitelib}/qubesadmin-*egg-info
 %{python3_sitelib}/qubesadmin
-
+/etc/qubes/post-install.d/30-keyboard-layout-service.sh
 
 %changelog
 @CHANGELOG@
