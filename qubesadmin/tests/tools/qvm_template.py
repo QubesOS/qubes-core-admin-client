@@ -15,10 +15,18 @@ import qubesadmin.tools.qvm_template
 
 class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        self.maxDiff = 1e9
+        # Print str(list) directly so that the output is consistent no matter
+        # which implementation of `column` we use
+        self.mock_table = mock.patch('qubesadmin.tools.print_table')
+        mock_table = self.mock_table.start()
+        def print_table(table, *args):
+            print(str(table))
+        mock_table.side_effect = print_table
+
         super().setUp()
 
     def tearDown(self):
+        self.mock_table.stop()
         super().tearDown()
 
     def test_000_verify_rpm_success(self):
@@ -2239,7 +2247,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 args, self.app, 'list')
             self.assertEqual(mock_out.getvalue(),
 '''Installed Templates
-test-vm  2:4.1-2020  @commandline
+[('test-vm', '2:4.1-2020', '@commandline')]
 ''')
             self.assertEqual(mock_disk.mock_calls, [mock.call()])
         self.assertEqual(mock_query.mock_calls, [])
@@ -2297,15 +2305,17 @@ test-vm  2:4.1-2020  @commandline
             qubesadmin.tools.qvm_template.list_templates(
                 args, self.app, 'list')
             # Order not determinstic because of sets
+            expected = [
+                ('fedora-31', '1:4.1-20200101', 'qubes-templates-itl'),
+                ('fedora-32', '0:4.2-20200201', 'qubes-templates-itl-testing')
+            ]
             self.assertTrue(mock_out.getvalue() == \
-'''Available Templates
-fedora-31  1:4.1-20200101  qubes-templates-itl
-fedora-32  0:4.2-20200201  qubes-templates-itl-testing
+f'''Available Templates
+{str([expected[1], expected[0]])}
 ''' \
                     or mock_out.getvalue() == \
-'''Available Templates
-fedora-32  0:4.2-20200201  qubes-templates-itl-testing
-fedora-31  1:4.1-20200101  qubes-templates-itl
+f'''Available Templates
+{str([expected[0], expected[1]])}
 ''')
         self.assertEqual(mock_query.mock_calls, [
             mock.call(args, self.app, 'fedora-32'),
@@ -2345,7 +2355,7 @@ fedora-31  1:4.1-20200101  qubes-templates-itl
                 args, self.app, 'list')
             self.assertEqual(mock_out.getvalue(),
 '''Available Templates
-fedora-31  1:4.1-20200101  qubes-templates-itl
+[('fedora-31', '1:4.1-20200101', 'qubes-templates-itl')]
 ''')
         self.assertEqual(mock_query.mock_calls, [
             mock.call(args, self.app)
@@ -2432,7 +2442,7 @@ fedora-31  1:4.1-20200101  qubes-templates-itl
                 args, self.app, 'list')
             self.assertEqual(mock_out.getvalue(),
 '''Extra Templates
-test-vm-2  1:4.0-2019  qubes-template-itl
+[('test-vm-2', '1:4.0-2019', 'qubes-template-itl')]
 ''')
             self.assertEqual(mock_disk.mock_calls, [mock.call()])
         self.assertEqual(mock_query.mock_calls, [
@@ -2534,7 +2544,7 @@ test-vm-2  1:4.0-2019  qubes-template-itl
                 args, self.app, 'list')
             self.assertEqual(mock_out.getvalue(),
 '''Available Upgrades
-test-vm  2:4.1-2020  qubes-templates-itl
+[('test-vm', '2:4.1-2020', 'qubes-templates-itl')]
 ''')
             self.assertEqual(mock_disk.mock_calls, [])
         self.assertEqual(mock_query.mock_calls, [
@@ -2606,9 +2616,9 @@ test-vm  2:4.1-2020  qubes-templates-itl
         )
         expected = \
 '''Installed Templates
-test-vm-2  1:4.0-2019  @commandline
+[('test-vm-2', '1:4.0-2019', '@commandline')]
 Available Templates
-test-vm  2:4.1-2020  qubes-templates-itl
+[('test-vm', '2:4.1-2020', 'qubes-templates-itl')]
 '''
         self.__test_list_templates_all_success('list', args, expected)
 
@@ -2625,9 +2635,9 @@ test-vm  2:4.1-2020  qubes-templates-itl
         )
         expected = \
 '''Installed Templates
-test-vm-2  1:4.0-2019  @commandline
+[('test-vm-2', '1:4.0-2019', '@commandline')]
 Available Templates
-test-vm  2:4.1-2020  qubes-templates-itl
+[('test-vm', '2:4.1-2020', 'qubes-templates-itl')]
 '''
         self.__test_list_templates_all_success('list', args, expected)
 
@@ -2644,34 +2654,9 @@ test-vm  2:4.1-2020  qubes-templates-itl
         )
         expected = \
 '''Installed Templates
-Name          :  test-vm-2
-Epoch         :  1
-Version       :  4.0
-Release       :  2019
-Size          :  1.2 MiB
-Repository    :  @commandline
-Buildtime     :  2020-09-02 14:30:00
-Install time  :  2020-09-02 15:30:00
-URL           :  https://qubes-os.org
-License       :  GPL
-Summary       :  Summary
-Description   :  Desc
-              :  desc
-                  
+[('Name', ':', 'test-vm-2'), ('Epoch', ':', '1'), ('Version', ':', '4.0'), ('Release', ':', '2019'), ('Size', ':', '1.2 MiB'), ('Repository', ':', '@commandline'), ('Buildtime', ':', '2020-09-02 14:30:00'), ('Install time', ':', '2020-09-02 15:30:00'), ('URL', ':', 'https://qubes-os.org'), ('License', ':', 'GPL'), ('Summary', ':', 'Summary'), ('Description', ':', 'Desc'), ('', ':', 'desc'), (' ', ' ', ' ')]
 Available Templates
-Name         :  test-vm
-Epoch        :  2
-Version      :  4.1
-Release      :  2020
-Size         :  1.0 MiB
-Repository   :  qubes-templates-itl
-Buildtime    :  2020-09-01 14:30:00+00:00
-URL          :  https://qubes-os.org
-License      :  GPL
-Summary      :  Qubes template for fedora-31
-Description  :  Qubes template
-             :   for fedora-31
-                 
+[('Name', ':', 'test-vm'), ('Epoch', ':', '2'), ('Version', ':', '4.1'), ('Release', ':', '2020'), ('Size', ':', '1.0 MiB'), ('Repository', ':', 'qubes-templates-itl'), ('Buildtime', ':', '2020-09-01 14:30:00+00:00'), ('URL', ':', 'https://qubes-os.org'), ('License', ':', 'GPL'), ('Summary', ':', 'Qubes template for fedora-31'), ('Description', ':', 'Qubes template'), ('', ':', ' for fedora-31'), (' ', ' ', ' ')]
 '''
         self.__test_list_templates_all_success('info', args, expected)
 
