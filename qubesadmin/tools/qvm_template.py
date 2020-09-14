@@ -448,6 +448,7 @@ def qrexec_repoquery(
     date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
     licence_re = re.compile(r'^[A-Za-z0-9._+\-()]*$')
     result = []
+    # FIXME: This breaks when \n is the first character of the description
     for line in stdout.split('|\n'):
         # Note that there's an empty entry at the end as .strip() is not used.
         # This is because if .strip() is used, the .split() will not work.
@@ -575,8 +576,8 @@ def verify_rpm(
         except rpm.error as e:
             if str(e) == 'public key not trusted' \
                     or str(e) == 'public key not available':
-                # TODO: This does not work
-                #       Should just tell TransactionSet not to verify sigs
+                # FIXME: This does not work
+                #        Should just tell TransactionSet not to verify sigs
                 return hdr if nogpgcheck else None
             return None
     return hdr
@@ -896,7 +897,7 @@ def install(
         for rpmfile, reponame, name, package_hdr in verified_rpm_list:
             with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
                 print('Installing template \'%s\'...' % name, file=sys.stderr)
-                # TODO: Handle return value
+                # FIXME: Handle return value
                 extract_rpm(name, rpmfile, target)
                 cmdline = [
                     'qvm-template-postprocess',
@@ -1016,8 +1017,7 @@ def list_templates(args: argparse.Namespace,
                     buildtime, licence, url, summary, description = data
                 dlsize = str(dlsize)
                 buildtime = buildtime.strftime(DATE_FMT)
-                install_time = install_time.strftime(DATE_FMT) \
-                    if install_time else ''
+                install_time = install_time if install_time else ''
                 if replace_newline:
                     description = description.replace('\n', '|')
                 output.append({
@@ -1046,6 +1046,11 @@ def list_templates(args: argparse.Namespace,
     def append_vm(vm, status):
         append(query_local(vm), status, vm.features['template-installtime'])
 
+    def check_append(name, evr):
+        return not args.templates or \
+            any(is_match_spec(name, *evr, spec)[0]
+                for spec in args.templates)
+
     if not (args.installed or args.available or args.extras or args.upgrades):
         args.all = True
 
@@ -1060,16 +1065,12 @@ def list_templates(args: argparse.Namespace,
 
     if args.installed or args.all:
         for vm in app.domains:
-            if is_managed_template(vm):
-                if not args.templates or \
-                        any(is_match_spec(
-                                vm.name,
-                                *query_local_evr(vm),
-                                spec)[0]
-                            for spec in args.templates):
+            if is_managed_template(vm) and \
+                    check_append(vm.name, query_local_evr(vm)):
                     append_vm(vm, TemplateState.INSTALLED)
 
     if args.available or args.all:
+        # Spec should already be checked by repoquery
         for data in query_res:
             append(data, TemplateState.AVAILABLE)
 
@@ -1078,7 +1079,8 @@ def list_templates(args: argparse.Namespace,
         for data in query_res:
             remote.add(data.name)
         for vm in app.domains:
-            if is_managed_template(vm) and vm.name not in remote:
+            if is_managed_template(vm) and vm.name not in remote and \
+                    check_append(vm.name, query_local_evr(vm)):
                 append_vm(vm, TemplateState.EXTRA)
 
     if args.upgrades:
@@ -1086,10 +1088,11 @@ def list_templates(args: argparse.Namespace,
         for vm in app.domains:
             if is_managed_template(vm):
                 local[vm.name] = query_local_evr(vm)
+        # Spec should already be checked by repoquery
         for entry in query_res:
+            evr = (entry.epoch, entry.version, entry.release)
             if entry.name in local:
-                if rpm.labelCompare(local[entry.name],
-                        (entry.epoch, entry.version, entry.release)) < 0:
+                if rpm.labelCompare(local[entry.name], evr) < 0:
                     append(entry, TemplateState.UPGRADABLE)
 
     if len(tpl_list) == 0:
@@ -1134,7 +1137,7 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     query_res_tmp = []
     for _, grp in itertools.groupby(sorted(query_res), lambda x: x[0]):
         def compare(lhs, rhs):
-            return lhs if rpm.labelCompare(lhs[1:4], rhs[1:4]) < 0 else rhs
+            return lhs if rpm.labelCompare(lhs[1:4], rhs[1:4]) > 0 else rhs
         query_res_tmp.append(functools.reduce(compare, grp))
     query_res = query_res_tmp
 
@@ -1292,7 +1295,7 @@ def clean(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     :param args: Arguments received by the application.
     :param app: Qubes application object
     """
-    # TODO: More fine-grained options
+    # TODO: More fine-grained options?
     _ = app # unused
 
     shutil.rmtree(args.cachedir)
