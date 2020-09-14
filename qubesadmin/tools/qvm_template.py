@@ -1067,7 +1067,7 @@ def list_templates(args: argparse.Namespace,
         for vm in app.domains:
             if is_managed_template(vm) and \
                     check_append(vm.name, query_local_evr(vm)):
-                    append_vm(vm, TemplateState.INSTALLED)
+                append_vm(vm, TemplateState.INSTALLED)
 
     if args.available or args.all:
         # Spec should already be checked by repoquery
