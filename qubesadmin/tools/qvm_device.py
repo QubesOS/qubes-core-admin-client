@@ -81,17 +81,22 @@ def list_devices(args):
     app = args.app
 
     devices = set()
-    if hasattr(args, 'domains') and args.domains:
-        for domain in args.domains:
-            for dev in domain.devices[args.devclass].attached():
-                devices.add(dev)
-            for dev in domain.devices[args.devclass].available():
-                devices.add(dev)
+    try:
+        if hasattr(args, 'domains') and args.domains:
+            for domain in args.domains:
+                for dev in domain.devices[args.devclass].attached():
+                    devices.add(dev)
+                for dev in domain.devices[args.devclass].available():
+                    devices.add(dev)
 
-    else:
-        for domain in app.domains:
-            for dev in domain.devices[args.devclass].available():
-                devices.add(dev)
+        else:
+            for domain in app.domains:
+                for dev in domain.devices[args.devclass].available():
+                    devices.add(dev)
+    except qubesadmin.exc.QubesDaemonAccessError:
+        raise qubesadmin.exc.QubesException(
+            "Failed to list '%s' devices, this device type either "
+            "does not exist or you do not have access to it.", args.devclass)
 
     result = {dev: Line(dev) for dev in devices}
 
