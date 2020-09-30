@@ -95,6 +95,13 @@ feature (with underscores replaced with dashes). For example, to enable
 To change a given GUI option globally, set the `gui-default-{option}` feature
 on the GuiVM for that qube.
 
+input-dom0-proxy
+^^^^^^^^^^^^^^^^
+
+When set to :py:obj:`True`, Qubes input proxy sender services will start
+for every non-virtual input devices available in dom0 on domain start.
+
+
 qrexec
 ^^^^^^
 
