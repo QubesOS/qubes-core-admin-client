@@ -25,6 +25,9 @@ override_dh_auto_install:
 	install -d debian/qubes-core-admin-client/usr/share/man/man1
 	install -m 0644 build/man/* \
 		debian/qubes-core-admin-client/usr/share/man/man1/
+	install -d debian/qubes-core-admin-client/etc/qubes/post-install.d
+	install -m 0755 scripts/30-keyboard-layout-service.sh \
+		debian/qubes-core-admin-client/etc/qubes/post-install.d/30-keyboard-layout-service.sh
 
 override_dh_clean:
 	dh_clean -O--buildsystem=pybuild
