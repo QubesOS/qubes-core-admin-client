@@ -53,6 +53,8 @@ def qubes_release() -> str:
                 continue
             val = val.strip('\'"') # strip possible quotes
             return val
+    # Return default value instead of throwing so that it works on CI
+    return '4.1'
 
 def parser_gen() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
@@ -257,7 +259,7 @@ def is_match_spec(name: str, epoch: str, version: str, release: str, spec: str
     :return: A tuple. The first element indicates whether there is a match; the
         second element represents the priority of the match (lower is better)
     """
-    if epoch != 0:
+    if epoch != '0':
         targets = [
             f'{name}-{epoch}:{version}-{release}',
             f'{name}',
@@ -713,14 +715,13 @@ def download(
         spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
         target = os.path.join(path, '%s.rpm' % spec)
         target_suffix = target + suffix
-        if suffix != '' and os.path.exists(target_suffix):
+        if os.path.exists(target_suffix):
             print('\'%s\' already exists, skipping...' % target,
                 file=sys.stderr)
-        if os.path.exists(target):
+        elif os.path.exists(target):
             print('\'%s\' already exists, skipping...' % target,
                 file=sys.stderr)
-            if suffix != '':
-                os.rename(target, target_suffix)
+            os.rename(target, target_suffix)
         else:
             print('Downloading \'%s\'...' % spec, file=sys.stderr)
             done = False
@@ -930,7 +931,7 @@ def install(
                             tz=datetime.timezone.utc) \
                         .strftime(DATE_FMT)
                 tpl.features['template-installtime'] = \
-                    datetime.datetime.today(
+                    datetime.datetime.now(
                         tz=datetime.timezone.utc).strftime(DATE_FMT)
                 tpl.features['template-license'] = \
                     package_hdr[rpm.RPMTAG_LICENSE]
@@ -1100,18 +1101,19 @@ def list_templates(args: argparse.Namespace,
 
     if args.machine_readable:
         if operation == 'info':
-            tpl_list = info_to_machine_output(tpl_list)
+            tpl_list_dict = info_to_machine_output(tpl_list)
         elif operation == 'list':
-            tpl_list = list_to_machine_output(tpl_list)
-        for status, grp in tpl_list.items():
+            tpl_list_dict = list_to_machine_output(tpl_list)
+        for status, grp in tpl_list_dict.items():
             for line in grp:
                 print('|'.join([status] + list(line.values())))
     elif args.machine_readable_json:
         if operation == 'info':
-            tpl_list = info_to_machine_output(tpl_list, replace_newline=False)
+            tpl_list_dict = \
+                info_to_machine_output(tpl_list, replace_newline=False)
         elif operation == 'list':
-            tpl_list = list_to_machine_output(tpl_list)
-        print(json.dumps(tpl_list))
+            tpl_list_dict = list_to_machine_output(tpl_list)
+        print(json.dumps(tpl_list_dict))
     else:
         if operation == 'info':
             tpl_list = info_to_human_output(tpl_list)
