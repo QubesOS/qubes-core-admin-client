@@ -98,7 +98,12 @@ def get_drive_assignment(app, drive_str):
         devtype = 'disk'
         drive_str = drive_str[len('hd:'):]
 
-    backend_domain_name, ident = drive_str.split(':', 1)
+    try:
+        backend_domain_name, ident = drive_str.split(':', 1)
+    except ValueError:
+        raise ValueError("Incorrect image name: image must be in the format "
+                         "of VMNAME:full_path, for example "
+                         "dom0:/home/user/test.iso")
     try:
         backend_domain = app.domains[backend_domain_name]
     except KeyError:
@@ -193,7 +198,8 @@ def main(args=None, app=None):
                 # don't reconnect this device after VM reboot
                 domain.devices['block'].update_persistent(
                     drive_assignment.device, False)
-        except (IOError, OSError, qubesadmin.exc.QubesException) as e:
+        except (IOError, OSError, qubesadmin.exc.QubesException,
+                ValueError) as e:
             if drive_assignment:
                 try:
                     domain.devices['block'].detach(drive_assignment)
