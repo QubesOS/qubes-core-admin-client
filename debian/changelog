@@ -1,3 +1,27 @@
+qubes-core-admin-client (4.1.10-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Make incorrect label name error more descriptive
+
+  [ Marek Marczykowski-Górecki ]
+  * Make pylint happy
+  * qvm-device: improve error message on invalid device type
+
+  [ Frédéric Pierret (fepitre) ]
+  * doc: add 'input-dom0-proxy' feature
+
+  [ Marta Marczykowska-Górecka ]
+  * Added supported-service keyboard-layout to allow for better working
+    Qube Manager
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix script executable bit
+
+  [ Marta Marczykowska-Górecka ]
+  * Better error reporting in qvm_start
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 10 Oct 2020 05:11:49 +0200
+
 qubes-core-admin-client (4.1.9-1) unstable; urgency=medium
 
   * 
