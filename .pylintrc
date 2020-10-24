@@ -16,6 +16,8 @@ disable=
   import-outside-toplevel,
   inconsistent-return-statements,
   duplicate-code,
+  raise-missing-from,
+  super-with-arguments,
   fixme,
   locally-disabled,
   locally-enabled,
