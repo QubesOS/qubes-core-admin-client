@@ -273,7 +273,7 @@ def main(args=None, app=None):
                                    file=sys.stderr, color=args.color_stderr)
                 retcode = max(retcode, 1)
                 continue
-            if vm.is_paused():
+            if not args.dispvm and vm.is_paused():
                 if not args.autostart:
                     if verbose > 0:
                         print_no_color(
