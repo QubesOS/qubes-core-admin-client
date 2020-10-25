@@ -1,3 +1,47 @@
+qubes-core-admin-client (4.0.31-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Add qvm-firewall reset action to the man page
+
+  [ Marta Marczykowska-Górecka ]
+  * Added a safeguard for invalid firewall rules
+
+  [ Marek Marczykowski-Górecki ]
+  * Do not check for object existence when got it with another Admin API
+    call
+
+  [ Frédéric Pierret (fepitre) ]
+  * Makefile: add clean of pkgs and debian changelog.*
+
+  [ Marta Marczykowska-Górecka ]
+  * Added better __eq__ method to Label class
+  * Fixed inconsistent firewall address checking
+
+  [ Marek Marczykowski-Górecki ]
+  * Make Label() object hashable
+  * travis: use sourced config, switch to R4.1
+  * backup/restore: distinguish dom0 by name
+  * backup/restore: improve error message about restoring tags
+  * tools: remove obsolete _want_app argument
+
+  [ Marta Marczykowska-Górecka ]
+  * qvm-run will unpause paused VMs by defaults
+  * Make incorrect label name error more descriptive
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-device: improve error message on invalid device type
+
+  [ Marta Marczykowska-Górecka ]
+  * Better error reporting in qvm_start
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-run: do not check if DispVM is paused before starting it
+  * pylint: ignore raise-missing-from and super-with-arguments
+  * tests: use asynctest some more
+  * rpm: adjust python2/python3 dependencies
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 25 Oct 2020 03:38:01 +0100
+
 qubes-core-admin-client (4.0.30-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
