@@ -33,8 +33,6 @@ Description: Qubes administrative tools
 Package: python-qubesadmin
 Architecture: any
 Depends:
- python-docutils,
- python-lxml,
  ${python:Depends},
 Provides:
  ${python:Provides},
