@@ -23,13 +23,6 @@ This package include managemt tools, like qvm-*.
 
 %package -n python2-qubesadmin
 Summary:    Python2 module qubesadmin
-%if 0%{?fedora} > 25
-Requires:   python2-daemon
-%else
-Requires:   python-daemon
-%endif
-Requires:   python2-docutils
-Requires:   python2-lxml
 
 %description -n python2-qubesadmin
 Python2 module qubesadmin.
