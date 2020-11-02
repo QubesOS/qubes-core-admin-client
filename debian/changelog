@@ -1,3 +1,10 @@
+qubes-core-admin-client (4.0.32-1) unstable; urgency=medium
+
+  * rpm: fix condition for fedora/centos
+  * trim deps of python-qubesadmin package
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 02 Nov 2020 01:57:43 +0100
+
 qubes-core-admin-client (4.0.31-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
