@@ -1,0 +1,19 @@
+include:
+  - project: 'QubesOS/qubes-continuous-integration'
+    file: '/r4.1/gitlab-base.yml'
+  - project: 'QubesOS/qubes-continuous-integration'
+    file: '/r4.1/gitlab-dom0.yml'
+  - project: 'QubesOS/qubes-continuous-integration'
+    file: '/r4.1/gitlab-vm.yml'
+
+# WIP: user different docker images
+tests:python3:
+  stage: tests
+  variables:
+    ENABLE_SLOW_TESTS: 1
+  before_script:
+    - pip3 install --quiet -r ci/requirements.txt
+  script:
+    - python3 setup.py build
+    - PYTHONPATH=test-packages pylint qubesadmin
+    - ./run-tests
