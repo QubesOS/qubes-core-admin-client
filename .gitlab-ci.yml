@@ -6,14 +6,23 @@ include:
   - project: 'QubesOS/qubes-continuous-integration'
     file: '/r4.0/gitlab-vm.yml'
 
-# WIP: user different docker images
-tests:python3:
-  stage: tests
+checks:tests:
+  stage: checks
   variables:
     ENABLE_SLOW_TESTS: 1
+    USER: gitlab-runner
   before_script:
+    - sudo dnf install -y openssl
     - pip3 install --quiet -r ci/requirements.txt
   script:
     - python3 setup.py build
-    - PYTHONPATH=test-packages pylint qubesadmin
     - ./run-tests
+  after_script:
+    - codecov
+
+checks:pylint:
+  stage: checks
+  before_script:
+    - pip3 install --quiet -r ci/requirements.txt
+  script:
+    - PYTHONPATH=test-packages pylint qubesadmin
