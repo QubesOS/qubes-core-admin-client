@@ -231,7 +231,11 @@ global: {
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         with unittest.mock.patch.object(self.launcher,
-                                        'common_guid_args', lambda vm: []):
+                                        'common_guid_args', lambda vm: []), \
+             unittest.mock.patch.object(qubesadmin.tools.qvm_start_daemon,
+                                        'get_monitor_layout',
+                                        unittest.mock.Mock(
+                                            return_value=['1600 900 0 0\n'])):
             loop.run_until_complete(self.launcher.start_gui_for_vm(
                 self.app.domains['test-vm']))
             # common arguments dropped for simplicity
@@ -268,7 +272,11 @@ global: {
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         with unittest.mock.patch.object(self.launcher,
-                                        'common_guid_args', lambda vm: []):
+                                        'common_guid_args', lambda vm: []), \
+            unittest.mock.patch.object(qubesadmin.tools.qvm_start_daemon,
+                                       'get_monitor_layout',
+                                       unittest.mock.Mock(
+                                           return_value=['1600 900 0 0\n'])):
             loop.run_until_complete(self.launcher.start_gui_for_vm(
                 self.app.domains['test-vm']))
             # common arguments dropped for simplicity
@@ -309,6 +317,10 @@ global: {
         self.addCleanup(pidfile.close)
 
         patch_proc = asynctest.patch('asyncio.create_subprocess_exec')
+        patch_monitor_layout = unittest.mock.patch.object(
+            qubesadmin.tools.qvm_start_daemon,
+            'get_monitor_layout',
+            unittest.mock.Mock(return_value=['1600 900 0 0\n']))
         patch_args = unittest.mock.patch.object(self.launcher,
                                                 'common_guid_args',
                                                 lambda vm: [])
@@ -319,6 +331,7 @@ global: {
             mock_proc = patch_proc.start()
             patch_args.start()
             patch_pidfile.start()
+            patch_monitor_layout.start()
             loop.run_until_complete(self.launcher.start_gui_for_vm(
                 self.app.domains['test-vm']))
             # common arguments dropped for simplicity
