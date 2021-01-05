@@ -993,8 +993,18 @@ class BackupRestore(object):
         else:
             backup_stdin = open(self.backup_location, 'rb')
 
+            block_size = os.statvfs(self.tmpdir).f_frsize
+
+            # slow down the restore if there is too little space in the temp dir
+            checkpoint_command = \
+                'while [ $(stat -f --format=%a "{}") -lt {} ]; ' \
+                'do sleep 1; done' \
+                .format(self.tmpdir, 500 * 1024 * 1024 // block_size)
+
             tar1_command = ['tar',
                             '-ixv',
+                            '--checkpoint=10000',
+                            '--checkpoint-action=exec=' + checkpoint_command,
                             '--occurrence=1',
                             '-C', self.tmpdir] + filelist
 
