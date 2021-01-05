@@ -1520,6 +1520,9 @@ class BackupRestore(object):
                 raise QubesException(
                     "Premature end of archive, the last file was %s" % filename)
         except:
+            with contextlib.suppress(ProcessLookupError):
+                retrieve_proc.terminate()
+            retrieve_proc.wait()
             to_extract.put(QUEUE_ERROR)
             extract_proc.join()
             raise
