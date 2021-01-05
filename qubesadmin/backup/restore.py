@@ -20,6 +20,7 @@
 
 '''Backup restore module'''
 
+import contextlib
 import errno
 import fcntl
 import functools
@@ -910,7 +911,8 @@ class BackupRestore(object):
                 self.username = os.path.basename(subdir)
 
     def __init__(self, app, backup_location, backup_vm, passphrase,
-                 location_is_service=False, force_compression_filter=None):
+                 location_is_service=False, force_compression_filter=None,
+                 tmpdir="/var/tmp"):
         super().__init__()
 
         #: qubes.Qubes instance
@@ -940,7 +942,7 @@ class BackupRestore(object):
 
         #: temporary directory used to extract the data before moving to the
         # final location
-        self.tmpdir = tempfile.mkdtemp(prefix="restore", dir="/var/tmp")
+        self.tmpdir = tempfile.mkdtemp(prefix="restore", dir=tmpdir)
 
         #: list of processes (Popen objects) to kill on cancel
         self.processes_to_kill_on_cancel = []
