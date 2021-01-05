@@ -169,17 +169,23 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
 
     def restore_backup(self, source=None, appvm=None, options=None,
                        expect_errors=None, manipulate_restore_info=None,
-                       passphrase='qubes', force_compression_filter=None):
+                       passphrase='qubes', force_compression_filter=None,
+                       tmpdir=None):
         if source is None:
             backupfile = os.path.join(self.backupdir,
                                       sorted(os.listdir(self.backupdir))[-1])
         else:
             backupfile = source
 
+        kwargs = {}
+        if tmpdir:
+            kwargs['tmpdir'] = tmpdir
+
         with self.assertNotRaises(qubesadmin.exc.QubesException):
             restore_op = qubesadmin.backup.restore.BackupRestore(
                 self.app, backupfile, appvm, passphrase,
-                force_compression_filter=force_compression_filter)
+                force_compression_filter=force_compression_filter,
+                **kwargs)
             if options:
                 for key, value in options.items():
                     setattr(restore_op.options, key, value)
@@ -213,6 +219,16 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         f.write(signature)
         f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
         f.truncate(size)
+        f.close()
+
+    def create_full_image(self, path, size, signature=b''):
+        f = open(path, "wb")
+        f.write(signature)
+        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
+        block_size = 1024 ** 2
+        f.write(b'\0' * (block_size - SIGNATURE_LEN))
+        for _ in range(size // block_size - 1):
+            f.write(b'\1' * block_size)
         f.close()
 
     def vm_checksum(self, vms):

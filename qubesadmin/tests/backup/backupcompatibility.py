@@ -775,13 +775,16 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
 
 # backup code use multiprocessing, synchronize with main process
 class AppProxy(object):
-    def __init__(self, app, sync_queue):
+    def __init__(self, app, sync_queue, delay_stream=0):
         self._app = app
         self._sync_queue = sync_queue
+        self._delay_stream = delay_stream
+        self.cache_enabled = False
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
         if payload_stream:
+            time.sleep(self._delay_stream)
             signature_bin = payload_stream.read(512)
             payload = signature_bin.split(b'\0', 1)[0]
             subprocess.call(['cat'], stdin=payload_stream,
@@ -792,9 +795,10 @@ class AppProxy(object):
 
 
 class MockVolume(qubesadmin.storage.Volume):
-    def __init__(self, import_data_queue, *args, **kwargs):
+    def __init__(self, import_data_queue, delay_stream, *args, **kwargs):
         super(MockVolume, self).__init__(*args, **kwargs)
-        self.app = AppProxy(self.app, import_data_queue)
+        self.app = AppProxy(self.app, import_data_queue,
+            delay_stream=delay_stream)
 
 class MockFirewall(qubesadmin.firewall.Firewall):
     def __init__(self, import_data_queue, *args, **kwargs):
@@ -824,13 +828,17 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             with open(os.path.join(dir, name + ".desktop"), "w") as f:
                 f.write(template.format(name=name, comment=name, command=name))
 
-    def create_private_img(self, filename):
+    def create_private_img(self, filename, sparse=True):
         signature = '/'.join(os.path.splitext(filename)[0].split('/')[-2:])
-        self.create_sparse(filename, 2*2**20, signature=signature.encode())
+        if sparse:
+            self.create_sparse(filename, 2*2**20, signature=signature.encode())
+        else:
+            self.create_full_image(filename, 2 * 2 ** 30,
+                signature=signature.encode())
         #subprocess.check_call(["/usr/sbin/mkfs.ext4", "-q", "-F", filename])
 
     def create_volatile_img(self, filename):
-        self.create_sparse(filename, 11.5*2**20)
+        self.create_sparse(filename, int(11.5*2**20))
         # here used to be sfdisk call with "0,1024,S\n,10240,L\n" input,
         # but since sfdisk folks like to change command arguments in
         # incompatible way, have an partition table verbatim here
@@ -1273,11 +1281,12 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         output.close()
 
-    def create_v4_backup(self, compressed="gzip"):
+    def create_v4_backup(self, compressed="gzip", big=False):
         """
         Create "backup format 4" backup - used in R4.0
 
         :param compressed: Should the backup be compressed
+        :param big: Should the backup include big(ish) VM?
         :return:
         """
         output = open(self.fullpath("backup.bin"), "w")
@@ -1301,6 +1310,12 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.handle_v4_file("qubes.xml", "", output, compressed=compressed)
 
         self.create_v4_files()
+        if big:
+            # make one AppVM non-sparse
+            self.create_private_img(
+                self.fullpath('appvms/test-work/private.img'),
+                sparse=False)
+
         for vm_type in ["appvms", "vm-templates"]:
             for vm_name in os.listdir(self.fullpath(vm_type)):
                 vm_dir = os.path.join(vm_type, vm_name)
@@ -1470,6 +1485,17 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
     def mock_appmenus(self, queue, vm, stream):
         queue.put((vm.name, 'appmenus', None, stream.read()))
 
+    def cleanup_tmpdir(self, tmpdir: tempfile.TemporaryDirectory):
+        subprocess.run(['sudo', 'umount', tmpdir.name], check=True)
+        tmpdir.cleanup()
+
+    def create_limited_tmpdir(self, size):
+        d = tempfile.TemporaryDirectory()
+        subprocess.run(['sudo', 'mount', '-t', 'tmpfs', 'none', d.name, '-o',
+                        'size={}'.format(size)], check=True)
+        self.addCleanup(self.cleanup_tmpdir, d)
+        return d.name
+
     def test_210_r2(self):
         self.create_v3_backup(False)
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
@@ -1504,7 +1530,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1572,7 +1598,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1639,7 +1665,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1708,7 +1734,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1779,7 +1805,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1850,7 +1876,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1893,7 +1919,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1952,7 +1978,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue)),
+                functools.partial(MockVolume, qubesd_calls_queue, 0)),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
                 functools.partial(self.mock_appmenus, qubesd_calls_queue)),
@@ -1970,6 +1996,86 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 'use-default-template': True,
                 'use-default-netvm': True,
             }, force_compression_filter='less')
+        finally:
+            for patch in patches:
+                patch.stop()
+
+        # retrieve calls from other multiprocess.Process instances
+        while not qubesd_calls_queue.empty():
+            call_args = qubesd_calls_queue.get()
+            with contextlib.suppress(qubesadmin.exc.QubesException):
+                self.app.qubesd_call(*call_args)
+        qubesd_calls_queue.close()
+
+        self.assertAllCalled()
+
+        self.assertDom0Restored(dummy_timestamp)
+
+    @unittest.skipUnless(spawn.find_executable('scrypt'),
+        "scrypt not installed")
+    def test_300_r4_no_space(self):
+        self.create_v4_backup("", big=True)
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\0dom0 class=AdminVM state=Running\n'
+            b'fedora-25 class=TemplateVM state=Halted\n'
+            b'testvm class=AppVM state=Running\n'
+            b'sys-net class=AppVM state=Running\n'
+        )
+        self.app.expected_calls[
+            ('dom0', 'admin.property.Get', 'default_template', None)] = \
+            b'0\0default=no type=vm fedora-25'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.Get', 'provides_network', None)] = \
+            b'0\0default=no type=bool True'
+        self.setup_expected_calls(parsed_qubes_xml_v4, templates_map={
+            'debian-8': 'fedora-25'
+        })
+        firewall_data = (
+            'action=accept specialtarget=dns\n'
+            'action=accept proto=icmp\n'
+            'action=accept proto=tcp dstports=22-22\n'
+            'action=accept proto=tcp dsthost=www.qubes-os.org '
+            'dstports=443-443\n'
+            'action=accept proto=tcp dst4=192.168.0.0/24\n'
+            'action=drop\n'
+        )
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.firewall.Set', None,
+            firewall_data.encode())] = b'0\0'
+        del self.app.expected_calls[
+            ('test-work', 'admin.vm.volume.Resize', 'private', b'2097152')]
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.volume.Resize', 'private', b'2147483648')] = \
+            b'0\0'
+
+        qubesd_calls_queue = multiprocessing.Queue()
+
+        dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
+        patches = [
+            mock.patch('qubesadmin.storage.Volume',
+                functools.partial(MockVolume, qubesd_calls_queue, 30)),
+            mock.patch(
+                'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
+                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+            mock.patch(
+                'qubesadmin.firewall.Firewall',
+                functools.partial(MockFirewall, qubesd_calls_queue)),
+            mock.patch(
+                'time.strftime',
+                return_value=dummy_timestamp),
+            mock.patch(
+                'qubesadmin.backup.restore.BackupRestore.check_disk_space')
+        ]
+        small_tmpdir = self.create_limited_tmpdir('620M')
+        for patch in patches:
+            patch.start()
+        try:
+            self.restore_backup(self.fullpath("backup.bin"),
+                tmpdir=small_tmpdir,
+                options={
+                    'use-default-template': True,
+                    'use-default-netvm': True,
+            })
         finally:
             for patch in patches:
                 patch.stop()
