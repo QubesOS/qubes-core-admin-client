@@ -1859,6 +1859,22 @@ class BackupRestore(object):
             self.log.error('Failed to resize volume %s of VM %s to %d: %s',
                 volume.name, vm.name, size, err)
 
+    def check_disk_space(self):
+        """
+        Check if there is enough disk space to restore the backup.
+
+        Currently it checks only for the space in temporary directory,
+        not the target storage pools.
+
+        :return:
+        """
+
+        statvfs = os.statvfs(self.tmpdir)
+        # require 1GB in /var/tmp
+        if statvfs.f_frsize * statvfs.f_bavail < 1024 ** 3:
+            raise QubesException("Too little space in {}, needs at least 1GB".
+                format(self.tmpdir))
+
     def restore_do(self, restore_info):
         '''
 
@@ -1874,6 +1890,8 @@ class BackupRestore(object):
 
         if self.header_data.version == 1:
             raise NotImplementedError('Backup format version 1 not supported')
+
+        self.check_disk_space()
 
         restore_info = self.restore_info_verify(restore_info)
 
