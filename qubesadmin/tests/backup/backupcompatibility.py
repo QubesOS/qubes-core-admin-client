@@ -1203,9 +1203,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     part):
                 continue
             part_with_dir = os.path.join(subdir, part)
-            f_name = self.scrypt_encrypt(part_with_dir,
+            f_name_enc = self.scrypt_encrypt(part_with_dir,
                 basedir=self.fullpath('stage1'))
-            self.append_backup_stream(f_name, stream,
+            self.append_backup_stream(f_name_enc, stream,
                                       basedir=self.fullpath("stage1"))
 
     def create_v3_backup(self, encrypted=True, compressed=True):
