@@ -31,7 +31,7 @@ Options
 .. option:: --updatevm UPDATEVM
 
    Specify VM to download updates from. (Set to empty string to specify the
-   current VM.) (default: sys-firewall)
+   current VM.) (default: same as UpdateVM - see ``qubes-prefs``)
 
 .. option:: --enablerepo REPOID
 

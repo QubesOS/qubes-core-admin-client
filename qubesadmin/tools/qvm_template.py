@@ -37,6 +37,8 @@ UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/var/tmp/qvm-template.lck'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
 
+UPDATEVM = str('global UpdateVM')
+
 def qubes_release() -> str:
     """Return the Qubes release."""
     if os.path.exists('/usr/share/qubes/marker-vm'):
@@ -78,7 +80,7 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_main.add_argument('--keyring',
         default='/usr/share/qubes/repo-templates/keys',
         help='Specify directory containing RPM public keys.')
-    parser_main.add_argument('--updatevm', default='sys-firewall',
+    parser_main.add_argument('--updatevm', default=UPDATEVM,
         help=('Specify VM to download updates from.'
             ' (Set to empty string to specify the current VM.)'))
     parser_main.add_argument('--enablerepo', action='append', default=[],
@@ -1383,6 +1385,9 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
 
     if app is None:
         app = qubesadmin.Qubes()
+
+    if p_args.updatevm is UPDATEVM:
+        p_args.updatevm = app.updatevm
 
     if p_args.refresh:
         qrexec_repoquery(p_args, app, refresh=True)
