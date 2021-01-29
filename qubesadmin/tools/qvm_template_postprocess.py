@@ -232,6 +232,12 @@ def call_postinstall_service(vm):
     finally:
         vm.netvm = qubesadmin.DEFAULT
 
+def validate_ip(ip):
+    """Check if given string has a valid IP address syntax"""
+    try:
+        return all(0 <= int(part) <= 255 for part in ip.split('.', 3))
+    except ValueError:
+        return False
 
 @asyncio.coroutine
 def post_install(args):
@@ -301,7 +307,11 @@ def post_install(args):
                 'net.fake-gateway',
                 'net.fake-netmask'):
             if key in conf:
-                vm.features[key] = conf[key]
+                if validate_ip(conf[key]):
+                    vm.features[key] = conf[key]
+                else:
+                    vm.log.warning(
+                        'ignoring invalid value for \'%s\'', key)
         if 'virt-mode' in conf:
             if conf['virt-mode'] == 'pv' and args.allow_pv:
                 vm.virt_mode = 'pv'
@@ -310,6 +320,8 @@ def post_install(args):
                     '--allow-pv not set, ignoring request to change virt-mode')
             elif conf['virt-mode'] in ('pvh', 'hvm'):
                 vm.virt_mode = conf['virt-mode']
+            else:
+                vm.log.warning('ignoring invalid value for virt-mode')
 
         if 'kernel' in conf:
             if conf['kernel'] == '':
