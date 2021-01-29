@@ -8,6 +8,7 @@ import pathlib
 import subprocess
 import tempfile
 
+import fcntl
 import rpm
 
 import qubesadmin.tests
@@ -151,13 +152,40 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         self.assertAllCalled()
 
+    @mock.patch('qubesadmin.tools.qvm_template.get_keys')
+    def test_090_install_lock(self, mock_get_keys):
+        class SuccessError(Exception):
+            pass
+        mock_get_keys.side_effect = SuccessError
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'):
+            with self.subTest('not locked'):
+                with self.assertRaises(SuccessError):
+                    # args don't matter
+                    qubesadmin.tools.qvm_template.install(mock.MagicMock(), None)
+                self.assertFalse(os.path.exists('/tmp/test.lock'))
+
+            with self.subTest('lock exists but unlocked'):
+                with open('/tmp/test.lock', 'w') as f:
+                    with self.assertRaises(SuccessError):
+                        # args don't matter
+                        qubesadmin.tools.qvm_template.install(mock.MagicMock(), None)
+                self.assertFalse(os.path.exists('/tmp/test.lock'))
+            with self.subTest('locked'):
+                with open('/tmp/test.lock', 'w') as f:
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    with self.assertRaises(
+                            qubesadmin.tools.qvm_template.AlreadyRunning):
+                        # args don't matter
+                        qubesadmin.tools.qvm_template.install(mock.MagicMock(), None)
+                    # and not cleaned up then
+                    self.assertTrue(os.path.exists('/tmp/test.lock'))
+
     def add_new_vm_side_effect(self, *args, **kwargs):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.domains.clear_cache()
         return self.app.domains['test-vm']
 
-    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -175,8 +203,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
-            mock_remove):
+            mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
         build_time = '2020-09-01 14:30:00' # 1598970600
         install_time = '2020-09-01 15:30:00'
@@ -213,7 +240,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
-        with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -231,12 +258,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_tmpdir.return_value.__enter__.return_value = \
                 '/var/tmp/qvm-template-tmpdir'
             qubesadmin.tools.qvm_template.install(args, self.app)
-            # Lock file created
-            self.assertEqual(mock_open.mock_calls, [
-                mock.call('/var/tmp/qvm-template.lck', 'x'),
-                mock.call().__enter__(),
-                mock.call().__exit__(None, None, None)
-            ])
         # Attempt to get download list
         selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
         self.assertEqual(mock_dl_list.mock_calls, [
@@ -269,13 +290,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # No templates downloaded, thus no renames needed
         self.assertEqual(mock_rename.mock_calls, [])
-        # Lock file removed
-        self.assertEqual(mock_remove.mock_calls, [
-            mock.call('/var/tmp/qvm-template.lck')
-        ])
         self.assertAllCalled()
 
-    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -293,8 +309,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
-            mock_remove):
+            mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
         build_time = '2020-09-01 14:30:00' # 1598970600
         install_time = '2020-09-01 15:30:00'
@@ -331,7 +346,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
-        with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -349,12 +364,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_tmpdir.return_value.__enter__.return_value = \
                 '/var/tmp/qvm-template-tmpdir'
             qubesadmin.tools.qvm_template.install(args, self.app)
-            # Lock file created
-            self.assertEqual(mock_open.mock_calls, [
-                mock.call('/var/tmp/qvm-template.lck', 'x'),
-                mock.call().__enter__(),
-                mock.call().__exit__(None, None, None)
-            ])
         # Attempt to get download list
         selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
         self.assertEqual(mock_dl_list.mock_calls, [
@@ -390,13 +399,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # No templates downloaded, thus no renames needed
         self.assertEqual(mock_rename.mock_calls, [])
-        # Lock file removed
-        self.assertEqual(mock_remove.mock_calls, [
-            mock.call('/var/tmp/qvm-template.lck')
-        ])
         self.assertAllCalled()
 
-    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -414,11 +418,10 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
-            mock_remove):
+            mock_rename):
         mock_verify.return_value = None
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -438,12 +441,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             # Should raise parser.error
             with self.assertRaises(SystemExit):
                 qubesadmin.tools.qvm_template.install(args, self.app)
-            # Lock file created
-            self.assertEqual(mock_open.mock_calls, [
-                mock.call('/var/tmp/qvm-template.lck', 'x'),
-                mock.call().__enter__(),
-                mock.call().__exit__(None, None, None)
-            ])
             # Check error message
             self.assertTrue('verification failed' in mock_err.getvalue())
         # Should not be executed:
@@ -453,13 +450,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_confirm.mock_calls, [])
         self.assertEqual(mock_call.mock_calls, [])
         self.assertEqual(mock_rename.mock_calls, [])
-        # Lock file removed
-        self.assertEqual(mock_remove.mock_calls, [
-            mock.call('/var/tmp/qvm-template.lck')
-        ])
         self.assertAllCalled()
 
-    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -477,8 +469,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
-            mock_remove):
+            mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         mock_verify.return_value = {
@@ -494,7 +485,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         }
         mock_dl_list.return_value = {}
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -512,12 +503,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_tmpdir.return_value.__enter__.return_value = \
                 '/var/tmp/qvm-template-tmpdir'
             qubesadmin.tools.qvm_template.install(args, self.app)
-            # Lock file created
-            self.assertEqual(mock_open.mock_calls, [
-                mock.call('/var/tmp/qvm-template.lck', 'x'),
-                mock.call().__enter__(),
-                mock.call().__exit__(None, None, None)
-            ])
             # Check warning message
             self.assertTrue('already installed' in mock_err.getvalue())
         # Attempt to get download list
@@ -535,13 +520,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_confirm.mock_calls, [])
         self.assertEqual(mock_call.mock_calls, [])
         self.assertEqual(mock_rename.mock_calls, [])
-        # Lock file removed
-        self.assertEqual(mock_remove.mock_calls, [
-            mock.call('/var/tmp/qvm-template.lck')
-        ])
         self.assertAllCalled()
 
-    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -559,8 +539,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
-            mock_remove):
+            mock_rename):
         mock_verify.return_value = {
             rpm.RPMTAG_NAME        : 'Xqubes-template-test-vm',
             rpm.RPMTAG_BUILDTIME   : 1598970600,
@@ -573,7 +552,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             rpm.RPMTAG_VERSION     : '4.1'
         }
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -592,12 +571,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 '/var/tmp/qvm-template-tmpdir'
             with self.assertRaises(SystemExit):
                 qubesadmin.tools.qvm_template.install(args, self.app)
-            # Lock file created
-            self.assertEqual(mock_open.mock_calls, [
-                mock.call('/var/tmp/qvm-template.lck', 'x'),
-                mock.call().__enter__(),
-                mock.call().__exit__(None, None, None)
-            ])
             # Check error message
             self.assertTrue('Illegal package name' in mock_err.getvalue())
         # Should not be executed:
@@ -607,74 +580,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_confirm.mock_calls, [])
         self.assertEqual(mock_call.mock_calls, [])
         self.assertEqual(mock_rename.mock_calls, [])
-        # Lock file removed
-        self.assertEqual(mock_remove.mock_calls, [
-            mock.call('/var/tmp/qvm-template.lck')
-        ])
         self.assertAllCalled()
 
-    @mock.patch('os.rename')
-    @mock.patch('os.makedirs')
-    @mock.patch('subprocess.check_call')
-    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
-    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.download')
-    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
-    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
-    def test_105_install_local_existinginstance_fail(
-            self,
-            mock_ts,
-            mock_verify,
-            mock_dl_list,
-            mock_dl,
-            mock_extract,
-            mock_confirm,
-            mock_call,
-            mock_mkdirs,
-            mock_rename):
-        mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('datetime.datetime', new=mock_time), \
-                mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
-                mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
-                tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
-            path = template_file.name
-            args = argparse.Namespace(
-                templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
-                nogpgcheck=False,
-                cachedir='/var/cache/qvm-template',
-                yes=False,
-                allow_pv=False,
-                pool=None
-            )
-            mock_tmpdir.return_value.__enter__.return_value = \
-                '/var/tmp/qvm-template-tmpdir'
-            pathlib.Path('/var/tmp/qvm-template.lck').touch()
-            try:
-                with mock.patch('os.remove') as mock_remove:
-                    with self.assertRaises(SystemExit):
-                        qubesadmin.tools.qvm_template.install(args, self.app)
-                self.assertEqual(mock_remove.mock_calls, [])
-            finally:
-                # Lock file not removed
-                self.assertTrue(os.path.exists('/var/tmp/qvm-template.lck'))
-                os.remove('/var/tmp/qvm-template.lck')
-            # Check error message
-            self.assertTrue('another instance of qvm-template is running' \
-                in mock_err.getvalue())
-        # Should not be executed:
-        self.assertEqual(mock_ts.mock_calls, [])
-        self.assertEqual(mock_verify.mock_calls, [])
-        self.assertEqual(mock_dl_list.mock_calls, [])
-        self.assertEqual(mock_dl.mock_calls, [])
-        self.assertEqual(mock_extract.mock_calls, [])
-        self.assertEqual(mock_confirm.mock_calls, [])
-        self.assertEqual(mock_call.mock_calls, [])
-        self.assertEqual(mock_rename.mock_calls, [])
-        self.assertAllCalled()
-
-    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -692,10 +599,9 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
-            mock_remove):
+            mock_rename):
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('builtins.open', mock.mock_open()) as mock_open, \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
@@ -713,12 +619,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 '/var/tmp/qvm-template-tmpdir'
             with self.assertRaises(SystemExit):
                 qubesadmin.tools.qvm_template.install(args, self.app)
-            # Lock file created
-            self.assertEqual(mock_open.mock_calls, [
-                mock.call('/var/tmp/qvm-template.lck', 'x'),
-                mock.call().__enter__(),
-                mock.call().__exit__(None, None, None)
-            ])
             # Check error message
             self.assertTrue(f"RPM file '{path}' not found" \
                 in mock_err.getvalue())
@@ -730,10 +630,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_confirm.mock_calls, [])
         self.assertEqual(mock_call.mock_calls, [])
         self.assertEqual(mock_rename.mock_calls, [])
-        # Lock file removed
-        self.assertEqual(mock_remove.mock_calls, [
-            mock.call('/var/tmp/qvm-template.lck')
-        ])
         self.assertAllCalled()
 
     def test_110_qrexec_payload_refresh_success(self):

@@ -23,6 +23,7 @@ import argparse
 import collections
 import datetime
 import enum
+import fcntl
 import fnmatch
 import functools
 import itertools
@@ -55,6 +56,9 @@ LOCK_FILE = '/var/tmp/qvm-template.lck'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
 
 UPDATEVM = str('global UpdateVM')
+
+class AlreadyRunning(Exception):
+    """Another qvm-template is already running"""
 
 class SignatureVerificationError(Exception):
     """Package signature is invalid or missing"""
@@ -768,6 +772,25 @@ def download(
                 print('Error: \'%s\' download failed.' % spec, file=sys.stderr)
                 sys.exit(1)
 
+def locked(func):
+    """Execute given function under a lock in *LOCK_FILE*"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with open(LOCK_FILE, 'w') as lock:
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                raise AlreadyRunning(
+                    ('cannot get lock on %s. '
+                     'Perhaps another instance of qvm-template is running?')
+                         % LOCK_FILE)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                os.remove(LOCK_FILE)
+    return wrapper
+
+@locked
 def install(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
@@ -785,14 +808,6 @@ def install(
     :param override_existing: Whether to override existing packages. Used for
         reinstall, upgrade, and downgrade operations
     """
-    try:
-        with open(LOCK_FILE, 'x') as _:
-            pass
-    except FileExistsError:
-        parser.error(('%s already exists.'
-            ' Perhaps another instance of qvm-template is running?')
-            % LOCK_FILE)
-
     try:
         keys = get_keys(args.keyring)
 
@@ -969,7 +984,7 @@ def install(
                 tpl.features['template-description'] = \
                     package_hdr[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
     finally:
-        os.remove(LOCK_FILE)
+        pass
 
 def list_templates(args: argparse.Namespace,
         app: qubesadmin.app.QubesBase, operation: str) -> None:
