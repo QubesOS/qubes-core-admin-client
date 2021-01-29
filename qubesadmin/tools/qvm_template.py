@@ -907,8 +907,9 @@ def install(
         for rpmfile, reponame, name, package_hdr in verified_rpm_list:
             with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
                 print('Installing template \'%s\'...' % name, file=sys.stderr)
-                # FIXME: Handle return value
-                extract_rpm(name, rpmfile, target)
+                if not extract_rpm(name, rpmfile, target):
+                    raise Exception(
+                        'Failed to extract {} template'.format(name))
                 cmdline = [
                     'qvm-template-postprocess',
                     '--really',
