@@ -78,7 +78,7 @@ def qubes_release() -> str:
     # Return default value instead of throwing so that it works on CI
     return '4.1'
 
-def parser_gen() -> argparse.ArgumentParser:
+def get_parser() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
     formatter = argparse.ArgumentDefaultsHelpFormatter
     parser_main = argparse.ArgumentParser(description='Qubes Template Manager',
@@ -128,7 +128,7 @@ def parser_gen() -> argparse.ArgumentParser:
     parser_install = parser_add_command('install',
         help_str='Install template packages.')
     parser_install.add_argument('--pool',
-        help='Specify pool to store created VMs in.')
+        help='Specify storage pool to store created templates in.')
     parser_reinstall = parser_add_command('reinstall',
         help_str='Reinstall template packages.')
     parser_downgrade = parser_add_command('downgrade',
@@ -212,7 +212,7 @@ def parser_gen() -> argparse.ArgumentParser:
 
     return parser_main
 
-parser = parser_gen()
+parser = get_parser()
 
 class TemplateState(enum.Enum):
     """Enum representing the state of a template."""
@@ -467,10 +467,10 @@ def qrexec_repoquery(
         for line in stderr.decode('ASCII').rstrip().split('\n'):
             print('[Qrexec] %s' % line, file=sys.stderr)
         raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
-    name_re = re.compile(r'^[A-Za-z0-9._+\-]*$')
+    name_re = re.compile(r'^[A-Za-z0-9._+-]*$')
     evr_re = re.compile(r'^[A-Za-z0-9._+~]*$')
     date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
-    licence_re = re.compile(r'^[A-Za-z0-9._+\-()]*$')
+    licence_re = re.compile(r'^[A-Za-z0-9._+()-]*$')
     result = []
     # FIXME: This breaks when \n is the first character of the description
     for line in stdout.split('|\n'):
