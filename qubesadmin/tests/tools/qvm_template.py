@@ -29,53 +29,75 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         self.mock_table.stop()
         super().tearDown()
 
-    def test_000_verify_rpm_success(self):
-        ts = mock.MagicMock()
+    @mock.patch('rpm.TransactionSet')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('subprocess.check_output')
+    def test_000_verify_rpm_success(self, mock_proc, mock_call, mock_ts):
         # Just return a dict instead of rpm.hdr
         hdr = {
             rpm.RPMTAG_SIGPGP: 'xxx', # non-empty
             rpm.RPMTAG_SIGGPG: 'xxx', # non-empty
         }
-        ts.hdrFromFdno.return_value = hdr
-        ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null', ts)
-        ts.hdrFromFdno.assert_called_once()
+        mock_ts.return_value.hdrFromFdno.return_value = hdr
+        mock_proc.return_value = b'dummy.rpm: digests signatures OK\n'
+        ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
+            ['/path/to/key'])
+        mock_call.assert_called_once()
+        mock_proc.assert_called_once()
         self.assertEqual(hdr, ret)
         self.assertAllCalled()
 
-    def test_001_verify_rpm_nosig_fail(self):
-        ts = mock.MagicMock()
+    @mock.patch('rpm.TransactionSet')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('subprocess.check_output')
+    def test_001_verify_rpm_nosig_fail(self, mock_proc, mock_call, mock_ts):
         # Just return a dict instead of rpm.hdr
         hdr = {
             rpm.RPMTAG_SIGPGP: None, # empty
             rpm.RPMTAG_SIGGPG: None, # empty
         }
-        ts.hdrFromFdno.return_value = hdr
-        ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null', ts)
-        ts.hdrFromFdno.assert_called_once()
-        self.assertEqual(ret, None)
+        mock_ts.return_value.hdrFromFdno.return_value = hdr
+        mock_proc.return_value = b'dummy.rpm: digests OK\n'
+        with self.assertRaises(Exception) as e:
+            qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
+                ['/path/to/key'])
+        mock_call.assert_called_once()
+        mock_proc.assert_called_once()
+        self.assertIn('Signature verification failed', e.exception.args[0])
+        mock_ts.assert_not_called()
         self.assertAllCalled()
 
-    def test_002_verify_rpm_nosig_success(self):
-        ts = mock.MagicMock()
+    @mock.patch('rpm.TransactionSet')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('subprocess.check_output')
+    def test_002_verify_rpm_nosig_success(self, mock_proc, mock_call, mock_ts):
         # Just return a dict instead of rpm.hdr
         hdr = {
             rpm.RPMTAG_SIGPGP: None, # empty
             rpm.RPMTAG_SIGGPG: None, # empty
         }
-        ts.hdrFromFdno.return_value = hdr
-        ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null', ts, True)
-        ts.hdrFromFdno.assert_called_once()
+        mock_ts.return_value.hdrFromFdno.return_value = hdr
+        mock_proc.return_value = b'dummy.rpm: digests OK\n'
+        ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
+            ['/path/to/key'], True)
+        mock_proc.assert_not_called()
+        mock_call.assert_not_called()
         self.assertEqual(ret, hdr)
         self.assertAllCalled()
 
-    def test_003_verify_rpm_badsig_fail(self):
-        ts = mock.MagicMock()
-        def f(*args):
-            raise rpm.error('public key not trusted')
-        ts.hdrFromFdno.side_effect = f
-        ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null', ts)
-        ts.hdrFromFdno.assert_called_once()
-        self.assertEqual(ret, None)
+    @mock.patch('rpm.TransactionSet')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('subprocess.check_output')
+    def test_003_verify_rpm_badsig_fail(self, mock_proc, mock_call, mock_ts):
+        mock_proc.side_effect = subprocess.CalledProcessError(1,
+            ['rpmkeys', '--checksig'], b'/dev/null: digests SIGNATURES NOT OK\n')
+        with self.assertRaises(Exception) as e:
+            qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
+                ['/path/to/key'])
+        mock_call.assert_called_once()
+        mock_proc.assert_called_once()
+        self.assertIn('Signature verification failed', e.exception.args[0])
+        mock_ts.assert_not_called()
         self.assertAllCalled()
 
     @mock.patch('subprocess.Popen')
@@ -144,10 +166,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
     def test_100_install_local_success(
             self,
-            mock_ts,
             mock_verify,
             mock_dl_list,
             mock_dl,
@@ -201,7 +221,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             path = template_file.name
             args = argparse.Namespace(
                 templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
+                keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
                 yes=False,
@@ -217,15 +237,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 mock.call().__enter__(),
                 mock.call().__exit__(None, None, None)
             ])
-        # Keyring created
-        self.assertEqual(mock_ts.mock_calls, [
-            mock.call('/usr/share/qubes/repo-templates/keys')
-        ])
-        # Package verified
-        self.assertEqual(mock_verify.mock_calls, [
-            mock.call(path, mock_ts('/usr/share/qubes/repo-templates/keys'),
-                False)
-        ])
         # Attempt to get download list
         selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
         self.assertEqual(mock_dl_list.mock_calls, [
@@ -275,10 +286,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
     def test_101_install_local_postprocargs_success(
             self,
-            mock_ts,
             mock_verify,
             mock_dl_list,
             mock_dl,
@@ -332,7 +341,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             path = template_file.name
             args = argparse.Namespace(
                 templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
+                keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
                 yes=False,
@@ -348,15 +357,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 mock.call().__enter__(),
                 mock.call().__exit__(None, None, None)
             ])
-        # Keyring created
-        self.assertEqual(mock_ts.mock_calls, [
-            mock.call('/usr/share/qubes/repo-templates/keys')
-        ])
-        # Package verified
-        self.assertEqual(mock_verify.mock_calls, [
-            mock.call(path, mock_ts('/usr/share/qubes/repo-templates/keys'),
-                False)
-        ])
         # Attempt to get download list
         selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
         self.assertEqual(mock_dl_list.mock_calls, [
@@ -409,10 +409,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
     def test_102_install_local_badsig_fail(
             self,
-            mock_ts,
             mock_verify,
             mock_dl_list,
             mock_dl,
@@ -432,7 +430,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             path = template_file.name
             args = argparse.Namespace(
                 templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
+                keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
                 yes=False,
@@ -452,15 +450,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             ])
             # Check error message
             self.assertTrue('verification failed' in mock_err.getvalue())
-        # Keyring created
-        self.assertEqual(mock_ts.mock_calls, [
-            mock.call('/usr/share/qubes/repo-templates/keys')
-        ])
-        # Package verified
-        self.assertEqual(mock_verify.mock_calls, [
-            mock.call(path, mock_ts('/usr/share/qubes/repo-templates/keys'),
-                False)
-        ])
         # Should not be executed:
         self.assertEqual(mock_dl_list.mock_calls, [])
         self.assertEqual(mock_dl.mock_calls, [])
@@ -483,10 +472,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
     def test_103_install_local_exists_fail(
             self,
-            mock_ts,
             mock_verify,
             mock_dl_list,
             mock_dl,
@@ -519,7 +506,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             path = template_file.name
             args = argparse.Namespace(
                 templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
+                keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
                 yes=False,
@@ -537,15 +524,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             ])
             # Check warning message
             self.assertTrue('already installed' in mock_err.getvalue())
-        # Keyring created
-        self.assertEqual(mock_ts.mock_calls, [
-            mock.call('/usr/share/qubes/repo-templates/keys')
-        ])
-        # Package verified
-        self.assertEqual(mock_verify.mock_calls, [
-            mock.call(path, mock_ts('/usr/share/qubes/repo-templates/keys'),
-                False)
-        ])
         # Attempt to get download list
         selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
         self.assertEqual(mock_dl_list.mock_calls, [
@@ -576,10 +554,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
     def test_104_install_local_badpkgname_fail(
             self,
-            mock_ts,
             mock_verify,
             mock_dl_list,
             mock_dl,
@@ -609,7 +585,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             path = template_file.name
             args = argparse.Namespace(
                 templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
+                keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
                 yes=False,
@@ -628,15 +604,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             ])
             # Check error message
             self.assertTrue('Illegal package name' in mock_err.getvalue())
-        # Keyring created
-        self.assertEqual(mock_ts.mock_calls, [
-            mock.call('/usr/share/qubes/repo-templates/keys')
-        ])
-        # Package verified
-        self.assertEqual(mock_verify.mock_calls, [
-            mock.call(path, mock_ts('/usr/share/qubes/repo-templates/keys'),
-                False)
-        ])
         # Should not be executed:
         self.assertEqual(mock_dl_list.mock_calls, [])
         self.assertEqual(mock_dl.mock_calls, [])
@@ -720,10 +687,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
-    @mock.patch('qubesadmin.tools.qvm_template.rpm_transactionset')
     def test_106_install_local_badpath_fail(
             self,
-            mock_ts,
             mock_verify,
             mock_dl_list,
             mock_dl,
@@ -741,7 +706,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             path = '/var/tmp/ShOulD-NoT-ExIsT.rpm'
             args = argparse.Namespace(
                 templates=[path],
-                keyring='/usr/share/qubes/repo-templates/keys',
+                keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
                 yes=False,
@@ -761,10 +726,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             # Check error message
             self.assertTrue(f"RPM file '{path}' not found" \
                 in mock_err.getvalue())
-        # Keyring created
-        self.assertEqual(mock_ts.mock_calls, [
-            mock.call('/usr/share/qubes/repo-templates/keys')
-        ])
         # Should not be executed:
         self.assertEqual(mock_verify.mock_calls, [])
         self.assertEqual(mock_dl_list.mock_calls, [])

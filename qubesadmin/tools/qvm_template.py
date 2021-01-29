@@ -20,9 +20,9 @@ import tempfile
 import time
 import typing
 
-import rpm
 import tqdm
 import xdg.BaseDirectory
+import rpm
 
 import qubesadmin
 import qubesadmin.tools
@@ -38,6 +38,9 @@ LOCK_FILE = '/var/tmp/qvm-template.lck'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
 
 UPDATEVM = str('global UpdateVM')
+
+class SignatureVerificationError(Exception):
+    """Package signature is invalid or missing"""
 
 def qubes_release() -> str:
     """Return the Qubes release."""
@@ -540,21 +543,18 @@ def qrexec_download(
             raise ConnectionError(
                 "qrexec call 'qubes.TemplateDownload' failed.")
 
-def rpm_transactionset(key_dir: str) -> rpm.transaction.TransactionSet:
-    """Create RPM TransactionSet using the keys in the given directory."""
-    tset = rpm.TransactionSet()
-    kring = rpm.keyring()
+def get_keys(key_dir: str) -> typing.List[str]:
+    """List gpg keys"""
+    keys = []
     for name in os.listdir(key_dir):
         path = os.path.join(key_dir, name)
         if os.path.isfile(path):
-            with open(path, 'rb') as fd:
-                kring.addKey(rpm.pubkey(fd.read()))
-    tset.setKeyring(kring)
-    return tset
+            keys.append(path)
+    return keys
 
 def verify_rpm(
         path: str,
-        transaction_set: rpm.transaction.TransactionSet,
+        keys: typing.List[str],
         nogpgcheck: bool = False
         ) -> rpm.hdr:
     """Verify the digest and signature of a RPM package and return the package
@@ -566,24 +566,29 @@ def verify_rpm(
     case.
 
     :param path: Location of the RPM package
-    :param transaction_set: RPM ``TransactionSet``
     :param nogpgcheck: Whether to allow invalid GPG signatures
 
-    :return: RPM package header. If verification fails, ``None`` is returned.
+    :return: RPM package header. If verification fails, raises an exception.
     """
+    if not nogpgcheck:
+        with tempfile.TemporaryDirectory() as rpmdb_dir:
+            for key in keys:
+                subprocess.check_call(
+                    ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
+            try:
+                output = subprocess.check_output(
+                    ['rpmkeys', '--dbpath=' + rpmdb_dir, '--checksig', path])
+            except subprocess.CalledProcessError as e:
+                raise SignatureVerificationError(
+                    'Signature verification failed: {}'.format(
+                        e.output.decode()))
+            if not output.endswith(b': digests signatures OK\n'):
+                raise SignatureVerificationError(
+                    'Signature verification failed: {}'.format(output.decode()))
     with open(path, 'rb') as fd:
-        try:
-            hdr = transaction_set.hdrFromFdno(fd)
-            if hdr[rpm.RPMTAG_SIGPGP] is None \
-                    and hdr[rpm.RPMTAG_SIGGPG] is None:
-                return hdr if nogpgcheck else None
-        except rpm.error as e:
-            if str(e) == 'public key not trusted' \
-                    or str(e) == 'public key not available':
-                # FIXME: This does not work
-                #        Should just tell TransactionSet not to verify sigs
-                return hdr if nogpgcheck else None
-            return None
+        tset = rpm.TransactionSet()
+        tset.setVSFlags(rpm.RPMVSF_MASK_NOSIGNATURES)
+        hdr = tset.hdrFromFdno(fd)
     return hdr
 
 def extract_rpm(name: str, path: str, target: str) -> bool:
@@ -772,7 +777,7 @@ def install(
             % LOCK_FILE)
 
     try:
-        transaction_set = rpm_transactionset(args.keyring)
+        keys = get_keys(args.keyring)
 
         unverified_rpm_list = [] # rpmfile, reponame
         verified_rpm_list = []
@@ -784,7 +789,7 @@ def install(
             else:
                 path = rpmfile
 
-            package_hdr = verify_rpm(path, transaction_set, args.nogpgcheck)
+            package_hdr = verify_rpm(path, keys, args.nogpgcheck)
             if not package_hdr:
                 parser.error('Package \'%s\' verification failed.' % rpmfile)
 

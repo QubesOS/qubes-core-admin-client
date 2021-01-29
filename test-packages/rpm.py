@@ -13,6 +13,8 @@ RPMTAG_SUMMARY     = 9
 RPMTAG_URL         = 10
 RPMTAG_VERSION     = 11
 
+RPMVSF_MASK_NOSIGNATURES = 0xc0c00
+
 class error(BaseException):
     def __init__(self, msg):
         self.msg = msg
@@ -21,7 +23,8 @@ class error(BaseException):
         return self.msg
 
 class hdr():
-    pass
+    def __getitem__(self, key):
+        pass
 
 class keyring():
     def addKey(self, *args):
@@ -31,13 +34,12 @@ class pubkey():
     pass
 
 class TransactionSet():
+    def setVSFlags(self, flags):
+        pass
     def setKeyring(self, *args):
         pass
-
-class transaction():
-    class TransactionSet():
-        def setKeyring(self, *args):
-            pass
+    def hdrFromFdno(self, fdno) -> hdr:
+        return hdr()
 
 def labelCompare(a, b):
     # Pretend that we're comparing the versions lexographically in the stub
