@@ -243,14 +243,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call(args, self.app, version_selector=selector)
         ])
         # Nothing downloaded
-        self.assertEqual(mock_dl.mock_calls, [
-            mock.call(args, self.app, path_override='/var/cache/qvm-template',
-                dl_list={}, suffix='.unverified', version_selector=selector)
-        ])
+        mock_dl.assert_called_with(args, self.app,
+            path_override='/var/tmp/qvm-template-tmpdir',
+            dl_list={}, suffix='.unverified', version_selector=selector)
         # Package is extracted
-        self.assertEqual(mock_extract.mock_calls, [
-            mock.call('test-vm', path, '/var/tmp/qvm-template-tmpdir')
-        ])
+        mock_extract.assert_called_with('test-vm', path,
+            '/var/tmp/qvm-template-tmpdir')
         # No packages overwritten, so no confirm needed
         self.assertEqual(mock_confirm.mock_calls, [])
         # qvm-template-postprocess is called
@@ -363,14 +361,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call(args, self.app, version_selector=selector)
         ])
         # Nothing downloaded
-        self.assertEqual(mock_dl.mock_calls, [
-            mock.call(args, self.app, path_override='/var/cache/qvm-template',
-                dl_list={}, suffix='.unverified', version_selector=selector)
-        ])
+        mock_dl.assert_called_with(args, self.app,
+            path_override='/var/tmp/qvm-template-tmpdir',
+            dl_list={}, suffix='.unverified', version_selector=selector)
         # Package is extracted
-        self.assertEqual(mock_extract.mock_calls, [
-            mock.call('test-vm', path, '/var/tmp/qvm-template-tmpdir')
-        ])
+        mock_extract.assert_called_with('test-vm', path,
+            '/var/tmp/qvm-template-tmpdir')
         # No packages overwritten, so no confirm needed
         self.assertEqual(mock_confirm.mock_calls, [])
         # qvm-template-postprocess is called
@@ -531,7 +527,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # Nothing downloaded
         self.assertEqual(mock_dl.mock_calls, [
-            mock.call(args, self.app, path_override='/var/cache/qvm-template',
+            mock.call(args, self.app, path_override='/var/tmp/qvm-template-tmpdir',
                 dl_list={}, suffix='.unverified', version_selector=selector)
         ])
         # Should not be executed:

@@ -781,11 +781,12 @@ def install(
 
         unverified_rpm_list = [] # rpmfile, reponame
         verified_rpm_list = []
-        def verify(rpmfile, reponame):
+        def verify(rpmfile, reponame, dl_dir=None):
             """Verify package signature and version, remove "unverified"
             suffix, and parse package header."""
-            if reponame != '@commandline':
-                path = rpmfile + UNVERIFIED_SUFFIX
+            if dl_dir:
+                path = os.path.join(
+                    dl_dir, os.path.basename(rpmfile) + UNVERIFIED_SUFFIX)
             else:
                 path = rpmfile
 
@@ -892,13 +893,14 @@ def install(
                 'This will override changes made in the following VMs:',
                 override_tpls)
 
-        download(args, app, path_override=args.cachedir,
-            dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
-            version_selector=version_selector)
+        with tempfile.TemporaryDirectory(dir=args.cachedir) as dl_dir:
+            download(args, app, path_override=dl_dir,
+                dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
+                version_selector=version_selector)
 
-        # Verify downloaded templates
-        for rpmfile, reponame in unverified_rpm_list:
-            verify(rpmfile, reponame)
+            # Verify downloaded templates
+            for rpmfile, reponame in unverified_rpm_list:
+                verify(rpmfile, reponame, dl_dir=dl_dir)
         unverified_rpm_list = []
 
         # Unpack and install
