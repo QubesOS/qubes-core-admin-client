@@ -374,7 +374,6 @@ def is_chroot():
             stat_root.st_dev != stat_init_root.st_dev or
             stat_root.st_ino != stat_init_root.st_ino)
     except IOError:
-        print('Stat failed, assuming not chroot', file=sys.stderr)
         return False
 
 
