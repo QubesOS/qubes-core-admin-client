@@ -124,6 +124,8 @@ def get_parser() -> argparse.ArgumentParser:
         help='Set repository metadata as expired before running the command.')
     parser_main.add_argument('--cachedir', default=CACHE_DIR,
         help='Specify cache directory.')
+    parser_main.add_argument('--keep-cache', default=False,
+        help='Keep downloaded packages in cache dir')
     parser_main.add_argument('--yes', action='store_true',
         help='Assume "yes" to questions.')
     parser_main.add_argument('--quiet', action='store_true',
@@ -982,6 +984,8 @@ def install(
                 package_hdr[rpm.RPMTAG_SUMMARY]
             tpl.features['template-description'] = \
                 package_hdr[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
+        if rpmfile.startswith(args.cachedir) and not args.keep_cache:
+            os.remove(rpmfile)
 
 def list_templates(args: argparse.Namespace,
         app: qubesadmin.app.QubesBase, operation: str) -> None:
