@@ -103,11 +103,13 @@ def write_backup_profile(output_stream, args, passphrase=None):
     if passphrase:
         profile_data['passphrase_text'] = passphrase
     profile_data['compression'] = args.compression
-    if args.appvm:
+    if args.appvm and args.appvm != 'dom0':
         profile_data['destination_vm'] = args.appvm
+        profile_data['destination_path'] = args.backup_location
     else:
         profile_data['destination_vm'] = 'dom0'
-    profile_data['destination_path'] = args.backup_location
+        profile_data['destination_path'] = os.path.join(
+            os.getcwd(), args.backup_location)
 
     yaml.safe_dump(profile_data, output_stream)
 
