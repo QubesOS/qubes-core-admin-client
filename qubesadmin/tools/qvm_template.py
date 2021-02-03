@@ -98,11 +98,11 @@ def get_parser() -> argparse.ArgumentParser:
             description=help_str)
 
     parser_main.add_argument('--repo-files', action='append',
-        default=['/usr/share/qubes/repo-templates/qubes-templates.repo'],
+        default=['/etc/qubes/repo-templates/qubes-templates.repo'],
         help=('Specify files containing DNF repository configuration.'
             ' Can be used more than once.'))
     parser_main.add_argument('--keyring',
-        default='/usr/share/qubes/repo-templates/keys',
+        default='/etc/qubes/repo-templates/keys',
         help='Specify directory containing RPM public keys.')
     parser_main.add_argument('--updatevm', default=UPDATEVM,
         help=('Specify VM to download updates from.'

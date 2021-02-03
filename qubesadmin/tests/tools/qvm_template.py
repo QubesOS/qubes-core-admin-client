@@ -645,7 +645,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_str2 = \
 '''[qubes-templates-itl-testing]
@@ -656,7 +656,7 @@ metalink = https://yum.qubes-os.org/r$releasever/templates-itl-testing/repodata/
 enabled = 0
 fastestmirror = 1
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -696,7 +696,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -730,7 +730,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -764,7 +764,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -798,7 +798,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -832,7 +832,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -866,7 +866,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
@@ -900,7 +900,7 @@ enabled = 1
 fastestmirror = 1
 metadata_expire = 7d
 gpgcheck = 1
-gpgkey = file:///usr/share/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
