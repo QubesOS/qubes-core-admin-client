@@ -85,9 +85,11 @@ def qubes_release() -> str:
 def get_parser() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
     formatter = argparse.ArgumentDefaultsHelpFormatter
-    parser_main = argparse.ArgumentParser(description='Qubes Template Manager',
+    parser_main = qubesadmin.tools.QubesArgumentParser(description=__doc__,
         formatter_class=formatter)
-    subparsers = parser_main.add_subparsers(dest='operation',
+    parser_main.register('action', 'parsers',
+        qubesadmin.tools.AliasedSubParsersAction)
+    subparsers = parser_main.add_subparsers(dest='command',
         description='Command to run.')
 
     def parser_add_command(cmd, help_str):
@@ -124,12 +126,10 @@ def get_parser() -> argparse.ArgumentParser:
         help='Set repository metadata as expired before running the command.')
     parser_main.add_argument('--cachedir', default=CACHE_DIR,
         help='Specify cache directory.')
-    parser_main.add_argument('--keep-cache', default=False,
+    parser_main.add_argument('--keep-cache', action='store_true', default=False,
         help='Keep downloaded packages in cache dir')
     parser_main.add_argument('--yes', action='store_true',
         help='Assume "yes" to questions.')
-    parser_main.add_argument('--quiet', action='store_true',
-        help='Decrease verbosity.')
     # qvm-template {install,reinstall,downgrade,upgrade}
     parser_install = parser_add_command('install',
         help_str='Install template packages.')
@@ -359,7 +359,7 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
     while confirm != 'y':
         confirm = input('Are you sure? [y/N] ').lower()
         if confirm == 'n':
-            print('Operation cancelled.')
+            print('command cancelled.')
             sys.exit(1)
 
 def qrexec_popen(
@@ -988,12 +988,12 @@ def install(
             os.remove(rpmfile)
 
 def list_templates(args: argparse.Namespace,
-        app: qubesadmin.app.QubesBase, operation: str) -> None:
+        app: qubesadmin.app.QubesBase, command: str) -> None:
     """Command that lists templates.
 
     :param args: Arguments received by the application.
     :param app: Qubes application object
-    :param operation: If set to ``list``, display a listing similar to ``dnf
+    :param command: If set to ``list``, display a listing similar to ``dnf
         list``. If set to ``info``, display detailed template information
         similar to ``dnf info``. Otherwise, an ``AssertionError`` is raised.
     """
@@ -1080,12 +1080,12 @@ def list_templates(args: argparse.Namespace,
             outputs[status.value] = output
         return outputs
 
-    if operation == 'list':
+    if command == 'list':
         append = append_list
-    elif operation == 'info':
+    elif command == 'info':
         append = append_info
     else:
-        assert False and 'Unknown operation'
+        assert False and 'Unknown command'
 
     def append_vm(vm, status):
         append(query_local(vm), status, vm.features['template-installtime'])
@@ -1143,24 +1143,24 @@ def list_templates(args: argparse.Namespace,
         parser.error('No matching templates to list')
 
     if args.machine_readable:
-        if operation == 'info':
+        if command == 'info':
             tpl_list_dict = info_to_machine_output(tpl_list)
-        elif operation == 'list':
+        elif command == 'list':
             tpl_list_dict = list_to_machine_output(tpl_list)
         for status, grp in tpl_list_dict.items():
             for line in grp:
                 print('|'.join([status] + list(line.values())))
     elif args.machine_readable_json:
-        if operation == 'info':
+        if command == 'info':
             tpl_list_dict = \
                 info_to_machine_output(tpl_list, replace_newline=False)
-        elif operation == 'list':
+        elif command == 'list':
             tpl_list_dict = list_to_machine_output(tpl_list)
         print(json.dumps(tpl_list_dict))
     else:
-        if operation == 'info':
+        if command == 'info':
             tpl_list = info_to_human_output(tpl_list)
-        elif operation == 'list':
+        elif command == 'list':
             tpl_list = list_to_human_output(tpl_list)
         for status, grp in tpl_list:
             print(status.title())
@@ -1416,8 +1416,8 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
     """
     p_args = parser.parse_args(args)
 
-    if not p_args.operation:
-        parser.error('An operation needs to be specified.')
+    if not p_args.command:
+        parser.error('A command needs to be specified.')
 
     # If the user specified other repo files...
     if len(p_args.repo_files) > 1:
@@ -1433,35 +1433,35 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
     if p_args.refresh:
         qrexec_repoquery(p_args, app, refresh=True)
 
-    if p_args.operation == 'download':
+    if p_args.command == 'download':
         download(p_args, app)
-    elif p_args.operation == 'install':
+    elif p_args.command == 'install':
         install(p_args, app)
-    elif p_args.operation == 'reinstall':
+    elif p_args.command == 'reinstall':
         install(p_args, app, version_selector=VersionSelector.REINSTALL,
             override_existing=True)
-    elif p_args.operation == 'downgrade':
+    elif p_args.command == 'downgrade':
         install(p_args, app, version_selector=VersionSelector.LATEST_LOWER,
             override_existing=True)
-    elif p_args.operation == 'upgrade':
+    elif p_args.command == 'upgrade':
         install(p_args, app, version_selector=VersionSelector.LATEST_HIGHER,
             override_existing=True)
-    elif p_args.operation == 'list':
+    elif p_args.command == 'list':
         list_templates(p_args, app, 'list')
-    elif p_args.operation == 'info':
+    elif p_args.command == 'info':
         list_templates(p_args, app, 'info')
-    elif p_args.operation == 'search':
+    elif p_args.command == 'search':
         search(p_args, app)
-    elif p_args.operation == 'remove':
+    elif p_args.command == 'remove':
         remove(p_args, app, disassoc=p_args.disassoc)
-    elif p_args.operation == 'purge':
+    elif p_args.command == 'purge':
         remove(p_args, app, purge=True)
-    elif p_args.operation == 'clean':
+    elif p_args.command == 'clean':
         clean(p_args, app)
-    elif p_args.operation == 'repolist':
+    elif p_args.command == 'repolist':
         repolist(p_args, app)
     else:
-        parser.error('Operation \'%s\' not supported.' % p_args.operation)
+        parser.error('Command \'%s\' not supported.' % p_args.command)
 
     return 0
 
