@@ -1414,7 +1414,9 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
 
     :return: Return code of the application
     """
-    p_args = parser.parse_args(args)
+    # do two passes to allow global options after command name too
+    p_args, args = parser.parse_known_args(args)
+    p_args = parser.parse_args(args, p_args)
 
     if not p_args.command:
         parser.error('A command needs to be specified.')
