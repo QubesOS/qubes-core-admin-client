@@ -2088,6 +2088,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2150,6 +2151,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
             available=True,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['fedora-32', 'fedora-31']
@@ -2183,6 +2185,19 @@ f'''Available Templates
                 'fedora-31',
                 '1',
                 '4.1',
+                '20190101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2019, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '1',
+                '4.1',
                 '20200101',
                 'qubes-templates-itl',
                 1048576,
@@ -2191,7 +2206,7 @@ f'''Available Templates
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
                 'Qubes template\n for fedora-31\n'
-            )
+            ),
         ]
         args = argparse.Namespace(
             all=False,
@@ -2199,6 +2214,60 @@ f'''Available Templates
             available=True,
             extras=False,
             upgrades=False,
+            all_versions=True,
+            machine_readable=False,
+            machine_readable_json=False,
+            templates=[]
+        )
+        with mock.patch('sys.stdout', new=io.StringIO()) as mock_out:
+            qubesadmin.tools.qvm_template.list_templates(
+                args, self.app, 'list')
+            self.assertEqual(mock_out.getvalue(),
+'''Available Templates
+[('fedora-31', '1:4.1-20190101', 'qubes-templates-itl'), ('fedora-31', '1:4.1-20200101', 'qubes-templates-itl')]
+''')
+        self.assertEqual(mock_query.mock_calls, [
+            mock.call(args, self.app)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_repoquery')
+    def test_151_list_templates_available_only_latest_success(self, mock_query):
+        mock_query.return_value = [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '1',
+                '4.1',
+                '20190101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2019, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '1',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+        ]
+        args = argparse.Namespace(
+            all=False,
+            installed=False,
+            available=True,
+            extras=False,
+            upgrades=False,
+            all_versions=False,
             machine_readable=False,
             machine_readable_json=False,
             templates=[]
@@ -2283,6 +2352,7 @@ f'''Available Templates
             available=False,
             extras=True,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2385,6 +2455,7 @@ f'''Available Templates
             available=False,
             extras=False,
             upgrades=True,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2463,6 +2534,7 @@ f'''Available Templates
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2482,6 +2554,7 @@ Available Templates
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2501,6 +2574,7 @@ Available Templates
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2520,6 +2594,7 @@ Available Templates
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=True,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2537,6 +2612,7 @@ available|test-vm|2:4.1-2020|qubes-templates-itl
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=True,
             machine_readable_json=False,
             templates=['test-vm*']
@@ -2554,6 +2630,7 @@ available|test-vm|2|4.1|2020|qubes-templates-itl|1048576|2020-09-01 14:30:00||GP
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=True,
             templates=['test-vm*']
@@ -2570,6 +2647,7 @@ available|test-vm|2|4.1|2020|qubes-templates-itl|1048576|2020-09-01 14:30:00||GP
             available=False,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=True,
             templates=['test-vm*']
@@ -2588,6 +2666,7 @@ r'''{"installed": [{"name": "test-vm-2", "epoch": "1", "version": "4.0", "releas
             available=True,
             extras=False,
             upgrades=False,
+            all_versions=True,
             machine_readable=False,
             machine_readable_json=False,
             templates=[]

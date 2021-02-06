@@ -176,6 +176,8 @@ def get_parser() -> argparse.ArgumentParser:
                 ' locally but not in repos) templates.'))
         parser_x.add_argument('--upgrades', action='store_true',
             help='Show available upgrades.')
+        parser_x.add_argument('--all-versions', action='store_true',
+            help='Show all available versions, not only the latest.')
         readable = parser_x.add_mutually_exclusive_group()
         readable.add_argument('--machine-readable', action='store_true',
             help='Enable machine-readable output.')
@@ -1128,6 +1130,8 @@ def list_templates(args: argparse.Namespace,
             query_res = list(query_res_set)
         else:
             query_res = qrexec_repoquery(args, app)
+        if not args.all_versions:
+            query_res = filter_version(query_res, app)
 
     if args.installed or args.all:
         for vm in app.domains:
