@@ -1477,38 +1477,43 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
     if p_args.updatevm is UPDATEVM:
         p_args.updatevm = app.updatevm
 
-    if p_args.refresh:
-        qrexec_repoquery(p_args, app, refresh=True)
+    try:
+        if p_args.refresh:
+            qrexec_repoquery(p_args, app, refresh=True)
 
-    if p_args.command == 'download':
-        download(p_args, app)
-    elif p_args.command == 'install':
-        install(p_args, app)
-    elif p_args.command == 'reinstall':
-        install(p_args, app, version_selector=VersionSelector.REINSTALL,
-            override_existing=True)
-    elif p_args.command == 'downgrade':
-        install(p_args, app, version_selector=VersionSelector.LATEST_LOWER,
-            override_existing=True)
-    elif p_args.command == 'upgrade':
-        install(p_args, app, version_selector=VersionSelector.LATEST_HIGHER,
-            override_existing=True)
-    elif p_args.command == 'list':
-        list_templates(p_args, app, 'list')
-    elif p_args.command == 'info':
-        list_templates(p_args, app, 'info')
-    elif p_args.command == 'search':
-        search(p_args, app)
-    elif p_args.command == 'remove':
-        remove(p_args, app, disassoc=p_args.disassoc)
-    elif p_args.command == 'purge':
-        remove(p_args, app, purge=True)
-    elif p_args.command == 'clean':
-        clean(p_args, app)
-    elif p_args.command == 'repolist':
-        repolist(p_args, app)
-    else:
-        parser.error('Command \'%s\' not supported.' % p_args.command)
+        if p_args.command == 'download':
+            download(p_args, app)
+        elif p_args.command == 'install':
+            install(p_args, app)
+        elif p_args.command == 'reinstall':
+            install(p_args, app, version_selector=VersionSelector.REINSTALL,
+                override_existing=True)
+        elif p_args.command == 'downgrade':
+            install(p_args, app, version_selector=VersionSelector.LATEST_LOWER,
+                override_existing=True)
+        elif p_args.command == 'upgrade':
+            install(p_args, app, version_selector=VersionSelector.LATEST_HIGHER,
+                override_existing=True)
+        elif p_args.command == 'list':
+            list_templates(p_args, app, 'list')
+        elif p_args.command == 'info':
+            list_templates(p_args, app, 'info')
+        elif p_args.command == 'search':
+            search(p_args, app)
+        elif p_args.command == 'remove':
+            remove(p_args, app, disassoc=p_args.disassoc)
+        elif p_args.command == 'purge':
+            remove(p_args, app, purge=True)
+        elif p_args.command == 'clean':
+            clean(p_args, app)
+        elif p_args.command == 'repolist':
+            repolist(p_args, app)
+        else:
+            parser.error('Command \'%s\' not supported.' % p_args.command)
+    except Exception as e:  # pylint: disable=broad-except
+        print('ERROR: ' + str(e), file=sys.stderr)
+        app.log.debug(str(e), exc_info=sys.exc_info())
+        return 1
 
     return 0
 
