@@ -152,7 +152,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         self.assertAllCalled()
 
-    @mock.patch('qubesadmin.tools.qvm_template.get_keys')
+    @mock.patch('qubesadmin.tools.qvm_template.get_keys_for_repos')
     def test_090_install_lock(self, mock_get_keys):
         class SuccessError(Exception):
             pass
@@ -251,6 +251,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
                 yes=False,
                 allow_pv=False,
                 pool=None
@@ -357,6 +359,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
                 yes=False,
                 allow_pv=True,
                 pool='my-pool'
@@ -432,6 +436,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
                 yes=False,
                 allow_pv=False,
                 pool=None
@@ -496,6 +502,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
                 yes=False,
                 allow_pv=False,
                 pool=None
@@ -563,6 +571,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
                 yes=False,
                 allow_pv=False,
                 pool=None
@@ -611,6 +621,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keyring='/tmp',
                 nogpgcheck=False,
                 cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
                 yes=False,
                 allow_pv=False,
                 pool=None
