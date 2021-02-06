@@ -143,8 +143,14 @@ def reset_private_img(vm):
     vm.volumes['private'].clear_data()
 
 
-def import_appmenus(vm, source_dir):
-    '''Import appmenus settings into VM object (later: GUI VM)'''
+def import_appmenus(vm, source_dir, skip_generate=True):
+    """Import appmenus settings into VM object (later: GUI VM)
+
+    :param vm: QubesVM object of just imported template
+    :param source_dir: directory with source files
+    :param skip_generate: do not generate actual menu entries,
+            only set item lists
+    """
     if os.getuid() == 0:
         try:
             qubes_group = grp.getgrnam('qubes')
@@ -170,6 +176,9 @@ def import_appmenus(vm, source_dir):
             os.path.join(source_dir, 'netvm-whitelisted-appmenus.list'), 'r') \
             as fd:
         vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
+
+    if skip_generate:
+        return
 
     # TODO: change this to qrexec calls to GUI VM, when GUI VM will be
     # implemented
@@ -283,7 +292,9 @@ def post_install(args):
         vm.log.info('Clearing private volume')
         reset_private_img(vm)
     vm.installed_by_rpm = not args.no_installed_by_rpm
-    import_appmenus(vm, args.dir)
+    # do not generate actual menu entries, if post-install service will be
+    # executed anyway
+    import_appmenus(vm, args.dir, skip_generate=not args.skip_start)
 
     conf_path = os.path.join(args.dir, 'template.conf')
     if os.path.exists(conf_path):

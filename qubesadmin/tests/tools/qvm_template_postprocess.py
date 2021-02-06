@@ -220,7 +220,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         vm = self.app.domains['test-vm']
         with mock.patch('subprocess.check_call') as mock_proc:
             qubesadmin.tools.qvm_template_postprocess.import_appmenus(
-                vm, self.source_dir.name)
+                vm, self.source_dir.name, skip_generate=False)
         self.assertEqual(mock_proc.mock_calls, [
             mock.call(['qvm-appmenus',
                 '--set-default-whitelist=' + os.path.join(self.source_dir.name,
@@ -282,7 +282,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         vm = self.app.domains['test-vm']
         with mock.patch('subprocess.check_call') as mock_proc:
             qubesadmin.tools.qvm_template_postprocess.import_appmenus(
-                vm, self.source_dir.name)
+                vm, self.source_dir.name, skip_generate=False)
         self.assertEqual(mock_proc.mock_calls, [
             mock.call(['runuser', '-u', 'user', '--', 'env', 'DISPLAY=:0',
                 'qvm-appmenus',
@@ -316,7 +316,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         vm = self.app.domains['test-vm']
         with mock.patch('subprocess.check_call') as mock_proc:
             qubesadmin.tools.qvm_template_postprocess.import_appmenus(
-                vm, self.source_dir.name)
+                vm, self.source_dir.name, skip_generate=False)
         self.assertEqual(mock_proc.mock_calls, [])
         self.assertAllCalled()
 
@@ -373,7 +373,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         mock_import_root_img.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name)
         mock_import_appmenus.assert_called_once_with(self.app.domains[
-            'test-vm'], self.source_dir.name)
+            'test-vm'], self.source_dir.name, skip_generate=True)
         if qubesadmin.tools.qvm_template_postprocess.have_events:
             mock_domain_shutdown.assert_called_once_with([self.app.domains[
                 'test-vm']])
@@ -428,7 +428,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         mock_reset_private_img.assert_called_once_with(self.app.domains[
             'test-vm'])
         mock_import_appmenus.assert_called_once_with(self.app.domains[
-            'test-vm'], self.source_dir.name)
+            'test-vm'], self.source_dir.name, skip_generate=True)
         if qubesadmin.tools.qvm_template_postprocess.have_events:
             mock_domain_shutdown.assert_called_once_with([self.app.domains[
                 'test-vm']])
@@ -469,7 +469,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         mock_reset_private_img.assert_called_once_with(self.app.domains[
             'test-vm'])
         mock_import_appmenus.assert_called_once_with(self.app.domains[
-            'test-vm'], self.source_dir.name)
+            'test-vm'], self.source_dir.name, skip_generate=False)
         if qubesadmin.tools.qvm_template_postprocess.have_events:
             self.assertFalse(mock_domain_shutdown.called)
         self.assertEqual(self.app.service_calls, [])
