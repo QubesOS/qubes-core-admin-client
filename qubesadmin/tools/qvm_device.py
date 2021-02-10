@@ -192,6 +192,14 @@ class DeviceAction(qubesadmin.tools.QubesAction):
 
             try:
                 dev = vm.devices[devclass][device_id]
+                alias = None
+                if isinstance(dev, qubesadmin.devices.UnknownDevice):
+                    for devinfo in vm.devices[devclass]:
+                        if device_id == devinfo.description:
+                            device_id = devinfo.ident
+                            alias = devinfo.description
+                            dev = vm.devices[devclass][device_id]
+                            break;
                 if not self.allow_unknown and \
                         isinstance(dev, qubesadmin.devices.UnknownDevice):
                     raise KeyError(device_id)
@@ -200,7 +208,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                     "backend vm {!r} doesn't expose device {!r}".format(
                         vmname, device_id))
             device_assignment = qubesadmin.devices.DeviceAssignment(
-                vm, device_id)
+                vm, device_id, alias=alias)
             setattr(namespace, self.dest, device_assignment)
         except ValueError:
             parser.error(

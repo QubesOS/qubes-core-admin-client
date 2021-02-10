@@ -36,13 +36,14 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
     """ Maps a device to a frontend_domain. """
 
     def __init__(self, backend_domain, ident, options=None, persistent=False,
-                 frontend_domain=None, devclass=None):
+                 frontend_domain=None, devclass=None, alias=None):
         self.backend_domain = backend_domain
         self.ident = ident
         self.devclass = devclass
         self.options = options or {}
         self.persistent = persistent
         self.frontend_domain = frontend_domain
+        self.alias = alias
 
     def __repr__(self):
         return "[%s]:%s" % (self.backend_domain, self.ident)
@@ -66,6 +67,7 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
             self.persistent,
             self.frontend_domain,
             self.devclass,
+            self.alias,
         )
 
     @property
@@ -153,6 +155,9 @@ class DeviceCollection(object):
         options = device_assignment.options.copy()
         if device_assignment.persistent:
             options['persistent'] = 'True'
+            if device_assignment.alias:
+                options['alias'] = device_assignment.alias
+
         options_str = ' '.join('{}={}'.format(opt, val)
                                for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,
