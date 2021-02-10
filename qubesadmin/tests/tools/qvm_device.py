@@ -183,6 +183,32 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 stderr.getvalue())
         self.assertAllCalled()
 
+    def test_015_attach_by_description(self):
+        ''' Test attach action '''
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Attach',
+            'test-vm1+dev1', b'')] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['test', 'attach', 'test-vm2', 'test-vm1:Description here'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_015_attach_persistent_by_description(self):
+        ''' Test attach action '''
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Attach',
+            'test-vm1+dev1', b'alias=Description here persistent=True')] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['test', 'attach', '-p', 'test-vm2', 'test-vm1:Description here'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_015_detach_by_description(self):
+        ''' Test detach action '''
+        self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Detach',
+            'test-vm1+dev1', None)] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['test', 'detach', 'test-vm2', 'test-vm1:Description here'], app=self.app)
+        self.assertAllCalled()
+
     def test_020_detach(self):
         ''' Test detach action '''
         self.app.expected_calls[('test-vm2', 'admin.vm.device.test.Detach',
