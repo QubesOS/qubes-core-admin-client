@@ -129,7 +129,7 @@ def attach_device(args):
     if args.ro:
         options['read-only'] = 'yes'
     device_assignment.persistent = args.persistent
-    device_assignment.options = options
+    device_assignment.options.update(options)
     vm.devices[args.devclass].attach(device_assignment)
 
 
@@ -199,7 +199,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                             device_id = devinfo.ident
                             alias = devinfo.description
                             dev = vm.devices[devclass][device_id]
-                            break;
+                            break
                 if not self.allow_unknown and \
                         isinstance(dev, qubesadmin.devices.UnknownDevice):
                     raise KeyError(device_id)
