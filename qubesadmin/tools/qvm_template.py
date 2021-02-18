@@ -146,8 +146,6 @@ def get_parser() -> argparse.ArgumentParser:
         help_str='Upgrade template packages.')
     for parser_x in [parser_install, parser_reinstall,
             parser_downgrade, parser_upgrade]:
-        parser_x.add_argument('--nogpgcheck', action='store_true',
-            help='Disable signature checks.')
         parser_x.add_argument('--allow-pv', action='store_true',
             help='Allow templates that set virt_mode to pv.')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
@@ -160,6 +158,8 @@ def get_parser() -> argparse.ArgumentParser:
             help='Specify download directory.')
         parser_x.add_argument('--retries', default=5, type=int,
             help='Specify maximum number of retries for downloads.')
+        parser_x.add_argument('--nogpgcheck', action='store_true',
+            help='Disable signature checks.')
     parser_download.add_argument('templates', nargs='*',
         metavar='TEMPLATESPEC')
     # qvm-template {list,info}
@@ -602,7 +602,8 @@ def get_keys_for_repos(repo_files: typing.List[str],
 def verify_rpm(
         path: str,
         key: str,
-        nogpgcheck: bool = False
+        nogpgcheck: bool = False,
+        template_name: typing.Optional[str] = None
         ) -> rpm.hdr:
     """Verify the digest and signature of a RPM package and return the package
     header.
@@ -614,6 +615,8 @@ def verify_rpm(
 
     :param path: Location of the RPM package
     :param nogpgcheck: Whether to allow invalid GPG signatures
+    :param template_name: expected template name - if specified, verifies if
+           the package name matches expected template name
 
     :return: RPM package header. If verification fails, raises an exception.
     """
@@ -635,6 +638,10 @@ def verify_rpm(
         tset = rpm.TransactionSet()
         tset.setVSFlags(rpm.RPMVSF_MASK_NOSIGNATURES)
         hdr = tset.hdrFromFdno(fd)
+    if template_name is not None:
+        if hdr[rpm.RPMTAG_NAME] != PACKAGE_NAME_PREFIX + template_name:
+            raise SignatureVerificationError(
+                'Downloaded package does not match expected template name')
     return hdr
 
 def extract_rpm(name: str, path: str, target: str) -> bool:
@@ -759,8 +766,8 @@ def download(
         app: qubesadmin.app.QubesBase,
         path_override: typing.Optional[str] = None,
         dl_list: typing.Optional[typing.Dict[str, DlEntry]] = None,
-        suffix: str = '',
-        version_selector: VersionSelector = VersionSelector.LATEST) -> None:
+        version_selector: VersionSelector = VersionSelector.LATEST) \
+        -> typing.Dict[str, rpm.hdr]:
     """Command that downloads template packages.
 
     :param args: Arguments received by the application.
@@ -770,49 +777,64 @@ def download(
     :param dl_list: Override list of templates to download. If not set or set
         to None, ``get_dl_list`` is called, which generates the list from
         ``args``.  Optional
-    :param suffix: Suffix to add to the file name of downloaded packages. This
-        is useful if you want to distinguish between verified and unverified
-        packages. Defaults to an empty string
     :param version_selector: Specify algorithm to select the candidate version
         of a package.  Defaults to ``VersionSelector.LATEST``
+    :return package headers of downloaded templates
     """
     if dl_list is None:
         dl_list = get_dl_list(args, app, version_selector=version_selector)
 
+    keys = get_keys_for_repos(args.repo_files, args.releasever)
+
+    package_hdrs = {}
+
     path = path_override if path_override is not None else args.downloaddir
-    for name, entry in dl_list.items():
-        version_str = build_version_str(entry.evr)
-        spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
-        target = os.path.join(path, '%s.rpm' % spec)
-        target_suffix = target + suffix
-        if os.path.exists(target_suffix):
-            print('\'%s\' already exists, skipping...' % target,
-                file=sys.stderr)
-        elif os.path.exists(target):
-            print('\'%s\' already exists, skipping...' % target,
-                file=sys.stderr)
-            os.rename(target, target_suffix)
-        else:
+    with tempfile.TemporaryDirectory(dir=path) as dl_dir:
+        for name, entry in dl_list.items():
+            version_str = build_version_str(entry.evr)
+            spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
+            target = os.path.join(path, '%s.rpm' % spec)
+            target_temp = os.path.join(dl_dir, '%s.rpm.UNTRUSTED' % spec)
+            repo_key = keys.get(entry.reponame)
+            if repo_key is None:
+                repo_key = args.keyring
+            if os.path.exists(target):
+                print('\'%s\' already exists, skipping...' % target,
+                    file=sys.stderr)
+                # but still verify the package
+                verify_rpm(target, repo_key, template_name=name)
+                continue
             print('Downloading \'%s\'...' % spec, file=sys.stderr)
             done = False
             for attempt in range(args.retries):
                 try:
-                    qrexec_download(args, app, spec, target_suffix,
+                    qrexec_download(args, app, spec, target_temp,
                         entry.dlsize)
+                    size = os.path.getsize(target_temp)
+                    if size != entry.dlsize:
+                        raise ConnectionError(
+                            'Downloaded file is {} bytes, expected {}'.format(
+                                size, entry.dlsize))
                     done = True
                     break
                 except ConnectionError:
-                    os.remove(target_suffix)
+                    os.remove(target_temp)
                     if attempt + 1 < args.retries:
                         print('\'%s\' download failed, retrying...' % spec,
                             file=sys.stderr)
-                except:
-                    # Also remove file if interrupted by other means
-                    os.remove(target_suffix)
-                    raise
             if not done:
                 print('Error: \'%s\' download failed.' % spec, file=sys.stderr)
                 sys.exit(1)
+
+            if args.nogpgcheck:
+                print(
+                    'Warning: --nogpgcheck is ignored for downloaded templates',
+                    file=sys.stderr)
+            package_hdr = verify_rpm(target_temp, repo_key, template_name=name)
+            # after package is verified, rename to the target location
+            os.rename(target_temp, target)
+            package_hdrs[name] = package_hdr
+    return package_hdrs
 
 def locked(func):
     """Execute given function under a lock in *LOCK_FILE*"""
@@ -854,21 +876,20 @@ def install(
 
     unverified_rpm_list = [] # rpmfile, reponame
     verified_rpm_list = []
-    def verify(rpmfile, reponame, dl_dir=None):
+    def verify(rpmfile, reponame, package_hdr=None):
         """Verify package signature and version, remove "unverified"
-        suffix, and parse package header."""
-        if dl_dir:
-            path = os.path.join(
-                dl_dir, os.path.basename(rpmfile) + UNVERIFIED_SUFFIX)
-        else:
-            path = rpmfile
+        suffix, and parse package header.
 
-        repo_key = keys.get(reponame)
-        if repo_key is None:
-            repo_key = args.keyring
-        package_hdr = verify_rpm(path, repo_key, args.nogpgcheck)
-        if not package_hdr:
-            parser.error('Package \'%s\' verification failed.' % rpmfile)
+        If package_hdr is provided, the signature check is skipped and only
+        other checks are performed."""
+        if package_hdr is None:
+            repo_key = keys.get(reponame)
+            if repo_key is None:
+                repo_key = args.keyring
+            package_hdr = verify_rpm(rpmfile, repo_key,
+                                     nogpgcheck=args.nogpgcheck)
+            if not package_hdr:
+                parser.error('Package \'%s\' verification failed.' % rpmfile)
 
         package_name = package_hdr[rpm.RPMTAG_NAME]
         if not package_name.startswith(PACKAGE_NAME_PREFIX):
@@ -876,9 +897,6 @@ def install(
                 'Illegal package name for package \'%s\'.' % rpmfile)
         # Remove prefix to get the real template name
         name = package_name[len(PACKAGE_NAME_PREFIX):]
-
-        if path != rpmfile:
-            os.rename(path, rpmfile)
 
         # Check if already installed
         if not override_existing and name in app.domains:
@@ -927,7 +945,7 @@ def install(
     # First verify local RPMs and extract header
     for rpmfile, reponame in unverified_rpm_list:
         verify(rpmfile, reponame)
-    unverified_rpm_list = []
+    unverified_rpm_list = {}
 
     os.makedirs(args.cachedir, exist_ok=True)
 
@@ -951,7 +969,7 @@ def install(
             version_str = build_version_str(entry.evr)
             target_file = \
                 '%s%s-%s.rpm' % (PACKAGE_NAME_PREFIX, name, version_str)
-            unverified_rpm_list.append(
+            unverified_rpm_list[name] = (
                 (os.path.join(args.cachedir, target_file), entry.reponame))
     dl_list = dl_list_copy
 
@@ -969,15 +987,14 @@ def install(
             'This will override changes made in the following VMs:',
             override_tpls)
 
-    with tempfile.TemporaryDirectory(dir=args.cachedir) as dl_dir:
-        download(args, app, path_override=dl_dir,
-            dl_list=dl_list, suffix=UNVERIFIED_SUFFIX,
-            version_selector=version_selector)
+    package_hdrs = download(args, app,
+        dl_list=dl_list,
+        version_selector=version_selector)
 
-        # Verify downloaded templates
-        for rpmfile, reponame in unverified_rpm_list:
-            verify(rpmfile, reponame, dl_dir=dl_dir)
-    unverified_rpm_list = []
+    # Verify downloaded templates
+    for name, (rpmfile, reponame) in unverified_rpm_list.items():
+        verify(rpmfile, reponame, package_hdrs[name])
+    del unverified_rpm_list
 
     # Unpack and install
     for rpmfile, reponame, name, package_hdr in verified_rpm_list:
