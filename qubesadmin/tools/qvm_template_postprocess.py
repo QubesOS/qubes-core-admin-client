@@ -309,48 +309,7 @@ def post_install(args):
 
     conf_path = os.path.join(args.dir, 'template.conf')
     if os.path.exists(conf_path):
-        conf = parse_template_config(conf_path)
-        # Import qvm-feature tags
-        for key in (
-                'no-monitor-layout',
-                'pci-e820-host',
-                'linux-stubdom',
-                'gui',
-                'gui-emulated'
-                'qrexec'):
-            if key in conf:
-                if conf[key] == '1':
-                    vm.features[key] = conf[key]
-                else:
-                    vm.log.warning(
-                        'ignoring boolean config flags that are not \'1\'')
-        for key in (
-                'net.fake-ip',
-                'net.fake-gateway',
-                'net.fake-netmask'):
-            if key in conf:
-                if validate_ip(conf[key]):
-                    vm.features[key] = conf[key]
-                else:
-                    vm.log.warning(
-                        'ignoring invalid value for \'%s\'', key)
-        if 'virt-mode' in conf:
-            if conf['virt-mode'] == 'pv' and args.allow_pv:
-                vm.virt_mode = 'pv'
-            elif conf['virt-mode'] == 'pv':
-                vm.log.warning(
-                    '--allow-pv not set, ignoring request to change virt-mode')
-            elif conf['virt-mode'] in ('pvh', 'hvm'):
-                vm.virt_mode = conf['virt-mode']
-            else:
-                vm.log.warning('ignoring invalid value for virt-mode')
-
-        if 'kernel' in conf:
-            if conf['kernel'] == '':
-                vm.kernel = ''
-            else:
-                vm.log.warning(
-                    'Currently only supports setting kernel to (none)')
+        import_template_config(args, conf_path, vm)
 
     if not args.skip_start:
         yield from call_postinstall_service(vm)
@@ -370,6 +329,60 @@ def post_install(args):
             subprocess.call(['fstrim', os.path.dirname(args.dir)])
 
     return 0
+
+
+def import_template_config(args, conf_path, vm):
+    """
+    Parse template.conf and apply its content to the just installed TemplateVM
+
+    :param args: arguments for qvm-template-postprocess (used for --allow-pv
+        option and possibly some other in the future)
+    :param conf_path: path to the template.conf
+    :param vm: Template to operate on
+    :return:
+    """
+    conf = parse_template_config(conf_path)
+    # Import qvm-feature tags
+    for key in (
+            'no-monitor-layout',
+            'pci-e820-host',
+            'linux-stubdom',
+            'gui',
+            'gui-emulated'
+            'qrexec'):
+        if key in conf:
+            if conf[key] == '1':
+                vm.features[key] = conf[key]
+            else:
+                vm.log.warning(
+                    'ignoring boolean config flags that are not \'1\'')
+    for key in (
+            'net.fake-ip',
+            'net.fake-gateway',
+            'net.fake-netmask'):
+        if key in conf:
+            if validate_ip(conf[key]):
+                vm.features[key] = conf[key]
+            else:
+                vm.log.warning(
+                    'ignoring invalid value for \'%s\'', key)
+    if 'virt-mode' in conf:
+        if conf['virt-mode'] == 'pv' and args.allow_pv:
+            vm.virt_mode = 'pv'
+        elif conf['virt-mode'] == 'pv':
+            vm.log.warning(
+                '--allow-pv not set, ignoring request to change virt-mode')
+        elif conf['virt-mode'] in ('pvh', 'hvm'):
+            vm.virt_mode = conf['virt-mode']
+        else:
+            vm.log.warning('ignoring invalid value for virt-mode')
+
+    if 'kernel' in conf:
+        if conf['kernel'] == '':
+            vm.kernel = ''
+        else:
+            vm.log.warning(
+                'Currently only supports setting kernel to (none)')
 
 
 def pre_remove(args):
