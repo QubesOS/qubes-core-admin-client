@@ -368,7 +368,7 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
     confirm = ''
     while confirm != 'y':
         confirm = input('Are you sure? [y/N] ').lower()
-        if confirm == 'n':
+        if confirm != 'y':
             print('command cancelled.')
             sys.exit(1)
 
