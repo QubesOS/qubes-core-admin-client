@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+import argparse
 import asyncio
 import os
 import subprocess
@@ -521,4 +522,120 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_template_postprocess.main([
                 'post-install', 'test-vm', self.source_dir.name],
                 app=self.app)
+        self.assertAllCalled()
+
+    def test_050_template_config(self):
+        template_config = """gui=1
+qrexec=1
+linux-stubdom=1
+net.fake-ip=192.168.1.100
+net.fake-netmask=255.255.255.0
+net.fake-gateway=192.168.1.1
+virt-mode=hvm
+kernel=
+"""
+        template_conf = os.path.join(self.source_dir.name, 'template.conf')
+        with open(template_conf, 'w') as f:
+            f.write(template_config)
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.feature.Set', 'gui', b'1')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.feature.Set', 'qrexec', b'1')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.feature.Set', 'linux-stubdom', b'1')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.feature.Set', 'net.fake-ip', b'192.168.1.100')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.feature.Set', 'net.fake-netmask', b'255.255.255.0')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.feature.Set', 'net.fake-gateway', b'192.168.1.1')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.property.Set', 'virt_mode', b'hvm')] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.property.Set', 'kernel', b'')] = b'0\0'
+
+        vm = self.app.domains['test-vm']
+        args = argparse.Namespace(
+            allow_pv=False,
+        )
+        qubesadmin.tools.qvm_template_postprocess.import_template_config(
+            args, template_conf, vm)
+        self.assertAllCalled()
+
+    def test_051_template_config_invalid(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0test-vm class=TemplateVM state=Halted\n'
+        vm = self.app.domains['test-vm']
+        args = argparse.Namespace(
+            allow_pv=False,
+        )
+        with self.subTest('invalid feature value'):
+            template_config = "gui=false\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
+
+        with self.subTest('invalid feature name'):
+            template_config = "invalid=1\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
+
+        with self.subTest('invalid ip'):
+            template_config = "net.fake-ip=1.2.3.4.5\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
+
+        with self.subTest('invalid virt-mode'):
+            template_config = "virt-mode=invalid\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
+
+        with self.subTest('invalid kernel'):
+            template_config = "kernel=1.2.3.4.5\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
+        self.assertAllCalled()
+
+    def test_052_template_config_virt_mode_pv(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0test-vm class=TemplateVM state=Halted\n'
+        vm = self.app.domains['test-vm']
+        args = argparse.Namespace(
+            allow_pv=False,
+        )
+        with self.subTest('not allowed'):
+            template_config = "virt-mode=pv\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
+        with self.subTest('allowed'):
+            args = argparse.Namespace(
+                allow_pv=True,
+            )
+            self.app.expected_calls[(
+                'test-vm', 'admin.vm.property.Set', 'virt_mode', b'pv')] = b'0\0'
+            template_config = "virt-mode=pv\n"
+            template_conf = os.path.join(self.source_dir.name, 'template.conf')
+            with open(template_conf, 'w') as f:
+                f.write(template_config)
+            qubesadmin.tools.qvm_template_postprocess.import_template_config(
+                args, template_conf, vm)
         self.assertAllCalled()
