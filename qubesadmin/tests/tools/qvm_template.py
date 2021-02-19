@@ -46,11 +46,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         hdr = {
             rpm.RPMTAG_SIGPGP: 'xxx', # non-empty
             rpm.RPMTAG_SIGGPG: 'xxx', # non-empty
+            rpm.RPMTAG_NAME: 'qubes-template-test-vm',
         }
         mock_ts.return_value.hdrFromFdno.return_value = hdr
         mock_proc.return_value = b'dummy.rpm: digests signatures OK\n'
         ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
-            ['/path/to/key'])
+            '/path/to/key', template_name='test-vm')
         mock_call.assert_called_once()
         mock_proc.assert_called_once()
         self.assertEqual(hdr, ret)
@@ -69,7 +70,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_proc.return_value = b'dummy.rpm: digests OK\n'
         with self.assertRaises(Exception) as e:
             qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
-                ['/path/to/key'])
+                '/path/to/key')
         mock_call.assert_called_once()
         mock_proc.assert_called_once()
         self.assertIn('Signature verification failed', e.exception.args[0])
@@ -88,7 +89,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_ts.return_value.hdrFromFdno.return_value = hdr
         mock_proc.return_value = b'dummy.rpm: digests OK\n'
         ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
-            ['/path/to/key'], True)
+            '/path/to/key', True)
         mock_proc.assert_not_called()
         mock_call.assert_not_called()
         self.assertEqual(ret, hdr)
@@ -102,7 +103,28 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             ['rpmkeys', '--checksig'], b'/dev/null: digests SIGNATURES NOT OK\n')
         with self.assertRaises(Exception) as e:
             qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
-                ['/path/to/key'])
+                '/path/to/key')
+        mock_call.assert_called_once()
+        mock_proc.assert_called_once()
+        self.assertIn('Signature verification failed', e.exception.args[0])
+        mock_ts.assert_not_called()
+        self.assertAllCalled()
+
+    @mock.patch('rpm.TransactionSet')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('subprocess.check_output')
+    def test_004_verify_rpm_badname(self, mock_proc, mock_call, mock_ts):
+        mock_proc.side_effect = subprocess.CalledProcessError(1,
+            ['rpmkeys', '--checksig'], b'/dev/null: digests signatures OK\n')
+        hdr = {
+            rpm.RPMTAG_SIGPGP: 'xxx', # non-empty
+            rpm.RPMTAG_SIGGPG: 'xxx', # non-empty
+            rpm.RPMTAG_NAME: 'qubes-template-unexpected',
+        }
+        mock_ts.return_value.hdrFromFdno.return_value = hdr
+        with self.assertRaises(Exception) as e:
+            qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
+                '/path/to/key', template_name='test-vm')
         mock_call.assert_called_once()
         mock_proc.assert_called_once()
         self.assertIn('Signature verification failed', e.exception.args[0])
@@ -3677,7 +3699,7 @@ test-vm : Qubes template for fedora-31
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
-    def test_189_download_verify_fail(self, mock_qrexec, mock_dllist,
+    def test_190_download_fail_verify(self, mock_qrexec, mock_dllist,
                                          mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
         mock_verify_rpm.side_effect = \
@@ -3689,7 +3711,7 @@ test-vm : Qubes template for fedora-31
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
-                nogpgcheck=False,
+                nogpgcheck=True,  # make sure it gets ignored
                 downloaddir=dir
             )
             with self.assertRaises(qubesadmin.tools.qvm_template.SignatureVerificationError):
@@ -3705,7 +3727,168 @@ test-vm : Qubes template for fedora-31
             ])
             self.assertEqual(mock_dllist.mock_calls, [])
             self.assertEqual(os.listdir(dir), [])
+            self.assertEqual(mock_verify_rpm.mock_calls, [
+                mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                          '/tmp/keyring.gpg', template_name='fedora-31'),
+            ])
 
-    # TODO: test unexpected name downloaded
-    # TODO: test truncated download
-    # TODO: test no disk space
+    def _mock_qrexec_download_short(self, args, app, spec, path,
+                              dlsize=None, refresh=False):
+        self.assertFalse(os.path.exists(path),
+            '{} should not exist before'.format(path))
+        # just create an empty file
+        with open(path, 'wb') as f:
+            if f is not None:
+                f.truncate(dlsize // 2)
+
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
+    def test_191_download_fail_short(self, mock_qrexec, mock_dllist,
+                                  mock_verify_rpm):
+        mock_qrexec.side_effect = self._mock_qrexec_download_short
+        with tempfile.TemporaryDirectory() as dir, \
+            self.assertRaises(SystemExit):
+            args = argparse.Namespace(
+                repo_files=[],
+                keyring='/tmp/keyring.gpg',
+                releasever='4.1',
+                nogpgcheck=False,
+                retries=1
+            )
+            qubesadmin.tools.qvm_template.download(args, self.app, dir, {
+                    'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
+                        ('1', '2', '3'), 'qubes-templates-itl', 1048576),
+                })
+        self.assertEqual(mock_qrexec.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
+                re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                1048576),
+        ])
+        self.assertEqual(mock_dllist.mock_calls, [])
+        self.assertEqual(mock_verify_rpm.mock_calls, [])
+
+
+    @mock.patch('os.rename')
+    @mock.patch('os.makedirs')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_200_reinstall_success(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_confirm,
+            mock_call,
+            mock_mkdirs,
+            mock_rename):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=TemplateVM state=Halted\n'
+        build_time = '2020-09-01 14:30:00' # 1598970600
+        install_time = '2020-09-01 15:30:00'
+        for key, val in [
+                ('name', 'test-vm'),
+                ('epoch', '2'),
+                ('version', '4.1'),
+                ('release', '2020')]:
+            self.app.expected_calls[(
+                'test-vm',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        for key, val in [
+                ('name', 'test-vm'),
+                ('epoch', '2'),
+                ('version', '4.1'),
+                ('release', '2020'),
+                ('reponame', 'qubes-templates-itl'),
+                ('buildtime', build_time),
+                ('installtime', install_time),
+                ('license', 'GPL'),
+                ('url', 'https://qubes-os.org'),
+                ('summary', 'Summary'),
+                ('description', 'Desc|desc')]:
+            self.app.expected_calls[(
+                'test-vm',
+                'admin.vm.feature.Set',
+                f'template-{key}',
+                val.encode())] = b'0\0'
+        rpm_hdr = {
+            rpm.RPMTAG_NAME        : 'qubes-template-test-vm',
+            rpm.RPMTAG_BUILDTIME   : 1598970600,
+            rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+            rpm.RPMTAG_EPOCHNUM    : 2,
+            rpm.RPMTAG_LICENSE     : 'GPL',
+            rpm.RPMTAG_RELEASE     : '2020',
+            rpm.RPMTAG_SUMMARY     : 'Summary',
+            rpm.RPMTAG_URL         : 'https://qubes-os.org',
+            rpm.RPMTAG_VERSION     : '4.1'
+        }
+        mock_dl.return_value = {'test-vm': rpm_hdr}
+        dl_list = {
+            'test-vm': qubesadmin.tools.qvm_template.DlEntry(
+                ('1', '4.1', '20200101'), 'qubes-templates-itl', 1048576)
+        }
+        mock_dl_list.return_value = dl_list
+        mock_call.side_effect = self.add_new_vm_side_effect
+        mock_time = mock.Mock(wraps=datetime.datetime)
+        mock_time.now.return_value = \
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+        selector = qubesadmin.tools.qvm_template.VersionSelector.REINSTALL
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+                mock.patch('datetime.datetime', new=mock_time), \
+                mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir:
+            args = argparse.Namespace(
+                templates=['test-vm'],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
+                yes=False,
+                keep_cache=True,
+                allow_pv=False,
+                pool=None
+            )
+            mock_tmpdir.return_value.__enter__.return_value = \
+                '/var/tmp/qvm-template-tmpdir'
+            qubesadmin.tools.qvm_template.install(args, self.app,
+                version_selector=selector,
+                override_existing=True)
+        # Attempt to get download list
+        self.assertEqual(mock_dl_list.mock_calls, [
+            mock.call(args, self.app, version_selector=selector)
+        ])
+        mock_dl.assert_called_with(args, self.app,
+            dl_list=dl_list, version_selector=selector)
+        # already verified by download()
+        self.assertEqual(mock_verify.mock_calls, [])
+        # Package is extracted
+        mock_extract.assert_called_with('test-vm',
+            '/var/cache/qvm-template/qubes-template-test-vm-1:4.1-20200101.rpm',
+            '/var/tmp/qvm-template-tmpdir')
+        # Expect override confirmation
+        self.assertEqual(mock_confirm.mock_calls,
+            [mock.call(re_str(r'.*override changes.*:'), ['test-vm'])])
+        # qvm-template-postprocess is called
+        self.assertEqual(mock_call.mock_calls, [
+            mock.call([
+                'qvm-template-postprocess',
+                '--really',
+                '--no-installed-by-rpm',
+                'post-install',
+                'test-vm',
+                '/var/tmp/qvm-template-tmpdir'
+                    '/var/lib/qubes/vm-templates/test-vm'
+            ])
+        ])
+        # Cache directory created
+        self.assertEqual(mock_mkdirs.mock_calls, [
+            mock.call(args.cachedir, exist_ok=True)
+        ])
+        self.assertAllCalled()
