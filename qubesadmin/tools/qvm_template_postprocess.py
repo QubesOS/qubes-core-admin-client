@@ -348,7 +348,7 @@ def import_template_config(args, conf_path, vm):
             'pci-e820-host',
             'linux-stubdom',
             'gui',
-            'gui-emulated'
+            'gui-emulated',
             'qrexec'):
         if key in conf:
             if conf[key] == '1':
