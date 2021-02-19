@@ -254,6 +254,8 @@ class VersionSelector(enum.Enum):
     LATEST_HIGHER = enum.auto()
     """Upgrade to the highest version that is higher than the current one."""
 
+
+# pylint: disable=too-few-public-methods,inherit-non-class
 class Template(typing.NamedTuple):
     """Details of a template."""
     name: str
@@ -273,11 +275,14 @@ class Template(typing.NamedTuple):
         """Return a tuple of (EPOCH, VERSION, RELEASE)"""
         return self.epoch, self.version, self.release
 
+
 class DlEntry(typing.NamedTuple):
     """Information about a template to be downloaded."""
     evr: typing.Tuple[str, str, str]
     reponame: str
     dlsize: int
+# pylint: enable=too-few-public-methods,inherit-non-class
+
 
 def build_version_str(evr: typing.Tuple[str, str, str]) -> str:
     """Return version string described by ``evr``, which is in (epoch, version,
