@@ -23,6 +23,7 @@
 import asyncio
 import glob
 import os
+import pathlib
 
 import shutil
 import subprocess
@@ -166,16 +167,26 @@ def import_appmenus(vm, source_dir, skip_generate=True):
     # store the whitelists in VM features
     # separated by spaces should be ok as there should be no spaces in the file
     # name according to the FreeDesktop spec
-    with open(os.path.join(source_dir, 'vm-whitelisted-appmenus.list'), 'r') \
-            as fd:
-        vm.features['default-menu-items'] = ' '.join([x.rstrip() for x in fd])
-    with open(os.path.join(source_dir, 'whitelisted-appmenus.list'), 'r') \
-            as fd:
-        vm.features['menu-items'] = ' '.join([x.rstrip() for x in fd])
-    with open(
-            os.path.join(source_dir, 'netvm-whitelisted-appmenus.list'), 'r') \
-            as fd:
-        vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
+    source_dir = pathlib.Path(source_dir)
+    try:
+        with open(source_dir / 'vm-whitelisted-appmenus.list', 'r') as fd:
+            vm.features['default-menu-items'] = \
+                ' '.join([x.rstrip() for x in fd])
+    except FileNotFoundError as e:
+        vm.log.warning('Cannot set default-menu-items, %s not found',
+                       e.filename)
+    try:
+        with open(source_dir / 'whitelisted-appmenus.list', 'r') as fd:
+            vm.features['menu-items'] = ' '.join([x.rstrip() for x in fd])
+    except FileNotFoundError as e:
+        vm.log.warning('Cannot set menu-items, %s not found',
+                       e.filename)
+    try:
+        with open(source_dir / 'netvm-whitelisted-appmenus.list', 'r') as fd:
+            vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
+    except FileNotFoundError as e:
+        vm.log.warning('Cannot set netvm-menu-items, %s not found',
+                       e.filename)
 
     if skip_generate:
         return
@@ -184,11 +195,11 @@ def import_appmenus(vm, source_dir, skip_generate=True):
     # implemented
     try:
         subprocess.check_call(cmd_prefix + ['qvm-appmenus',
-            '--set-default-whitelist={}'.format(os.path.join(source_dir,
-                'vm-whitelisted-appmenus.list')), vm.name])
+            '--set-default-whitelist={!s}'.format(
+                source_dir / 'vm-whitelisted-appmenus.list'), vm.name])
         subprocess.check_call(cmd_prefix + ['qvm-appmenus',
-            '--set-whitelist={}'.format(os.path.join(source_dir,
-                'whitelisted-appmenus.list')), vm.name])
+            '--set-whitelist={!s}'.format(
+                source_dir / 'whitelisted-appmenus.list'), vm.name])
     except subprocess.CalledProcessError as e:
         vm.log.warning('Failed to set default application list: %s', e)
 
