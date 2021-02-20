@@ -988,9 +988,12 @@ def install(
         for name in dl_list:
             override_tpls.append(name)
 
-        confirm_action(
-            'This will override changes made in the following VMs:',
-            override_tpls)
+        # Only confirm if we have something to do
+        # since confiming w/ an empty list is probably silly
+        if override_tpls:
+            confirm_action(
+                'This will override changes made in the following VMs:',
+                override_tpls)
 
     package_hdrs = download(args, app,
         dl_list=dl_list,
