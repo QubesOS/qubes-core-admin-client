@@ -114,21 +114,22 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('subprocess.check_call')
     @mock.patch('subprocess.check_output')
     def test_004_verify_rpm_badname(self, mock_proc, mock_call, mock_ts):
-        mock_proc.side_effect = subprocess.CalledProcessError(1,
-            ['rpmkeys', '--checksig'], b'/dev/null: digests signatures OK\n')
+        mock_proc.return_value = b'/dev/null: digests signatures OK\n'
         hdr = {
             rpm.RPMTAG_SIGPGP: 'xxx', # non-empty
             rpm.RPMTAG_SIGGPG: 'xxx', # non-empty
             rpm.RPMTAG_NAME: 'qubes-template-unexpected',
         }
         mock_ts.return_value.hdrFromFdno.return_value = hdr
-        with self.assertRaises(Exception) as e:
+        with self.assertRaises(
+                qubesadmin.tools.qvm_template.SignatureVerificationError) as e:
             qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
                 '/path/to/key', template_name='test-vm')
         mock_call.assert_called_once()
         mock_proc.assert_called_once()
-        self.assertIn('Signature verification failed', e.exception.args[0])
-        mock_ts.assert_not_called()
+        self.assertIn('package does not match expected template name',
+            e.exception.args[0])
+        mock_ts.assert_called_once()
         self.assertAllCalled()
 
     @mock.patch('subprocess.Popen')
