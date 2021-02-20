@@ -882,8 +882,7 @@ def install(
     unverified_rpm_list = [] # rpmfile, reponame
     verified_rpm_list = []
     def verify(rpmfile, reponame, package_hdr=None):
-        """Verify package signature and version, remove "unverified"
-        suffix, and parse package header.
+        """Verify package signature and version and parse package header.
 
         If package_hdr is provided, the signature check is skipped and only
         other checks are performed."""
