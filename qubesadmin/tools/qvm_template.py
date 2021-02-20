@@ -1360,13 +1360,16 @@ def remove(
 
     if not args.yes:
         repeat = 3 if purge else 1
+        # XXX: Mutating the list later seems to break the tests...
+        remove_list_copy = remove_list.copy()
         for _ in range(repeat):
             confirm_action(
                 'This will completely remove the selected VM(s)...',
-                remove_list)
+                remove_list_copy)
 
     if disassoc:
         # Remove the dummy afterwards if we're purging
+        # as nothing should depend on it in the end
         remove_dummy = purge
         # Create dummy template; handle name collisions
         orig_dummy = dummy

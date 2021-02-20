@@ -3892,3 +3892,205 @@ test-vm : Qubes template for fedora-31
             mock.call(args.cachedir, exist_ok=True)
         ])
         self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_remove.main')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    def test_210_remove_success(self, mock_confirm, mock_remove):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00vm1 class=TemplateVM state=Halted\n'
+            b'vm2 class=TemplateVM state=Halted\n'
+        )
+        args = argparse.Namespace(
+            templates=['vm1', 'vm2'],
+            yes=False
+        )
+        qubesadmin.tools.qvm_template.remove(args, self.app)
+        self.assertEqual(mock_confirm.mock_calls,
+            [mock.call(re_str(r'.*completely remove.*'), ['vm1', 'vm2'])])
+        self.assertEqual(mock_remove.mock_calls, [
+            mock.call(['--force', '--', 'vm1', 'vm2'], self.app)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_kill.main')
+    @mock.patch('qubesadmin.tools.qvm_remove.main')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    def test_211_remove_purge_disassoc_success(
+            self,
+            mock_confirm,
+            mock_remove,
+            mock_kill):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00vm1 class=TemplateVM state=Halted\n'
+            b'vm2 class=TemplateVM state=Halted\n'
+            b'vm3 class=TemplateVM state=Halted\n'
+            b'vm4 class=TemplateVM state=Halted\n'
+            b'dummy class=TemplateVM state=Halted\n'
+            b'dummy-1 class=TemplateVM state=Halted\n'
+        )
+        self.app.expected_calls[
+                ('dummy', 'admin.vm.feature.Get', 'template-dummy', None)] = \
+            b'0\x000'
+        self.app.expected_calls[
+                ('dummy-1', 'admin.vm.feature.Get',
+                    'template-dummy', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+                ('vm2', 'admin.vm.property.Set',
+                    'default_template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm2', 'admin.vm.property.Set', 'template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm3', 'admin.vm.property.Set', 'netvm', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm3', 'admin.vm.property.Set', 'template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm4', 'admin.vm.property.Set', 'netvm', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm4', 'admin.vm.property.Set', 'template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('dom0', 'admin.property.Set', 'updatevm', b'')] = \
+            b'0\x00'
+        args = argparse.Namespace(
+            templates=['vm1'],
+            yes=False
+        )
+        def deps(app, vm):
+            if vm == 'vm1':
+                return [(self.app.domains['vm2'], 'default_template'),
+                        (self.app.domains['vm3'], 'netvm')]
+            if vm == 'vm2' or vm == 'vm3':
+                return [(self.app.domains['vm4'], 'netvm')]
+            if vm == 'vm4':
+                return [(None, 'updatevm')]
+            return []
+        with mock.patch('qubesadmin.utils.vm_dependencies') as mock_deps:
+            mock_deps.side_effect = deps
+            qubesadmin.tools.qvm_template.remove(args, self.app, purge=True)
+            # Once for purge (dependency detection) and
+            # one for disassoc (actually disassociating the dependencies
+            self.assertEqual(mock_deps.mock_calls, [
+                mock.call(self.app, self.app.domains['vm1']),
+                mock.call(self.app, self.app.domains['vm2']),
+                mock.call(self.app, self.app.domains['vm3']),
+                mock.call(self.app, self.app.domains['vm4']),
+                mock.call(self.app, self.app.domains['vm1']),
+                mock.call(self.app, self.app.domains['vm2']),
+                mock.call(self.app, self.app.domains['vm3']),
+                mock.call(self.app, self.app.domains['vm4'])
+            ])
+        self.assertEqual(mock_confirm.mock_calls, [
+            mock.call(re_str(r'.*completely remove.*'),
+                ['vm1', 'vm2', 'vm3', 'vm4']),
+            mock.call(re_str(r'.*completely remove.*'),
+                ['vm1', 'vm2', 'vm3', 'vm4']),
+            mock.call(re_str(r'.*completely remove.*'),
+                ['vm1', 'vm2', 'vm3', 'vm4'])
+        ])
+        self.assertEqual(mock_remove.mock_calls, [
+            mock.call(['--force', '--', 'vm1', 'vm2', 'vm3', 'vm4', 'dummy-1'],
+                self.app)
+        ])
+        self.assertEqual(mock_kill.mock_calls, [
+            mock.call(['--', 'vm1', 'vm2', 'vm3', 'vm4', 'dummy-1'], self.app)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_kill.main')
+    @mock.patch('qubesadmin.tools.qvm_remove.main')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    def test_212_remove_disassoc_success(
+            self,
+            mock_confirm,
+            mock_remove,
+            mock_kill):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00vm1 class=TemplateVM state=Halted\n'
+            b'vm2 class=TemplateVM state=Halted\n'
+            b'vm3 class=TemplateVM state=Halted\n'
+            b'vm4 class=TemplateVM state=Halted\n'
+            b'dummy class=TemplateVM state=Halted\n'
+            b'dummy-1 class=TemplateVM state=Halted\n'
+        )
+        self.app.expected_calls[
+                ('dummy', 'admin.vm.feature.Get', 'template-dummy', None)] = \
+            b'0\x000'
+        self.app.expected_calls[
+                ('dummy-1', 'admin.vm.feature.Get',
+                    'template-dummy', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+                ('vm2', 'admin.vm.property.Set',
+                    'default_template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm2', 'admin.vm.property.Set', 'template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm3', 'admin.vm.property.Set', 'netvm', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm3', 'admin.vm.property.Set', 'template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm4', 'admin.vm.property.Set', 'netvm', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('vm4', 'admin.vm.property.Set', 'template', b'dummy-1')] = \
+            b'0\x00'
+        self.app.expected_calls[
+                ('dom0', 'admin.property.Set', 'updatevm', b'')] = \
+            b'0\x00'
+        args = argparse.Namespace(
+            templates=['vm1', 'vm2', 'vm3', 'vm4'],
+            yes=False
+        )
+        def deps(app, vm):
+            if vm == 'vm1':
+                return [(self.app.domains['vm2'], 'default_template'),
+                        (self.app.domains['vm3'], 'netvm')]
+            if vm == 'vm2' or vm == 'vm3':
+                return [(self.app.domains['vm4'], 'netvm')]
+            if vm == 'vm4':
+                return [(None, 'updatevm')]
+            return []
+        with mock.patch('qubesadmin.utils.vm_dependencies') as mock_deps:
+            mock_deps.side_effect = deps
+            qubesadmin.tools.qvm_template.remove(args, self.app, disassoc=True)
+            self.assertEqual(mock_deps.mock_calls, [
+                mock.call(self.app, self.app.domains['vm1']),
+                mock.call(self.app, self.app.domains['vm2']),
+                mock.call(self.app, self.app.domains['vm3']),
+                mock.call(self.app, self.app.domains['vm4'])
+            ])
+        self.assertEqual(mock_confirm.mock_calls, [
+            mock.call(re_str(r'.*completely remove.*'),
+                ['vm1', 'vm2', 'vm3', 'vm4'])
+        ])
+        self.assertEqual(mock_remove.mock_calls, [
+            mock.call(['--force', '--', 'vm1', 'vm2', 'vm3', 'vm4'],
+                self.app)
+        ])
+        self.assertEqual(mock_kill.mock_calls, [
+            mock.call(['--', 'vm1', 'vm2', 'vm3', 'vm4'], self.app)
+        ])
+        self.assertAllCalled()
+
+    def test_213_remove_fail_nodomain(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00vm1 class=TemplateVM state=Halted\n'
+        args = argparse.Namespace(
+            templates=['vm0'],
+            yes=False
+        )
+        with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_template.remove(args, self.app)
+            self.assertTrue('no such domain:' in mock_err.getvalue())
+        self.assertAllCalled()
