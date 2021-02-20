@@ -1376,7 +1376,7 @@ def remove(
         cnt = 1
         while dummy in app.domains \
                 and app.domains[dummy].features.get(
-                    'template-dummy', '0') == '0':
+                    'template-dummy', '0') != '1':
             dummy = '%s-%d' % (orig_dummy, cnt)
             cnt += 1
         if dummy not in app.domains:
