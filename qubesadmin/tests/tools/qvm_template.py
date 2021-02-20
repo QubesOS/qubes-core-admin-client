@@ -3997,7 +3997,7 @@ test-vm : Qubes template for fedora-31
         mock_dl.return_value = {'test-vm': rpm_hdr}
         dl_list = {
             'test-vm': qubesadmin.tools.qvm_template.DlEntry(
-                ('1', '4.1', '20200101'), 'qubes-templates-itl', 1048576)
+                ('2', '4.1', '2020'), 'qubes-templates-itl', 1048576)
         }
         mock_dl_list.return_value = dl_list
         mock_call.side_effect = self.add_new_vm_side_effect
@@ -4035,7 +4035,7 @@ test-vm : Qubes template for fedora-31
         self.assertEqual(mock_verify.mock_calls, [])
         # Package is extracted
         mock_extract.assert_called_with('test-vm',
-            '/var/cache/qvm-template/qubes-template-test-vm-1:4.1-20200101.rpm',
+            '/var/cache/qvm-template/qubes-template-test-vm-2:4.1-2020.rpm',
             '/var/tmp/qvm-template-tmpdir')
         # Expect override confirmation
         self.assertEqual(mock_confirm.mock_calls,
