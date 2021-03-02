@@ -291,6 +291,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_tmpdir.return_value.__enter__.return_value = \
                 '/var/tmp/qvm-template-tmpdir'
             qubesadmin.tools.qvm_template.install(args, self.app)
+            # Downloaded package should not be removed
+            self.assertTrue(os.path.exists(path))
         # Attempt to get download list
         selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
         self.assertEqual(mock_dl_list.mock_calls, [
@@ -675,6 +677,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_rename.mock_calls, [])
         self.assertAllCalled()
 
+    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -692,7 +695,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename):
+            mock_rename,
+            mock_remove):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
         build_time = '2020-09-01 14:30:00' # 1598970600
         install_time = '2020-09-01 15:30:00'
@@ -745,7 +749,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 repo_files=[],
                 releasever='4.1',
                 yes=False,
-                keep_cache=True,
+                keep_cache=False,
                 allow_pv=False,
                 pool=None
             )
@@ -785,6 +789,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # No templates downloaded, thus no renames needed
         self.assertEqual(mock_rename.mock_calls, [])
+        # Downloaded template is removed
+        self.assertEqual(mock_remove.mock_calls, [
+            mock.call('/var/cache/qvm-template/' \
+                'qubes-template-test-vm-1:4.1-20200101.rpm'),
+            mock.call('/tmp/test.lock')
+        ])
         self.assertAllCalled()
 
     @mock.patch('os.rename')
@@ -3934,6 +3944,7 @@ test-vm : Qubes template for fedora-31
         self.assertEqual(mock_verify_rpm.mock_calls, [])
 
 
+    @mock.patch('os.remove')
     @mock.patch('os.rename')
     @mock.patch('os.makedirs')
     @mock.patch('subprocess.check_call')
@@ -3951,7 +3962,8 @@ test-vm : Qubes template for fedora-31
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename):
+            mock_rename,
+            mock_remove):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=TemplateVM state=Halted\n'
         build_time = '2020-09-01 14:30:00' # 1598970600
@@ -4056,6 +4068,10 @@ test-vm : Qubes template for fedora-31
         self.assertEqual(mock_mkdirs.mock_calls, [
             mock.call(args.cachedir, exist_ok=True)
         ])
+        # Downloaded package should not be removed
+        self.assertEqual(mock_remove.mock_calls, [
+            mock.call('/tmp/test.lock')
+        ])
         self.assertAllCalled()
 
     @mock.patch('os.rename')
@@ -4141,6 +4157,131 @@ test-vm : Qubes template for fedora-31
         # Nothing extracted / installed
         mock_extract.assert_not_called()
         mock_call.assert_not_called()
+        # Cache directory created
+        self.assertEqual(mock_mkdirs.mock_calls, [
+            mock.call(args.cachedir, exist_ok=True)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('os.rename')
+    @mock.patch('os.makedirs')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_202_reinstall_local_success(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_confirm,
+            mock_call,
+            mock_mkdirs,
+            mock_rename):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=TemplateVM state=Halted\n'
+        build_time = '2020-09-01 14:30:00' # 1598970600
+        install_time = '2020-09-01 15:30:00'
+        for key, val in [
+                ('name', 'test-vm'),
+                ('epoch', '2'),
+                ('version', '4.1'),
+                ('release', '2020')]:
+            self.app.expected_calls[(
+                'test-vm',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        for key, val in [
+                ('name', 'test-vm'),
+                ('epoch', '2'),
+                ('version', '4.1'),
+                ('release', '2020'),
+                ('reponame', '@commandline'),
+                ('buildtime', build_time),
+                ('installtime', install_time),
+                ('license', 'GPL'),
+                ('url', 'https://qubes-os.org'),
+                ('summary', 'Summary'),
+                ('description', 'Desc|desc')]:
+            self.app.expected_calls[(
+                'test-vm',
+                'admin.vm.feature.Set',
+                f'template-{key}',
+                val.encode())] = b'0\0'
+        rpm_hdr = {
+            rpm.RPMTAG_NAME        : 'qubes-template-test-vm',
+            rpm.RPMTAG_BUILDTIME   : 1598970600,
+            rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+            rpm.RPMTAG_EPOCHNUM    : 2,
+            rpm.RPMTAG_LICENSE     : 'GPL',
+            rpm.RPMTAG_RELEASE     : '2020',
+            rpm.RPMTAG_SUMMARY     : 'Summary',
+            rpm.RPMTAG_URL         : 'https://qubes-os.org',
+            rpm.RPMTAG_VERSION     : '4.1'
+        }
+        mock_verify.return_value = rpm_hdr
+        dl_list = {}
+        mock_dl_list.return_value = dl_list
+        mock_call.side_effect = self.add_new_vm_side_effect
+        mock_time = mock.Mock(wraps=datetime.datetime)
+        mock_time.now.return_value = \
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+        selector = qubesadmin.tools.qvm_template.VersionSelector.REINSTALL
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+                mock.patch('datetime.datetime', new=mock_time), \
+                mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
+                tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
+            path = template_file.name
+            args = argparse.Namespace(
+                templates=[path],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
+                yes=False,
+                allow_pv=False,
+                pool=None
+            )
+            mock_tmpdir.return_value.__enter__.return_value = \
+                '/var/tmp/qvm-template-tmpdir'
+            qubesadmin.tools.qvm_template.install(args, self.app,
+                version_selector=selector,
+                override_existing=True)
+            # Package is extracted
+            mock_extract.assert_called_with(
+                'test-vm',
+                path,
+                '/var/tmp/qvm-template-tmpdir')
+            # Package verified
+            self.assertEqual(mock_verify.mock_calls, [
+                mock.call(path, '/tmp/keyring.gpg', nogpgcheck=False)
+            ])
+        # Attempt to get download list
+        self.assertEqual(mock_dl_list.mock_calls, [
+            mock.call(args, self.app, version_selector=selector)
+        ])
+        mock_dl.assert_called_with(args, self.app,
+            dl_list=dl_list, version_selector=selector)
+        # Expect override confirmation
+        self.assertEqual(mock_confirm.mock_calls,
+            [mock.call(re_str(r'.*override changes.*:'), ['test-vm'])])
+        # qvm-template-postprocess is called
+        self.assertEqual(mock_call.mock_calls, [
+            mock.call([
+                'qvm-template-postprocess',
+                '--really',
+                '--no-installed-by-rpm',
+                'post-install',
+                'test-vm',
+                '/var/tmp/qvm-template-tmpdir'
+                    '/var/lib/qubes/vm-templates/test-vm'
+            ])
+        ])
         # Cache directory created
         self.assertEqual(mock_mkdirs.mock_calls, [
             mock.call(args.cachedir, exist_ok=True)
@@ -4619,4 +4760,519 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
         self.assertEqual(mock_mkdirs.mock_calls, [
             mock.call(args.cachedir, exist_ok=True)
         ])
+        self.assertAllCalled()
+
+    def test_230_filter_version_latest(self):
+        query_res = [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl-testing',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ]
+        results = qubesadmin.tools.qvm_template.filter_version(
+            query_res,
+            self.app
+        )
+        self.assertEqual(sorted(results), [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ])
+        self.assertAllCalled()
+
+    def test_231_filter_version_reinstall(self):
+        query_res = [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl-testing',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ]
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00fedora-31 class=TemplateVM state=Halted\n' \
+            b'fedora-32 class=TemplateVM state=Halted\n'
+        for key, val in [
+                ('name', 'fedora-31'),
+                ('epoch', '0'),
+                ('version', '4.1'),
+                ('release', '20200101')]:
+            self.app.expected_calls[(
+                'fedora-31',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        for key, val in [
+                ('name', 'fedora-32'),
+                ('epoch', '0'),
+                ('version', '4.1'),
+                ('release', '20200101')]:
+            self.app.expected_calls[(
+                'fedora-32',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        results = qubesadmin.tools.qvm_template.filter_version(
+            query_res,
+            self.app,
+            qubesadmin.tools.qvm_template.VersionSelector.REINSTALL
+        )
+        self.assertEqual(sorted(results), [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ])
+        self.assertAllCalled()
+
+    def test_232_filter_version_upgrade(self):
+        query_res = [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl-testing',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ]
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00fedora-31 class=TemplateVM state=Halted\n' \
+            b'fedora-32 class=TemplateVM state=Halted\n'
+        for key, val in [
+                ('name', 'fedora-31'),
+                ('epoch', '0'),
+                ('version', '4.1'),
+                ('release', '20200101')]:
+            self.app.expected_calls[(
+                'fedora-31',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        for key, val in [
+                ('name', 'fedora-32'),
+                ('epoch', '0'),
+                ('version', '4.1'),
+                ('release', '20200101')]:
+            self.app.expected_calls[(
+                'fedora-32',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        results = qubesadmin.tools.qvm_template.filter_version(
+            query_res,
+            self.app,
+            qubesadmin.tools.qvm_template.VersionSelector.LATEST_HIGHER
+        )
+        self.assertEqual(sorted(results), [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ])
+        self.assertAllCalled()
+
+    def test_233_filter_version_downgrade(self):
+        query_res = [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-31',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-31',
+                'Qubes template\n for fedora-31\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            ),
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200102',
+                'qubes-templates-itl-testing',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ]
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00fedora-31 class=TemplateVM state=Halted\n' \
+            b'fedora-32 class=TemplateVM state=Halted\n'
+        for key, val in [
+                ('name', 'fedora-31'),
+                ('epoch', '0'),
+                ('version', '4.1'),
+                ('release', '20200101')]:
+            self.app.expected_calls[(
+                'fedora-31',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        for key, val in [
+                ('name', 'fedora-32'),
+                ('epoch', '0'),
+                ('version', '4.1'),
+                ('release', '20200102')]:
+            self.app.expected_calls[(
+                'fedora-32',
+                'admin.vm.feature.Get',
+                f'template-{key}',
+                None)] = b'0\0' + val.encode()
+        results = qubesadmin.tools.qvm_template.filter_version(
+            query_res,
+            self.app,
+            qubesadmin.tools.qvm_template.VersionSelector.LATEST_LOWER
+        )
+        self.assertEqual(sorted(results), [
+            qubesadmin.tools.qvm_template.Template(
+                'fedora-32',
+                '0',
+                '4.1',
+                '20200101',
+                'qubes-templates-itl',
+                1048576,
+                datetime.datetime(2020, 1, 23, 4, 56),
+                'GPL',
+                'https://qubes-os.org',
+                'Qubes template for fedora-32',
+                'Qubes template\n for fedora-32\n'
+            )
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('os.path.exists')
+    def test_240_qubes_release(self, mock_exists):
+        # /usr/share/qubes/marker-vm does not exist
+        mock_exists.return_value = False
+        marker_vm = '''
+NAME=Qubes
+VERSION="4.2 (R4.2)"
+ID=qubes
+# Some comments here
+VERSION_ID=4.2
+PRETTY_NAME="Qubes 4.2 (R4.2)"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:ITL:qubes:4.2"
+'''
+        with mock.patch('builtins.open', mock.mock_open(read_data=marker_vm)) \
+                as mock_open:
+            ret = qubesadmin.tools.qvm_template.qubes_release()
+            self.assertEqual(ret, '4.2')
+            self.assertEqual(mock_exists.mock_calls, [
+                mock.call('/usr/share/qubes/marker-vm')
+            ])
+            mock_open.assert_called_with('/etc/os-release', 'r')
+        self.assertAllCalled()
+
+    @mock.patch('os.path.exists')
+    def test_241_qubes_release_quotes(self, mock_exists):
+        # /usr/share/qubes/marker-vm does not exist
+        mock_exists.return_value = False
+        os_rel = '''
+NAME=Qubes
+VERSION="4.2 (R4.2)"
+ID=qubes
+# Some comments here
+VERSION_ID="4.2"
+PRETTY_NAME="Qubes 4.2 (R4.2)"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:ITL:qubes:4.2"
+'''
+        with mock.patch('builtins.open', mock.mock_open(read_data=os_rel)) \
+                as mock_open:
+            ret = qubesadmin.tools.qvm_template.qubes_release()
+            self.assertEqual(ret, '4.2')
+            self.assertEqual(mock_exists.mock_calls, [
+                mock.call('/usr/share/qubes/marker-vm')
+            ])
+            mock_open.assert_called_with('/etc/os-release', 'r')
+        self.assertAllCalled()
+
+    @mock.patch('os.path.exists')
+    def test_242_qubes_release_quotes(self, mock_exists):
+        # /usr/share/qubes/marker-vm does exist
+        mock_exists.return_value = True
+        marker_vm = '''
+# This is just a marker file for Qubes OS VM.
+# This VM have tools for Qubes version:
+4.2
+'''
+        with mock.patch('builtins.open', mock.mock_open(read_data=marker_vm)) \
+                as mock_open:
+            ret = qubesadmin.tools.qvm_template.qubes_release()
+            self.assertEqual(ret, '4.2')
+            self.assertEqual(mock_exists.mock_calls, [
+                mock.call('/usr/share/qubes/marker-vm')
+            ])
+            mock_open.assert_called_with('/usr/share/qubes/marker-vm', 'r')
+        self.assertAllCalled()
+
+    def test_250_qrexec_download_success(self):
+        rand_bytes = os.urandom(128)
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_service_calls[
+            ('test-vm', 'qubes.TemplateDownload')] = rand_bytes
+        args = argparse.Namespace(
+            repo_files=[],
+            releasever='4.1',
+            updatevm='test-vm',
+            enablerepo=[],
+            disablerepo=[],
+            repoid=[],
+            quiet=True
+        )
+        with tempfile.NamedTemporaryFile() as fd:
+            qubesadmin.tools.qvm_template.qrexec_download(
+                args, self.app, 'fedora-31:4.0', path=fd.name)
+            with open(fd.name, 'rb') as fd2:
+                result = fd2.read()
+            self.assertEqual(rand_bytes, result)
+        self.assertAllCalled()
+
+    def test_251_qrexec_download_fail(self):
+        rand_bytes = os.urandom(128)
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_service_calls[
+            ('test-vm', 'qubes.TemplateDownload')] = rand_bytes
+        args = argparse.Namespace(
+            repo_files=[],
+            releasever='4.1',
+            updatevm='test-vm',
+            enablerepo=[],
+            disablerepo=[],
+            repoid=[],
+            quiet=True
+        )
+        with tempfile.NamedTemporaryFile() as fd, \
+                mock.patch('qubesadmin.tests.TestProcess.wait') as mock_wait:
+            mock_wait.return_value = 1
+            with self.assertRaises(ConnectionError):
+                qubesadmin.tools.qvm_template.qrexec_download(
+                    args, self.app, 'fedora-31:4.0', path=fd.name)
         self.assertAllCalled()
