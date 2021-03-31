@@ -300,6 +300,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # Nothing downloaded
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
         mock_verify.assert_called_once_with(template_file.name, '/tmp/keyring.gpg',
             nogpgcheck=False)
@@ -409,6 +410,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # Nothing downloaded
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
         # Package is extracted
         mock_extract.assert_called_with('test-vm', path,
@@ -554,6 +556,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         # Nothing downloaded
         self.assertEqual(mock_dl.mock_calls, [
             mock.call(args, self.app,
+                path_override='/var/cache/qvm-template',
                 dl_list={}, version_selector=selector)
         ])
         # Should not be executed:
@@ -762,6 +765,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call(args, self.app, version_selector=selector)
         ])
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list=dl_list, version_selector=selector)
         # download already verify the package internally
         self.assertEqual(mock_verify.mock_calls, [])
@@ -863,6 +867,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # Nothing downloaded nor installed
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
         mock_verify.assert_not_called()
         mock_extract.assert_not_called()
@@ -943,6 +948,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         ])
         # Nothing downloaded
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
         mock_verify.assert_called_once_with(template_file.name,
             '/tmp/keyring.gpg',
@@ -4042,6 +4048,7 @@ test-vm : Qubes template for fedora-31
             mock.call(args, self.app, version_selector=selector)
         ])
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list=dl_list, version_selector=selector)
         # already verified by download()
         self.assertEqual(mock_verify.mock_calls, [])
@@ -4148,6 +4155,7 @@ test-vm : Qubes template for fedora-31
             mock.call(args, self.app, version_selector=selector)
         ])
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list=dl_list, version_selector=selector)
         # already verified by download()
         self.assertEqual(mock_verify.mock_calls, [])
@@ -4266,6 +4274,7 @@ test-vm : Qubes template for fedora-31
             mock.call(args, self.app, version_selector=selector)
         ])
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list=dl_list, version_selector=selector)
         # Expect override confirmation
         self.assertEqual(mock_confirm.mock_calls,
@@ -4662,6 +4671,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             mock.call(args, self.app, version_selector=selector)
         ])
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
         self.assertEqual(mock_verify.mock_calls, [
             mock.call(template_file.name, '/tmp/keyring.gpg', nogpgcheck=False)
@@ -4747,6 +4757,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             mock.call(args, self.app, version_selector=selector)
         ])
         mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
         self.assertEqual(mock_verify.mock_calls, [
             mock.call(template_file.name, '/tmp/keyring.gpg', nogpgcheck=False)

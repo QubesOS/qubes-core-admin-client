@@ -996,6 +996,7 @@ def install(
 
     package_hdrs = download(args, app,
         dl_list=dl_list,
+        path_override=args.cachedir,
         version_selector=version_selector)
 
     # Verify downloaded templates
