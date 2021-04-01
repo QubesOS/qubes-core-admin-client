@@ -23,6 +23,7 @@
 import asyncio
 import glob
 import os
+import pathlib
 
 import shutil
 import subprocess
@@ -49,6 +50,12 @@ parser.add_argument('--skip-start', action='store_true',
     help='Do not start the VM - do not retrieve menu entries etc.')
 parser.add_argument('--keep-source', action='store_true',
     help='Do not remove source data (*dir* directory) after import')
+parser.add_argument('--no-installed-by-rpm', action='store_true',
+    help='Do not set installed_by_rpm')
+parser.add_argument('--allow-pv', action='store_true',
+    help='Allow setting virt_mode to pv in configuration file.')
+parser.add_argument('--pool',
+    help='Specify pool to store created VMs in.')
 parser.add_argument('action', choices=['post-install', 'pre-remove'],
     help='Action to perform')
 parser.add_argument('name', action='store',
@@ -60,9 +67,13 @@ parser.add_argument('dir', action='store',
 def get_root_img_size(source_dir):
     '''Extract size of root.img to be imported'''
     root_path = os.path.join(source_dir, 'root.img')
-    if os.path.exists(root_path + '.part.00'):
+    # deal with both cases: split tar and non-split tar
+    part_path = root_path + '.part.00'
+    tar_path = root_path + '.tar'
+    if os.path.exists(part_path) or os.path.exists(tar_path):
         # get just file root_size from the tar header
-        p = subprocess.Popen(['tar', 'tvf', root_path + '.part.00'],
+        path = part_path if os.path.exists(part_path) else tar_path
+        p = subprocess.Popen(['tar', 'tvf', path],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         (stdout, _) = p.communicate()
         # -rw-r--r-- 0/0      1073741824 1970-01-01 01:00 root.img
@@ -98,6 +109,12 @@ def import_root_img(vm, source_dir):
             raise qubesadmin.exc.QubesException('root.img extraction failed')
         if cat.wait() != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
+    elif os.path.exists(root_path + '.tar'):
+        tar = subprocess.Popen(['tar', 'xSOf', root_path + '.tar'],
+            stdout=subprocess.PIPE)
+        vm.volumes['root'].import_data(stream=tar.stdout)
+        if tar.wait() != 0:
+            raise qubesadmin.exc.QubesException('root.img extraction failed')
     elif os.path.exists(root_path):
         if vm.app.qubesd_connection_type == 'socket':
             # check if root.img was already overwritten, i.e. if the source
@@ -127,8 +144,14 @@ def reset_private_img(vm):
     vm.volumes['private'].clear_data()
 
 
-def import_appmenus(vm, source_dir):
-    '''Import appmenus settings into VM object (later: GUI VM)'''
+def import_appmenus(vm, source_dir, skip_generate=True):
+    """Import appmenus settings into VM object (later: GUI VM)
+
+    :param vm: QubesVM object of just imported template
+    :param source_dir: directory with source files
+    :param skip_generate: do not generate actual menu entries,
+            only set item lists
+    """
     if os.getuid() == 0:
         try:
             qubes_group = grp.getgrnam('qubes')
@@ -141,17 +164,49 @@ def import_appmenus(vm, source_dir):
     else:
         cmd_prefix = []
 
+    # store the whitelists in VM features
+    # separated by spaces should be ok as there should be no spaces in the file
+    # name according to the FreeDesktop spec
+    source_dir = pathlib.Path(source_dir)
+    try:
+        with open(source_dir / 'vm-whitelisted-appmenus.list', 'r') as fd:
+            vm.features['default-menu-items'] = \
+                ' '.join([x.rstrip() for x in fd])
+    except FileNotFoundError as e:
+        vm.log.warning('Cannot set default-menu-items, %s not found',
+                       e.filename)
+    try:
+        with open(source_dir / 'whitelisted-appmenus.list', 'r') as fd:
+            vm.features['menu-items'] = ' '.join([x.rstrip() for x in fd])
+    except FileNotFoundError as e:
+        vm.log.warning('Cannot set menu-items, %s not found',
+                       e.filename)
+    try:
+        with open(source_dir / 'netvm-whitelisted-appmenus.list', 'r') as fd:
+            vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
+    except FileNotFoundError as e:
+        vm.log.warning('Cannot set netvm-menu-items, %s not found',
+                       e.filename)
+
+    if skip_generate:
+        return
+
     # TODO: change this to qrexec calls to GUI VM, when GUI VM will be
     # implemented
     try:
         subprocess.check_call(cmd_prefix + ['qvm-appmenus',
-            '--set-default-whitelist={}'.format(os.path.join(source_dir,
-                'vm-whitelisted-appmenus.list')), vm.name])
+            '--set-default-whitelist={!s}'.format(
+                source_dir / 'vm-whitelisted-appmenus.list'), vm.name])
         subprocess.check_call(cmd_prefix + ['qvm-appmenus',
-            '--set-whitelist={}'.format(os.path.join(source_dir,
-                'whitelisted-appmenus.list')), vm.name])
+            '--set-whitelist={!s}'.format(
+                source_dir / 'whitelisted-appmenus.list'), vm.name])
     except subprocess.CalledProcessError as e:
         vm.log.warning('Failed to set default application list: %s', e)
+
+def parse_template_config(path):
+    '''Parse template.conf from template package. (KEY=VALUE format)'''
+    with open(path, 'r') as fd:
+        return dict(line.rstrip('\n').split('=', 1) for line in fd)
 
 @asyncio.coroutine
 def call_postinstall_service(vm):
@@ -197,6 +252,12 @@ def call_postinstall_service(vm):
     finally:
         vm.netvm = qubesadmin.DEFAULT
 
+def validate_ip(ip):
+    """Check if given string has a valid IP address syntax"""
+    try:
+        return all(0 <= int(part) <= 255 for part in ip.split('.', 3))
+    except ValueError:
+        return False
 
 @asyncio.coroutine
 def post_install(args):
@@ -226,7 +287,8 @@ def post_install(args):
 
         vm = app.add_new_vm('TemplateVM',
             name=args.name,
-            label=qubesadmin.config.defaults['template_label'])
+            label=qubesadmin.config.defaults['template_label'],
+            pool=args.pool)
         vm_created = True
 
     vm.log.info('Importing data')
@@ -240,8 +302,14 @@ def post_install(args):
     if not vm_created:
         vm.log.info('Clearing private volume')
         reset_private_img(vm)
-    vm.installed_by_rpm = True
-    import_appmenus(vm, args.dir)
+    vm.installed_by_rpm = not args.no_installed_by_rpm
+    # do not generate actual menu entries, if post-install service will be
+    # executed anyway
+    import_appmenus(vm, args.dir, skip_generate=not args.skip_start)
+
+    conf_path = os.path.join(args.dir, 'template.conf')
+    if os.path.exists(conf_path):
+        import_template_config(args, conf_path, vm)
 
     if not args.skip_start:
         yield from call_postinstall_service(vm)
@@ -261,6 +329,60 @@ def post_install(args):
             subprocess.call(['fstrim', os.path.dirname(args.dir)])
 
     return 0
+
+
+def import_template_config(args, conf_path, vm):
+    """
+    Parse template.conf and apply its content to the just installed TemplateVM
+
+    :param args: arguments for qvm-template-postprocess (used for --allow-pv
+        option and possibly some other in the future)
+    :param conf_path: path to the template.conf
+    :param vm: Template to operate on
+    :return:
+    """
+    conf = parse_template_config(conf_path)
+    # Import qvm-feature tags
+    for key in (
+            'no-monitor-layout',
+            'pci-e820-host',
+            'linux-stubdom',
+            'gui',
+            'gui-emulated',
+            'qrexec'):
+        if key in conf:
+            if conf[key] == '1':
+                vm.features[key] = conf[key]
+            else:
+                vm.log.warning(
+                    'ignoring boolean config flags that are not \'1\'')
+    for key in (
+            'net.fake-ip',
+            'net.fake-gateway',
+            'net.fake-netmask'):
+        if key in conf:
+            if validate_ip(conf[key]):
+                vm.features[key] = conf[key]
+            else:
+                vm.log.warning(
+                    'ignoring invalid value for \'%s\'', key)
+    if 'virt-mode' in conf:
+        if conf['virt-mode'] == 'pv' and args.allow_pv:
+            vm.virt_mode = 'pv'
+        elif conf['virt-mode'] == 'pv':
+            vm.log.warning(
+                '--allow-pv not set, ignoring request to change virt-mode')
+        elif conf['virt-mode'] in ('pvh', 'hvm'):
+            vm.virt_mode = conf['virt-mode']
+        else:
+            vm.log.warning('ignoring invalid value for virt-mode')
+
+    if 'kernel' in conf:
+        if conf['kernel'] == '':
+            vm.kernel = ''
+        else:
+            vm.log.warning(
+                'Currently only supports setting kernel to (none)')
 
 
 def pre_remove(args):
@@ -287,7 +409,6 @@ def is_chroot():
             stat_root.st_dev != stat_init_root.st_dev or
             stat_root.st_ino != stat_init_root.st_ino)
     except IOError:
-        print('Stat failed, assuming not chroot', file=sys.stderr)
         return False
 
 

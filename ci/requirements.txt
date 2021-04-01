@@ -10,3 +10,5 @@ lxml
 PyYAML
 xcffib
 asynctest
+tqdm
+pyxdg

@@ -180,6 +180,14 @@ qubesadmin\.tools\.qvm\_tags module
     :undoc-members:
     :show-inheritance:
 
+qubesadmin\.tools\.qvm\_template module
+---------------------------------------
+
+.. automodule:: qubesadmin.tools.qvm_template
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 qubesadmin\.tools\.qvm\_template\_postprocess module
 ----------------------------------------------------
 
