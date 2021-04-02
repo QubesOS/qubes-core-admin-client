@@ -3535,7 +3535,7 @@ test-vm : Qubes template for fedora-31
                 nogpgcheck=False,
                 retries=1
             )
-            qubesadmin.tools.qvm_template.download(args, self.app, dir, {
+            pkgs = qubesadmin.tools.qvm_template.download(args, self.app, dir, {
                     'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                         ('1', '2', '3'), 'qubes-templates-itl', 1048576),
                     'fedora-32': qubesadmin.tools.qvm_template.DlEntry(
@@ -3543,6 +3543,8 @@ test-vm : Qubes template for fedora-31
                         'qubes-templates-itl-testing',
                         2048576)
                 })
+            self.assertIn('fedora-31', pkgs)
+            self.assertIn('fedora-32', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
@@ -3575,10 +3577,11 @@ test-vm : Qubes template for fedora-31
                 downloaddir=dir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
-                qubesadmin.tools.qvm_template.download(args, self.app, None, {
+                pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                         'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                             ('1', '2', '3'), 'qubes-templates-itl', 1048576)
                     })
+            self.assertIn('fedora-31', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
@@ -3608,9 +3611,10 @@ test-vm : Qubes template for fedora-31
                 releasever='4.1',
                 nogpgcheck=False,
             )
-            qubesadmin.tools.qvm_template.download(args, self.app,
+            pkgs = qubesadmin.tools.qvm_template.download(args, self.app,
                 dir, None,
                 qubesadmin.tools.qvm_template.VersionSelector.LATEST_LOWER)
+            self.assertIn('fedora-31', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
@@ -3642,10 +3646,11 @@ test-vm : Qubes template for fedora-31
                 nogpgcheck=False,
                 downloaddir=dir
             )
-            qubesadmin.tools.qvm_template.download(args, self.app, None, {
+            pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                     'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                         ('1', '2', '3'), 'qubes-templates-itl', 1048576)
                 })
+            self.assertIn('fedora-31', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
@@ -3673,7 +3678,7 @@ test-vm : Qubes template for fedora-31
                 downloaddir=dir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
-                qubesadmin.tools.qvm_template.download(args, self.app, None, {
+                pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                         'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                             ('1', '2', '3'), 'qubes-templates-itl', 1048576),
                         'fedora-32': qubesadmin.tools.qvm_template.DlEntry(
@@ -3681,8 +3686,22 @@ test-vm : Qubes template for fedora-31
                             'qubes-templates-itl-testing',
                             2048576)
                     })
+                self.assertIn('fedora-31', pkgs)
+                self.assertIn('fedora-32', pkgs)
                 self.assertTrue('already exists, skipping'
                     in mock_err.getvalue())
+            self.assertEqual(mock_verify_rpm.mock_calls, [
+                mock.call(
+                    dir + '/qubes-template-fedora-31-1:2-3.rpm',
+                    '/tmp/keyring.gpg',
+                    template_name='fedora-31',
+                ),
+                mock.call(
+                    re_str(dir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
+                    '/tmp/keyring.gpg',
+                    template_name='fedora-32',
+                ),
+            ])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-32-0:1-2',
                     re_str(dir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
@@ -3710,10 +3729,11 @@ test-vm : Qubes template for fedora-31
                 downloaddir=dir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
-                qubesadmin.tools.qvm_template.download(args, self.app, None, {
+                pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                         'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                             ('1', '2', '3'), 'qubes-templates-itl', 1048576)
                     })
+                self.assertIn('fedora-31', pkgs)
                 self.assertTrue('already exists, skipping'
                     in mock_err.getvalue())
             self.assertEqual(mock_qrexec.mock_calls, [])
@@ -3741,10 +3761,11 @@ test-vm : Qubes template for fedora-31
                 downloaddir=dir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
-                qubesadmin.tools.qvm_template.download(args, self.app, None, {
+                pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                         'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                             ('1', '2', '3'), 'qubes-templates-itl', 1048576)
                     })
+                self.assertIn('fedora-31', pkgs)
                 self.assertTrue('already exists, skipping'
                     in mock_err.getvalue())
             self.assertEqual(mock_qrexec.mock_calls, [])
@@ -3776,14 +3797,22 @@ test-vm : Qubes template for fedora-31
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
                     mock.patch('os.remove') as mock_rm:
-                qubesadmin.tools.qvm_template.download(args, self.app, None, {
+                pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                         'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                             ('1', '2', '3'), 'qubes-templates-itl', 1048576)
                     })
+                self.assertIn('fedora-31', pkgs)
                 self.assertTrue('retrying...' in mock_err.getvalue())
                 self.assertEqual(mock_rm.mock_calls, [
                     mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'))
                 ])
+            self.assertEqual(mock_verify_rpm.mock_calls, [
+                mock.call(
+                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    '/tmp/keyring.gpg',
+                    template_name='fedora-31',
+                ),
+            ])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
@@ -3832,6 +3861,7 @@ test-vm : Qubes template for fedora-31
                     mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED')),
                     mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'))
                 ])
+            self.assertEqual(mock_verify_rpm.mock_calls, [])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
@@ -3875,6 +3905,7 @@ test-vm : Qubes template for fedora-31
                     re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm'),
                     1048576)
             ])
+            self.assertEqual(mock_verify_rpm.mock_calls, [])
             self.assertEqual(mock_dllist.mock_calls, [])
 
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')

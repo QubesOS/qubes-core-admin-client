@@ -807,7 +807,8 @@ def download(
                 print('\'%s\' already exists, skipping...' % target,
                     file=sys.stderr)
                 # but still verify the package
-                verify_rpm(target, repo_key, template_name=name)
+                package_hdrs[name] = verify_rpm(
+                    target, repo_key, template_name=name)
                 continue
             print('Downloading \'%s\'...' % spec, file=sys.stderr)
             done = False
