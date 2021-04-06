@@ -21,12 +21,12 @@ Options
 
    Specify files containing DNF repository configuration. Can be
    used more than once. (default:
-   ['/usr/share/qubes/repo-templates/qubes-templates.repo'])
+   ['/etc/qubes/repo-templates/qubes-templates.repo'])
 
 .. option:: --keyring KEYRING
 
    Specify directory containing RPM public keys. (default:
-   /usr/share/qubes/repo-templates/keys)
+   /etc/qubes/repo-templates/keys)
 
 .. option:: --updatevm UPDATEVM
 
