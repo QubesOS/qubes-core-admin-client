@@ -91,8 +91,11 @@ def list_devices(args):
 
         else:
             for domain in app.domains:
-                for dev in domain.devices[args.devclass].available():
-                    devices.add(dev)
+                try:
+                    for dev in domain.devices[args.devclass].available():
+                        devices.add(dev)
+                except qubesadmin.exc.QubesVMNotFoundError:
+                    continue
     except qubesadmin.exc.QubesDaemonAccessError:
         raise qubesadmin.exc.QubesException(
             "Failed to list '%s' devices, this device type either "
@@ -105,16 +108,19 @@ def list_devices(args):
             if domain == dev.backend_domain:
                 continue
 
-            for assignment in domain.devices[args.devclass].assignments():
-                if dev != assignment:
-                    continue
-                if assignment.options:
-                    result[dev].frontends.append('{!s} ({})'.format(
-                        domain, ', '.join('{}={}'.format(key, value)
-                                          for key, value in
-                                          assignment.options.items())))
-                else:
-                    result[dev].frontends.append(str(domain))
+            try:
+                for assignment in domain.devices[args.devclass].assignments():
+                    if dev != assignment:
+                        continue
+                    if assignment.options:
+                        result[dev].frontends.append('{!s} ({})'.format(
+                            domain, ', '.join('{}={}'.format(key, value)
+                                              for key, value in
+                                              assignment.options.items())))
+                    else:
+                        result[dev].frontends.append(str(domain))
+            except qubesadmin.exc.QubesVMNotFoundError:
+                continue
 
     qubesadmin.tools.print_table(prepare_table(result.values()))
 
@@ -281,7 +287,8 @@ def main(args=None, app=None):
     if basename.startswith('qvm-') and basename != 'qvm-device':
         devclass = basename[4:]
 
-    args = get_parser(devclass).parse_args(args, app=app)
+    parser = get_parser(devclass)
+    args = parser.parse_args(args, app=app)
 
     if args.list_device_classes:
         print('\n'.join(qubesadmin.Qubes().list_deviceclass()))
@@ -290,7 +297,7 @@ def main(args=None, app=None):
     try:
         args.func(args)
     except qubesadmin.exc.QubesException as e:
-        print(str(e), file=sys.stderr)
+        parser.print_error(str(e))
         return 1
     return 0
 

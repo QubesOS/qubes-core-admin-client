@@ -467,17 +467,25 @@ class Table(object):
             table_data.append(self.get_head())
             self.spinner.update()
             if self.tree_sorted:
+                #FIXME: handle qubesadmin.exc.QubesVMNotFoundError
+                #       (see QubesOS/qubes-issues#5105)
                 insertion_vm_list = self.sort_to_tree(self.domains)
                 for insertion, vm in insertion_vm_list:
                     table_data.append(self.get_row(vm, insertion))
             else:
                 for vm in sorted(self.domains):
-                    table_data.append(self.get_row(vm))
+                    try:
+                        table_data.append(self.get_row(vm))
+                    except qubesadmin.exc.QubesVMNotFoundError:
+                        continue
             self.spinner.hide()
             qubesadmin.tools.print_table(table_data, stream=stream)
         else:
             for vm in sorted(self.domains):
-                stream.write('|'.join(self.get_row(vm)) + '\n')
+                try:
+                    stream.write('|'.join(self.get_row(vm)) + '\n')
+                except qubesadmin.exc.QubesVMNotFoundError:
+                    continue
 
 
 #: Available formats. Feel free to plug your own one.
@@ -576,7 +584,7 @@ def get_parser():
     parser = qubesadmin.tools.QubesArgumentParser(
         vmname_nargs=argparse.ZERO_OR_MORE,
         formatter_class=argparse.RawTextHelpFormatter,
-        description='List Qubes domains and their parametres.',
+        description='List Qubes domains and their parameters.',
         epilog='available formats (see --help-formats):\n{}\n\n'
                'available columns (see --help-columns):\n{}'.format(
                 wrapper.fill(', '.join(sorted(formats.keys()))),
