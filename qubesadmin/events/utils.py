@@ -20,7 +20,6 @@
 
 ''' Utilities for common events-based actions '''
 
-import asyncio
 import functools
 
 import qubesadmin.events
@@ -44,8 +43,7 @@ def interrupt_on_vm_shutdown(vms, subject, event):
             raise Interrupt
 
 
-@asyncio.coroutine
-def wait_for_domain_shutdown(vms):
+async def wait_for_domain_shutdown(vms):
     ''' Helper function to wait for domain shutdown.
 
     This function wait for domain shutdown, but do not initiate the shutdown
@@ -63,6 +61,6 @@ def wait_for_domain_shutdown(vms):
     events.add_handler('connection-established',
         functools.partial(interrupt_on_vm_shutdown, vms))
     try:
-        yield from events.listen_for_events()
+        await events.listen_for_events()
     except Interrupt:
         pass

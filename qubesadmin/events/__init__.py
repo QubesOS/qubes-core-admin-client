@@ -77,8 +77,8 @@ class EventsDispatcher(object):
         '''
         self.handlers[event].remove(handler)
 
-    @asyncio.coroutine
-    def _get_events_reader(self, vm=None) -> (asyncio.StreamReader, callable):
+    async def _get_events_reader(self, vm=None) -> (
+        asyncio.StreamReader, callable):
         '''Make connection to qubesd and return stream to read events from
 
         :param vm: Specific VM for which events should be handled, use None
@@ -91,7 +91,7 @@ class EventsDispatcher(object):
             dest = 'dom0'
 
         if self.app.qubesd_connection_type == 'socket':
-            reader, writer = yield from asyncio.open_unix_connection(
+            reader, writer = await asyncio.open_unix_connection(
                 qubesadmin.config.QUBESD_SOCKET)
             writer.write(self._api_method.encode() + b'+ ')  # method+arg
             writer.write(b'dom0 ')  # source
@@ -102,7 +102,7 @@ class EventsDispatcher(object):
                 '''Close connection to qubesd'''
                 writer.close()
         elif self.app.qubesd_connection_type == 'qrexec':
-            proc = yield from asyncio.create_subprocess_exec(
+            proc = await asyncio.create_subprocess_exec(
                 'qrexec-client-vm', dest, self._api_method,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
@@ -120,8 +120,7 @@ class EventsDispatcher(object):
                                       + self.app.qubesd_connection_type)
         return reader, cleanup_func
 
-    @asyncio.coroutine
-    def listen_for_events(self, vm=None, reconnect=True):
+    async def listen_for_events(self, vm=None, reconnect=True):
         '''
         Listen for events and call appropriate handlers.
         This function do not exit until manually terminated.
@@ -136,7 +135,7 @@ class EventsDispatcher(object):
         '''
         while True:
             try:
-                yield from self._listen_for_events(vm)
+                await self._listen_for_events(vm)
             except (OSError, qubesadmin.exc.QubesDaemonCommunicationError):
                 pass
             if not reconnect:
@@ -145,10 +144,9 @@ class EventsDispatcher(object):
                 'Connection to qubesd terminated, reconnecting in {} '
                 'seconds'.format(qubesadmin.config.QUBESD_RECONNECT_DELAY))
             # avoid busy-loop if qubesd is dead
-            yield from asyncio.sleep(qubesadmin.config.QUBESD_RECONNECT_DELAY)
+            await asyncio.sleep(qubesadmin.config.QUBESD_RECONNECT_DELAY)
 
-    @asyncio.coroutine
-    def _listen_for_events(self, vm=None):
+    async def _listen_for_events(self, vm=None):
         '''
         Listen for events and call appropriate handlers.
         This function do not exit until manually terminated.
@@ -161,27 +159,27 @@ class EventsDispatcher(object):
         :rtype: bool
         '''
 
-        reader, cleanup_func = yield from self._get_events_reader(vm)
+        reader, cleanup_func = await self._get_events_reader(vm)
         try:
             some_event_received = False
             while not reader.at_eof():
                 try:
-                    event_header = yield from reader.readuntil(b'\0')
+                    event_header = await reader.readuntil(b'\0')
                     if event_header != b'1\0':
                         raise qubesadmin.exc.QubesDaemonCommunicationError(
                             'Non-event received on events connection: '
                             + repr(event_header))
-                    subject = (yield from reader.readuntil(b'\0'))[:-1].decode(
+                    subject = (await reader.readuntil(b'\0'))[:-1].decode(
                         'utf-8')
-                    event = (yield from reader.readuntil(b'\0'))[:-1].decode(
+                    event = (await reader.readuntil(b'\0'))[:-1].decode(
                         'utf-8')
                     kwargs = {}
                     while True:
-                        key = (yield from reader.readuntil(b'\0'))[:-1].decode(
+                        key = (await reader.readuntil(b'\0'))[:-1].decode(
                             'utf-8')
                         if not key:
                             break
-                        value = (yield from reader.readuntil(b'\0'))[:-1].\
+                        value = (await reader.readuntil(b'\0'))[:-1].\
                             decode('utf-8')
                         kwargs[key] = value
                 except BrokenPipeError:

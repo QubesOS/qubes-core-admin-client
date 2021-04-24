@@ -33,12 +33,6 @@ except ImportError:
     # don't run any tests on python2
     def load_tests(loader, tests, pattern):
         return unittest.TestSuite()
-    # don't fail on coroutine decorator
-    class asyncio(object):
-        @staticmethod
-        def coroutine(f):
-            return f
-
 
 class TC_00_Events(qubesadmin.tests.QubesTestCase):
     def setUp(self):
@@ -96,20 +90,15 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         self.dispatcher.handle('', 'some-event', arg1='value1')
         self.assertFalse(handler.called)
 
-    @asyncio.coroutine
-    def mock_get_events_reader(self, stream, cleanup_func, expected_vm,
+    async def mock_get_events_reader(self, stream, cleanup_func, expected_vm,
             vm=None):
         self.assertEqual(expected_vm, vm)
         return stream, cleanup_func
 
-    @asyncio.coroutine
-    def send_events(self, stream, events):
+    async def send_events(self, stream, events):
         for event in events:
             stream.feed_data(event)
-            # don't use yield from...
-            sleep = asyncio.sleep(0.01)
-            for x in iter(lambda: sleep.send(None), None):
-                yield x
+            await asyncio.sleep(0.01)
         stream.feed_eof()
 
     def test_010_listen_for_events(self):
@@ -203,8 +192,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         loop.run_forever()
         loop.close()
 
-    @asyncio.coroutine
-    def mock_coroutine(self, mock, *args, **kwargs):
+    async def mock_coroutine(self, mock, *args, **kwargs):
         return mock(*args, **kwargs)
 
     def test_022_get_events_reader_remote(self):
