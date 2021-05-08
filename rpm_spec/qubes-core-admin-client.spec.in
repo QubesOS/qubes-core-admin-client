@@ -7,6 +7,7 @@ Group:		Qubes
 License:	LGPLv2.1+
 URL:		https://www.qubes-os.org
 
+BuildRequires:	make
 BuildRequires:	python%{python3_pkgversion}-setuptools
 BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
