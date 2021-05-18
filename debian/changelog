@@ -1,3 +1,180 @@
+qubes-core-admin-client (4.1.11-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-run: do not check if DispVM is paused before starting it
+
+  [ Frédéric Pierret (fepitre) ]
+  * Add .gitlab-ci.yml
+
+  [ Marek Marczykowski-Górecki ]
+  * gitlab-ci: adjust custom job
+  * tests: avoid 'xrandr' call
+  * backup: add function parameter for override temp directory
+  * backup: cleanup retrieve_proc on failure
+  * backup: check if there is enough disk space available to restore
+  * backup: throttle backup extracting if there is not enough disk space
+  * tests: fix preparing multi-part disk volume
+  * tests: restoring a backup bigger than available space in /var/tmp
+  * gitlab-ci: fix codecov call
+
+  [ Rusty Bird ]
+  * qvm-backup: dom0 dst relative to cwd of tool, not qubesd
+
+  [ WillyPillow ]
+  * Initial support for qvm-template.
+  * Separate whitelist entries with spaces instead of newlines.
+  * Verify values of boolean flags in template config.
+  * Allow virt_mode other than pv.
+  * Change "whitelist" to "menu-items" in qvm-features for clarity.
+  * Initial commit of qvm-template.
+  * Better way of detecting VM.
+  * Various cleanup and improvements.
+  * Use tqdm for progress bar.
+  * Check for newlines in qrexec arguments & improve error handling.
+  * Add suffix for unverified RPMs.
+  * Fix pylint warnings.
+  * Support for {reinstall,downgrade,upgrade} operations.
+  * Allow <package-spec>-like arguments for the list operation.
+  * Initial implementation for "qvm-template info".
+  * Initial implementation for "qvm-template search".
+  * Add lock-file functionality for qvm-template install.
+  * Print error messages if qubes.TemplateSearch fails.
+  * Revamp "qvm-template search" and finish TODOs.
+  * Check number of fields for qubes.TemplateSearch output.
+  * qvm-template: Incorporate additional metadata in
+    qubes.TemplateSearch.
+  * qvm-template: Remove downloaded file if the download is interrupted.
+  * qvm-template: Add --refresh option and allow DNF cache to be used.
+  * qvm-template: Make pylint happy by changing "license" to "licence".
+  * qvm-template*: Add option to specify pool to store created VM.
+  * qvm-template: {reinstall,{up,down}grade}: Better handling and checks
+    for existing version.
+  * qvm-template: Switch to namedtuples and other slight cleanup.
+  * qvm-template: Reorder functions.
+  * qvm-template: Make pylint happy.
+  * qvm-template: Check that template spec is not "---".
+  * qvm-template: Fix typo.
+  * qvm-template: Check that template is managed by qvm-template before
+    accessing relevant features.
+  * qvm-template: Better args parsing: Use subparsers and complain about
+    unknown args if the operation is not "remove".
+  * qvm-template: Use repo file from qubes-repo-templates.
+  * qvm-template: Use "vm.features.get" instead of explicit membership
+    check.
+  * qvm-template: Defer qrexec calls so that they can be omitted if
+    exceptions are raised.
+  * qvm-template: Partially include docstrings and type hints.
+  * qvm-template: More docstrings.
+  * qvm-template: Initial support for machine-readable listings.
+  * qvm-template: Include module in documentation.
+  * qvm-template: Tidy up code responsible for output in {info,list}
+    operations.
+  * qvm-template: Replace newlines in machine-readable output.
+  * qvm-template: Initial implementation of repolist.
+  * qvm-template: Remove default 'repo_files' entry if other entries
+    have been specified by the user.
+  * qvm-template: Fix missing args for install operations.
+  * qvm-template: Add confirmation for dangerous operations; verify
+    signatures once instead of twice by returning header after
+    verification.
+  * qvm-template-postprocess: Make pylint happy.
+  * qvm-template: Fix type hints.
+  * qvm-template: Slight improvements to package verification.
+  * qvm-template: Add purge operation.
+  * qvm-template: Add option to specify RPM keyring location.
+  * qvm-template: Add support for JSON output.
+  * qvm-template: Add option to disable download progress bar.
+  * qvm-template: Make sure that template-dummy is set and used
+    properly.
+  * qvm-template: Initial manpage.
+  * qvm-template: Tweak machine-readable output format.
+  * qvm-template: Eliminate use of lsb_release
+  * qvm-template: Replace "template-install-time" with "template-
+    installtime" for consistency
+  * qvm-template: Improve help message for --upgrades
+  * qvm-template: Fix qvm_template_postprocess tests
+  * Fix CI dependencies
+  * qvm-template: Make pylint happy
+  * Add stubs for rpm module and initial tests for qvm-template install
+  * qvm-template: Update docs for --updatevm
+  * qvm-template: Fix timezone issues by storing timezone explictly in
+    features
+  * qvm-template: Fix compatibility with Python 3.6
+  * Revert "qvm-template: Fix compatibility with Python 3.6"
+  * qvm-template: Fix date formats to "%Y-%m-%d %H:%M:%S"
+  * qvm-template: Add tests for qrexec_payload
+  * Make TestProcess.communicate return str instead of IO object
+  * qvm-template: Add partial tests for qrexec_repoquery
+  * qvm-template: Fix compatibility with Python 3.6
+  * qvm-template: Fix compatibility with Python 3.6 in tests
+  * qvm-template: Make pylint happy
+  * qvm-template: Add tests for qrexec_repoquery and get_dl_list
+  * qvm-template: Fix minor bugs
+  * qvm-template: Add tests for functions list_templates and search
+  * qvm-template: Mock print_table in tests for consistent output
+  * qvm-template: Fix broken indention
+  * qvm-template: Add tests for download function and fix minor bugs
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-template: use UpdateVM by default
+  * qvm-template: call rpmkeys --checksig for signature verification
+  * qvm-template: download templates to a temporary directory
+  * qvm-template: handle template extraction failure
+  * qvm-template: add copyright header
+  * qvm-template: minor improvements
+  * deb,rpm: depend on qubes-repo-templates
+  * qvm-template-postprocess: improve data validation
+  * qvm-template: improve install lock
+  * qvm-template: cleanup install function
+  * qvm-template: remove downloaded package after installation
+  * qvm-template-preprocess: remove confusing message
+  * Store template repo configuration in /etc
+  * qvm-template: use QubesArgumentParser
+  * qvm-template: allow global arguments after action name
+  * qvm-template: factor filter_version() out of get_dl_list()
+  * qvm-template: by default list only latest available template
+  * qvm-template: use key specified in the repo definition if possible
+  * qvm-template-postprocess: do not generate appmenus twice
+  * qvm-template: improve error reporting
+  * qvm-template: verify template package signature directly at download
+  * qvm-template: default confirm to 'n'
+  * qvm-template-postprocess: treat missing appmenus files as warnings
+    only
+  * qvm-template-postprocess: extract config handling into separate
+    function
+  * qvm-template-postprocess: fix allowed features list
+  * tests: qvm-template-postprocess - template.conf handling
+  * qvm-template: mute pylint complains about typing.NamedTuple
+  * tests: some more for qvm-template
+
+  [ WillyPillow ]
+  * tests: add tests for qvm-template remove
+  * tests: fix tests for verify_rpm involving incorrect template names
+  * qvm-template: test != 1 instead of == 0 for template-dummy feature
+  * tests: add more tests re. install, remove, and get_keys_for_repos
+  * qvm-template: only ask for confirmation during install if something
+    is being done
+  * qvm-template: update comments to reflect e424c7d
+  * tests: fix mock return values of get_dl_list when testing `qvm-
+    template reinstall`
+  * tests: add tests for qvm-template reinstall/up/downgrade when
+    nothing needs to be done
+  * tests: improve TestProcess behavior
+  * tests: add tests for other qvm-template functions
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-template: fix downloading template for install
+  * qvm-template: fix installing already cached templates
+  * doc: update default values on qvm-template man page
+
+  [ Frédéric Pierret (fepitre) ]
+  * spec: add BR make
+
+  [ 3hhh ]
+  * qvm-ls & qvm-device: Handle removal of VM during on_shutdown.
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 18 May 2021 03:22:27 +0200
+
 qubes-core-admin-client (4.1.10-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
