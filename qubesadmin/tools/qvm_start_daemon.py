@@ -710,12 +710,12 @@ parser.add_argument('--kde', action='store_true',
 # Add it for the help only
 parser.add_argument('--force', action='store_true', default=False,
                     help='Force running daemon without enabled services'
-                         ' \'guivm-gui-agent\' or \'audiovm-audio-agent\'')
+                         ' \'guivm\' or \'audiovm\'')
 
 
 def main(args=None):
     """ Main function of qvm-start-daemon tool"""
-    only_if_service_enabled = ['guivm-gui-agent', 'audiovm-audio-agent']
+    only_if_service_enabled = ['guivm', 'audiovm']
     enabled_services = [service for service in only_if_service_enabled if
                         os.path.exists('/var/run/qubes-service/%s' % service)]
     if not enabled_services and '--force' not in sys.argv and \

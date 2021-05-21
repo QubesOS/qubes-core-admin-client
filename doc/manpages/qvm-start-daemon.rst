@@ -56,8 +56,8 @@ Options
 .. option:: --force
 
    Force running, even if this isn't GUI/Audio domain. GUI domain is a domain
-   with 'guivm-gui-agent' qvm-service enabled. Similarly for Audio domain it is
-   'audiovm-audio-agent' qvm-service.
+   with 'guivm' qvm-service enabled. Similarly for Audio domain it is
+   'audiovm' qvm-service.
 
 .. option:: --kde
 
