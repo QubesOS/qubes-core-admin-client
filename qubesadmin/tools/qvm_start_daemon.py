@@ -326,6 +326,10 @@ class DAEMONLauncher:
         self.vm_names = vm_names
         self.kde = kde
 
+        # cache XID values when the VM was still running -
+        # for cleanup purpose
+        self.xid_cache = {}
+
     async def send_monitor_layout(self, vm, layout=None, startup=False):
         """Send monitor layout to a given VM
 
@@ -607,6 +611,8 @@ class DAEMONLauncher:
         if not self.is_watched(vm):
             return
 
+        self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+
         try:
             if getattr(vm, 'guivm', None) == vm.app.local_name and \
                     vm.features.check_with_template('gui', True) and \
@@ -641,6 +647,7 @@ class DAEMONLauncher:
                 asyncio.ensure_future(
                     self.start_gui(vm, monitor_layout=monitor_layout))
                 asyncio.ensure_future(self.start_audio(vm))
+                self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start'
                 # event when fully started
@@ -654,9 +661,16 @@ class DAEMONLauncher:
         if not self.is_watched(vm):
             return
 
-        self.cleanup_guid(vm.xid)
-        if vm.virt_mode == 'hvm':
-            self.cleanup_guid(vm.stubdom_xid)
+        # read XID from cache, as stopped domain reports it already as -1
+        try:
+            xid, stubdom_xid = self.xid_cache[vm.name]
+            del self.xid_cache[vm.name]
+        except KeyError:
+            return
+        if xid != -1:
+            self.cleanup_guid(xid)
+        if stubdom_xid != -1:
+            self.cleanup_guid(stubdom_xid)
 
     def cleanup_guid(self, xid):
         """
