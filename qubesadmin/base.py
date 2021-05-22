@@ -157,7 +157,8 @@ class PropertyHolder(object):
                 self._method_prefix + 'Get',
                 item,
                 None)
-        except qubesadmin.exc.QubesDaemonAccessError:
+        except (qubesadmin.exc.QubesDaemonAccessError,
+                qubesadmin.exc.QubesVMNotFoundError):
             raise qubesadmin.exc.QubesPropertyAccessError(item)
         is_default, value = self._deserialize_property(property_str)
         if self.app.cache_enabled:
@@ -179,7 +180,8 @@ class PropertyHolder(object):
                 self._method_prefix + 'GetDefault',
                 item,
                 None)
-        except qubesadmin.exc.QubesDaemonAccessError:
+        except (qubesadmin.exc.QubesDaemonAccessError,
+                qubesadmin.exc.QubesVMNotFoundError):
             raise qubesadmin.exc.QubesPropertyAccessError(item)
         if not property_str:
             raise AttributeError(item + ' has no default')
@@ -224,7 +226,8 @@ class PropertyHolder(object):
                 self._method_prefix + 'Get',
                 item,
                 None)
-        except qubesadmin.exc.QubesDaemonNoResponseError:
+        except (qubesadmin.exc.QubesDaemonNoResponseError,
+                qubesadmin.exc.QubesVMNotFoundError):
             raise qubesadmin.exc.QubesPropertyAccessError(item)
         is_default, value = self._deserialize_property(property_str)
         if self.app.cache_enabled:
@@ -353,7 +356,8 @@ class PropertyHolder(object):
                     self._method_prefix + 'Reset',
                     key,
                     None)
-            except qubesadmin.exc.QubesDaemonNoResponseError:
+            except (qubesadmin.exc.QubesDaemonNoResponseError,
+                    qubesadmin.exc.QubesVMNotFoundError):
                 raise qubesadmin.exc.QubesPropertyAccessError(key)
         else:
             if isinstance(value, qubesadmin.vm.QubesVM):
@@ -366,7 +370,8 @@ class PropertyHolder(object):
                     self._method_prefix + 'Set',
                     key,
                     str(value).encode('utf-8'))
-            except qubesadmin.exc.QubesDaemonNoResponseError:
+            except (qubesadmin.exc.QubesDaemonNoResponseError,
+                    qubesadmin.exc.QubesVMNotFoundError):
                 raise qubesadmin.exc.QubesPropertyAccessError(key)
 
     def __delattr__(self, name):
@@ -378,7 +383,8 @@ class PropertyHolder(object):
                 self._method_prefix + 'Reset',
                 name
             )
-        except qubesadmin.exc.QubesDaemonNoResponseError:
+        except (qubesadmin.exc.QubesDaemonNoResponseError,
+                qubesadmin.exc.QubesVMNotFoundError):
             raise qubesadmin.exc.QubesPropertyAccessError(name)
 
 
