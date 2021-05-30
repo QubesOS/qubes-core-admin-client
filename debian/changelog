@@ -1,3 +1,11 @@
+qubes-core-admin-client (4.1.12-1) unstable; urgency=medium
+
+  * Guard qvm-start-daemon with generic 'guivm' or 'audiovm' services
+  * Fix gui-daemon cleanup
+  * Uniformly handle QubesVMNotFoundError when accessing a property
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 30 May 2021 04:24:25 +0200
+
 qubes-core-admin-client (4.1.11-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
