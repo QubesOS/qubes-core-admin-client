@@ -137,9 +137,30 @@ disable-dns-server
     Enabling this service will result in an empty /etc/resolv.conf.
     The functionality is implemented in /usr/lib/qubes/setup-ip.
 
+lightdm:
+    Default: enabled in GPU and VNC GuiVM
+
+    Start `lightdm` on boot which prevent `qubes-gui-agent` to start.
+    In this case, `lightdm` is responsible to start the `X.org` server.
+
+guivm:
+    Default: enabled in GuiVM
+
+    Enable common mandatory functionalities in a GuiVM.
+
+guivm-gui-agent:
+    Default: enabled for hybrid GuiVM
+
+    When enabled, it starts hybrid GuiVM specific functionality.
+
+guivm-vnc:
+    Default: enabled for VNC GuiVM
+
+    When enabled, it starts VNC GuiVM specific functionality.
 
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
+| Frédéric Pierret <frederic dot pierret at qubes dash os dot org>

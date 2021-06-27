@@ -232,6 +232,13 @@ When a qube with this feature create a new VM, it gets extra tags listed in this
 feature value (separated with space) automatically. Tags are added before qube
 creation finishes.
 
+set-created-guivm
+^^^^^^^^^^^^^^^^^
+
+When a qube with this feature create a new VM, it sets to the new VM its `guivm`
+property value to `set-created-guivm` feature value.
+
+
 Authors
 -------
 
