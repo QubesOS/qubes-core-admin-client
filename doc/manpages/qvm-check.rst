@@ -65,4 +65,6 @@ Authors
 | Wojtek Porczyk <woju at invisiblethingslab dot com>
 | Frédéric Pierret <frederic dot pierret at qubes dash os dot com>
 
+| For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
+
 .. vim: ts=3 sw=3 et tw=80

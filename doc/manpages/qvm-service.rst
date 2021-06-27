@@ -164,3 +164,5 @@ Authors
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
 | Frédéric Pierret <frederic dot pierret at qubes dash os dot org>
+
+| For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git

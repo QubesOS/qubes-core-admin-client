@@ -57,3 +57,5 @@ Authors
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
 | Bahtiar `kalkin-` Gadimov <bahtiar at gadimov dot de> 
+
+| For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git

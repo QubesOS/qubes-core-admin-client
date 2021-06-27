@@ -144,4 +144,6 @@ Authors
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
 | Bahtiar `kalkin-` Gadimov <bahtiar at gadimov dot de>
 
+| For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
+
 .. vim: ts=3 sw=3 et tw=80

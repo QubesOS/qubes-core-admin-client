@@ -131,3 +131,5 @@ Authors
 -------
 | Bahtiar \`kalkin-\` Gadimov <bahtiar at gadimov dot de>
 | Saswat Padhi <padhi at cs dot ucla dot edu>
+
+| For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git

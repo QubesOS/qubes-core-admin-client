@@ -495,3 +495,8 @@ matching. In particular, the following special characters can be used:
 
 In particular, note that ``{}``, while supported by DNF, is not supported by
 `qvm-template`.
+
+Authors
+-------
+
+| For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
