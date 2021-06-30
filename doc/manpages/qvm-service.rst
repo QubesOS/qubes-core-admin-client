@@ -138,23 +138,23 @@ disable-dns-server
     The functionality is implemented in /usr/lib/qubes/setup-ip.
 
 lightdm:
-    Default: enabled in GPU and VNC GuiVM
+    Default: disabled
 
-    Start `lightdm` on boot which prevent `qubes-gui-agent` to start.
+    Start `lightdm` and avoid starting `qubes-gui-agent`.
     In this case, `lightdm` is responsible to start the `X.org` server.
 
 guivm:
-    Default: enabled in GuiVM
+    Default: disabled
 
     Enable common mandatory functionalities in a GuiVM.
 
 guivm-gui-agent:
-    Default: enabled for hybrid GuiVM
+    Default: disabled
 
     When enabled, it starts hybrid GuiVM specific functionality.
 
 guivm-vnc:
-    Default: enabled for VNC GuiVM
+    Default: disabled
 
     When enabled, it starts VNC GuiVM specific functionality.
 
