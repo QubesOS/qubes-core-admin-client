@@ -326,9 +326,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui-emulated',
             None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
-        proc_mock = unittest.mock.Mock()
-        with unittest.mock.patch('asyncio.create_subprocess_exec',
-                lambda *args: self.mock_coroutine(proc_mock, *args)):
+        with unittest.mock.patch('asyncio.create_subprocess_exec') as proc_mock:
             with unittest.mock.patch.object(self.launcher,
                     'common_guid_args', lambda vm: []):
                 loop.run_until_complete(self.launcher.start_gui_for_stubdomain(
@@ -359,9 +357,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui-emulated',
             None)] = \
             b'0\x001'
-        proc_mock = unittest.mock.Mock()
-        with unittest.mock.patch('asyncio.create_subprocess_exec',
-                lambda *args: self.mock_coroutine(proc_mock, *args)):
+        with unittest.mock.patch('asyncio.create_subprocess_exec') as proc_mock:
             with unittest.mock.patch.object(self.launcher,
                     'common_guid_args', lambda vm: []):
                 loop.run_until_complete(self.launcher.start_gui_for_stubdomain(
