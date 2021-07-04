@@ -1,3 +1,37 @@
+qubes-core-admin-client (4.0.33-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * rpm: add BR: python3-lxml and python3-xcffib
+
+  [ Frédéric Pierret (fepitre) ]
+  * Add .gitlab-ci.yml
+
+  [ Marek Marczykowski-Górecki ]
+  * gitlab-ci: adjust custom job
+  * tests: avoid 'xrandr' call
+  * backup: add function parameter for override temp directory
+  * backup: cleanup retrieve_proc on failure
+  * backup: check if there is enough disk space available to restore
+  * backup: throttle backup extracting if there is not enough disk space
+  * tests: fix preparing multi-part disk volume
+  * tests: restoring a backup bigger than available space in /var/tmp
+
+  [ Rusty Bird ]
+  * qvm-backup: dom0 dst relative to cwd of tool, not qubesd
+
+  [ Marek Marczykowski-Górecki ]
+  * gitlab-ci: fix codecov call
+  * Drop Python2 support
+  * debian: really drop python2 build
+
+  [ Frédéric Pierret (fepitre) ]
+  * spec: add BR make
+
+  [ Marek Marczykowski-Górecki ]
+  * Convert tests to use stdlib's AsyncMock()
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 04 Jul 2021 05:44:07 +0200
+
 qubes-core-admin-client (4.0.32-1) unstable; urgency=medium
 
   * rpm: fix condition for fedora/centos
