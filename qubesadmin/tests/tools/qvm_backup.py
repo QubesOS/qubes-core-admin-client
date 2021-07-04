@@ -22,7 +22,6 @@ import os
 import unittest.mock as mock
 
 import asyncio
-import asynctest
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
@@ -178,7 +177,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                 None)] = \
             b'0\0'
         try:
-            mock_events = asynctest.CoroutineMock()
+            mock_events = mock.AsyncMock()
             patch = mock.patch(
                 'qubesadmin.events.EventsDispatcher._get_events_reader',
                 mock_events)

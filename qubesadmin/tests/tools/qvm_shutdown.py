@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 import asyncio
-import asynctest
 import unittest.mock
 
 import qubesadmin.tests
@@ -87,7 +86,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = asynctest.CoroutineMock()
+        mock_events = unittest.mock.AsyncMock()
         patch = unittest.mock.patch(
             'qubesadmin.events.EventsDispatcher._get_events_reader',
             mock_events)
@@ -118,7 +117,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = asynctest.CoroutineMock()
+        mock_events = unittest.mock.AsyncMock()
         patch = unittest.mock.patch(
             'qubesadmin.events.EventsDispatcher._get_events_reader',
             mock_events)
@@ -165,7 +164,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = asynctest.CoroutineMock()
+        mock_events = unittest.mock.AsyncMock()
         patch = unittest.mock.patch(
             'qubesadmin.events.EventsDispatcher._get_events_reader',
             mock_events)

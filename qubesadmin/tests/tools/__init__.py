@@ -80,6 +80,5 @@ class MockEventsReader(object):
         self.current_event = rest
         return data + delim
 
-    @asyncio.coroutine
     def __call__(self, vm=None):
         return self, (lambda: None)
