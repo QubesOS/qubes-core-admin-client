@@ -377,14 +377,14 @@ class Rule(object):
         return self._srchost
 
     @srchost.setter
-    def dsthost(self, value):
+    def srchost(self, value):
         if value is not None and not isinstance(value, SrcHost):
             value = SrcHost(value)
         self._srchost = value
 
     @property
     def dstports(self):
-        ''''Destination port(s) (for \'tcp\' and \'udp\' protocol only)'''
+        '''Destination port(s) (for \'tcp\' and \'udp\' protocol only)'''
         return self._dstports
 
     @dstports.setter
