@@ -66,11 +66,21 @@ class Action(RuleChoice):
     '''Rule action'''
     accept = 'accept'
     drop = 'drop'
+    forward = 'forward'
 
     @property
     def rule(self):
         '''API representation of this rule element'''
         return 'action=' + str(self)
+
+
+class ForwardType(RuleChoice):
+    external = 'external'
+    internal = 'internal'
+
+    @property
+    def rule(self):
+        return 'forwardtype=' + str(self)
 
 
 class Proto(RuleChoice):
@@ -85,7 +95,7 @@ class Proto(RuleChoice):
         return 'proto=' + str(self)
 
 
-class DstHost(RuleOption):
+class Host(RuleOption):
     '''Represent host/network address: either IPv4, IPv6, or DNS name'''
     def __init__(self, value, prefixlen=None):
         # TODO: in python >= 3.3 ipaddress module could be used
@@ -150,6 +160,9 @@ class DstHost(RuleOption):
 
         super().__init__(value)
 
+
+class DstHost(Host):
+
     @property
     def rule(self):
         '''API representation of this rule element'''
@@ -160,7 +173,19 @@ class DstHost(RuleOption):
         return self.type + '=' + str(self)
 
 
-class DstPorts(RuleOption):
+class SrcHost(Host):
+    
+    @property
+    def rule(self):
+        '''API representation of this rule element'''
+        if self.prefixlen == 0 and self.type != 'dsthost':
+            # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
+            # so skip it
+            return None
+        return 'src' + self.type + '=' + str(self)
+
+
+class Ports(RuleOption):
     '''Destination port(s), for TCP/UDP only'''
     def __init__(self, value):
         if isinstance(value, int):
@@ -179,11 +204,19 @@ class DstPorts(RuleOption):
             str(self.range[0]) if self.range[0] == self.range[1]
             else '{!s}-{!s}'.format(*self.range))
 
+class DstPorts(Ports):
+
     @property
     def rule(self):
         '''API representation of this rule element'''
         return 'dstports=' + '{!s}-{!s}'.format(*self.range)
 
+class SrcPorts(Ports):
+    
+    @property
+    def rule(self):
+        '''API representation of this rule element'''
+        return 'srcports=' + '{!s}-{!s}'.format(*self.range)
 
 class IcmpType(RuleOption):
     '''ICMP packet type'''
@@ -251,9 +284,12 @@ class Rule(object):
         :param kwargs: rule elements
         '''
         self._action = None
+        self._forwardtype = None
         self._proto = None
         self._dsthost = None
+        self._srchost = None
         self._dstports = None
+        self._srcports = None
         self._icmptype = None
         self._specialtarget = None
         self._expire = None
@@ -269,8 +305,9 @@ class Rule(object):
                 rule_dict['comment'] = comment
         rule_dict.update(kwargs)
 
-        rule_elements = ('action', 'proto', 'dsthost', 'dst4', 'dst6',
-            'specialtarget', 'dstports', 'icmptype', 'expire', 'comment')
+        rule_elements = ('action', 'forwardtype', 'proto', 'dsthost', 'dst4',
+            'dst6', 'specialtarget', 'srcports', 'dstports', 'icmptype',
+            'expire', 'comment')
         for rule_opt in rule_elements:
             value = rule_dict.pop(rule_opt, None)
             if value is None:
@@ -296,6 +333,17 @@ class Rule(object):
         if not isinstance(value, Action):
             value = Action(value)
         self._action = value
+
+    @property
+    def forwardtype(self):
+        '''type of forwarding (internal or external)'''
+        return self._forwardtype
+
+    @forwardtype.setter
+    def forwardtype(self, value):
+        if not isinstance(value, ForwardType):
+            value = ForwardType(value)
+        self._forwardtype = value
 
     @property
     def proto(self):
@@ -324,6 +372,17 @@ class Rule(object):
         self._dsthost = value
 
     @property
+    def srchost(self):
+        '''destination host/network'''
+        return self._srchost
+
+    @srchost.setter
+    def dsthost(self, value):
+        if value is not None and not isinstance(value, SrcHost):
+            value = SrcHost(value)
+        self._srchost = value
+
+    @property
     def dstports(self):
         ''''Destination port(s) (for \'tcp\' and \'udp\' protocol only)'''
         return self._dstports
@@ -337,6 +396,21 @@ class Rule(object):
             if not isinstance(value, DstPorts):
                 value = DstPorts(value)
         self._dstports = value
+
+    @property
+    def srcports(self):
+        ''''Source port(s) (for forwarding only)'''
+        return self._srcports
+
+    @srcports.setter
+    def srcports(self, value):
+        if value is not None:
+            if self.proto not in ('tcp', 'udp'):
+                raise ValueError(
+                    'srcports valid only for \'tcp\' and \'udp\' protocols')
+            if not isinstance(value, DstPorts):
+                value = SrcPorts(value)
+        self._srcports = value
 
     @property
     def icmptype(self):
@@ -390,8 +464,9 @@ class Rule(object):
         '''API representation of this rule'''
         values = []
         # comment must be the last one
-        for prop in ('action', 'proto', 'dsthost', 'dstports', 'icmptype',
-                'specialtarget', 'expire', 'comment'):
+        for prop in ('action', 'forwardtype', 'proto', 'dsthost', 'srchost',
+            'dstports', 'srcports', 'icmptype',  'specialtarget', 'expire',
+            'comment'):
             value = getattr(self, prop)
             if value is None:
                 continue
