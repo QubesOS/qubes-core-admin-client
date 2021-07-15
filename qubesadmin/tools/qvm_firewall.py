@@ -155,7 +155,6 @@ def rules_list_table(vm):
     header = ['NO', 'ACTION', 'FWD TYPE', 'DSTHOST', 'SRCHOST', 'PROTOCOL', 'DSTPORT(S)',
         'SRCPORT(S)', 'SPECIAL TARGET', 'ICMP TYPE', 'EXPIRE', 'COMMENT']
     rows = []
-    print(vm.firewall.rules)
     for (rule, rule_no) in zip(vm.firewall.rules, itertools.count()):
         row = [x.pretty_value if x is not None else '-' for x in [
             rule.action,

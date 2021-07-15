@@ -475,8 +475,6 @@ class Rule(object):
             if value.rule is None:
                 continue
             values.append(value.rule)
-            with open('/tmp/log.txt', 'a') as f:
-                f.write(' '.join(values) + '\n')
         return ' '.join(values)
 
     def __eq__(self, other):
