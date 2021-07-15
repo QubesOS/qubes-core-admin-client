@@ -113,7 +113,7 @@ class Host(RuleOption):
                     raise ValueError(
                         'netmask for IPv6 must be between 0 and 128')
                 value += '/' + str(self.prefixlen)
-                self.type = 'dst6'
+                self.type = '6'
             except socket.error:
                 try:
                     socket.inet_pton(socket.AF_INET, value)
@@ -128,9 +128,9 @@ class Host(RuleOption):
                         raise ValueError(
                             'netmask for IPv4 must be between 0 and 32')
                     value += '/' + str(self.prefixlen)
-                    self.type = 'dst4'
+                    self.type = '4'
                 except socket.error:
-                    self.type = 'dsthost'
+                    self.type = 'host'
                     self.prefixlen = 0
                     safe_set = string.ascii_lowercase + string.digits + '-._'
                     if not all(c in safe_set for c in value):
@@ -145,13 +145,13 @@ class Host(RuleOption):
                 socket.inet_pton(socket.AF_INET6, host)
                 if prefixlen > 128:
                     raise ValueError('netmask for IPv6 must be <= 128')
-                self.type = 'dst6'
+                self.type = '6'
             except socket.error:
                 try:
                     socket.inet_pton(socket.AF_INET, host)
                     if prefixlen > 32:
                         raise ValueError('netmask for IPv4 must be <= 32')
-                    self.type = 'dst4'
+                    self.type = '4'
                     if host.count('.') != 3:
                         raise ValueError(
                             'Invalid number of dots in IPv4 address')
@@ -170,7 +170,7 @@ class DstHost(Host):
             # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
             # so skip it
             return None
-        return self.type + '=' + str(self)
+        return 'dst' + self.type + '=' + str(self)
 
 
 class SrcHost(Host):
@@ -178,7 +178,7 @@ class SrcHost(Host):
     @property
     def rule(self):
         '''API representation of this rule element'''
-        if self.prefixlen == 0 and self.type != 'dsthost':
+        if self.prefixlen == 0 and self.type != 'srchost':
             # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
             # so skip it
             return None
@@ -305,8 +305,8 @@ class Rule(object):
                 rule_dict['comment'] = comment
         rule_dict.update(kwargs)
 
-        rule_elements = ('action', 'forwardtype', 'proto', 'dsthost', 'dst4',
-            'dst6', 'specialtarget', 'srcports', 'dstports', 'icmptype',
+        rule_elements = ('action', 'forwardtype', 'proto', 'dsthost', 'srchost', 'dst4',
+            'dst6', 'src4', 'src6', 'specialtarget', 'srcports', 'dstports', 'icmptype',
             'expire', 'comment')
         for rule_opt in rule_elements:
             value = rule_dict.pop(rule_opt, None)
@@ -314,6 +314,8 @@ class Rule(object):
                 continue
             if rule_opt in ('dst4', 'dst6'):
                 rule_opt = 'dsthost'
+            if rule_opt in ('src4', 'src6'):
+                rule_opt = 'srchost'
             setattr(self, rule_opt, value)
 
         if rule_dict:
@@ -473,6 +475,8 @@ class Rule(object):
             if value.rule is None:
                 continue
             values.append(value.rule)
+            with open('/tmp/log.txt', 'a') as f:
+                f.write(' '.join(values) + '\n')
         return ' '.join(values)
 
     def __eq__(self, other):

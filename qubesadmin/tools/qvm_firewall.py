@@ -62,6 +62,8 @@ class RuleAction(argparse.Action):
                     'invalid rule description: {}'.format(opt))
             if key in ['dst4', 'dst6']:
                 key = 'dsthost'
+            if key in ['src4', 'src6']:
+                key = 'srchost'
             if key not in allowed_opts:
                 raise argparse.ArgumentError(None,
                     'Invalid rule element: {}'.format(opt))
@@ -153,6 +155,7 @@ def rules_list_table(vm):
     header = ['NO', 'ACTION', 'FWD TYPE', 'DSTHOST', 'SRCHOST', 'PROTOCOL', 'DSTPORT(S)',
         'SRCPORT(S)', 'SPECIAL TARGET', 'ICMP TYPE', 'EXPIRE', 'COMMENT']
     rows = []
+    print(vm.firewall.rules)
     for (rule, rule_no) in zip(vm.firewall.rules, itertools.count()):
         row = [x.pretty_value if x is not None else '-' for x in [
             rule.action,
