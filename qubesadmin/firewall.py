@@ -166,7 +166,7 @@ class DstHost(Host):
     @property
     def rule(self):
         '''API representation of this rule element'''
-        if self.prefixlen == 0 and self.type != 'dsthost':
+        if self.prefixlen == 0 and self.type != 'host':
             # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
             # so skip it
             return None
@@ -178,7 +178,7 @@ class SrcHost(Host):
     @property
     def rule(self):
         '''API representation of this rule element'''
-        if self.prefixlen == 0 and self.type != 'srchost':
+        if self.prefixlen == 0 and self.type != 'host':
             # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
             # so skip it
             return None
