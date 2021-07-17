@@ -182,7 +182,7 @@ class SrcHost(Host):
             # drop both hostname based source verification and wildcard /0
             # TODO: discuss wether these defaults are too limiting, however since exposing a 
             # port/service poses a greater threat, 
-            raise ValueError("srchost cannot neither an hostname nor contain the /0 prefix")
+            raise ValueError("srchost cannot neither be an hostname nor contain the /0 prefix")
         return 'src' + self.type + '=' + str(self)
 
 
