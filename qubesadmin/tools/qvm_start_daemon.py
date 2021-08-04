@@ -25,6 +25,7 @@ import signal
 import subprocess
 import fcntl
 import asyncio
+import logging
 import re
 import functools
 import sys
@@ -278,7 +279,11 @@ def get_monitor_layout():
             ['xrandr', '-q'], stdout=subprocess.PIPE).stdout:
         line = line.decode()
         if not line.startswith("Screen") and not line.startswith(" "):
-            output_params = REGEX_OUTPUT.match(line).groupdict()
+            match = REGEX_OUTPUT.match(line)
+            if not match:
+                logging.warning('Invalid output from xrandr: %r', line)
+                continue
+            output_params = match.groupdict()
             if output_params['width']:
                 phys_size = ""
                 if output_params['width_mm'] and int(output_params['width_mm']):
