@@ -117,6 +117,15 @@ class VMCollection(object):
                                          power_state=power_state)
         return self._vm_objects[item]
 
+    def get(self, item, default=None):
+        """
+        Get a VM object, or return *default* if it can't be found.
+        """
+        try:
+            return self[item]
+        except KeyError:
+            return default
+
     def __contains__(self, item):
         if isinstance(item, qubesadmin.vm.QubesVM):
             item = item.name
