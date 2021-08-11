@@ -375,8 +375,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         if pool is None and pools is None:
             # use the same pools as the source - check if non default is used
             for volume in sorted(src_vm.volumes.values()):
-                if not volume.save_on_stop:
-                    # clone only persistent volumes
+                if volume.snap_on_start or not volume.rw:
+                    # also see qubes.vm.qubesvm._patch_pool_config()
                     continue
                 if ignore_volumes and volume.name in ignore_volumes:
                     continue
