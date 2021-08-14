@@ -1,3 +1,23 @@
+qubes-core-admin-client (4.1.13-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * doc: add set-created-guivm features and guivm related services
+  * doc: point complete author list to git repo
+  * manpages: be more precise on guivm services
+
+  [ Marek Marczykowski-Górecki ]
+  * Convert tests to use stdlib's AsyncMock()
+
+  [ Demi Marie Obenour ]
+  * Rip out @asyncio.coroutine
+  * Use fcntl locking for the PID file
+  * Do not crash on unexpected output from xrandr
+
+  [ Rusty Bird ]
+  * app: fix pool-preserving VM clone mode used by GUI
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 14 Aug 2021 04:42:36 +0200
+
 qubes-core-admin-client (4.1.12-1) unstable; urgency=medium
 
   * Guard qvm-start-daemon with generic 'guivm' or 'audiovm' services
