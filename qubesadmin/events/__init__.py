@@ -249,4 +249,9 @@ class EventsDispatcher(object):
             for h_func in h_func_set
             if fnmatch.fnmatch(event, h_name)]
         for handler in handlers:
-            handler(subject, event, **kwargs)
+            try:
+                handler(subject, event, **kwargs)
+            except:  # pylint: disable=bare-except
+                self.app.log.exception(
+                    'Failed to handle event: %s, %s, %s',
+                    subject, event, kwargs)
