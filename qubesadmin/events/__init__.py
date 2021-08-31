@@ -52,6 +52,9 @@ class EventsDispatcher(object):
         #: event handlers - dict of event -> handlers
         self.handlers = {}
 
+        #: used to stop processing events
+        self._reader_task = None
+
         if enable_cache:
             self.app.cache_enabled = True
 
@@ -135,9 +138,15 @@ class EventsDispatcher(object):
         '''
         while True:
             try:
-                await self._listen_for_events(vm)
+                self._reader_task = asyncio.create_task(
+                    self._listen_for_events(vm))
+                await self._reader_task
             except (OSError, qubesadmin.exc.QubesDaemonCommunicationError):
                 pass
+            except asyncio.CancelledError:
+                break
+            finally:
+                self._reader_task = None
             if not reconnect:
                 break
             self.app.log.warning(
@@ -197,6 +206,11 @@ class EventsDispatcher(object):
         finally:
             cleanup_func()
         return some_event_received
+
+    def stop(self):
+        """Stop currently running dispatcher"""
+        if self._reader_task:
+            self._reader_task.cancel()
 
     def handle(self, subject, event, **kwargs):
         """Call handlers for given event"""
