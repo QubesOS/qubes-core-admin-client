@@ -72,7 +72,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         for vm in this_round_domains:
             try:
                 vm.shutdown(force=force)
-            except qubesadmin.exc.QubesVMNotRunningError:
+            except qubesadmin.exc.QubesVMNotStartedError:
                 pass
             except qubesadmin.exc.QubesException as e:
                 if not args.wait:
