@@ -37,6 +37,9 @@ class TestVM(object):
     def get_power_state(self):
         return getattr(self, 'power_state', 'Running')
 
+    def is_networked(self):
+        return bool(getattr(self, 'netvm', False))
+
     def __str__(self):
         return self.name
 
@@ -49,6 +52,8 @@ class TestVM(object):
 class TestVMCollection(dict):
     def __iter__(self):
         return iter(self.values())
+
+    get_blind = dict.get
 
 
 class TestProcess(object):
