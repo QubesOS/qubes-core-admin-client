@@ -63,8 +63,9 @@ Options
 
 .. option:: --root-move-from=FILENAME, -R FILENAME
 
-   Use provided :file:`root.img` instead of default/empty one (file will be
-   *moved*). This option is mutually exclusive with :option:`--root-copy-from`.
+   Like :option:`--root-copy-from`, but remove provided :file:`root.img` file
+   after succesful copy. This option is mutually exclusive with
+   :option:`--root-copy-from`.
 
 .. option:: -P POOL
 
