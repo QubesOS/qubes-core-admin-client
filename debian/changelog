@@ -1,3 +1,29 @@
+qubes-core-admin-client (4.1.14-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Add Qubes.domains.get() method
+
+  [ Marta Marczykowska-Górecka ]
+  * Fix too-narrow exception caught in qvm_shutdown
+  * Improve TestVM and TestVMCollection capabilities
+
+  [ Marek Marczykowski-Górecki ]
+  * Make --force-root parameter optionally visible again
+  * Add EventsDispatcher.stop()
+  * Do not interrupt the whole dispatcher if a single handler fails
+
+  [ Marta Marczykowska-Górecka ]
+  * Clarify 'internal' feature usage
+
+  [ Yann Dirson ]
+  * qvm-create.1: improve --root-move-from description
+  * qvm-create.1: more detailed --root-copy-from description
+
+  [ Marta Marczykowska-Górecka ]
+  * Better error reporting on backup errors
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 28 Sep 2021 05:25:57 +0200
+
 qubes-core-admin-client (4.1.13-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
