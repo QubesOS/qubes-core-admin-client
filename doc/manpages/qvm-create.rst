@@ -58,13 +58,17 @@ Options
 
 .. option:: --root-copy-from=FILENAME, -r FILENAME
 
-   Use provided :file:`root.img` instead of default/empty one (file will be
-   *copied*). This option is mutually exclusive with :option:`--root-move-from`.
+   Use provided :file:`root.img` instead of default/empty one (file
+   will be *copied*). If the provided file does not have the same size
+   as the system volume being created, the VM will still be created
+   but with an empty system volume, and the program will report an
+   error. This option is mutually exclusive with :option:`--root-move-from`.
 
 .. option:: --root-move-from=FILENAME, -R FILENAME
 
-   Use provided :file:`root.img` instead of default/empty one (file will be
-   *moved*). This option is mutually exclusive with :option:`--root-copy-from`.
+   Like :option:`--root-copy-from`, but remove provided :file:`root.img` file
+   after succesful copy. This option is mutually exclusive with
+   :option:`--root-copy-from`.
 
 .. option:: -P POOL
 
