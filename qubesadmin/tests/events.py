@@ -90,6 +90,16 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         self.dispatcher.handle('', 'some-event', arg1='value1')
         self.assertFalse(handler.called)
 
+    def test_003_handler_error(self):
+        handler = unittest.mock.Mock()
+        self.dispatcher.add_handler('some-event', handler)
+        handler2 = unittest.mock.Mock(side_effect=AssertionError)
+        self.dispatcher.add_handler('some-event', handler2)
+        # should catch the exception
+        self.dispatcher.handle('', 'some-event', arg1='value1')
+        handler.assert_called_once_with(None, 'some-event', arg1='value1')
+        handler2.assert_called_once_with(None, 'some-event', arg1='value1')
+
     async def mock_get_events_reader(self, stream, cleanup_func, expected_vm,
             vm=None):
         self.assertEqual(expected_vm, vm)
