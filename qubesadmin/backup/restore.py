@@ -1859,11 +1859,13 @@ class BackupRestore(object):
     def _handle_appmenus_list(self, vm, stream):
         '''Handle whitelisted-appmenus.list file'''
         try:
-            subprocess.check_call(
-                ['qvm-appmenus', '--set-whitelist=-', vm.name],
-                stdin=stream)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            self.log.error('Failed to set application list for %s', vm.name)
+            appmenus_list = stream.read().decode('ascii').splitlines()
+            # remove empty lines
+            appmenus_list = [l for l in appmenus_list if l]
+            vm.features['menu-items'] = ' '.join(appmenus_list)
+        except QubesException as e:
+            self.log.error(
+                'Failed to set application list for %s: %s', vm.name, e)
 
     def _handle_volume_data(self, vm, volume, stream):
         '''Wrap volume data import with logging'''
