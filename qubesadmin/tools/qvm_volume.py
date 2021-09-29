@@ -94,7 +94,7 @@ def info_volume(args):
     volume = args.volume
     info_items = (
         'pool', 'vid', 'rw', 'source', 'save_on_stop',
-        'snap_on_start', 'size', 'usage', 'revisions_to_keep')
+        'snap_on_start', 'size', 'usage', 'revisions_to_keep', 'ephemeral')
     if args.property:
         if args.property == 'revisions':
             for rev in volume.revisions:
@@ -131,7 +131,7 @@ def info_volume(args):
 def config_volume(args):
     """ Change property of selected volume """
     volume = args.volume
-    if not args.property in ('rw', 'revisions_to_keep'):
+    if args.property not in ('rw', 'revisions_to_keep', 'ephemeral'):
         raise qubesadmin.exc.QubesNoSuchPropertyError(
             'Invalid property: {}'.format(args.property))
     setattr(volume, args.property, args.value)
