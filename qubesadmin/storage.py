@@ -165,6 +165,21 @@ class Volume(object):
         self._info = None
 
     @property
+    def ephemeral(self):
+        """True if volume is read-write."""
+        try:
+            self._fetch_info()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesPropertyAccessError('ephemeral')
+        return self._info.get('ephemeral', 'False') == 'True'
+
+    @ephemeral.setter
+    def ephemeral(self, value):
+        """Set rw property"""
+        self._qubesd_call('Set.ephemeral', str(value).encode('ascii'))
+        self._info = None
+
+    @property
     def snap_on_start(self):
         """Create a snapshot from source on VM start."""
         try:
