@@ -1,3 +1,9 @@
+qubes-core-admin-client (4.1.15-1) unstable; urgency=medium
+
+  * Fix fallout from qvm-appmenus --force-root
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 01 Oct 2021 00:33:26 +0200
+
 qubes-core-admin-client (4.1.14-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
