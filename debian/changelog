@@ -1,3 +1,12 @@
+qubes-core-admin-client (4.1.16-1) unstable; urgency=medium
+
+  * storage: fix formatting
+  * tools/qvm-volume: improve formatting
+  * storage: add Volume.ephemeral property
+  * tools/qvm-volume: add showing and setting 'ephemeral' property
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 09 Oct 2021 05:12:43 +0200
+
 qubes-core-admin-client (4.1.15-1) unstable; urgency=medium
 
   * Fix fallout from qvm-appmenus --force-root
