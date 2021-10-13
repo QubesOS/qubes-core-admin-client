@@ -127,6 +127,13 @@ Create a pool backed by the `file` driver.
 
     qvm-pool add foo file -o dir_path=/mnt/foo
 
+Have pool ``lvm`` encrypt its volatile volumes with an ephemeral key for
+anti-forensics:
+
+::
+
+    qvm-pool set -o encrypted_volatile=True lvm
+
 Authors
 -------
 | Bahtiar \`kalkin-\` Gadimov <bahtiar at gadimov dot de>

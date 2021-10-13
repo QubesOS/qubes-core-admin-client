@@ -407,6 +407,22 @@ class Pool(object):
         self._config = None
 
     @property
+    def ephemeral_volatile(self):
+        """Whether volatile volumes in this pool should be encrypted with an
+           ephemeral key in dom0"""
+        return bool(self.config['ephemeral_volatile'])
+
+    @ephemeral_volatile.setter
+    def ephemeral_volatile(self, value):
+        """Set ephemeral_volatile property"""
+        self.app.qubesd_call(
+            'dom0',
+            'admin.pool.Set.ephemeral_volatile',
+            self.name,
+            str(value).encode('ascii'))
+        self._config = None
+
+    @property
     def volumes(self):
         """ Volumes managed by this pool """
         try:

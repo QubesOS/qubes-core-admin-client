@@ -121,9 +121,19 @@ class TC_00_qvm_pool(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.pool.Set.revisions_to_keep', 'pool-lvm', b'2')] = \
             b'0\x00'
+        self.app.expected_calls[(
+            'dom0',
+            'admin.pool.Set.ephemeral_volatile',
+            'pool-lvm',
+            b'True',
+        )] = b'0\x00'
         self.assertEqual(0,
             qubesadmin.tools.qvm_pool.main(['set', 'pool-lvm', '-o',
                 'revisions_to_keep=2'],
+                app=self.app))
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_pool.main(['set', 'pool-lvm', '-o',
+                'ephemeral_volatile=True'],
                 app=self.app))
         self.assertAllCalled()
 
