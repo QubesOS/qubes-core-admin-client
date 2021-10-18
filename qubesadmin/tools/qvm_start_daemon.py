@@ -23,14 +23,15 @@
 import os
 import signal
 import subprocess
+import fcntl
 import asyncio
+import logging
 import re
 import functools
 import sys
 import xcffib
 import xcffib.xproto  # pylint: disable=unused-import
 
-import daemon.pidfile
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
@@ -278,7 +279,11 @@ def get_monitor_layout():
             ['xrandr', '-q'], stdout=subprocess.PIPE).stdout:
         line = line.decode()
         if not line.startswith("Screen") and not line.startswith(" "):
-            output_params = REGEX_OUTPUT.match(line).groupdict()
+            match = REGEX_OUTPUT.match(line)
+            if not match:
+                logging.warning('Invalid output from xrandr: %r', line)
+                continue
+            output_params = match.groupdict()
             if output_params['width']:
                 phys_size = ""
                 if output_params['width_mm'] and int(output_params['width_mm']):
@@ -750,7 +755,24 @@ def main(args=None):
         kde=args.kde)
 
     if args.watch:
-        with daemon.pidfile.TimeoutPIDLockFile(args.pidfile):
+        fd = os.open(args.pidfile,
+                     os.O_RDWR | os.O_CREAT | os.O_CLOEXEC,
+                     0o600)
+        with os.fdopen(fd, 'r+') as lock_f:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                try:
+                    pid = int(lock_f.read().strip())
+                except ValueError:
+                    pid = 'unknown'
+                print('Another GUI daemon process (with PID {}) is already '
+                      'running'.format(pid),
+                      file=sys.stderr)
+                sys.exit(1)
+            print(os.getpid(), file=lock_f)
+            lock_f.flush()
+            lock_f.truncate()
             loop = asyncio.get_event_loop()
             # pylint: disable=no-member
             events = qubesadmin.events.EventsDispatcher(args.app)

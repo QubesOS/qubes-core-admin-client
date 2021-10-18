@@ -132,7 +132,9 @@ internal
 ^^^^^^^^
 
 Internal qubes (with this feature set to :py:obj:`True`) are not included in the
-menu.
+menu, not available in GUI tools (e.g in Global Settings as a default net qube)
+and generally hidden from normal usage. It is not recommended to set this
+feature manually.
 
 Default: not internal VM
 

@@ -329,6 +329,9 @@ class QubesArgumentParser(argparse.ArgumentParser):
         * '*' consumes zero or more arguments (and produces a list)
         * '+' consumes one or more arguments (and produces a list)
 
+    :param show_forceroot: don't hide --force-root parameter, prevent running
+        as root unless it is given
+
     *kwargs* are passed to :py:class:`argparser.ArgumentParser`.
 
     Currenty supported options:
@@ -337,7 +340,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
         ``--verbose`` and ``--quiet``
     '''
 
-    def __init__(self, vmname_nargs=None, **kwargs):
+    def __init__(self, vmname_nargs=None, show_forceroot=False, **kwargs):
 
         super().__init__(add_help=False, **kwargs)
 
@@ -349,8 +352,15 @@ class QubesArgumentParser(argparse.ArgumentParser):
         self.add_argument('--quiet', '-q', action='count',
                           help='decrease verbosity')
 
-        self.add_argument('--force-root', action='store_true',
-                          default=False, help=argparse.SUPPRESS)
+        if show_forceroot:
+            self.add_argument(
+                '--force-root', action='store_true',
+                default=False,
+                help="Force running the tool even if called as root")
+        else:
+            self.add_argument('--force-root', action='store_true',
+                              default=False, help=argparse.SUPPRESS)
+        self._complain_if_root = show_forceroot
 
         self.add_argument('--help', '-h', action=SubParsersHelpAction,
                           help='show this help message and exit')
@@ -371,6 +381,11 @@ class QubesArgumentParser(argparse.ArgumentParser):
         # hack for tests
         app = kwargs.pop('app', None)
         namespace = super().parse_args(*args, **kwargs)
+
+        if self._complain_if_root and \
+                os.getuid() == 0 and \
+                not namespace.force_root:
+            self.error('refusing to run as root; add --force-root to override')
 
         self.set_qubes_verbosity(namespace)
         if app is not None:

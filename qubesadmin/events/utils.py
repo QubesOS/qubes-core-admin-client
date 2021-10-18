@@ -18,51 +18,42 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-''' Utilities for common events-based actions '''
+""" Utilities for common events-based actions """
 
-import asyncio
 import functools
 
 import qubesadmin.events
 import qubesadmin.exc
 
 
-
-class Interrupt(Exception):
-    '''Interrupt events processing'''
-
-
-def interrupt_on_vm_shutdown(vms, subject, event):
-    '''Interrupt events processing when given VM was shutdown'''
+def interrupt_on_vm_shutdown(vms, dispatcher, subject, event):
+    """Interrupt events processing when given VM was shutdown"""
     # pylint: disable=unused-argument
     if event == 'connection-established':
-        if all(vm.is_halted() for vm in sorted(vms)):
-            raise Interrupt
+        for vm in sorted(vms):
+            if vm.is_halted():
+                vms.remove(vm)
     elif event == 'domain-shutdown' and subject in vms:
         vms.remove(subject)
-        if not vms:
-            raise Interrupt
+    if not vms:
+        dispatcher.stop()
 
 
-@asyncio.coroutine
-def wait_for_domain_shutdown(vms):
-    ''' Helper function to wait for domain shutdown.
+async def wait_for_domain_shutdown(vms):
+    """ Helper function to wait for domain shutdown.
 
     This function wait for domain shutdown, but do not initiate the shutdown
     itself.
 
     :param vms: QubesVM object collection to wait for shutdown on
-    '''
+    """
     if not vms:
         return
     app = list(vms)[0].app
     vms = set(vms)
     events = qubesadmin.events.EventsDispatcher(app, enable_cache=False)
     events.add_handler('domain-shutdown',
-        functools.partial(interrupt_on_vm_shutdown, vms))
+        functools.partial(interrupt_on_vm_shutdown, vms, events))
     events.add_handler('connection-established',
-        functools.partial(interrupt_on_vm_shutdown, vms))
-    try:
-        yield from events.listen_for_events()
-    except Interrupt:
-        pass
+        functools.partial(interrupt_on_vm_shutdown, vms, events))
+    await events.listen_for_events()

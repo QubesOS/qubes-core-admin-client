@@ -410,6 +410,9 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.property.Get', 'default_pool_private', None)] = \
             b'0\0default=True type=str lvm'
+        self.app.expected_calls[
+            ('dom0', 'admin.property.Get', 'default_pool_volatile', None)] = \
+            b'0\0default=True type=str lvm'
 
     def test_030_clone(self):
         self.clone_setup_common_calls('test-vm', 'new-name')
@@ -453,6 +456,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
                 'test-vm', 'admin.vm.volume.Info', volume, None]
         del self.app.expected_calls[
             'dom0', 'admin.property.Get', 'default_pool_private', None]
+        del self.app.expected_calls[
+            'dom0', 'admin.property.Get', 'default_pool_volatile', None]
         self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             'test-template',
             b'name=new-name label=red pool=some-pool')] = b'0\x00'
@@ -474,6 +479,8 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
                 'test-vm', 'admin.vm.volume.Info', volume, None]
         del self.app.expected_calls[
             'dom0', 'admin.property.Get', 'default_pool_private', None]
+        del self.app.expected_calls[
+            'dom0', 'admin.property.Get', 'default_pool_volatile', None]
         self.app.expected_calls[('dom0', 'admin.vm.CreateInPool.AppVM',
             'test-template',
             b'name=new-name label=red pool:private=some-pool '

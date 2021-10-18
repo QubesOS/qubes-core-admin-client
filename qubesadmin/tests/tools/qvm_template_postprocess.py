@@ -327,8 +327,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.domains.clear_cache()
         return self.app.domains['test-vm']
 
-    @asyncio.coroutine
-    def wait_for_shutdown(self, vm):
+    async def wait_for_shutdown(self, vm):
         pass
 
     @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')

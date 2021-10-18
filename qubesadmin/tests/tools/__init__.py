@@ -69,12 +69,11 @@ class MockEventsReader(object):
     def at_eof(self):
         return not bool(self.events)
 
-    @asyncio.coroutine
-    def readuntil(self, delim):
+    async def readuntil(self, delim):
         if not self.current_event:
             if not self.events:
                 raise asyncio.IncompleteReadError(b'', delim)
-            yield from asyncio.sleep(self.delay)
+            await asyncio.sleep(self.delay)
             self.current_event = self.events.pop(0)
         data, rest = self.current_event.split(delim, 1)
         self.current_event = rest

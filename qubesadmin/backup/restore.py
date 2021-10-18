@@ -1195,15 +1195,16 @@ class BackupRestore(object):
         retrieve_proc_returncode = retrieve_proc.wait()
         if retrieve_proc in self.processes_to_kill_on_cancel:
             self.processes_to_kill_on_cancel.remove(retrieve_proc)
-        extract_stderr = error_pipe.read(MAX_STDERR_BYTES)
+        extract_stderr = error_pipe.read(MAX_STDERR_BYTES).decode(
+            'ascii', 'ignore')
         error_pipe.close()
 
         # wait for other processes (if any)
         for proc in self.processes_to_kill_on_cancel:
             if proc.wait() != 0:
                 raise QubesException(
-                    "Backup header retrieval failed (exit code {})".format(
-                        proc.wait())
+                    "Backup header retrieval failed (exit code {}): {}".format(
+                        proc.wait(), extract_stderr)
                 )
 
         if retrieve_proc_returncode != 0:
@@ -1858,11 +1859,13 @@ class BackupRestore(object):
     def _handle_appmenus_list(self, vm, stream):
         '''Handle whitelisted-appmenus.list file'''
         try:
-            subprocess.check_call(
-                ['qvm-appmenus', '--set-whitelist=-', vm.name],
-                stdin=stream)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            self.log.error('Failed to set application list for %s', vm.name)
+            appmenus_list = stream.read().decode('ascii').splitlines()
+            # remove empty lines
+            appmenus_list = [l for l in appmenus_list if l]
+            vm.features['menu-items'] = ' '.join(appmenus_list)
+        except QubesException as e:
+            self.log.error(
+                'Failed to set application list for %s: %s', vm.name, e)
 
     def _handle_volume_data(self, vm, volume, stream):
         '''Wrap volume data import with logging'''

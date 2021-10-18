@@ -1,3 +1,64 @@
+qubes-core-admin-client (4.1.16-1) unstable; urgency=medium
+
+  * storage: fix formatting
+  * tools/qvm-volume: improve formatting
+  * storage: add Volume.ephemeral property
+  * tools/qvm-volume: add showing and setting 'ephemeral' property
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 09 Oct 2021 05:12:43 +0200
+
+qubes-core-admin-client (4.1.15-1) unstable; urgency=medium
+
+  * Fix fallout from qvm-appmenus --force-root
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 01 Oct 2021 00:33:26 +0200
+
+qubes-core-admin-client (4.1.14-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Add Qubes.domains.get() method
+
+  [ Marta Marczykowska-Górecka ]
+  * Fix too-narrow exception caught in qvm_shutdown
+  * Improve TestVM and TestVMCollection capabilities
+
+  [ Marek Marczykowski-Górecki ]
+  * Make --force-root parameter optionally visible again
+  * Add EventsDispatcher.stop()
+  * Do not interrupt the whole dispatcher if a single handler fails
+
+  [ Marta Marczykowska-Górecka ]
+  * Clarify 'internal' feature usage
+
+  [ Yann Dirson ]
+  * qvm-create.1: improve --root-move-from description
+  * qvm-create.1: more detailed --root-copy-from description
+
+  [ Marta Marczykowska-Górecka ]
+  * Better error reporting on backup errors
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 28 Sep 2021 05:25:57 +0200
+
+qubes-core-admin-client (4.1.13-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * doc: add set-created-guivm features and guivm related services
+  * doc: point complete author list to git repo
+  * manpages: be more precise on guivm services
+
+  [ Marek Marczykowski-Górecki ]
+  * Convert tests to use stdlib's AsyncMock()
+
+  [ Demi Marie Obenour ]
+  * Rip out @asyncio.coroutine
+  * Use fcntl locking for the PID file
+  * Do not crash on unexpected output from xrandr
+
+  [ Rusty Bird ]
+  * app: fix pool-preserving VM clone mode used by GUI
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 14 Aug 2021 04:42:36 +0200
+
 qubes-core-admin-client (4.1.12-1) unstable; urgency=medium
 
   * Guard qvm-start-daemon with generic 'guivm' or 'audiovm' services

@@ -402,8 +402,7 @@ global: {
 
         self.assertAllCalled()
 
-    @asyncio.coroutine
-    def mock_coroutine(self, mock, *args, **kwargs):
+    async def mock_coroutine(self, mock, *args, **kwargs):
         mock(*args, **kwargs)
 
     def test_040_start_gui(self):

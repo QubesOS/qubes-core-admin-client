@@ -360,6 +360,21 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
                 app=self.app))
         self.assertAllCalled()
 
+    def test_033_set_ephemeral(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\nvolatile\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Set.ephemeral', 'volatile',
+            b'True')] = b'0\x00'
+        self.assertEqual(0,
+            qubesadmin.tools.qvm_volume.main(
+                ['set', 'testvm:volatile', 'ephemeral', 'True'],
+                app=self.app))
+        self.assertAllCalled()
+
     def test_040_info(self):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00testvm class=AppVM state=Running\n'
@@ -377,6 +392,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'save_on_stop=True\n' \
             b'snap_on_start=False\n' \
             b'revisions_to_keep=3\n' \
+            b'ephemeral=False\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
             ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
@@ -398,6 +414,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             'size               2147483648\n'
             'usage              10000000\n'
             'revisions_to_keep  3\n'
+            'ephemeral          False\n'
             'is_outdated        False\n'
             'Available revisions (for revert):\n'
             '  200101010000\n'
@@ -422,6 +439,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'save_on_stop=False\n' \
             b'snap_on_start=True\n' \
             b'revisions_to_keep=0\n' \
+            b'ephemeral=True\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
             ('testvm', 'admin.vm.volume.ListSnapshots', 'root', None)] = \
@@ -440,6 +458,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             'size               2147483648\n'
             'usage              10000000\n'
             'revisions_to_keep  0\n'
+            'ephemeral          True\n'
             'is_outdated        False\n'
             'Available revisions (for revert): none\n')
         self.assertAllCalled()
@@ -488,6 +507,52 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             '200101010000\n'
             '200201010000\n'
             '200301010000\n')
+        self.assertAllCalled()
+
+    def test_044_info_no_ephemeral(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00testvm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00root\nprivate\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.Info', 'private', None)] = \
+            b'0\x00pool=lvm\n' \
+            b'vid=qubes_dom0/vm-testvm-private\n' \
+            b'size=2147483648\n' \
+            b'usage=10000000\n' \
+            b'rw=True\n' \
+            b'source=\n' \
+            b'save_on_stop=True\n' \
+            b'snap_on_start=False\n' \
+            b'revisions_to_keep=3\n' \
+            b'is_outdated=False\n'
+        self.app.expected_calls[
+            ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
+            b'0\x00200101010000\n200201010000\n200301010000\n'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(0,
+                qubesadmin.tools.qvm_volume.main(['info', 'testvm:private'],
+                    app=self.app))
+        output = stdout.getvalue()
+        # travis...
+        output = output.replace('\nsource\n', '\nsource             \n')
+        self.assertEqual(output,
+            'pool               lvm\n'
+            'vid                qubes_dom0/vm-testvm-private\n'
+            'rw                 True\n'
+            'source             \n'
+            'save_on_stop       True\n'
+            'snap_on_start      False\n'
+            'size               2147483648\n'
+            'usage              10000000\n'
+            'revisions_to_keep  3\n'
+            'ephemeral          False\n'
+            'is_outdated        False\n'
+            'Available revisions (for revert):\n'
+            '  200101010000\n'
+            '  200201010000\n'
+            '  200301010000\n')
         self.assertAllCalled()
 
     def test_050_import_file(self):

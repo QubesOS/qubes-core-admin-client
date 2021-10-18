@@ -117,6 +117,15 @@ class VMCollection(object):
                                          power_state=power_state)
         return self._vm_objects[item]
 
+    def get(self, item, default=None):
+        """
+        Get a VM object, or return *default* if it can't be found.
+        """
+        try:
+            return self[item]
+        except KeyError:
+            return default
+
     def __contains__(self, item):
         if isinstance(item, qubesadmin.vm.QubesVM):
             item = item.name
@@ -375,8 +384,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         if pool is None and pools is None:
             # use the same pools as the source - check if non default is used
             for volume in sorted(src_vm.volumes.values()):
-                if not volume.save_on_stop:
-                    # clone only persistent volumes
+                if volume.snap_on_start or not volume.rw:
+                    # also see qubes.vm.qubesvm._patch_pool_config()
                     continue
                 if ignore_volumes and volume.name in ignore_volumes:
                     continue
@@ -453,7 +462,22 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 appmenus_cmd = \
                     ['qvm-appmenus', '--init', '--update',
                      '--source', src_vm.name, dst_vm.name]
-                subprocess.check_output(appmenus_cmd, stderr=subprocess.STDOUT)
+                runas = []
+                if os.getuid() == 0:
+                    try:
+                        user = self.domains[self.local_name].default_user
+                    except (KeyError, qubesadmin.exc.QubesException):
+                        try:
+                            user = grp.getgrnam('qubes').gr_mem[0]
+                        except KeyError:
+                            user = None
+                    if not user:
+                        raise qubesadmin.exc.QubesException(
+                            'Failed to find local user account')
+                    runas = ['runuser', '-u', user, '--']
+
+                subprocess.check_output(runas + appmenus_cmd,
+                    stderr=subprocess.STDOUT)
             except OSError as e:
                 # this file needs to be python 2.7 compatible,
                 # so no FileNotFoundError
@@ -464,6 +488,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             except subprocess.CalledProcessError as e:
                 self.log.error('Failed to clone appmenus: %s',
                                e.output.decode())
+                if not ignore_errors:
+                    raise qubesadmin.exc.QubesException(
+                        'Failed to clone appmenus') from e
+            except qubesadmin.exc.QubesException as e:
+                self.log.error('Failed to clone appmenus: %s', e)
                 if not ignore_errors:
                     raise qubesadmin.exc.QubesException(
                         'Failed to clone appmenus') from e

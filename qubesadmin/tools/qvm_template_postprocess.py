@@ -208,8 +208,7 @@ def parse_template_config(path):
     with open(path, 'r') as fd:
         return dict(line.rstrip('\n').split('=', 1) for line in fd)
 
-@asyncio.coroutine
-def call_postinstall_service(vm):
+async def call_postinstall_service(vm):
     '''Call qubes.PostInstall service
 
     And adjust related settings (netvm, features).
@@ -232,7 +231,7 @@ def call_postinstall_service(vm):
         if have_events:
             try:
                 # pylint: disable=no-member
-                yield from asyncio.wait_for(
+                await asyncio.wait_for(
                     qubesadmin.events.utils.wait_for_domain_shutdown([vm]),
                     qubesadmin.config.defaults['shutdown_timeout'])
             except asyncio.TimeoutError:
@@ -242,7 +241,7 @@ def call_postinstall_service(vm):
             while timeout >= 0:
                 if vm.is_halted():
                     break
-                yield from asyncio.sleep(1)
+                await asyncio.sleep(1)
                 timeout -= 1
             if not vm.is_halted():
                 try:
@@ -259,8 +258,7 @@ def validate_ip(ip):
     except ValueError:
         return False
 
-@asyncio.coroutine
-def post_install(args):
+async def post_install(args):
     '''Handle post-installation tasks'''
 
     app = args.app
@@ -312,7 +310,7 @@ def post_install(args):
         import_template_config(args, conf_path, vm)
 
     if not args.skip_start:
-        yield from call_postinstall_service(vm)
+        await call_postinstall_service(vm)
 
     if not args.keep_source:
         if local_reinstall:

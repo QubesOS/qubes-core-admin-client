@@ -202,6 +202,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.CurrentState', None, None)] = [
             b'0\x00power_state=Running',
+            b'0\x00power_state=Running',
         ]
         self.app.expected_calls[
             ('other-vm', 'admin.vm.CurrentState', None, None)] = [
