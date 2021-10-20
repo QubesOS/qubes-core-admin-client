@@ -33,7 +33,7 @@ Requires:   python%{python3_pkgversion}-daemon
 Requires:   python%{python3_pkgversion}-docutils
 Requires:   python%{python3_pkgversion}-lxml
 Requires:   python%{python3_pkgversion}-xcffib
-Conflicts:  qubes-core-dom0 < 4.1.12
+Conflicts:  qubes-core-dom0 <= 4.1.22
 Conflicts:  qubes-manager < 4.0.6
 
 %description -n python%{python3_pkgversion}-qubesadmin
