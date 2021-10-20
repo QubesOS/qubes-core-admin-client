@@ -1,3 +1,14 @@
+qubes-core-admin-client (4.1.17-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * Support setting ephemeral_volatile volume
+
+  [ Marek Marczykowski-Górecki ]
+  * Include qvm-template man page in the package
+  * Avoid inheriting from multiple builtin exceptions
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 20 Oct 2021 05:32:46 +0200
+
 qubes-core-admin-client (4.1.16-1) unstable; urgency=medium
 
   * storage: fix formatting
