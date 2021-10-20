@@ -149,7 +149,7 @@ class StoragePoolException(QubesException):
     ''' A general storage exception '''
 
 
-class QubesDaemonCommunicationError(QubesException, IOError):
+class QubesDaemonCommunicationError(QubesException):
     '''Error while communicating with qubesd, may mean insufficient
     permissions as well'''
 
