@@ -793,6 +793,7 @@ def main(args=None):
             x_fd = conn.get_file_descriptor()
             loop.add_reader(x_fd, x_watcher.event_reader,
                             events_listener.cancel)
+            x_watcher.update_keyboard_layout()
 
             try:
                 loop.run_until_complete(events_listener)
