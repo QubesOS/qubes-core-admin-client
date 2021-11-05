@@ -46,6 +46,12 @@ class PropertyHolder(object):
         self._properties_help = None
         self._properties_cache = {}
 
+    def clear_cache(self):
+        """
+        Clear property cache.
+        """
+        self._properties_cache = {}
+
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
         '''
