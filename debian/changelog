@@ -1,3 +1,13 @@
+qubes-core-admin-client (4.1.18-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-start-daemon: update initial keyboard layout
+
+  [ Marta Marczykowska-Górecka ]
+  * Add clearing property cache to Property Holder class
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 09 Nov 2021 06:24:44 +0100
+
 qubes-core-admin-client (4.1.17-1) unstable; urgency=medium
 
   [ Demi Marie Obenour ]
