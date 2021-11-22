@@ -49,7 +49,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             rpm.RPMTAG_NAME: 'qubes-template-test-vm',
         }
         mock_ts.return_value.hdrFromFdno.return_value = hdr
-        mock_proc.return_value = b'dummy.rpm: digests signatures OK\n'
+        mock_proc.return_value = b'-: digests signatures OK\n'
         ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
             '/path/to/key', template_name='test-vm')
         mock_call.assert_called_once()
@@ -67,7 +67,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             rpm.RPMTAG_SIGGPG: None, # empty
         }
         mock_ts.return_value.hdrFromFdno.return_value = hdr
-        mock_proc.return_value = b'dummy.rpm: digests OK\n'
+        mock_proc.return_value = b'-: digests OK\n'
         with self.assertRaises(Exception) as e:
             qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
                 '/path/to/key')
@@ -87,7 +87,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             rpm.RPMTAG_SIGGPG: None, # empty
         }
         mock_ts.return_value.hdrFromFdno.return_value = hdr
-        mock_proc.return_value = b'dummy.rpm: digests OK\n'
+        mock_proc.return_value = b'-: digests OK\n'
         ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
             '/path/to/key', True)
         mock_proc.assert_not_called()
@@ -100,7 +100,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('subprocess.check_output')
     def test_003_verify_rpm_badsig_fail(self, mock_proc, mock_call, mock_ts):
         mock_proc.side_effect = subprocess.CalledProcessError(1,
-            ['rpmkeys', '--checksig'], b'/dev/null: digests SIGNATURES NOT OK\n')
+            ['rpmkeys', '--checksig'], b'-: digests SIGNATURES NOT OK\n')
         with self.assertRaises(Exception) as e:
             qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
                 '/path/to/key')
@@ -114,7 +114,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('subprocess.check_call')
     @mock.patch('subprocess.check_output')
     def test_004_verify_rpm_badname(self, mock_proc, mock_call, mock_ts):
-        mock_proc.return_value = b'/dev/null: digests signatures OK\n'
+        mock_proc.return_value = b'-: digests signatures OK\n'
         hdr = {
             rpm.RPMTAG_SIGPGP: 'xxx', # non-empty
             rpm.RPMTAG_SIGGPG: 'xxx', # non-empty
