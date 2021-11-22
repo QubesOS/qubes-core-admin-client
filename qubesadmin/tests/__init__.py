@@ -78,7 +78,11 @@ class TestProcess(object):
         if stdout_data:
             self.stdout.write(stdout_data)
             # Seek to head so that it can be read later
-            self.stdout.seek(0)
+            try:
+                self.stdout.seek(0)
+            except io.UnsupportedOperation:
+                # this can happen if (say) stdout is a pipe
+                pass
         self.returncode = 0
 
     def store_input(self):
