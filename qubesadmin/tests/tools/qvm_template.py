@@ -89,7 +89,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_ts.return_value.hdrFromFdno.return_value = hdr
         mock_proc.return_value = b'-: digests OK\n'
         ret = qubesadmin.tools.qvm_template.verify_rpm('/dev/null',
-            '/path/to/key', True)
+            '/path/to/key', nogpgcheck=True)
         mock_proc.assert_not_called()
         mock_call.assert_not_called()
         self.assertEqual(ret, hdr)

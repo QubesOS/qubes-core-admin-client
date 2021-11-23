@@ -622,6 +622,7 @@ def get_keys_for_repos(repo_files: typing.List[str],
 def verify_rpm(
         path: str,
         key: str,
+        *,
         nogpgcheck: bool = False,
         template_name: typing.Optional[str] = None
         ) -> rpm.hdr:
@@ -640,6 +641,7 @@ def verify_rpm(
 
     :return: RPM package header. If verification fails, raises an exception.
     """
+    assert isinstance(nogpgcheck, bool), 'Must pass a boolean for nogpgcheck'
     with open(path, 'rb') as fd:
         if not nogpgcheck:
             with tempfile.TemporaryDirectory() as rpmdb_dir:
