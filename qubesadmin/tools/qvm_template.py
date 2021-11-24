@@ -497,16 +497,20 @@ def qrexec_repoquery(
     """
     payload = qrexec_payload(args, app, spec, refresh)
     proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
-    stdout, stderr = proc.communicate(payload.encode('UTF-8'))
-    stdout = stdout.decode('ASCII')
+    proc.stdin.write(payload.encode('UTF-8'))
+    proc.stdin.close()
+    stdout = proc.stdout.read(1 << 20).decode('ascii', 'strict')
+    proc.stdout.close()
+    stderr = proc.stderr.read(1 << 10).decode('ascii', 'strict')
+    proc.stderr.close()
     if proc.wait() != 0:
-        for line in stderr.decode('ASCII').rstrip().split('\n'):
+        for line in stderr.rstrip().split('\n'):
             print('[Qrexec] %s' % line, file=sys.stderr)
         raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
-    name_re = re.compile(r'^[A-Za-z0-9._+-]*$')
-    evr_re = re.compile(r'^[A-Za-z0-9._+~]*$')
-    date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
-    licence_re = re.compile(r'^[A-Za-z0-9._+()-]*$')
+    name_re = re.compile(r'\A[A-Za-z0-9._+][A-Za-z0-9._+-]*\Z')
+    evr_re = re.compile(r'\A[A-Za-z0-9._+~]*\Z')
+    date_re = re.compile(r'\A\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}\Z')
+    licence_re = re.compile(r'\A[A-Za-z0-9._+()][A-Za-z0-9._+()-]*\Z')
     result = []
     # FIXME: This breaks when \n is the first character of the description
     for line in stdout.split('|\n'):
