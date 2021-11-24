@@ -59,7 +59,7 @@ class TC_00_Features(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.Get', 'feature1', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00feature1\x00'
         with self.assertRaises(KeyError):
-            self.vm.features.get('feature1')
+            self.vm.features.get('feature1', self.vm.features.NO_DEFAULT)
         self.assertAllCalled()
 
     def test_013_get_default(self):
