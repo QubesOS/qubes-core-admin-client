@@ -83,6 +83,17 @@ def qubes_release() -> str:
     # Return default value instead of throwing so that it works on CI
     return '4.1'
 
+
+class RepoOptCallback(argparse.Action):
+    """Parser action for storing repository related options, like
+    --enablerepo, --disablerepo, etc. Store them in a single list, to preserve
+    relative order."""
+    def __call__(self, parser_arg, namespace, values, option_string=None):
+        operation = option_string.lstrip('-')
+        repo_actions = getattr(namespace, self.dest)
+        repo_actions.append((values, operation))
+
+
 def get_parser() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
     formatter = argparse.ArgumentDefaultsHelpFormatter
@@ -112,15 +123,17 @@ def get_parser() -> argparse.ArgumentParser:
     parser_main.add_argument('--updatevm', default=UPDATEVM,
         help=('Specify VM to download updates from.'
             ' (Set to empty string to specify the current VM.)'))
-    parser_main.add_argument('--enablerepo', action='append', default=[],
-        metavar='REPOID',
+    parser_main.add_argument('--enablerepo', action=RepoOptCallback, default=[],
+        metavar='REPOID', dest='repos',
         help=('Enable additional repositories by an id or a glob.'
             ' Can be used more than once.'))
-    parser_main.add_argument('--disablerepo', action='append', default=[],
-        metavar='REPOID',
+    parser_main.add_argument('--disablerepo', action=RepoOptCallback,
+        default=[],
+        metavar='REPOID', dest='repos',
         help=('Disable certain repositories by an id or a glob.'
             ' Can be used more than once.'))
-    parser_main.add_argument('--repoid', action='append', default=[],
+    parser_main.add_argument('--repoid', action=RepoOptCallback, default=[],
+        dest='repos',
         help=('Enable just specific repositories by an id or a glob.'
             ' Can be used more than once.'))
     parser_main.add_argument('--releasever', default=qubes_release(),
@@ -440,15 +453,9 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
                 " argument should not contain '\\n'.")
 
     payload = ''
-    for repo in args.enablerepo:
-        check_newline(repo, '--enablerepo')
-        payload += '--enablerepo=%s\n' % repo
-    for repo in args.disablerepo:
-        check_newline(repo, '--disablerepo')
-        payload += '--disablerepo=%s\n' % repo
-    for repo in args.repoid:
-        check_newline(repo, '--repoid')
-        payload += '--repoid=%s\n' % repo
+    for repo_op, repo_id in args.repos:
+        check_newline(repo_id, '--' + repo_op)
+        payload += '--%s=%s\n' % (repo_op, repo_id)
     if refresh:
         payload += '--refresh\n'
     check_newline(args.releasever, '--releasever')

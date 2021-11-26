@@ -999,9 +999,9 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf2.write(repo_str2.encode())
             repo_conf2.flush()
             args = argparse.Namespace(
-                enablerepo=['repo1', 'repo2'],
-                disablerepo=['repo3', 'repo4', 'repo5'],
-                repoid=[],
+                repos=[('enablerepo', 'repo1'), ('enablerepo', 'repo2'),
+                       ('disablerepo', 'repo3'), ('disablerepo', 'repo4'),
+                       ('disablerepo', 'repo5')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name, repo_conf2.name]
             )
@@ -1037,9 +1037,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
             args = argparse.Namespace(
-                enablerepo=[],
-                disablerepo=[],
-                repoid=['repo1', 'repo2'],
+                repos=[('repoid', 'repo1'), ('repoid', 'repo2')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name]
             )
@@ -1073,7 +1071,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             args = argparse.Namespace(
                 enablerepo=[],
                 disablerepo=[],
-                repoid=['repo1', 'repo2'],
+                repos=[('repoid', 'repo1'), ('repoid', 'repo2')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name]
             )
@@ -1105,9 +1103,8 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
             args = argparse.Namespace(
-                enablerepo=['repo\n0'],
-                disablerepo=[],
-                repoid=['repo1', 'repo2'],
+                repos=[('enablerepo', 'repo\n0'),
+                       ('repoid', 'repo1'), ('repoid', 'repo2')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name]
             )
@@ -1139,9 +1136,8 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
             args = argparse.Namespace(
-                enablerepo=[],
-                disablerepo=['repo\n0'],
-                repoid=['repo1', 'repo2'],
+                repos=[('disablereporepo', 'repo\n0'),
+                       ('repoid', 'repo1'), ('repoid', 'repo2')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name]
             )
@@ -1173,9 +1169,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
             args = argparse.Namespace(
-                enablerepo=[],
-                disablerepo=[],
-                repoid=['repo\n1', 'repo2'],
+                repos=[('repoid', 'repo\n1'), ('repoid', 'repo2')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name]
             )
@@ -1207,9 +1201,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
             args = argparse.Namespace(
-                enablerepo=[],
-                disablerepo=[],
-                repoid=['repo1', 'repo2'],
+                repos=[('repoid', 'repo1'), ('repoid', 'repo2')],
                 releasever='4\n.1',
                 repo_files=[repo_conf1.name]
             )
@@ -1241,9 +1233,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             repo_conf1.write(repo_str1.encode())
             repo_conf1.flush()
             args = argparse.Namespace(
-                enablerepo=[],
-                disablerepo=[],
-                repoid=['repo1', 'repo2'],
+                repos=[('repoid', 'repo1'), ('repoid', 'repo2')],
                 releasever='4.1',
                 repo_files=[repo_conf1.name]
             )
@@ -5283,9 +5273,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             repo_files=[],
             releasever='4.1',
             updatevm='test-vm',
-            enablerepo=[],
-            disablerepo=[],
-            repoid=[],
+            repos=[],
             quiet=True
         )
         with tempfile.NamedTemporaryFile() as fd:
@@ -5306,9 +5294,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             repo_files=[],
             releasever='4.1',
             updatevm='test-vm',
-            enablerepo=[],
-            disablerepo=[],
-            repoid=[],
+            repos=[],
             quiet=True
         )
         with tempfile.NamedTemporaryFile() as fd, \
