@@ -2509,8 +2509,8 @@ f'''Available Templates
 {str([expected[0], expected[1]])}
 ''')
         self.assertEqual(mock_query.mock_calls, [
-            mock.call(args, self.app, 'fedora-32'),
-            mock.call(args, self.app, 'fedora-31')
+            mock.call(args, self.app, 'qubes-template-fedora-32'),
+            mock.call(args, self.app, 'qubes-template-fedora-31')
         ])
         self.assertAllCalled()
 
@@ -2705,7 +2705,7 @@ f'''Available Templates
 ''')
             self.assertEqual(mock_disk.mock_calls, [mock.call()])
         self.assertEqual(mock_query.mock_calls, [
-            mock.call(args, self.app, 'test-vm*')
+            mock.call(args, self.app, 'qubes-template-test-vm*')
         ])
         self.assertAllCalled()
 
@@ -2808,7 +2808,7 @@ f'''Available Templates
 ''')
             self.assertEqual(mock_disk.mock_calls, [])
         self.assertEqual(mock_query.mock_calls, [
-            mock.call(args, self.app, 'test-vm*')
+            mock.call(args, self.app, 'qubes-template-test-vm*')
         ])
         self.assertAllCalled()
 
@@ -2859,7 +2859,7 @@ f'''Available Templates
             self.assertEqual(mock_out.getvalue(), expected)
             self.assertEqual(mock_disk.mock_calls, [mock.call()])
         self.assertEqual(mock_query.mock_calls, [
-            mock.call(args, self.app, 'test-vm*')
+            mock.call(args, self.app, 'qubes-template-test-vm*')
         ])
         self.assertAllCalled()
 

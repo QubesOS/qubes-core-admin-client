@@ -1171,7 +1171,8 @@ def list_templates(args: argparse.Namespace,
         if args.templates:
             query_res_set: typing.Set[Template] = set()
             for spec in args.templates:
-                query_res_set |= set(qrexec_repoquery(args, app, spec))
+                query_res_set |= set(qrexec_repoquery(
+                    args, app, PACKAGE_NAME_PREFIX + spec))
             query_res = list(query_res_set)
         else:
             query_res = qrexec_repoquery(args, app)
