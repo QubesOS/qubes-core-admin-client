@@ -68,18 +68,26 @@ def qubes_release() -> str:
     """Return the Qubes release."""
     if os.path.exists('/usr/share/qubes/marker-vm'):
         with open('/usr/share/qubes/marker-vm', 'r') as fd:
-            # Get last line (in the format `x.x`)
-            return fd.readlines()[-1].strip()
+            # Get the first non-comment line
+            release = [l.strip() for l in fd.readlines()
+                       if l.strip() and not l.startswith('#')]
+            # sanity check
+            if release and release[0] and release[0][0].isdigit():
+                return release[0]
     with open('/etc/os-release', 'r') as fd:
+        release = None
+        distro_id = None
         for line in fd:
             line = line.strip()
             if not line or line[0] == '#':
                 continue
             key, val = line.split('=', 1)
-            if key != 'VERSION_ID':
-                continue
-            val = val.strip('\'"') # strip possible quotes
-            return val
+            if key == 'ID':
+                distro_id = val
+            if key == 'VERSION_ID':
+                release = val.strip('\'"') # strip possible quotes
+        if distro_id and 'qubes' in distro_id and release:
+            return release
     # Return default value instead of throwing so that it works on CI
     return '4.1'
 
