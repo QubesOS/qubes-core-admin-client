@@ -66,24 +66,24 @@ class Features(object):
         for key in self:
             yield key, self[key]
 
-    _NO_DEFAULT = object()
+    NO_DEFAULT = object()
 
-    def get(self, item, default=_NO_DEFAULT):
+    def get(self, item, default=None):
         '''Get a feature, return default value if missing.'''
         try:
             return self[item]
         except KeyError:
-            if default is self._NO_DEFAULT:
+            if default is self.NO_DEFAULT:
                 raise
             return default
 
-    def check_with_template(self, feature, default=_NO_DEFAULT):
+    def check_with_template(self, feature, default=None):
         ''' Check if the vm's template has the specified feature. '''
         try:
             qubesd_response = self.vm.qubesd_call(
                 self.vm.name, 'admin.vm.feature.CheckWithTemplate', feature)
             return qubesd_response.decode('utf-8')
         except KeyError:
-            if default is self._NO_DEFAULT:
+            if default is self.NO_DEFAULT:
                 raise
             return default
