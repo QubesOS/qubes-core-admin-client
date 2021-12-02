@@ -601,7 +601,8 @@ class DAEMONLauncher:
         try:
             if getattr(vm, 'guivm', None) != vm.app.local_name:
                 return
-            if not vm.features.check_with_template('gui', True):
+            if not vm.features.check_with_template('gui', True) and \
+                    not vm.features.check_with_template('gui-emulated', True):
                 return
             if vm.virt_mode == 'hvm' and \
                     kwargs.get('start_guid', 'True') == 'True':
