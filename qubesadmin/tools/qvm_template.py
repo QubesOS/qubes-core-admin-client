@@ -68,20 +68,39 @@ def qubes_release() -> str:
     """Return the Qubes release."""
     if os.path.exists('/usr/share/qubes/marker-vm'):
         with open('/usr/share/qubes/marker-vm', 'r') as fd:
-            # Get last line (in the format `x.x`)
-            return fd.readlines()[-1].strip()
+            # Get the first non-comment line
+            release = [l.strip() for l in fd.readlines()
+                       if l.strip() and not l.startswith('#')]
+            # sanity check
+            if release and release[0] and release[0][0].isdigit():
+                return release[0]
     with open('/etc/os-release', 'r') as fd:
+        release = None
+        distro_id = None
         for line in fd:
             line = line.strip()
             if not line or line[0] == '#':
                 continue
             key, val = line.split('=', 1)
-            if key != 'VERSION_ID':
-                continue
-            val = val.strip('\'"') # strip possible quotes
-            return val
+            if key == 'ID':
+                distro_id = val
+            if key == 'VERSION_ID':
+                release = val.strip('\'"') # strip possible quotes
+        if distro_id and 'qubes' in distro_id and release:
+            return release
     # Return default value instead of throwing so that it works on CI
     return '4.1'
+
+
+class RepoOptCallback(argparse.Action):
+    """Parser action for storing repository related options, like
+    --enablerepo, --disablerepo, etc. Store them in a single list, to preserve
+    relative order."""
+    def __call__(self, parser_arg, namespace, values, option_string=None):
+        operation = option_string.lstrip('-')
+        repo_actions = getattr(namespace, self.dest)
+        repo_actions.append((values, operation))
+
 
 def get_parser() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
@@ -112,15 +131,17 @@ def get_parser() -> argparse.ArgumentParser:
     parser_main.add_argument('--updatevm', default=UPDATEVM,
         help=('Specify VM to download updates from.'
             ' (Set to empty string to specify the current VM.)'))
-    parser_main.add_argument('--enablerepo', action='append', default=[],
-        metavar='REPOID',
+    parser_main.add_argument('--enablerepo', action=RepoOptCallback, default=[],
+        metavar='REPOID', dest='repos',
         help=('Enable additional repositories by an id or a glob.'
             ' Can be used more than once.'))
-    parser_main.add_argument('--disablerepo', action='append', default=[],
-        metavar='REPOID',
+    parser_main.add_argument('--disablerepo', action=RepoOptCallback,
+        default=[],
+        metavar='REPOID', dest='repos',
         help=('Disable certain repositories by an id or a glob.'
             ' Can be used more than once.'))
-    parser_main.add_argument('--repoid', action='append', default=[],
+    parser_main.add_argument('--repoid', action=RepoOptCallback, default=[],
+        dest='repos',
         help=('Enable just specific repositories by an id or a glob.'
             ' Can be used more than once.'))
     parser_main.add_argument('--releasever', default=qubes_release(),
@@ -440,15 +461,9 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
                 " argument should not contain '\\n'.")
 
     payload = ''
-    for repo in args.enablerepo:
-        check_newline(repo, '--enablerepo')
-        payload += '--enablerepo=%s\n' % repo
-    for repo in args.disablerepo:
-        check_newline(repo, '--disablerepo')
-        payload += '--disablerepo=%s\n' % repo
-    for repo in args.repoid:
-        check_newline(repo, '--repoid')
-        payload += '--repoid=%s\n' % repo
+    for repo_op, repo_id in args.repos:
+        check_newline(repo_id, '--' + repo_op)
+        payload += '--%s=%s\n' % (repo_op, repo_id)
     if refresh:
         payload += '--refresh\n'
     check_newline(args.releasever, '--releasever')
@@ -1180,7 +1195,8 @@ def list_templates(args: argparse.Namespace,
         if args.templates:
             query_res_set: typing.Set[Template] = set()
             for spec in args.templates:
-                query_res_set |= set(qrexec_repoquery(args, app, spec))
+                query_res_set |= set(qrexec_repoquery(
+                    args, app, PACKAGE_NAME_PREFIX + spec))
             query_res = list(query_res_set)
         else:
             query_res = qrexec_repoquery(args, app)
