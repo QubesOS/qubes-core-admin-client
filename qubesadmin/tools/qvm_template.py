@@ -625,22 +625,31 @@ def verify_rpm(
 
     :return: RPM package header. If verification fails, raises an exception.
     """
-    if not nogpgcheck:
-        with tempfile.TemporaryDirectory() as rpmdb_dir:
-            subprocess.check_call(
-                ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
-            try:
-                output = subprocess.check_output(
-                    ['rpmkeys', '--dbpath=' + rpmdb_dir, '--checksig', path])
-            except subprocess.CalledProcessError as e:
-                raise SignatureVerificationError(
-                    'Signature verification failed: {}'.format(
-                        e.output.decode()))
-            if not output.endswith(b': digests signatures OK\n'):
-                raise SignatureVerificationError(
-                    'Signature verification failed: {}'.format(output.decode()))
     with open(path, 'rb') as fd:
+        if not nogpgcheck:
+            with tempfile.TemporaryDirectory() as rpmdb_dir:
+                subprocess.check_call(
+                    ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
+                try:
+                    output = subprocess.check_output([
+                        'rpmkeys',
+                        '--dbpath=' + rpmdb_dir,
+                        '--define=_pkgverify_level all',
+                        '--define=_pkgverify_flags 0x0',
+                        '--checksig',
+                        '-',
+                    ], env={'LC_ALL': 'C', **os.environ}, stdin=fd)
+                except subprocess.CalledProcessError as e:
+                    raise SignatureVerificationError(
+                        'Signature verification failed: {}'.format(
+                            e.output.decode()))
+                if output != b'-: digests signatures OK\n':
+                    raise SignatureVerificationError(
+                        'Signature verification failed: {}'.format(
+                            output.decode()))
+            fd.seek(0)
         tset = rpm.TransactionSet()
+        # even if gpgcheck is not disabled, the database path is wrong
         tset.setVSFlags(rpm.RPMVSF_MASK_NOSIGNATURES)
         hdr = tset.hdrFromFdno(fd)
     if template_name is not None:
