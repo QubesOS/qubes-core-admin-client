@@ -10,7 +10,7 @@ Synopsis
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* del [--rule-no=*RULE_NUMBER*] [*RULE*]
 
-:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* list [--raw]
+:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] [--raw] *VMNAME* list
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* reset
 
@@ -35,7 +35,7 @@ Options
 
 .. option:: --raw
 
-   in combination with :option:`--list`, print raw rules
+   in combination with `list` action, print raw rules
 
 
 Actions description
