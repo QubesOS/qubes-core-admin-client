@@ -682,16 +682,19 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
 
     :return: Whether the extraction succeeded
     """
-    rpm2cpio = subprocess.Popen(['rpm2cpio', path], stdout=subprocess.PIPE)
+    with open(path, 'rb') as pkg_f:
+        rpm2cpio = subprocess.Popen(['rpm2archive', "-"],
+            stdin=pkg_f,
+            stdout=subprocess.PIPE)
     # `-D` is GNUism
-    cpio = subprocess.Popen([
-            'cpio',
-            '-idm',
-            '-D',
+    tar = subprocess.Popen([
+            'tar',
+            'xz',
+            '-C',
             target,
-            '.%s/%s/*' % (PATH_PREFIX, name)
+            '.%s/%s/' % (PATH_PREFIX, name)
         ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL)
-    return rpm2cpio.wait() == 0 and cpio.wait() == 0
+    return rpm2cpio.wait() == 0 and tar.wait() == 0
 
 
 def filter_version(

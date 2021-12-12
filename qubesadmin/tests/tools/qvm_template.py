@@ -145,13 +145,15 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 'test-vm', path, dirpath)
         self.assertEqual(ret, True)
         self.assertEqual(mock_popen.mock_calls, [
-            mock.call(['rpm2cpio', path], stdout=subprocess.PIPE),
+            mock.call(['rpm2archive', '-'],
+                stdin=mock.ANY,
+                stdout=subprocess.PIPE),
             mock.call([
-                    'cpio',
-                    '-idm',
-                    '-D',
+                    'tar',
+                    'xz',
+                    '-C',
                     dirpath,
-                    './var/lib/qubes/vm-templates/test-vm/*'
+                    './var/lib/qubes/vm-templates/test-vm/'
                 ], stdin=pipe, stdout=subprocess.DEVNULL),
             mock.call().wait(),
             mock.call().wait()
@@ -171,13 +173,15 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 'test-vm', path, dirpath)
         self.assertEqual(ret, False)
         self.assertEqual(mock_popen.mock_calls, [
-            mock.call(['rpm2cpio', path], stdout=subprocess.PIPE),
+            mock.call(['rpm2archive', '-'],
+                stdin=mock.ANY,
+                stdout=subprocess.PIPE),
             mock.call([
-                    'cpio',
-                    '-idm',
-                    '-D',
+                    'tar',
+                    'xz',
+                    '-C',
                     dirpath,
-                    './var/lib/qubes/vm-templates/test-vm/*'
+                    './var/lib/qubes/vm-templates/test-vm/'
                 ], stdin=pipe, stdout=subprocess.DEVNULL),
             mock.call().wait()
         ])
