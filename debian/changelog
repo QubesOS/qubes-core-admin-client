@@ -1,3 +1,32 @@
+qubes-core-admin-client (4.1.19-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * set default value for features.get to None
+
+  [ Ivan Kardykov ]
+  * fix stubdomain gui starting when 'gui' is empty
+
+  [ Demi Marie Obenour ]
+  * Use `%_pkgverify_level all` when checking package signatures
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-template: fix listing available templates
+  * qvm-template: preserve order of --enablerepo/--disablerepo/--repoid
+  * qvm-template: make getting qubes release more defensive
+  * qvm-template: do not crash when killing already powered off VM
+  * Add dependencies required for qvm-template tool
+  * qvm-template: use rpm2archive instead of rpm2cpio
+
+  [ Demi Marie Obenour ]
+  * nogpgcheck should be a keyword-only argument
+  * Strengthen handling of untrusted qrexec output
+  * Use rpmcanon to canonicalize downloaded templates
+
+  [ Marek Marczykowski-Górecki ]
+  * Add qubes-rpm-oxide dependency for qvm-template
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 12 Dec 2021 19:42:09 +0100
+
 qubes-core-admin-client (4.1.18-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
