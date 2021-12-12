@@ -25,6 +25,7 @@ Depends:
  python3-qubesadmin,
  qubes-repo-templates,
  scrypt,
+ qubes-rpm-oxide (>= 0.2.3),
  ${python:Depends},
  ${python3:Depends},
  ${misc:Depends},
