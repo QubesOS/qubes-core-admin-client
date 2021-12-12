@@ -36,7 +36,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import typing
 
 import tqdm
@@ -497,16 +496,20 @@ def qrexec_repoquery(
     """
     payload = qrexec_payload(args, app, spec, refresh)
     proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
-    stdout, stderr = proc.communicate(payload.encode('UTF-8'))
-    stdout = stdout.decode('ASCII')
+    proc.stdin.write(payload.encode('UTF-8'))
+    proc.stdin.close()
+    stdout = proc.stdout.read(1 << 20).decode('ascii', 'strict')
+    proc.stdout.close()
+    stderr = proc.stderr.read(1 << 10).decode('ascii', 'strict')
+    proc.stderr.close()
     if proc.wait() != 0:
-        for line in stderr.decode('ASCII').rstrip().split('\n'):
+        for line in stderr.rstrip().split('\n'):
             print('[Qrexec] %s' % line, file=sys.stderr)
         raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
-    name_re = re.compile(r'^[A-Za-z0-9._+-]*$')
-    evr_re = re.compile(r'^[A-Za-z0-9._+~]*$')
-    date_re = re.compile(r'^\d+-\d+-\d+ \d+:\d+$')
-    licence_re = re.compile(r'^[A-Za-z0-9._+()-]*$')
+    name_re = re.compile(r'\A[A-Za-z0-9._+][A-Za-z0-9._+-]*\Z')
+    evr_re = re.compile(r'\A[A-Za-z0-9._+~]*\Z')
+    date_re = re.compile(r'\A\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}\Z')
+    licence_re = re.compile(r'\A[A-Za-z0-9._+()][A-Za-z0-9._+()-]*\Z')
     result = []
     # FIXME: This breaks when \n is the first character of the description
     for line in stdout.split('|\n'):
@@ -560,6 +563,7 @@ def qrexec_download(
         app: qubesadmin.app.QubesBase,
         spec: str,
         path: str,
+        key: str,
         dlsize: typing.Optional[int] = None,
         refresh: bool = False) -> None:
     """Download a template from repositories.
@@ -577,25 +581,47 @@ def qrexec_download(
 
     :raises ConnectionError: if the qrexec call fails
     """
-    with open(path, 'wb') as fd:
+    with tempfile.TemporaryDirectory() as rpmdb_dir:
+        subprocess.check_call(
+            ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
         payload = qrexec_payload(args, app, spec, refresh)
-        # Don't filter ESCs for binary files
-        proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
-            stdout=fd, filter_esc=False)
-        proc.stdin.write(payload.encode('UTF-8'))
-        proc.stdin.close()
-        with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
-                unit_divisor=1000, unit='B', disable=args.quiet) as pbar:
-            last = 0
-            while proc.poll() is None:
-                cur = fd.tell()
-                pbar.update(cur - last)
-                last = cur
-                time.sleep(0.1)
-        if proc.wait() != 0:
-            raise ConnectionError(
-                "qrexec call 'qubes.TemplateDownload' failed.")
+        with subprocess.Popen([
+            'rpmcanon',
+            '--dbpath=' + rpmdb_dir,
+            '--report-progress',
+            '--',
+            '/dev/stdin',
+            path
+        ], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as rpmcanon:
+            # Don't filter ESCs for binary files
+            proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
+                stdout=rpmcanon.stdin, filter_esc=False)
+            rpmcanon.stdin.close()
+            proc.stdin.write(payload.encode('UTF-8'))
+            proc.stdin.close()
+            with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
+                    unit_divisor=1000, unit='B', disable=args.quiet) as pbar:
+                last_count = 0
+                for i in rpmcanon.stdout:
+                    if i.endswith(b' bytes so far\n'):
+                        new_count = int(i[:-14])
+                        pbar.update(new_count - last_count)
+                        last_count = new_count
+                    elif i.endswith(b' bytes total\n'):
+                        actual_size = int(i[:-13])
+                        if dlsize is not None and dlsize != actual_size:
+                            raise ConnectionError(
+                                'Downloaded file is {} bytes, '
+                                'expected {}'.format(dlsize, actual_size))
+                    else:
+                        raise ConnectionError(
+                            'Bad line from rpmcanon: {!r}'.format(i))
 
+            if proc.wait() != 0:
+                raise ConnectionError(
+                    "qrexec call 'qubes.TemplateDownload' failed.")
+            if rpmcanon.wait() != 0:
+                raise ConnectionError("rpmcanon failed")
 
 def get_keys_for_repos(repo_files: typing.List[str],
                        releasever: str) -> typing.Dict[str, str]:
@@ -622,6 +648,7 @@ def get_keys_for_repos(repo_files: typing.List[str],
 def verify_rpm(
         path: str,
         key: str,
+        *,
         nogpgcheck: bool = False,
         template_name: typing.Optional[str] = None
         ) -> rpm.hdr:
@@ -640,6 +667,7 @@ def verify_rpm(
 
     :return: RPM package header. If verification fails, raises an exception.
     """
+    assert isinstance(nogpgcheck, bool), 'Must pass a boolean for nogpgcheck'
     with open(path, 'rb') as fd:
         if not nogpgcheck:
             with tempfile.TemporaryDirectory() as rpmdb_dir:
@@ -842,12 +870,7 @@ def download(
             for attempt in range(args.retries):
                 try:
                     qrexec_download(args, app, spec, target_temp,
-                        entry.dlsize)
-                    size = os.path.getsize(target_temp)
-                    if size != entry.dlsize:
-                        raise ConnectionError(
-                            'Downloaded file is {} bytes, expected {}'.format(
-                                size, entry.dlsize))
+                        repo_key, entry.dlsize)
                     done = True
                     break
                 except ConnectionError:

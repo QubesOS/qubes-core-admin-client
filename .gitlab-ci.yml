@@ -12,7 +12,7 @@ checks:tests:
     ENABLE_SLOW_TESTS: 1
     USER: gitlab-runner
   before_script:
-    - sudo dnf install -y openssl
+    - sudo dnf install -y openssl python3-rpm
     - pip3 install --quiet -r ci/requirements.txt
   script:
     - python3 setup.py build
@@ -23,6 +23,7 @@ checks:tests:
 checks:pylint:
   stage: checks
   before_script:
+    - sudo dnf install -y python3-rpm
     - pip3 install --quiet -r ci/requirements.txt
   script:
-    - PYTHONPATH=test-packages pylint qubesadmin
+    - PYTHONPATH=test-packages pylint --extension-pkg-whitelist=rpm qubesadmin
