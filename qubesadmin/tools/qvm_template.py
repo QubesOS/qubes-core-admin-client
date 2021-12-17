@@ -42,9 +42,6 @@ import tqdm
 import xdg.BaseDirectory
 import rpm
 
-import dnf.repo
-import dnf.conf
-
 import qubesadmin
 import qubesadmin.vm
 import qubesadmin.utils
@@ -1518,11 +1515,13 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """
     _ = app  # unused
 
-    # python-dnf is not packaged on Debian
-    # As this is not an "essential operation", the module is imported here
-    # instead of top-level so that other operations still work.
+    # Even if python3-dnf is now available on Debian 11+, this is not
+    # an "essential operation" so the module is imported here
+    # instead of top-level. Any other operation still work in case where
+    # a failure occurs with python3-dnf.
     try:
-        import dnf
+        import dnf.repo
+        import dnf.conf
     except ModuleNotFoundError:
         print("Error: Python module 'dnf' not found.", file=sys.stderr)
         sys.exit(1)
