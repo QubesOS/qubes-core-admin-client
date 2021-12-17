@@ -17,7 +17,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-'''Tool for managing VM templates.'''
+"""Tool for managing VM templates."""
 
 import argparse
 import collections
@@ -42,7 +42,12 @@ import tqdm
 import xdg.BaseDirectory
 import rpm
 
+import dnf.repo
+import dnf.conf
+
 import qubesadmin
+import qubesadmin.vm
+import qubesadmin.utils
 import qubesadmin.tools
 import qubesadmin.tools.qvm_kill
 import qubesadmin.tools.qvm_remove
@@ -57,11 +62,14 @@ DATE_FMT = '%Y-%m-%d %H:%M:%S'
 
 UPDATEVM = str('global UpdateVM')
 
+
 class AlreadyRunning(Exception):
     """Another qvm-template is already running"""
 
+
 class SignatureVerificationError(Exception):
     """Package signature is invalid or missing"""
+
 
 def qubes_release() -> str:
     """Return the Qubes release."""
@@ -104,12 +112,12 @@ class RepoOptCallback(argparse.Action):
 def get_parser() -> argparse.ArgumentParser:
     """Generate argument parser for the application."""
     formatter = argparse.ArgumentDefaultsHelpFormatter
-    parser_main = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-        formatter_class=formatter)
-    parser_main.register('action', 'parsers',
-        qubesadmin.tools.AliasedSubParsersAction)
-    subparsers = parser_main.add_subparsers(dest='command',
-        description='Command to run.')
+    parser_main = qubesadmin.tools.QubesArgumentParser(
+        description=__doc__, formatter_class=formatter)
+    parser_main.register(
+        'action', 'parsers', qubesadmin.tools.AliasedSubParsersAction)
+    subparsers = parser_main.add_subparsers(
+        dest='command', description='Command to run.')
 
     def parser_add_command(cmd, help_str):
         return subparsers.add_parser(
@@ -169,6 +177,7 @@ def get_parser() -> argparse.ArgumentParser:
         parser_x.add_argument('--allow-pv', action='store_true',
             help='Allow templates that set virt_mode to pv.')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
+
     # qvm-template download
     parser_download = parser_add_command('download',
         help_str='Download template packages.')
@@ -182,6 +191,7 @@ def get_parser() -> argparse.ArgumentParser:
             help='Disable signature checks.')
     parser_download.add_argument('templates', nargs='*',
         metavar='TEMPLATESPEC')
+
     # qvm-template {list,info}
     parser_list = parser_add_command('list',
         help_str='List templates.')
@@ -207,6 +217,7 @@ def get_parser() -> argparse.ArgumentParser:
         readable.add_argument('--machine-readable-json', action='store_true',
             help='Enable machine-readable output (JSON).')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
+
     # qvm-template search
     parser_search = parser_add_command('search',
         help_str='Search template details for the given string.')
@@ -214,6 +225,7 @@ def get_parser() -> argparse.ArgumentParser:
         help=('Search also in the template description and URL. In addition,'
             ' the criterion are evaluated with OR instead of AND.'))
     parser_search.add_argument('templates', nargs='*', metavar='PATTERN')
+
     # qvm-template remove
     parser_remove = parser_add_command('remove',
         help_str='Remove installed templates.')
@@ -221,14 +233,17 @@ def get_parser() -> argparse.ArgumentParser:
             help=('Also disassociate VMs from the templates to be removed.'
                 ' This creates a dummy template for the VMs to link with.'))
     parser_remove.add_argument('templates', nargs='*', metavar='TEMPLATE')
+
     # qvm-template purge
     parser_purge = parser_add_command('purge',
         help_str='Remove installed templates and associated VMs.')
     parser_purge.add_argument('templates', nargs='*', metavar='TEMPLATE')
+
     # qvm-template clean
     parser_clean = parser_add_command('clean',
         help_str='Remove locally cached packages.')
     _ = parser_clean # unused
+
     # qvm-template repolist
     parser_repolist = parser_add_command('repolist',
         help_str='Show configured repositories.')
@@ -243,7 +258,9 @@ def get_parser() -> argparse.ArgumentParser:
 
     return parser_main
 
+
 parser = get_parser()
+
 
 class TemplateState(enum.Enum):
     """Enum representing the state of a template."""
@@ -254,7 +271,7 @@ class TemplateState(enum.Enum):
 
     def title(self) -> str:
         """Return a long description of the state. Can be used as headings."""
-        #pylint: disable=invalid-name
+        # pylint: disable=invalid-name
         TEMPLATE_TITLES = {
             TemplateState.INSTALLED: 'Installed Templates',
             TemplateState.AVAILABLE: 'Available Templates',
@@ -262,6 +279,7 @@ class TemplateState(enum.Enum):
             TemplateState.UPGRADABLE: 'Available Upgrades'
         }
         return TEMPLATE_TITLES[self]
+
 
 class VersionSelector(enum.Enum):
     """Enum representing how the candidate template version is chosen."""
@@ -301,6 +319,8 @@ class DlEntry(typing.NamedTuple):
     evr: typing.Tuple[str, str, str]
     reponame: str
     dlsize: int
+
+
 # pylint: enable=too-few-public-methods,inherit-non-class
 
 
@@ -309,8 +329,9 @@ def build_version_str(evr: typing.Tuple[str, str, str]) -> str:
     release) format."""
     return '%s:%s-%s' % evr
 
+
 def is_match_spec(name: str, epoch: str, version: str, release: str, spec: str
-        ) -> typing.Tuple[bool, float]:
+                  ) -> typing.Tuple[bool, float]:
     """Check whether (name, epoch, version, release) matches the spec string.
 
     For the algorithm, refer to section "NEVRA Matching" in the DNF
@@ -341,6 +362,7 @@ def is_match_spec(name: str, epoch: str, version: str, release: str, spec: str
             return True, prio
     return False, float('inf')
 
+
 def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
     """Return Template object associated with ``vm``.
 
@@ -359,6 +381,7 @@ def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
         vm.features['template-summary'],
         vm.features['template-description'].replace('|', '\n'))
 
+
 def query_local_evr(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[str, str, str]:
     """Return the (epoch, version, release) of ``vm``.
 
@@ -369,12 +392,14 @@ def query_local_evr(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[str, str, str]:
         vm.features['template-version'],
         vm.features['template-release'])
 
+
 def is_managed_template(vm: qubesadmin.vm.QubesVM) -> bool:
     """Return whether the VM is managed by qvm-template."""
     return vm.features.get('template-name', None) == vm.name
 
+
 def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
-        ) -> qubesadmin.vm.QubesVM:
+                            ) -> qubesadmin.vm.QubesVM:
     """Return the QubesVM object associated with the given name if it exists
     and is managed by qvm-template, otherwise raise a parser error."""
     if name not in app.domains:
@@ -383,6 +408,7 @@ def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
     if not is_managed_template(vm):
         parser.error("Template '%s' is not managed by qvm-template." % name)
     return vm
+
 
 def confirm_action(msg: str, affected: typing.List[str]) -> None:
     """Confirm user action."""
@@ -396,6 +422,7 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
         if confirm != 'y':
             print('command cancelled.')
             sys.exit(1)
+
 
 def qrexec_popen(
         args: argparse.Namespace,
@@ -428,14 +455,15 @@ def qrexec_popen(
             filter_esc=filter_esc,
             stdout=stdout)
     return subprocess.Popen([
-            '/etc/qubes-rpc/%s' % service,
-        ],
+        '/etc/qubes-rpc/%s' % service,
+    ],
         stdin=subprocess.PIPE,
         stdout=stdout,
         stderr=subprocess.PIPE)
 
+
 def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
-        spec: str, refresh: bool) -> str:
+                   spec: str, refresh: bool) -> str:
     """Return payload string for the ``qubes.Template*`` qrexec calls.
 
     :param args: Arguments received by the application. Specifically,
@@ -449,7 +477,7 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
 
     :raises: Parser error if spec equals ``---`` or input contains ``\\n``
     """
-    _ = app # unused
+    _ = app  # unused
 
     if spec == '---':
         parser.error("Malformed template name: argument should not be '---'.")
@@ -457,7 +485,7 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
     def check_newline(string, name):
         if '\n' in string:
             parser.error(f"Malformed {name}:" +
-                " argument should not contain '\\n'.")
+                         " argument should not contain '\\n'.")
 
     payload = ''
     for repo_op, repo_id in args.repos:
@@ -474,6 +502,7 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
         with open(path, 'r') as fd:
             payload += fd.read() + '\n'
     return payload
+
 
 def qrexec_repoquery(
         args: argparse.Namespace,
@@ -523,7 +552,7 @@ def qrexec_repoquery(
             # Unpack manually instead of stuffing into `Template` right away
             # so that it's easier to mutate stuff.
             name, epoch, version, release, reponame, dlsize, \
-                buildtime, licence, url, summary, description = entry
+            buildtime, licence, url, summary, description = entry
 
             # Ignore packages that are not templates
             if not name.startswith(PACKAGE_NAME_PREFIX):
@@ -548,15 +577,17 @@ def qrexec_repoquery(
                 raise ValueError
             # Check name actually matches spec
             if not is_match_spec(PACKAGE_NAME_PREFIX + name,
-                    epoch, version, release, spec)[0]:
+                                 epoch, version, release, spec)[0]:
                 continue
 
             result.append(Template(name, epoch, version, release, reponame,
-                dlsize, buildtime, licence, url, summary, description))
+                                   dlsize, buildtime, licence, url, summary,
+                                   description))
         except (TypeError, ValueError):
             raise ConnectionError(("qrexec call 'qubes.TemplateSearch' failed:"
-                " unexpected data format."))
+                                   " unexpected data format."))
     return result
+
 
 def qrexec_download(
         args: argparse.Namespace,
@@ -595,12 +626,13 @@ def qrexec_download(
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as rpmcanon:
             # Don't filter ESCs for binary files
             proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
-                stdout=rpmcanon.stdin, filter_esc=False)
+                                stdout=rpmcanon.stdin, filter_esc=False)
             rpmcanon.stdin.close()
             proc.stdin.write(payload.encode('UTF-8'))
             proc.stdin.close()
             with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
-                    unit_divisor=1000, unit='B', disable=args.quiet) as pbar:
+                           unit_divisor=1000, unit='B',
+                           disable=args.quiet) as pbar:
                 last_count = 0
                 for i in rpmcanon.stdout:
                     if i.endswith(b' bytes so far\n'):
@@ -622,6 +654,7 @@ def qrexec_download(
                     "qrexec call 'qubes.TemplateDownload' failed.")
             if rpmcanon.wait() != 0:
                 raise ConnectionError("rpmcanon failed")
+
 
 def get_keys_for_repos(repo_files: typing.List[str],
                        releasever: str) -> typing.Dict[str, str]:
@@ -645,13 +678,8 @@ def get_keys_for_repos(repo_files: typing.List[str],
     return keys
 
 
-def verify_rpm(
-        path: str,
-        key: str,
-        *,
-        nogpgcheck: bool = False,
-        template_name: typing.Optional[str] = None
-        ) -> rpm.hdr:
+def verify_rpm(path: str, key: str, *, nogpgcheck: bool = False,
+               template_name: typing.Optional[str] = None) -> rpm.hdr:
     """Verify the digest and signature of a RPM package and return the package
     header.
 
@@ -700,6 +728,7 @@ def verify_rpm(
             raise SignatureVerificationError(
                 'Downloaded package does not match expected template name')
     return hdr
+
 
 def extract_rpm(name: str, path: str, target: str) -> bool:
     """Extract a template RPM package.
@@ -768,11 +797,12 @@ def filter_version(
 
     return results.values()
 
+
 def get_dl_list(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
         version_selector: VersionSelector = VersionSelector.LATEST
-        ) -> typing.Dict[str, DlEntry]:
+) -> typing.Dict[str, DlEntry]:
     """Return list of templates that needs to be downloaded.
 
     :param args: Arguments received by the application.
@@ -800,16 +830,16 @@ def get_dl_list(
                 parser.error('Template \'%s\' not found.' % template)
             elif version_selector == VersionSelector.REINSTALL:
                 parser.error('Same version of template \'%s\' not found.' \
-                    % template)
+                             % template)
             # Copy behavior of DNF and do nothing if version not found
             elif version_selector == VersionSelector.LATEST_LOWER:
                 print(("Template '%s' of lowest version"
-                    " already installed, skipping..." % template),
-                    file=sys.stderr)
+                       " already installed, skipping..." % template),
+                      file=sys.stderr)
             elif version_selector == VersionSelector.LATEST_HIGHER:
                 print(("Template '%s' of highest version"
-                    " already installed, skipping..." % template),
-                    file=sys.stderr)
+                       " already installed, skipping..." % template),
+                      file=sys.stderr)
 
         # Merge & choose the template with the highest version
         for entry in query_res:
@@ -820,6 +850,7 @@ def get_dl_list(
                     DlEntry(entry.evr, entry.reponame, entry.dlsize)
 
     return full_candid
+
 
 def download(
         args: argparse.Namespace,
@@ -860,7 +891,7 @@ def download(
                 repo_key = args.keyring
             if os.path.exists(target):
                 print('\'%s\' already exists, skipping...' % target,
-                    file=sys.stderr)
+                      file=sys.stderr)
                 # but still verify the package
                 package_hdrs[name] = verify_rpm(
                     target, repo_key, template_name=name)
@@ -870,14 +901,14 @@ def download(
             for attempt in range(args.retries):
                 try:
                     qrexec_download(args, app, spec, target_temp,
-                        repo_key, entry.dlsize)
+                                    repo_key, entry.dlsize)
                     done = True
                     break
                 except ConnectionError:
                     os.remove(target_temp)
                     if attempt + 1 < args.retries:
                         print('\'%s\' download failed, retrying...' % spec,
-                            file=sys.stderr)
+                              file=sys.stderr)
             if not done:
                 print('Error: \'%s\' download failed.' % spec, file=sys.stderr)
                 sys.exit(1)
@@ -891,6 +922,7 @@ def download(
             os.rename(target_temp, target)
             package_hdrs[name] = package_hdr
     return package_hdrs
+
 
 def locked(func):
     """Execute given function under a lock in *LOCK_FILE*"""
@@ -909,6 +941,7 @@ def locked(func):
             finally:
                 os.remove(LOCK_FILE)
     return wrapper
+
 
 @locked
 def install(
@@ -930,8 +963,9 @@ def install(
     """
     keys = get_keys_for_repos(args.repo_files, args.releasever)
 
-    unverified_rpm_list = [] # rpmfile, reponame
+    unverified_rpm_list = []  # rpmfile, reponame
     verified_rpm_list = []
+
     def verify(rpmfile, reponame, package_hdr=None):
         """Verify package signature and version and parse package header.
 
@@ -956,9 +990,9 @@ def install(
         # Check if already installed
         if not override_existing and name in app.domains:
             print(('Template \'%s\' already installed, skipping...'
-                ' (You may want to use the'
-                ' {reinstall,upgrade,downgrade}'
-                ' operations.)') % name, file=sys.stderr)
+                   ' (You may want to use the'
+                   ' {reinstall,upgrade,downgrade}'
+                   ' operations.)') % name, file=sys.stderr)
             return
 
         # Check if version is really what we want
@@ -978,14 +1012,14 @@ def install(
             elif version_selector == VersionSelector.LATEST_LOWER \
                     and cmp_res != -1:
                 print(("Template '%s' of lower version"
-                    " already installed, skipping..." % name),
-                    file=sys.stderr)
+                       " already installed, skipping..." % name),
+                      file=sys.stderr)
                 return
             elif version_selector == VersionSelector.LATEST_HIGHER \
                     and cmp_res != 1:
                 print(("Template '%s' of higher version"
-                    " already installed, skipping..." % name),
-                    file=sys.stderr)
+                       " already installed, skipping..." % name),
+                      file=sys.stderr)
                 return
 
         verified_rpm_list.append((rpmfile, reponame, name, package_hdr))
@@ -1046,9 +1080,9 @@ def install(
                 override_tpls)
 
     package_hdrs = download(args, app,
-        dl_list=dl_list,
-        path_override=args.cachedir,
-        version_selector=version_selector)
+                            dl_list=dl_list,
+                            path_override=args.cachedir,
+                            version_selector=version_selector)
 
     # Verify downloaded templates
     for name, (rpmfile, reponame) in unverified_rpm_list.items():
@@ -1106,8 +1140,9 @@ def install(
         if rpmfile.startswith(args.cachedir) and not args.keep_cache:
             os.remove(rpmfile)
 
+
 def list_templates(args: argparse.Namespace,
-        app: qubesadmin.app.QubesBase, command: str) -> None:
+                   app: qubesadmin.app.QubesBase, command: str) -> None:
     """Command that lists templates.
 
     :param args: Arguments received by the application.
@@ -1154,7 +1189,7 @@ def list_templates(args: argparse.Namespace,
                 output.append(('Version', ':', data.version))
                 output.append(('Release', ':', data.release))
                 output.append(('Size', ':',
-                    qubesadmin.utils.size_to_human(data.dlsize)))
+                               qubesadmin.utils.size_to_human(data.dlsize)))
                 output.append(('Repository', ':', data.reponame))
                 output.append(('Buildtime', ':', str(data.buildtime)))
                 if install_time:
@@ -1288,6 +1323,7 @@ def list_templates(args: argparse.Namespace,
             print(status.title())
             qubesadmin.tools.print_table(grp)
 
+
 def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that searches template details for given patterns.
 
@@ -1305,10 +1341,11 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     for _, grp in itertools.groupby(sorted(query_res), lambda x: x[0]):
         def compare(lhs, rhs):
             return lhs if rpm.labelCompare(lhs[1:4], rhs[1:4]) > 0 else rhs
+
         query_res_tmp.append(functools.reduce(compare, grp))
     query_res = query_res_tmp
 
-    #pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     WEIGHT_NAME_EXACT = 1 << 4
     WEIGHT_NAME = 1 << 3
     WEIGHT_SUMMARY = 1 << 2
@@ -1323,7 +1360,7 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         (WEIGHT_URL, 'URL')]
 
     search_res_by_idx: \
-            typing.Dict[int, typing.List[typing.Tuple[int, str, bool]]] = \
+        typing.Dict[int, typing.List[typing.Tuple[int, str, bool]]] = \
         collections.defaultdict(list)
     for keyword in args.templates:
         for idx, entry in enumerate(query_res):
@@ -1331,7 +1368,7 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
                 [(entry.name, WEIGHT_NAME), (entry.summary, WEIGHT_SUMMARY)]
             if args.all:
                 needle_types += [(entry.description, WEIGHT_DESCRIPTION),
-                            (entry.url, WEIGHT_URL)]
+                                 (entry.url, WEIGHT_URL)]
             for key, weight in needle_types:
                 if fnmatch.fnmatch(key, '*' + keyword + '*'):
                     exact = keyword == key
@@ -1376,13 +1413,14 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
             print('===', cur_header, '===')
         print(query_res[idx].name, ':', query_res[idx].summary)
 
+
 def remove(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
         disassoc: bool = False,
         purge: bool = False,
         dummy: str = 'dummy'
-        ) -> None:
+) -> None:
     """Command that remove templates.
 
     :param args: Arguments received by the application.
@@ -1402,7 +1440,7 @@ def remove(
         # Not disassociating first may result in dependency ordering issues
         disassoc = True
         # Remove recursively via BFS
-        remove_set = set(remove_list) # visited
+        remove_set = set(remove_list)  # visited
         idx = 0
         while idx < len(remove_list):
             tpl = remove_list[idx]
@@ -1431,7 +1469,7 @@ def remove(
         cnt = 1
         while dummy in app.domains \
                 and app.domains[dummy].features.get(
-                    'template-dummy', '0') != '1':
+            'template-dummy', '0') != '1':
             dummy = '%s-%d' % (orig_dummy, cnt)
             cnt += 1
         if dummy not in app.domains:
@@ -1450,7 +1488,7 @@ def remove(
                         prop, holder.name, dummy), file=sys.stderr)
                 else:
                     print("Global property '%s' set to ''." % prop,
-                        file=sys.stderr)
+                          file=sys.stderr)
                     setattr(app, prop, '')
         if remove_dummy:
             remove_list.append(dummy)
@@ -1458,6 +1496,7 @@ def remove(
     if disassoc or purge:
         qubesadmin.tools.qvm_kill.main(['--'] + remove_list, app)
     qubesadmin.tools.qvm_remove.main(['--force', '--'] + remove_list, app)
+
 
 def clean(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that cleans the local package cache.
@@ -1470,13 +1509,14 @@ def clean(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
 
     shutil.rmtree(args.cachedir)
 
+
 def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that lists configured repositories.
 
     :param args: Arguments received by the application.
     :param app: Qubes application object
     """
-    _ = app # unused
+    _ = app  # unused
 
     # python-dnf is not packaged on Debian
     # As this is not an "essential operation", the module is imported here
@@ -1530,8 +1570,9 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
 
         qubesadmin.tools.print_table(table)
 
+
 def main(args: typing.Optional[typing.Sequence[str]] = None,
-        app: typing.Optional[qubesadmin.app.QubesBase] = None) -> int:
+         app: typing.Optional[qubesadmin.app.QubesBase] = None) -> int:
     """Main routine of **qvm-template**.
 
     :param args: Override arguments received by the application. Optional
@@ -1567,13 +1608,13 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
             install(p_args, app)
         elif p_args.command == 'reinstall':
             install(p_args, app, version_selector=VersionSelector.REINSTALL,
-                override_existing=True)
+                    override_existing=True)
         elif p_args.command == 'downgrade':
             install(p_args, app, version_selector=VersionSelector.LATEST_LOWER,
-                override_existing=True)
+                    override_existing=True)
         elif p_args.command == 'upgrade':
             install(p_args, app, version_selector=VersionSelector.LATEST_HIGHER,
-                override_existing=True)
+                    override_existing=True)
         elif p_args.command == 'list':
             list_templates(p_args, app, 'list')
         elif p_args.command == 'info':
@@ -1596,6 +1637,7 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
         return 1
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())
