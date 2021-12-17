@@ -1541,26 +1541,45 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         conf.reposdir = reposdir
         base = dnf.Base(conf)
         base.read_all_repos()
-        if args.repoid:
-            base.repos.get_matching('*').disable()
-            for repo in args.repoid:
-                base.repos.get_matching(repo).enable()
-        else:
-            for repo in args.enablerepo:
-                base.repos.get_matching(repo).enable()
-            for repo in args.disablerepo:
-                base.repos.get_matching(repo).disable()
 
-        repos: typing.List[dnf.repo.Repo]
+        # Filter (name, operation) from args.repos
+        enable_repos = []
+        disable_repos = []
+        repoid = []
+        repos: typing.List[dnf.repo.Repo] = []
         if args.repos:
-            repos = []
             for repo in args.repos:
-                repos += list(base.repos.get_matching(repo))
+                name, operation = repo
+                if operation == "repoid":
+                    repoid.append(name)
+                elif operation == "enablerepo":
+                    enable_repos.append(name)
+                elif operation == "disablerepo":
+                    disable_repos.append(name)
+
+            if repoid:
+                if enable_repos or disable_repos:
+                    print("Warning: Ignoring --enablerepo and --disablerepo "
+                          "options.", file=sys.stderr)
+                base.repos.get_matching('*').disable()
+                for repo in repoid:
+                    dnf_repo = base.repos.get_matching(repo)
+                    dnf_repo.enable()
+                    repos += list(dnf_repo)
+            else:
+                for repo in enable_repos:
+                    dnf_repo = base.repos.get_matching(repo)
+                    dnf_repo.enable()
+                    repos += list(dnf_repo)
+                for repo in disable_repos:
+                    dnf_repo = base.repos.get_matching(repo)
+                    dnf_repo.disable()
+                    repos += list(dnf_repo)
             repos = list(set(repos))
-            repos.sort(key=operator.attrgetter('id'))
         else:
             repos = list(base.repos.values())
-            repos.sort(key=operator.attrgetter('id'))
+
+        repos.sort(key=operator.attrgetter('id'))
 
         table = []
         for repo in repos:
