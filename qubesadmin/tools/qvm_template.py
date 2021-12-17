@@ -400,10 +400,10 @@ def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
     """Return the QubesVM object associated with the given name if it exists
     and is managed by qvm-template, otherwise raise a parser error."""
     if name not in app.domains:
-        parser.error("Template '%s' not already installed." % name)
+        parser.error(f"Template '{name}' not already installed.")
     vm = app.domains[name]
     if not is_managed_template(vm):
-        parser.error("Template '%s' is not managed by qvm-template." % name)
+        parser.error(f"Template '{name}' is not managed by qvm-template.")
     return vm
 
 
@@ -451,12 +451,10 @@ def qrexec_popen(
             service,
             filter_esc=filter_esc,
             stdout=stdout)
-    return subprocess.Popen([
-        '/etc/qubes-rpc/%s' % service,
-    ],
-        stdin=subprocess.PIPE,
-        stdout=stdout,
-        stderr=subprocess.PIPE)
+    return subprocess.Popen(
+        [f'/etc/qubes-rpc/{service}'], stdin=subprocess.PIPE, stdout=stdout,
+        stderr=subprocess.PIPE
+    )
 
 
 def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
@@ -487,11 +485,11 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
     payload = ''
     for repo_op, repo_id in args.repos:
         check_newline(repo_id, '--' + repo_op)
-        payload += '--%s=%s\n' % (repo_op, repo_id)
+        payload += f'--{repo_op}={repo_id}\n'
     if refresh:
         payload += '--refresh\n'
     check_newline(args.releasever, '--releasever')
-    payload += '--releasever=%s\n' % args.releasever
+    payload += f'--releasever={args.releasever}\n'
     check_newline(spec, 'template name')
     payload += spec + '\n'
     payload += '---\n'
@@ -530,7 +528,7 @@ def qrexec_repoquery(
     proc.stderr.close()
     if proc.wait() != 0:
         for line in stderr.rstrip().split('\n'):
-            print('[Qrexec] %s' % line, file=sys.stderr)
+            print(f"[Qrexec] {line}", file=sys.stderr)
         raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
     name_re = re.compile(r'\A[A-Za-z0-9._+][A-Za-z0-9._+-]*\Z')
     evr_re = re.compile(r'\A[A-Za-z0-9._+~]*\Z')
@@ -581,8 +579,8 @@ def qrexec_repoquery(
                                    dlsize, buildtime, licence, url, summary,
                                    description))
         except (TypeError, ValueError):
-            raise ConnectionError(("qrexec call 'qubes.TemplateSearch' failed:"
-                                   " unexpected data format."))
+            raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed:"
+                                   " unexpected data format.")
     return result
 
 
@@ -640,11 +638,11 @@ def qrexec_download(
                         actual_size = int(i[:-13])
                         if dlsize is not None and dlsize != actual_size:
                             raise ConnectionError(
-                                'Downloaded file is {} bytes, '
-                                'expected {}'.format(dlsize, actual_size))
+                                f"Downloaded file is {dlsize} bytes, "
+                                f"expected {actual_size}")
                     else:
                         raise ConnectionError(
-                            'Bad line from rpmcanon: {!r}'.format(i))
+                            f'Bad line from rpmcanon: {i!r}')
 
             if proc.wait() != 0:
                 raise ConnectionError(
@@ -709,12 +707,10 @@ def verify_rpm(path: str, key: str, *, nogpgcheck: bool = False,
                     ], env={'LC_ALL': 'C', **os.environ}, stdin=fd)
                 except subprocess.CalledProcessError as e:
                     raise SignatureVerificationError(
-                        'Signature verification failed: {}'.format(
-                            e.output.decode()))
+                        f"Signature verification failed: {e.output.decode()}")
                 if output != b'-: digests signatures OK\n':
                     raise SignatureVerificationError(
-                        'Signature verification failed: {}'.format(
-                            output.decode()))
+                        f"Signature verification failed: {output.decode()}")
             fd.seek(0)
         tset = rpm.TransactionSet()
         # even if gpgcheck is not disabled, the database path is wrong
@@ -742,11 +738,7 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
             stdout=subprocess.PIPE)
     # `-D` is GNUism
     tar = subprocess.Popen([
-            'tar',
-            'xz',
-            '-C',
-            target,
-            '.%s/%s/' % (PATH_PREFIX, name)
+            'tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/'
         ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL)
     return rpm2cpio.wait() == 0 and tar.wait() == 0
 
@@ -824,19 +816,17 @@ def get_dl_list(
         #      perhaps the messages can be improved
         if len(query_res) == 0:
             if version_selector == VersionSelector.LATEST:
-                parser.error('Template \'%s\' not found.' % template)
+                parser.error(f"Template '{template}' not found.")
             elif version_selector == VersionSelector.REINSTALL:
-                parser.error('Same version of template \'%s\' not found.' \
-                             % template)
+                parser.error(f"Same version of template '{template}' "
+                             f"not found.")
             # Copy behavior of DNF and do nothing if version not found
             elif version_selector == VersionSelector.LATEST_LOWER:
-                print(("Template '%s' of lowest version"
-                       " already installed, skipping..." % template),
-                      file=sys.stderr)
+                print(f"Template '{template}' of lowest version already "
+                      f"installed, skipping...", file=sys.stderr)
             elif version_selector == VersionSelector.LATEST_HIGHER:
-                print(("Template '%s' of highest version"
-                       " already installed, skipping..." % template),
-                      file=sys.stderr)
+                print(f"Template '{template}' of highest version already "
+                      f"installed, skipping...", file=sys.stderr)
 
         # Merge & choose the template with the highest version
         for entry in query_res:
@@ -881,19 +871,19 @@ def download(
         for name, entry in dl_list.items():
             version_str = build_version_str(entry.evr)
             spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
-            target = os.path.join(path, '%s.rpm' % spec)
-            target_temp = os.path.join(dl_dir, '%s.rpm.UNTRUSTED' % spec)
+            target = os.path.join(path, f'{spec}.rpm')
+            target_temp = os.path.join(dl_dir, f'{spec}.rpm.UNTRUSTED')
             repo_key = keys.get(entry.reponame)
             if repo_key is None:
                 repo_key = args.keyring
             if os.path.exists(target):
-                print('\'%s\' already exists, skipping...' % target,
+                print(f"'{target}' already exists, skipping...",
                       file=sys.stderr)
                 # but still verify the package
                 package_hdrs[name] = verify_rpm(
                     target, repo_key, template_name=name)
                 continue
-            print('Downloading \'%s\'...' % spec, file=sys.stderr)
+            print(f"Downloading '{spec}'...", file=sys.stderr)
             done = False
             for attempt in range(args.retries):
                 try:
@@ -904,10 +894,10 @@ def download(
                 except ConnectionError:
                     os.remove(target_temp)
                     if attempt + 1 < args.retries:
-                        print('\'%s\' download failed, retrying...' % spec,
+                        print(f"'{spec}' download failed, retrying...",
                               file=sys.stderr)
             if not done:
-                print('Error: \'%s\' download failed.' % spec, file=sys.stderr)
+                print(f"Error: '{spec}' download failed.", file=sys.stderr)
                 sys.exit(1)
 
             if args.nogpgcheck:
@@ -930,9 +920,8 @@ def locked(func):
                 fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
                 raise AlreadyRunning(
-                    ('cannot get lock on %s. '
-                     'Perhaps another instance of qvm-template is running?')
-                         % LOCK_FILE)
+                    f"Cannot get lock on {LOCK_FILE}. Perhaps another instance "
+                    f"of qvm-template is running?")
             try:
                 return func(*args, **kwargs)
             finally:
@@ -975,21 +964,20 @@ def install(
             package_hdr = verify_rpm(rpmfile, repo_key,
                                      nogpgcheck=args.nogpgcheck)
             if not package_hdr:
-                parser.error('Package \'%s\' verification failed.' % rpmfile)
+                parser.error(f"Package '{rpmfile}' verification failed.")
 
         package_name = package_hdr[rpm.RPMTAG_NAME]
         if not package_name.startswith(PACKAGE_NAME_PREFIX):
-            parser.error(
-                'Illegal package name for package \'%s\'.' % rpmfile)
+            parser.error(f"Illegal package name for package '{rpmfile}'.")
         # Remove prefix to get the real template name
         name = package_name[len(PACKAGE_NAME_PREFIX):]
 
         # Check if already installed
         if not override_existing and name in app.domains:
-            print(('Template \'%s\' already installed, skipping...'
-                   ' (You may want to use the'
-                   ' {reinstall,upgrade,downgrade}'
-                   ' operations.)') % name, file=sys.stderr)
+            print(f"Template '{name}' already installed, skipping..."
+                   " (You may want to use the"
+                   " {reinstall,upgrade,downgrade}"
+                   " operations.)", file=sys.stderr)
             return
 
         # Check if version is really what we want
@@ -1003,19 +991,17 @@ def install(
             cmp_res = rpm.labelCompare(pkg_evr, vm_evr)
             if version_selector == VersionSelector.REINSTALL \
                     and cmp_res != 0:
-                parser.error(
-                    'Same version of template \'%s\' not found.' \
-                    % name)
+                parser.error(f'Same version of template \'{name}\' not found.')
             elif version_selector == VersionSelector.LATEST_LOWER \
                     and cmp_res != -1:
-                print(("Template '%s' of lower version"
-                       " already installed, skipping..." % name),
+                print(f"Template '{name}' of lower version "
+                      f"already installed, skipping...",
                       file=sys.stderr)
                 return
             elif version_selector == VersionSelector.LATEST_HIGHER \
                     and cmp_res != 1:
-                print(("Template '%s' of higher version"
-                       " already installed, skipping..." % name),
+                print(f"Template '{name}' of higher version"
+                       " already installed, skipping...",
                       file=sys.stderr)
                 return
 
@@ -1025,7 +1011,7 @@ def install(
     for template in args.templates:
         if template.endswith('.rpm'):
             if not os.path.exists(template):
-                parser.error('RPM file \'%s\' not found.' % template)
+                parser.error(f'RPM file \'{template}\' not found.')
             unverified_rpm_list.append((template, '@commandline'))
 
     # First verify local RPMs and extract header
@@ -1045,16 +1031,16 @@ def install(
         # Note that we *still* have to do this again in verify() for
         # already-downloaded templates
         if not override_existing and name in app.domains:
-            print(('Template \'%s\' already installed, skipping...'
-                ' (You may want to use the'
-                ' {reinstall,upgrade,downgrade}'
-                ' operations.)') % name, file=sys.stderr)
+            print(f"Template '{name}' already installed, skipping..."
+                   " (You may want to use the"
+                   " {reinstall,upgrade,downgrade}"
+                   " operations.)", file=sys.stderr)
             del dl_list_copy[name]
         else:
             # XXX: Perhaps this is better returned by download()
             version_str = build_version_str(entry.evr)
             target_file = \
-                '%s%s-%s.rpm' % (PACKAGE_NAME_PREFIX, name, version_str)
+                f'{PACKAGE_NAME_PREFIX}{name}-{version_str}.rpm'
             unverified_rpm_list[name] = (
                 (os.path.join(args.cachedir, target_file), entry.reponame))
     dl_list = dl_list_copy
@@ -1089,10 +1075,9 @@ def install(
     # Unpack and install
     for rpmfile, reponame, name, package_hdr in verified_rpm_list:
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
-            print('Installing template \'%s\'...' % name, file=sys.stderr)
+            print(f'Installing template \'{name}\'...', file=sys.stderr)
             if not extract_rpm(name, rpmfile, target):
-                raise Exception(
-                    'Failed to extract {} template'.format(name))
+                raise Exception(f'Failed to extract {name} template')
             cmdline = [
                 'qvm-template-postprocess',
                 '--really',
@@ -1385,7 +1370,7 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         idx, needles = x
         weight = sum(t[0] for t in needles)
         name = query_res[idx][0]
-        return (-weight, needles, name)
+        return -weight, needles, name
 
     search_res = sorted(search_res_by_idx.items(), key=key_func)
 
@@ -1430,7 +1415,7 @@ def remove(
     #       it does not seem to work as a parent parser
     for tpl in args.templates:
         if tpl not in app.domains:
-            parser.error("no such domain: '%s'" % tpl)
+            parser.error(f"no such domain: '{tpl}'")
 
     remove_list = args.templates
     if purge:
@@ -1464,10 +1449,9 @@ def remove(
         # Create dummy template; handle name collisions
         orig_dummy = dummy
         cnt = 1
-        while dummy in app.domains \
-                and app.domains[dummy].features.get(
-            'template-dummy', '0') != '1':
-            dummy = '%s-%d' % (orig_dummy, cnt)
+        while dummy in app.domains and \
+                app.domains[dummy].features.get('template-dummy', '0') != '1':
+            dummy = f'{orig_dummy}-{cnt:d}'
             cnt += 1
         if dummy not in app.domains:
             dummy_vm = app.add_new_vm('TemplateVM', dummy, 'red')
@@ -1481,10 +1465,10 @@ def remove(
                 if holder:
                     setattr(holder, prop, dummy_vm)
                     holder.template = dummy_vm
-                    print("Property '%s' of '%s' set to '%s'." % (
-                        prop, holder.name, dummy), file=sys.stderr)
+                    print(f"Property '{prop}' of '{holder.name}' set to "
+                          f"'{dummy}'.", file=sys.stderr)
                 else:
-                    print("Global property '%s' set to ''." % prop,
+                    print(f"Global property '{prop}' set to ''.",
                           file=sys.stderr)
                     setattr(app, prop, '')
         if remove_dummy:
@@ -1533,7 +1517,7 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         for idx, path in enumerate(args.repo_files):
             src = os.path.abspath(path)
             # Use index as file name in case of collisions
-            dst = os.path.join(reposdir, '%d.repo' % idx)
+            dst = os.path.join(reposdir, f'{idx:d}.repo')
             os.symlink(src, dst)
         conf = dnf.conf.Conf()
         conf.substitutions['releasever'] = args.releasever
@@ -1648,7 +1632,7 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
         elif p_args.command == 'repolist':
             repolist(p_args, app)
         else:
-            parser.error('Command \'%s\' not supported.' % p_args.command)
+            parser.error(f'Command \'{p_args.command}\' not supported.')
     except Exception as e:  # pylint: disable=broad-except
         print('ERROR: ' + str(e), file=sys.stderr)
         app.log.debug(str(e), exc_info=sys.exc_info())
