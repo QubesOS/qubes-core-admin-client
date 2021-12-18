@@ -16,14 +16,14 @@ Execution mode
 When executing a command, it is recommended to pass the arguments directly to
 `qvm-run`, for example:
 
-    qvm-run --pass-io personal -- ls -a
+    ``qvm-run --pass-io personal -- ls -a``
 
 (Note the `--` used to ensure that `-a` is not treated as option of `qvm-run`).
 
 If no arguments are specified, *COMMAND* will be interpreted as a shell
 command, for example:
 
-    qvm-run --pass-io personal 'ls -a'
+    ``qvm-run --pass-io personal 'ls -a'``
 
 This is more flexible but also less safe, because care must be taken to quote
 or escape special characters. Use the :option:`--no-shell` option to ensure
