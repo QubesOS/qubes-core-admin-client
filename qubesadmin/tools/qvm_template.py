@@ -1526,22 +1526,18 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         base.read_all_repos()
 
         # Filter (name, operation) from args.repos
-        enable_repos = []
-        disable_repos = []
         repoid = []
+        enable_disable_repos = []
         repos: typing.List[dnf.repo.Repo] = []
         if args.repos:
             for repo in args.repos:
                 name, operation = repo
                 if operation == "repoid":
                     repoid.append(name)
-                elif operation == "enablerepo":
-                    enable_repos.append(name)
-                elif operation == "disablerepo":
-                    disable_repos.append(name)
-
+                elif operation in ("enablerepo", "disablerepo"):
+                    enable_disable_repos.append(name)
             if repoid:
-                if enable_repos or disable_repos:
+                if enable_disable_repos:
                     print("Warning: Ignoring --enablerepo and --disablerepo "
                           "options.", file=sys.stderr)
                 base.repos.get_matching('*').disable()
@@ -1550,14 +1546,16 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
                     dnf_repo.enable()
                     repos += list(dnf_repo)
             else:
-                for repo in enable_repos:
-                    dnf_repo = base.repos.get_matching(repo)
-                    dnf_repo.enable()
-                    repos += list(dnf_repo)
-                for repo in disable_repos:
-                    dnf_repo = base.repos.get_matching(repo)
-                    dnf_repo.disable()
-                    repos += list(dnf_repo)
+                for repo in enable_disable_repos:
+                    name, operation = repo
+                    if operation == "enablerepo":
+                        dnf_repo = base.repos.get_matching(repo)
+                        dnf_repo.enable()
+                        repos += list(dnf_repo)
+                    elif operation == "disablerepo":
+                        dnf_repo = base.repos.get_matching(repo)
+                        dnf_repo.disable()
+                        repos += list(dnf_repo)
             repos = list(set(repos))
         else:
             repos = list(base.repos.values())
