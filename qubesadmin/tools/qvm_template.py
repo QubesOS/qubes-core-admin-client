@@ -103,7 +103,7 @@ class RepoOptCallback(argparse.Action):
     def __call__(self, parser_arg, namespace, values, option_string=None):
         operation = option_string.lstrip('-')
         repo_actions = getattr(namespace, self.dest)
-        repo_actions.append((values, operation))
+        repo_actions.append((operation, values))
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -1531,7 +1531,7 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         repos: typing.List[dnf.repo.Repo] = []
         if args.repos:
             for repo in args.repos:
-                name, operation = repo
+                operation, name = repo
                 if operation == "repoid":
                     repoid.append(name)
                 elif operation in ("enablerepo", "disablerepo"):
@@ -1547,7 +1547,7 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
                     repos += list(dnf_repo)
             else:
                 for repo in enable_disable_repos:
-                    name, operation = repo
+                    operation, name = repo
                     if operation == "enablerepo":
                         dnf_repo = base.repos.get_matching(repo)
                         dnf_repo.enable()
