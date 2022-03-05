@@ -24,26 +24,9 @@ def get_console_scripts():
                 basename)
 
 # create simple scripts that run much faster than "console entry points"
-class CustomInstall(setuptools.command.install.install):
-    def run(self):
-        bin = os.path.join(self.root, "usr/bin")
-        try:
-            os.makedirs(bin)
-        except:
-            pass
-        for file, pkg in get_console_scripts():
-           path = os.path.join(bin, file)
-           with open(path, "w") as f:
-               f.write(
-"""#!/usr/bin/python3
-from {} import main
-import sys
-if __name__ == '__main__':
-	sys.exit(main())
-""".format(pkg))
-
-           os.chmod(path, 0o755)
-        setuptools.command.install.install.run(self)
+scripts = []
+for filename, pkg in get_console_scripts():
+    scripts.append(f'{filename} = {pkg}:main')
 
 if __name__ == '__main__':
     setuptools.setup(
@@ -58,8 +41,7 @@ if __name__ == '__main__':
         package_data={
             'qubesadmin.tests.backup': ['*.xml'],
         },
-        cmdclass={
-           'install': CustomInstall
+        entry_points={
+            'gui_scripts': scripts
         },
-
-        )
+    )

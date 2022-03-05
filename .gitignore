@@ -6,3 +6,4 @@ pkgs/
 .coverage
 __pycache__
 debian/changelog.*
+qubesadmin.egg-info/
