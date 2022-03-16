@@ -27,6 +27,7 @@ import enum
 import fcntl
 import fnmatch
 import functools
+import glob
 import itertools
 import json
 import operator
@@ -124,7 +125,7 @@ def get_parser() -> argparse.ArgumentParser:
             description=help_str)
 
     parser_main.add_argument('--repo-files', action='append',
-        default=['/etc/qubes/repo-templates/qubes-templates.repo'],
+        default=['/etc/qubes/repo-templates/*.repo'],
         help=('Specify files containing DNF repository configuration.'
             ' Can be used more than once.'))
     parser_main.add_argument('--keyring',
@@ -1591,6 +1592,10 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
     if len(p_args.repo_files) > 1:
         # ...remove the default entry
         p_args.repo_files.pop(0)
+
+    # resolve wildcards
+    p_args.repo_files = list(itertools.chain(
+        *(glob.glob(path) for path in p_args.repo_files)))
 
     if app is None:
         app = qubesadmin.Qubes()

@@ -5364,3 +5364,45 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
                         args, self.app, 'fedora-31:4.0', key=pubkey, path=fd.name)
         gen_rpm(False, execute)
         self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.repolist')
+    def test_300_repo_files_glob(self, mock_repolist):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_str1 = \
+'''[qubes-templates-itl]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl/repodata/repomd.xml.metalink
+enabled = 1
+fastestmirror = 1
+metadata_expire = 7d
+gpgcheck = 1
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            repo_str2 = \
+'''[qubes-templates-itl-testing]
+name = Qubes Templates repository
+#baseurl = https://yum.qubes-os.org/r$releasever/templates-itl-testing
+#baseurl = http://yum.qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/r$releasever/templates-itl-testing
+metalink = https://yum.qubes-os.org/r$releasever/templates-itl-testing/repodata/repomd.xml.metalink
+enabled = 0
+fastestmirror = 1
+gpgcheck = 1
+gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
+'''
+            with open(temp_dir + '/first.repo', 'w') as f:
+                f.write(repo_str1)
+            with open(temp_dir + '/second.repo', 'w') as f:
+                f.write(repo_str2)
+
+            qubesadmin.tools.qvm_template.main(
+                ['--updatevm=',
+                 '--repo-files=' + temp_dir + '/*.repo', 'repolist'])
+            mock_repolist.assert_called_once()
+
+            self.assertCountEqual(
+                [temp_dir + '/first.repo', temp_dir + '/second.repo'],
+                mock_repolist.mock_calls[0][1][0].repo_files
+            )
+        self.assertAllCalled()
