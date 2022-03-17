@@ -18,7 +18,7 @@ checks:tests:
     - python3 setup.py build
     - ./run-tests
   after_script:
-    - PATH=$PATH:$HOME/.local/bin codecov
+    - ci/codecov-wrapper
 
 checks:pylint:
   stage: checks
