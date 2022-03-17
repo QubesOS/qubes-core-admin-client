@@ -955,9 +955,10 @@ class TC_20_QubesLocal(unittest.TestCase):
 class TC_30_QubesRemote(unittest.TestCase):
     def setUp(self):
         super(TC_30_QubesRemote, self).setUp()
-        self.proc_mock = mock.Mock()
+        self.proc_mock = mock.MagicMock()
         self.proc_mock.configure_mock(**{
-            'return_value.returncode': 0
+            'return_value.returncode': 0,
+            'return_value.__enter__.return_value': self.proc_mock.return_value,
         })
         self.proc_patch = mock.patch('subprocess.Popen', self.proc_mock)
         self.proc_patch.start()
@@ -980,7 +981,9 @@ class TC_30_QubesRemote(unittest.TestCase):
                 'some.method+arg1'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE),
-            mock.call().communicate(b'payload')
+            mock.call().__enter__(),
+            mock.call().communicate(b'payload'),
+            mock.call().__exit__(None, None, None),
         ])
 
     def test_001_qubesd_call_none_arg(self):
@@ -991,7 +994,9 @@ class TC_30_QubesRemote(unittest.TestCase):
                 'some.method'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE),
-            mock.call().communicate(b'payload')
+            mock.call().__enter__(),
+            mock.call().communicate(b'payload'),
+            mock.call().__exit__(None, None, None),
         ])
 
     def test_002_qubesd_call_none_payload(self):
@@ -1002,7 +1007,9 @@ class TC_30_QubesRemote(unittest.TestCase):
                 'some.method'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE),
-            mock.call().communicate(None)
+            mock.call().__enter__(),
+            mock.call().communicate(None),
+            mock.call().__exit__(None, None, None),
         ])
 
     def test_003_qubesd_call_payload_stream(self):
@@ -1024,7 +1031,9 @@ class TC_30_QubesRemote(unittest.TestCase):
                 stdin=payload_file,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE),
-            mock.call().communicate()
+            mock.call().__enter__(),
+            mock.call().communicate(),
+            mock.call().__exit__(None, None, None),
         ])
         self.assertEqual(value, b'return-value')
 
@@ -1045,9 +1054,11 @@ class TC_30_QubesRemote(unittest.TestCase):
                 'some.method+some-arg'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE),
+            mock.call().__enter__(),
             mock.call().stdin.write(b'first line\n'),
             mock.call().stdin.write(b'some payload\n'),
-            mock.call().communicate()
+            mock.call().communicate(),
+            mock.call().__exit__(None, None, None),
         ])
         self.assertEqual(value, b'return-value')
 
@@ -1092,7 +1103,9 @@ class TC_30_QubesRemote(unittest.TestCase):
                   'some-vm', 'admin.vm.CurrentState'],
                  stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                  stderr=subprocess.PIPE),
+            call().__enter__(),
             call().communicate(None),
+            call().__exit__(None, None, None),
             call([qubesadmin.config.QREXEC_CLIENT_VM,
                   '-T', 'some-vm', 'service.name'],
                  stdin=subprocess.PIPE, stdout=subprocess.PIPE,

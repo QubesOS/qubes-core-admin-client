@@ -73,9 +73,11 @@ def get_root_img_size(source_dir):
     if os.path.exists(part_path) or os.path.exists(tar_path):
         # get just file root_size from the tar header
         path = part_path if os.path.exists(part_path) else tar_path
-        p = subprocess.Popen(['tar', 'tvf', path],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        (stdout, _) = p.communicate()
+        with subprocess.Popen(
+                ['tar', 'tvf', path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL) as p:
+            (stdout, _) = p.communicate()
         # -rw-r--r-- 0/0      1073741824 1970-01-01 01:00 root.img
         root_size = int(stdout.split()[2])
     elif os.path.exists(root_path):
@@ -98,22 +100,24 @@ def import_root_img(vm, source_dir):
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
         input_files = glob.glob(root_path + '.part.*')
-        cat = subprocess.Popen(['cat'] + sorted(input_files),
-            stdout=subprocess.PIPE)
-        tar = subprocess.Popen(['tar', 'xSOf', '-'],
-            stdin=cat.stdout,
-            stdout=subprocess.PIPE)
-        cat.stdout.close()
-        vm.volumes['root'].import_data(stream=tar.stdout)
-        if tar.wait() != 0:
-            raise qubesadmin.exc.QubesException('root.img extraction failed')
-        if cat.wait() != 0:
-            raise qubesadmin.exc.QubesException('root.img extraction failed')
+        with subprocess.Popen(['cat'] + sorted(input_files),
+                stdout=subprocess.PIPE) as cat:
+            with subprocess.Popen(['tar', 'xSOf', '-'],
+                    stdin=cat.stdout,
+                    stdout=subprocess.PIPE) as tar:
+                cat.stdout.close()
+                vm.volumes['root'].import_data(stream=tar.stdout)
+        if tar.returncode != 0:
+            raise qubesadmin.exc.QubesException(
+                'root.img extraction failed')
+        if cat.returncode != 0:
+            raise qubesadmin.exc.QubesException(
+                'root.img extraction failed')
     elif os.path.exists(root_path + '.tar'):
-        tar = subprocess.Popen(['tar', 'xSOf', root_path + '.tar'],
-            stdout=subprocess.PIPE)
-        vm.volumes['root'].import_data(stream=tar.stdout)
-        if tar.wait() != 0:
+        with subprocess.Popen(['tar', 'xSOf', root_path + '.tar'],
+                stdout=subprocess.PIPE) as tar:
+            vm.volumes['root'].import_data(stream=tar.stdout)
+        if tar.returncode != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
     elif os.path.exists(root_path):
         if vm.app.qubesd_connection_type == 'socket':

@@ -177,11 +177,11 @@ def main(args=None, app=None):
 
     if args.profile is None:
         if args.passphrase_file is not None:
-            pass_f = open(args.passphrase_file) \
-                if args.passphrase_file != "-" else sys.stdin
-            passphrase = pass_f.readline().rstrip()
-            if pass_f is not sys.stdin:
-                pass_f.close()
+            if args.passphrase_file == '-':
+                passphrase = sys.stdin.readline().rstrip()
+            else:
+                with open(args.passphrase_file) as pass_f:
+                    passphrase = pass_f.readline().rstrip()
         else:
             prompt = ("Please enter the passphrase that will be used to "
                       "encrypt and verify the backup: ")

@@ -452,6 +452,7 @@ def qrexec_popen(
             service,
             filter_esc=filter_esc,
             stdout=stdout)
+    # pylint: disable=consider-using-with
     return subprocess.Popen(
         [f'/etc/qubes-rpc/{service}'], stdin=subprocess.PIPE, stdout=stdout,
         stderr=subprocess.PIPE
@@ -734,14 +735,15 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
     :return: Whether the extraction succeeded
     """
     with open(path, 'rb') as pkg_f:
-        rpm2cpio = subprocess.Popen(['rpm2archive', "-"],
-            stdin=pkg_f,
-            stdout=subprocess.PIPE)
-    # `-D` is GNUism
-    tar = subprocess.Popen([
-            'tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/'
-        ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL)
-    return rpm2cpio.wait() == 0 and tar.wait() == 0
+        with subprocess.Popen(['rpm2archive', "-"],
+                stdin=pkg_f,
+                stdout=subprocess.PIPE) as rpm2cpio:
+            # `-D` is GNUism
+            with subprocess.Popen([
+                    'tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/'
+                    ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL) as tar:
+                pass
+    return rpm2cpio.returncode == 0 and tar.returncode == 0
 
 
 def filter_version(
@@ -1222,7 +1224,7 @@ def list_templates(args: argparse.Namespace,
     elif command == 'info':
         append = append_info
     else:
-        assert False and 'Unknown command'
+        assert False, 'Unknown command'
 
     def append_vm(vm, status):
         append(query_local(vm), status, vm.features['template-installtime'])

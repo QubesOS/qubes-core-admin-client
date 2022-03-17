@@ -260,7 +260,7 @@ def launch_proc_with_pty(args, stdin=None, stdout=None, stderr=None, echo=True):
             termios_p[3] &= ~termios.ECHO
             termios.tcsetattr(ctty_fd, termios.TCSANOW, termios_p)
     (pty_master, pty_slave) = os.openpty()
-    # pylint: disable=subprocess-popen-preexec-fn
+    # pylint: disable=subprocess-popen-preexec-fn,consider-using-with
     p = subprocess.Popen(args, stdin=stdin, stdout=stdout,
         stderr=stderr,
         preexec_fn=lambda: set_ctty(pty_slave, pty_master))
@@ -569,6 +569,7 @@ class ExtractWorker3(Process):
         '''
         assert self.tar2_feeder is None
 
+        # pylint: disable=consider-using-with
         self.tar2_feeder = subprocess.Popen(['cat', filename],
             stdout=input_pipe)
 
@@ -671,6 +672,7 @@ class ExtractWorker3(Process):
                                             tar_compress_cmd)
 
                 self.log.debug("Running command %s", str(tar2_cmdline))
+                # pylint: disable=consider-using-with
                 if self.encrypted:
                     # Start decrypt
                     self.decryptor_process = subprocess.Popen(
@@ -777,22 +779,18 @@ def get_supported_hmac_algo(hmac_algorithm=None):
         yield hmac_algorithm
     if hmac_algorithm != 'scrypt':
         yield 'scrypt'
-    proc = subprocess.Popen(
-        'openssl list-message-digest-algorithms || '
-        'openssl list -digest-algorithms',
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL)
-    try:
+    with subprocess.Popen(
+            'openssl list-message-digest-algorithms || '
+            'openssl list -digest-algorithms',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL) as proc:
         for algo in proc.stdout.readlines():
             algo = algo.decode('ascii')
             if '=>' in algo:
                 continue
             yield algo.strip().lower()
-    finally:
-        proc.terminate()
-        proc.wait()
-        proc.stdout.close()
+
 
 def get_supported_crypto_algo(crypto_algorithm=None):
     '''Generate a list of supported hmac algorithms
@@ -805,22 +803,18 @@ def get_supported_crypto_algo(crypto_algorithm=None):
         yield crypto_algorithm
     if crypto_algorithm != 'scrypt':
         yield 'scrypt'
-    proc = subprocess.Popen(
-        'openssl list-cipher-algorithms || '
-        'openssl list -cipher-algorithms',
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL)
-    try:
+    with subprocess.Popen(
+                          'openssl list-cipher-algorithms || '
+                          'openssl list -cipher-algorithms',
+                          shell=True,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.DEVNULL) as proc:
         for algo in proc.stdout.readlines():
             algo = algo.decode('ascii')
             if '=>' in algo:
                 continue
             yield algo.strip().lower()
-    finally:
-        proc.terminate()
-        proc.wait()
-        proc.stdout.close()
+
 
 class BackupRestoreOptions(object):
     '''Options for restore operation'''
@@ -976,6 +970,7 @@ class BackupRestore(object):
         errors)
         """
 
+        # pylint: disable=consider-using-with
         vmproc = None
         if self.backup_vm is not None:
             # If APPVM, STDOUT is a PIPE
@@ -1111,11 +1106,12 @@ class BackupRestore(object):
                     return True
 
         with open(os.path.join(self.tmpdir, filename), 'rb') as f_input:
-            hmac_proc = subprocess.Popen(
-                ["openssl", "dgst", "-" + algorithm, "-hmac", passphrase],
-                stdin=f_input,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            hmac_stdout, hmac_stderr = hmac_proc.communicate()
+            with subprocess.Popen(
+                    ["openssl", "dgst", "-" + algorithm, "-hmac", passphrase],
+                    stdin=f_input,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE) as hmac_proc:
+                hmac_stdout, hmac_stderr = hmac_proc.communicate()
 
         if hmac_stderr:
             raise QubesException(

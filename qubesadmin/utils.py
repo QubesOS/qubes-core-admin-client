@@ -178,6 +178,7 @@ class LockFile(object):
     def __init__(self, path, nonblock=False):
         """Open the file. Call *acquire* or enter the context to lock
         the file"""
+        # pylint: disable=consider-using-with
         self.file = open(path, "w")
         self.nonblock = nonblock
 

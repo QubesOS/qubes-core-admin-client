@@ -588,33 +588,26 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :return: (process, stdout, stderr)
         """
 
-        if payload:
-            # It's not strictly correct to write data to stdin in this way,
-            # because the process can get blocked on stdout or stderr pipe.
-            # However, in practice the output should be always smaller than 4K.
-            proc = subprocess.Popen(
+        with subprocess.Popen(
                 command,
-                stdin=subprocess.PIPE,
+                stdin=(subprocess.PIPE if payload else payload_stream),
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            proc.stdin.write(payload)
-            try:
-                shutil.copyfileobj(payload_stream, proc.stdin)
-            except BrokenPipeError:
-                # We might receive an error from qubesd before we sent
-                # everything (for instance, because we are sending too much
-                # data).
-                pass
-        else:
-            # Connect the stream directly.
-            proc = subprocess.Popen(
-                command,
-                stdin=payload_stream,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-
-        payload_stream.close()
-        stdout, stderr = proc.communicate()
+                stderr=subprocess.PIPE) as proc:
+            if payload:
+                # It's not strictly correct to write data to stdin in this way,
+                # because the process can get blocked on stdout or stderr pipe.
+                # However, in practice the output should be always smaller
+                # than 4K.
+                proc.stdin.write(payload)
+                try:
+                    shutil.copyfileobj(payload_stream, proc.stdin)
+                except BrokenPipeError:
+                    # We might receive an error from qubesd before we sent
+                    # everything (for instance, because we are sending too much
+                    # data).
+                    pass
+            payload_stream.close()
+            stdout, stderr = proc.communicate()
         return proc, stdout, stderr
 
     def _invalidate_cache(self, subject, event, name, **kwargs):
@@ -774,6 +767,7 @@ class QubesLocal(QubesBase):
         elif not self.domains.get_blind(dest).is_running():
             raise qubesadmin.exc.QubesVMNotRunningError(
                 '%s is not running', dest)
+        # pylint: disable=consider-using-with
         if dest == 'dom0':
             # can't make real dom0->dom0 call
             if filter_esc:
@@ -861,11 +855,11 @@ class QubesRemote(QubesBase):
             (p, stdout, stderr) = self._call_with_stream(
                 command, payload, payload_stream)
         else:
-            p = subprocess.Popen(command,
-                                 stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            (stdout, stderr) = p.communicate(payload)
+            with subprocess.Popen(command,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE) as p:
+                (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
             raise qubesadmin.exc.QubesDaemonAccessError(
                 'Service call error: %s', stderr.decode())
@@ -916,6 +910,7 @@ class QubesRemote(QubesBase):
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
         kwargs.setdefault('stderr', subprocess.PIPE)
+        # pylint: disable=consider-using-with
         proc = subprocess.Popen(
             [qubesadmin.config.QREXEC_CLIENT_VM] +
             qrexec_opts +

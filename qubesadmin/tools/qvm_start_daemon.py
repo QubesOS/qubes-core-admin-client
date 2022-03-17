@@ -275,44 +275,45 @@ def get_monitor_layout():
     """Get list of monitors and their size/position"""
     outputs = []
 
-    for line in subprocess.Popen(
-            ['xrandr', '-q'], stdout=subprocess.PIPE).stdout:
-        line = line.decode()
-        if not line.startswith("Screen") and not line.startswith(" "):
-            match = REGEX_OUTPUT.match(line)
-            if not match:
-                logging.warning('Invalid output from xrandr: %r', line)
-                continue
-            output_params = match.groupdict()
-            if output_params['width']:
-                phys_size = ""
-                if output_params['width_mm'] and int(output_params['width_mm']):
-                    # don't provide real values for privacy reasons - see
-                    # #1951 for details
-                    dpi = (int(output_params['width']) * 254 //
-                           int(output_params['width_mm']) // 10)
-                    if dpi > 300:
-                        dpi = 300
-                    elif dpi > 200:
-                        dpi = 200
-                    elif dpi > 150:
-                        dpi = 150
-                    else:
-                        # if lower, don't provide this info to the VM at all
-                        dpi = 0
-                    if dpi:
-                        # now calculate dimensions based on approximate DPI
-                        phys_size = " {} {}".format(
-                            int(output_params['width']) * 254 // dpi // 10,
-                            int(output_params['height']) * 254 // dpi // 10,
-                        )
-                outputs.append("%s %s %s %s%s\n" % (
-                    output_params['width'],
-                    output_params['height'],
-                    output_params['x'],
-                    output_params['y'],
-                    phys_size,
-                ))
+    with subprocess.Popen(['xrandr', '-q'], stdout=subprocess.PIPE) as proc:
+        for line in proc.stdout:
+            line = line.decode()
+            if not line.startswith("Screen") and not line.startswith(" "):
+                match = REGEX_OUTPUT.match(line)
+                if not match:
+                    logging.warning('Invalid output from xrandr: %r', line)
+                    continue
+                output_params = match.groupdict()
+                if output_params['width']:
+                    phys_size = ""
+                    if output_params['width_mm'] \
+                            and int(output_params['width_mm']):
+                        # don't provide real values for privacy reasons - see
+                        # #1951 for details
+                        dpi = (int(output_params['width']) * 254 //
+                               int(output_params['width_mm']) // 10)
+                        if dpi > 300:
+                            dpi = 300
+                        elif dpi > 200:
+                            dpi = 200
+                        elif dpi > 150:
+                            dpi = 150
+                        else:
+                            # if lower, don't provide this info to the VM at all
+                            dpi = 0
+                        if dpi:
+                            # now calculate dimensions based on approximate DPI
+                            phys_size = " {} {}".format(
+                                int(output_params['width']) * 254 // dpi // 10,
+                                int(output_params['height']) * 254 // dpi // 10,
+                            )
+                    outputs.append("%s %s %s %s%s\n" % (
+                        output_params['width'],
+                        output_params['height'],
+                        output_params['x'],
+                        output_params['y'],
+                        phys_size,
+                    ))
     return outputs
 
 

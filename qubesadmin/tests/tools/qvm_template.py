@@ -198,9 +198,11 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
 
     @mock.patch('subprocess.Popen')
     def test_010_extract_rpm_success(self, mock_popen):
+        mock_popen.return_value.__enter__.return_value = mock_popen.return_value
         pipe = mock.Mock()
         mock_popen.return_value.stdout = pipe
         mock_popen.return_value.wait.return_value = 0
+        mock_popen.return_value.returncode = 0
         with tempfile.NamedTemporaryFile() as fd, \
                 tempfile.TemporaryDirectory() as dir:
             path = fd.name
@@ -212,6 +214,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call(['rpm2archive', '-'],
                 stdin=mock.ANY,
                 stdout=subprocess.PIPE),
+            mock.call().__enter__(),
             mock.call([
                     'tar',
                     'xz',
@@ -219,16 +222,18 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                     dirpath,
                     './var/lib/qubes/vm-templates/test-vm/'
                 ], stdin=pipe, stdout=subprocess.DEVNULL),
-            mock.call().wait(),
-            mock.call().wait()
+            mock.call().__enter__(),
+            mock.call().__exit__(None, None, None),
+            mock.call().__exit__(None, None, None),
         ])
         self.assertAllCalled()
 
     @mock.patch('subprocess.Popen')
     def test_011_extract_rpm_fail(self, mock_popen):
+        mock_popen.return_value.__enter__.return_value = mock_popen.return_value
         pipe = mock.Mock()
         mock_popen.return_value.stdout = pipe
-        mock_popen.return_value.wait.return_value = 1
+        mock_popen.return_value.returncode = 1
         with tempfile.NamedTemporaryFile() as fd, \
                 tempfile.TemporaryDirectory() as dir:
             path = fd.name
@@ -240,6 +245,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call(['rpm2archive', '-'],
                 stdin=mock.ANY,
                 stdout=subprocess.PIPE),
+            mock.call().__enter__(),
             mock.call([
                     'tar',
                     'xz',
@@ -247,7 +253,9 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                     dirpath,
                     './var/lib/qubes/vm-templates/test-vm/'
                 ], stdin=pipe, stdout=subprocess.DEVNULL),
-            mock.call().wait()
+            mock.call().__enter__(),
+            mock.call().__exit__(None, None, None),
+            mock.call().__exit__(None, None, None),
         ])
         self.assertAllCalled()
 

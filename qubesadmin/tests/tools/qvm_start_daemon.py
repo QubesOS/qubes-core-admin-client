@@ -466,6 +466,7 @@ global: {
 
     @unittest.mock.patch('subprocess.Popen')
     def test_050_get_monitor_layout1(self, proc_mock):
+        proc_mock().__enter__.return_value = proc_mock()
         proc_mock().stdout = b'''Screen 0: minimum 8 x 8, current 1920 x 1200, maximum 32767 x 32767
 HDMI1 connected 1920x1200+0+0 (normal left inverted right x axis y axis) 518mm x 324mm
    1920x1200     59.95*+
@@ -492,6 +493,7 @@ VIRTUAL1 disconnected (normal left inverted right x axis y axis)
 
     @unittest.mock.patch('subprocess.Popen')
     def test_051_get_monitor_layout_multiple(self, proc_mock):
+        proc_mock().__enter__.return_value = proc_mock()
         proc_mock().stdout = b'''Screen 0: minimum 8 x 8, current 2880 x 1024, maximum 32767 x 32767
 LVDS1 connected 1600x900+0+0 (normal left inverted right x axis y axis)
 VGA1 connected 1280x1024+1600+0 (normal left inverted right x axis y axis)
@@ -501,6 +503,7 @@ VGA1 connected 1280x1024+1600+0 (normal left inverted right x axis y axis)
 
     @unittest.mock.patch('subprocess.Popen')
     def test_052_get_monitor_layout_hidpi1(self, proc_mock):
+        proc_mock().__enter__.return_value = proc_mock()
         proc_mock().stdout = b'''Screen 0: minimum 8 x 8, current 1920 x 1200, maximum 32767 x 32767
 HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 372mm x 208mm
    1920x1200     60.00*+
@@ -513,6 +516,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 372mm x
 
     @unittest.mock.patch('subprocess.Popen')
     def test_052_get_monitor_layout_hidpi2(self, proc_mock):
+        proc_mock().__enter__.return_value = proc_mock()
         proc_mock().stdout = b'''Screen 0: minimum 8 x 8, current 1920 x 1200, maximum 32767 x 32767
 HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 310mm x 174mm
    1920x1200     60.00*+
@@ -525,6 +529,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 310mm x
 
     @unittest.mock.patch('subprocess.Popen')
     def test_052_get_monitor_layout_hidpi3(self, proc_mock):
+        proc_mock().__enter__.return_value = proc_mock()
         proc_mock().stdout = b'''Screen 0: minimum 8 x 8, current 1920 x 1200, maximum 32767 x 32767
 HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x 116mm
    1920x1200     60.00*+

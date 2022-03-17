@@ -204,6 +204,7 @@ def run_command_single(args, vm):
         proc.stdin.write(vm.prepare_input_for_vmshell(shell_cmd))
         proc.stdin.flush()
     if args.localcmd:
+        # pylint: disable=consider-using-with
         local_proc = subprocess.Popen(args.localcmd,
             shell=True,
             stdout=proc.stdin,

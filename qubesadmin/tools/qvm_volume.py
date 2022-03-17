@@ -145,6 +145,7 @@ def import_volume(args):
     if input_path == '-':
         input_file = sys.stdin.buffer
     else:
+        # pylint: disable=consider-using-with
         input_file = open(input_path, 'rb')
     try:
         if args.no_resize:

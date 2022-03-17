@@ -259,10 +259,11 @@ def main(args=None, app=None):
         return
 
     if args.pass_file is not None:
-        pass_f = open(args.pass_file) if args.pass_file != "-" else sys.stdin
-        passphrase = pass_f.readline().rstrip()
-        if pass_f is not sys.stdin:
-            pass_f.close()
+        if args.pass_file == '-':
+            passphrase = sys.stdin.readline().rstrip()
+        else:
+            with open(args.pass_file) as pass_f:
+                passphrase = pass_f.readline().rstrip()
     else:
         passphrase = getpass.getpass("Please enter the passphrase to verify "
                                      "and (if encrypted) decrypt the backup: ")
