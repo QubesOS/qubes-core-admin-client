@@ -26,4 +26,4 @@ checks:pylint:
     - sudo dnf install -y python3-rpm
     - pip3 install --quiet -r ci/requirements.txt
   script:
-    - PYTHONPATH=test-packages pylint --extension-pkg-whitelist=rpm qubesadmin
+    - PYTHONPATH=test-packages pylint --extension-pkg-whitelist=rpm,lxml qubesadmin
