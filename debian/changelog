@@ -1,3 +1,12 @@
+qubes-core-admin-client (4.1.21-1) unstable; urgency=medium
+
+  * qvm-template: load all repo files from /etc/qubes/repo-templates
+  * Adjust for pylint consider-using-with on suprocess.Popen
+  * CI: add lxml to extension-pkg-whitelist
+  * ci: use codecov-wrapper for proper commit sha reporting
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 26 Mar 2022 14:32:48 +0100
+
 qubes-core-admin-client (4.1.20-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
