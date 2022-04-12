@@ -417,7 +417,7 @@ class Table(object):
 
         :param qubes.vm.qubesvm.QubesVM: Parent vm of the children VMs
         '''
-        childs = list()
+        childs = []
         for child in parent.connected_vms:
             if child.provides_network and child in self.domains:
                 childs.append((level, child))
@@ -433,7 +433,7 @@ class Table(object):
         :param list() domains: The domains which will be sorted
         :return list(tuple()) tree: returns a list of tuple(insertion, vm)
         '''
-        tree = list()
+        tree = []
         # We need a copy of domains, because domains.remove() is not allowed
         # while iterating over it. Besides, the domains should be sorted anyway.
         sorted_doms = sorted(domains)

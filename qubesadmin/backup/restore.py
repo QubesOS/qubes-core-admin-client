@@ -231,7 +231,7 @@ class BackupHeader(object):
 
     def save(self, filename):
         '''Save backup header into a file'''
-        with open(filename, "w") as f_header:
+        with open(filename, "w", encoding='utf-8') as f_header:
             # make sure 'version' is the first key
             f_header.write('version={}\n'.format(self.version))
             for key, header in self.known_headers.items():
@@ -1153,11 +1153,11 @@ class BackupRestore(object):
         else:
             fulloutput = os.path.join(self.tmpdir, origname)
         if origname == HEADER_FILENAME:
-            passphrase = u'{filename}!{passphrase}'.format(
+            passphrase = '{filename}!{passphrase}'.format(
                 filename=origname,
                 passphrase=self.passphrase)
         else:
-            passphrase = u'{backup_id}!{filename}!{passphrase}'.format(
+            passphrase = '{backup_id}!{filename}!{passphrase}'.format(
                 backup_id=self.header_data.backup_id,
                 filename=origname,
                 passphrase=self.passphrase)

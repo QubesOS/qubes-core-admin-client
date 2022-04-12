@@ -142,7 +142,7 @@ def main(args=None, app=None):
             # summary
             profile_path = os.path.join(
                 backup_profile_dir, profile_name + '.conf')
-            with open(profile_path, 'w') as f_profile:
+            with open(profile_path, 'w', encoding='utf-8') as f_profile:
                 write_backup_profile(f_profile, args)
         else:
             if args.save_profile:
@@ -190,7 +190,7 @@ def main(args=None, app=None):
             if getpass.getpass("Enter again for verification: ") != passphrase:
                 parser.error_runtime("Passphrase mismatch!")
 
-        with open(profile_path, 'w') as f_profile:
+        with open(profile_path, 'w', encoding='utf-8') as f_profile:
             write_backup_profile(f_profile, args, passphrase)
 
     loop = asyncio.get_event_loop()

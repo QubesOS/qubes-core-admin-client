@@ -343,7 +343,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
                 vm.devices['pci'][('dom0', pcidev.replace(':', '_'))] = {}
 
     def load(self):
-        with open(self.store) as fh:
+        with open(self.store, encoding='utf-8') as fh:
             try:
                 # pylint: disable=no-member
                 tree = lxml.etree.parse(fh)

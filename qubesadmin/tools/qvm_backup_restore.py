@@ -262,7 +262,7 @@ def main(args=None, app=None):
         if args.pass_file == '-':
             passphrase = sys.stdin.readline().rstrip()
         else:
-            with open(args.pass_file) as pass_f:
+            with open(args.pass_file, encoding='utf-8') as pass_f:
                 passphrase = pass_f.readline().rstrip()
     else:
         passphrase = getpass.getpass("Please enter the passphrase to verify "

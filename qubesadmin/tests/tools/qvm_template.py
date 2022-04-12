@@ -5278,7 +5278,8 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/etc/os-release', 'r')
+            mock_open.assert_called_with('/etc/os-release', 'r',
+                                         encoding='ascii')
         self.assertAllCalled()
 
     @mock.patch('os.path.exists')
@@ -5302,7 +5303,8 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/etc/os-release', 'r')
+            mock_open.assert_called_with('/etc/os-release', 'r',
+                                         encoding='ascii')
         self.assertAllCalled()
 
     @mock.patch('os.path.exists')
@@ -5321,7 +5323,8 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/usr/share/qubes/marker-vm', 'r')
+            mock_open.assert_called_with('/usr/share/qubes/marker-vm', 'r',
+                                         encoding='ascii')
         self.assertAllCalled()
 
     @skipUnless(which('rpmcanon'), 'rpmcanon not installed')

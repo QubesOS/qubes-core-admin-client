@@ -360,11 +360,12 @@ class DAEMONLauncher:
         vm.log.info('Sending monitor layout')
 
         if not startup:
-            with open(self.guid_pidfile(vm.xid)) as pidfile:
+            with open(self.guid_pidfile(vm.xid), encoding='ascii') as pidfile:
                 pid = int(pidfile.read())
             os.kill(pid, signal.SIGHUP)
             try:
-                with open(self.guid_pidfile(vm.stubdom_xid)) as pidfile:
+                with open(self.guid_pidfile(vm.stubdom_xid),
+                          encoding='ascii') as pidfile:
                     pid = int(pidfile.read())
                 os.kill(pid, signal.SIGHUP)
             except FileNotFoundError:
@@ -453,7 +454,7 @@ class DAEMONLauncher:
     @staticmethod
     def write_guid_config(config_path, config):
         """Write guid configuration to a file"""
-        with open(config_path, 'w') as config_file:
+        with open(config_path, 'w', encoding='ascii') as config_file:
             config_file.write(config)
 
     @staticmethod
@@ -500,7 +501,8 @@ class DAEMONLauncher:
             stubdom_guid_pidfile = self.guid_pidfile(vm.stubdom_xid)
             if not vm.debug and os.path.exists(stubdom_guid_pidfile):
                 # Terminate stubdom guid once "real" gui agent connects
-                with open(stubdom_guid_pidfile, 'r') as pidfile:
+                with open(stubdom_guid_pidfile, 'r',
+                          encoding='ascii') as pidfile:
                     stubdom_guid_pid = pidfile.read().strip()
                 guid_cmd += ['-K', stubdom_guid_pid]
 
@@ -807,7 +809,7 @@ def main(args=None):
             loop.close()
     elif args.notify_monitor_layout:
         try:
-            with open(pidfile_path, 'r') as pidfile:
+            with open(pidfile_path, 'r', encoding='ascii') as pidfile:
                 pid = int(pidfile.read().strip())
             os.kill(pid, signal.SIGHUP)
         except (FileNotFoundError, ValueError) as e:

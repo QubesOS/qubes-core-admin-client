@@ -173,20 +173,23 @@ def import_appmenus(vm, source_dir, skip_generate=True):
     # name according to the FreeDesktop spec
     source_dir = pathlib.Path(source_dir)
     try:
-        with open(source_dir / 'vm-whitelisted-appmenus.list', 'r') as fd:
+        with open(source_dir / 'vm-whitelisted-appmenus.list', 'r',
+                  encoding='ascii') as fd:
             vm.features['default-menu-items'] = \
                 ' '.join([x.rstrip() for x in fd])
     except FileNotFoundError as e:
         vm.log.warning('Cannot set default-menu-items, %s not found',
                        e.filename)
     try:
-        with open(source_dir / 'whitelisted-appmenus.list', 'r') as fd:
+        with open(source_dir / 'whitelisted-appmenus.list', 'r',
+                  encoding='ascii') as fd:
             vm.features['menu-items'] = ' '.join([x.rstrip() for x in fd])
     except FileNotFoundError as e:
         vm.log.warning('Cannot set menu-items, %s not found',
                        e.filename)
     try:
-        with open(source_dir / 'netvm-whitelisted-appmenus.list', 'r') as fd:
+        with open(source_dir / 'netvm-whitelisted-appmenus.list', 'r',
+                  encoding='ascii') as fd:
             vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
     except FileNotFoundError as e:
         vm.log.warning('Cannot set netvm-menu-items, %s not found',
@@ -209,7 +212,7 @@ def import_appmenus(vm, source_dir, skip_generate=True):
 
 def parse_template_config(path):
     '''Parse template.conf from template package. (KEY=VALUE format)'''
-    with open(path, 'r') as fd:
+    with open(path, 'r', encoding='ascii') as fd:
         return dict(line.rstrip('\n').split('=', 1) for line in fd)
 
 async def call_postinstall_service(vm):

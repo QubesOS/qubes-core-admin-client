@@ -145,7 +145,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
         self.domains[vm.name] = vm
 
     def load(self):
-        with open(self.store) as fh:
+        with open(self.store, encoding='utf-8') as fh:
             try:
                 # pylint: disable=no-member
                 tree = lxml.etree.parse(fh)

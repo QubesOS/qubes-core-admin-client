@@ -179,7 +179,7 @@ class LockFile(object):
         """Open the file. Call *acquire* or enter the context to lock
         the file"""
         # pylint: disable=consider-using-with
-        self.file = open(path, "w")
+        self.file = open(path, "w", encoding='ascii')
         self.nonblock = nonblock
 
     def __enter__(self, *args, **kwargs):

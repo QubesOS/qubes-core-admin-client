@@ -72,14 +72,14 @@ class SignatureVerificationError(Exception):
 def qubes_release() -> str:
     """Return the Qubes release."""
     if os.path.exists('/usr/share/qubes/marker-vm'):
-        with open('/usr/share/qubes/marker-vm', 'r') as fd:
+        with open('/usr/share/qubes/marker-vm', 'r', encoding='ascii') as fd:
             # Get the first non-comment line
             release = [l.strip() for l in fd.readlines()
                        if l.strip() and not l.startswith('#')]
             # sanity check
             if release and release[0] and release[0][0].isdigit():
                 return release[0]
-    with open('/etc/os-release', 'r') as fd:
+    with open('/etc/os-release', 'r', encoding='ascii') as fd:
         release = None
         distro_id = None
         for line in fd:
@@ -496,7 +496,7 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
     payload += spec + '\n'
     payload += '---\n'
     for path in args.repo_files:
-        with open(path, 'r') as fd:
+        with open(path, 'r', encoding='utf-8') as fd:
             payload += fd.read() + '\n'
     return payload
 
@@ -918,7 +918,7 @@ def locked(func):
     """Execute given function under a lock in *LOCK_FILE*"""
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        with open(LOCK_FILE, 'w') as lock:
+        with open(LOCK_FILE, 'w', encoding='ascii') as lock:
             try:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
