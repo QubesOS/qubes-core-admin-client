@@ -461,6 +461,26 @@ Options
 
    Show only disabled repos.
 
+migrate-from-rpmdb
+------------------
+
+Migrate templates metadata from R4.0 format. This makes template originally
+installed via rpm (qubes-dom0-update) available for qvm-template.
+All templates gets `installed_by_rpm` property set to false.
+If the operation fails for any reason, it is safe to retry.
+
+Synopsis
+^^^^^^^^
+
+:command:`qvm-template migrate-from-rpmdb` [-h]
+
+Options
+^^^^^^^
+
+.. option:: -h, --help
+
+   Show help message and exit.
+
 Template Spec
 -------------
 

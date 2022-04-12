@@ -5417,3 +5417,105 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
                 mock_repolist.mock_calls[0][1][0].repo_files
             )
         self.assertAllCalled()
+
+    @mock.patch('os.getuid')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('rpm.TransactionSet')
+    def test_400_migrate_from_rpmdb(self, mock_rpm_ts, mock_check_call, mock_getuid):
+        mock_getuid.return_value = 0
+        build_time = '2020-09-01 14:30:00'  # 1598970600
+        install_time = '2020-09-01 13:30:00'  # 1598967000
+        mock_rpm_ts.return_value.dbMatch.return_value = [
+            {
+                rpm.RPMTAG_NAME        : 'non-template',
+                rpm.RPMTAG_BUILDTIME   : 1598970600,
+                rpm.RPMTAG_INSTALLTIME : 1598967000,
+                rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+                rpm.RPMTAG_EPOCHNUM    : 2,
+                rpm.RPMTAG_LICENSE     : 'GPL',
+                rpm.RPMTAG_RELEASE     : '2020',
+                rpm.RPMTAG_SUMMARY     : 'Summary',
+                rpm.RPMTAG_URL         : 'https://qubes-os.org',
+                rpm.RPMTAG_VERSION     : '4.1'
+            },
+            {
+                rpm.RPMTAG_NAME        : 'qubes-template-test-existing',
+                rpm.RPMTAG_BUILDTIME   : 1598970600,
+                rpm.RPMTAG_INSTALLTIME : 1598967000,
+                rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+                rpm.RPMTAG_EPOCHNUM    : 2,
+                rpm.RPMTAG_LICENSE     : 'GPL',
+                rpm.RPMTAG_RELEASE     : '2020',
+                rpm.RPMTAG_SUMMARY     : 'Summary',
+                rpm.RPMTAG_URL         : 'https://qubes-os.org',
+                rpm.RPMTAG_VERSION     : '4.1'
+            },
+            {
+                rpm.RPMTAG_NAME        : 'qubes-template-test-migrated',
+                rpm.RPMTAG_BUILDTIME   : 1598970600,
+                rpm.RPMTAG_INSTALLTIME : 1598967000,
+                rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+                rpm.RPMTAG_EPOCHNUM    : 2,
+                rpm.RPMTAG_LICENSE     : 'GPL',
+                rpm.RPMTAG_RELEASE     : '2020',
+                rpm.RPMTAG_SUMMARY     : 'Summary',
+                rpm.RPMTAG_URL         : 'https://qubes-os.org',
+                rpm.RPMTAG_VERSION     : '4.1'
+            },
+            {
+                rpm.RPMTAG_NAME        : 'qubes-template-test-removed',
+                rpm.RPMTAG_BUILDTIME   : 1598970600,
+                rpm.RPMTAG_INSTALLTIME : 1598967000,
+                rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+                rpm.RPMTAG_EPOCHNUM    : 2,
+                rpm.RPMTAG_LICENSE     : 'GPL',
+                rpm.RPMTAG_RELEASE     : '2020',
+                rpm.RPMTAG_SUMMARY     : 'Summary',
+                rpm.RPMTAG_URL         : 'https://qubes-os.org',
+                rpm.RPMTAG_VERSION     : '4.1'
+            },
+        ]
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=TemplateVM state=Halted\n' \
+            b'test-existing class=TemplateVM state=Halted\n' \
+            b'test-migrated class=TemplateVM state=Halted\n'
+        for key, val in [
+                ('name', 'test-existing'),
+                ('epoch', '2'),
+                ('version', '4.1'),
+                ('release', '2020'),
+                ('reponame', '@commandline'),
+                ('buildtime', build_time),
+                ('installtime', install_time),
+                ('license', 'GPL'),
+                ('url', 'https://qubes-os.org'),
+                ('summary', 'Summary'),
+                ('description', 'Desc|desc')]:
+            self.app.expected_calls[(
+                'test-existing',
+                'admin.vm.feature.Set',
+                f'template-{key}',
+                val.encode())] = b'0\0'
+        self.app.expected_calls[(
+            'test-existing',
+            'admin.vm.property.Set',
+            f'installed_by_rpm',
+            b'False')] = b'0\0'
+        self.app.expected_calls[(
+            'test-migrated',
+            'admin.vm.feature.Get',
+            'template-name',
+            None)] = b'0\0test-migrated'
+        self.app.expected_calls[(
+            'test-existing',
+            'admin.vm.feature.Get',
+            'template-name',
+            None)] = b'2\0QubesFeatureNotFoundError\0\0No such feature\0'
+        qubesadmin.tools.qvm_template.migrate_from_rpmdb(self.app)
+        mock_check_call.assert_called_once_with([
+            'rpm', '-e', '--justdb',
+            'qubes-template-test-existing',
+            'qubes-template-test-migrated',
+            'qubes-template-test-removed'])
+        self.assertAllCalled()

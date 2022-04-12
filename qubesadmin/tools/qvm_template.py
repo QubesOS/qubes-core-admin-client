@@ -254,6 +254,10 @@ def get_parser() -> argparse.ArgumentParser:
         help='Show only disabled repos.')
     parser_repolist.add_argument('repos', nargs='*', metavar='REPOS')
 
+    # qvm-template migrate-from-rpmdb
+    parser_add_command('migrate-from-rpmdb',
+        help_str='Import R4.0 templates info to R4.1 format')
+
     return parser_main
 
 
@@ -1574,6 +1578,56 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         qubesadmin.tools.print_table(table)
 
 
+def migrate_from_rpmdb(app):
+    """Migrate templates stored in rpmdb, into 'features' set on the VM itself.
+    """
+
+    if os.getuid() != 0:
+        parser.error('This command needs to be run as root')
+    rpm_ts = rpm.TransactionSet()
+    pkgs_to_remove = []
+    for pkg in rpm_ts.dbMatch():
+        if not pkg[rpm.RPMTAG_NAME].startswith('qubes-template-'):
+            continue
+        try:
+            vm = app.domains[pkg[rpm.RPMTAG_NAME][len('qubes-template-'):]]
+        except KeyError:
+            # no longer present, remove from rpmdb
+            pkgs_to_remove.append(pkg)
+            continue
+        if is_managed_template(vm):
+            # already migrated, cleanup
+            pkgs_to_remove.append(pkg)
+            continue
+        try:
+            vm.features['template-name'] = vm.name
+            vm.features['template-epoch'] = pkg[rpm.RPMTAG_EPOCHNUM]
+            vm.features['template-version'] = pkg[rpm.RPMTAG_VERSION]
+            vm.features['template-release'] = pkg[rpm.RPMTAG_RELEASE]
+            vm.features['template-reponame'] = '@commandline'
+            vm.features['template-buildtime'] = \
+                datetime.datetime.fromtimestamp(
+                    pkg[rpm.RPMTAG_BUILDTIME], tz=datetime.timezone.utc).\
+                strftime(DATE_FMT)
+            vm.features['template-installtime'] = \
+                datetime.datetime.fromtimestamp(
+                    pkg[rpm.RPMTAG_INSTALLTIME], tz=datetime.timezone.utc).\
+                strftime(DATE_FMT)
+            vm.features['template-license'] = pkg[rpm.RPMTAG_LICENSE]
+            vm.features['template-url'] = pkg[rpm.RPMTAG_URL]
+            vm.features['template-summary'] = pkg[rpm.RPMTAG_SUMMARY]
+            vm.features['template-description'] = \
+                pkg[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
+            vm.installed_by_rpm = False
+        except Exception as e:  # pylint: disable=broad-except
+            print('Failed to set template {} metadata: {}'.format(vm.name, e))
+            continue
+        pkgs_to_remove.append(pkg)
+    subprocess.check_call(
+        ['rpm', '-e', '--justdb'] +
+        [p[rpm.RPMTAG_NAME] for p in pkgs_to_remove])
+
+
 def main(args: typing.Optional[typing.Sequence[str]] = None,
          app: typing.Optional[qubesadmin.app.QubesBase] = None) -> int:
     """Main routine of **qvm-template**.
@@ -1636,6 +1690,8 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
             clean(p_args, app)
         elif p_args.command == 'repolist':
             repolist(p_args, app)
+        elif p_args.command == 'migrate-from-rpmdb':
+            migrate_from_rpmdb(app)
         else:
             parser.error(f'Command \'{p_args.command}\' not supported.')
     except Exception as e:  # pylint: disable=broad-except
