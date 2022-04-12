@@ -94,8 +94,6 @@ def import_root_img(vm, source_dir):
     #  volume needs to be extended, do it before import, if reduced - after.
 
     root_size = get_root_img_size(source_dir)
-    if vm.volumes['root'].size < root_size:
-        vm.volumes['root'].resize(root_size)
 
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
@@ -106,7 +104,8 @@ def import_root_img(vm, source_dir):
                     stdin=cat.stdout,
                     stdout=subprocess.PIPE) as tar:
                 cat.stdout.close()
-                vm.volumes['root'].import_data(stream=tar.stdout)
+                vm.volumes['root'].import_data_with_size(
+                    stream=tar.stdout, size=root_size)
         if tar.returncode != 0:
             raise qubesadmin.exc.QubesException(
                 'root.img extraction failed')
@@ -116,7 +115,8 @@ def import_root_img(vm, source_dir):
     elif os.path.exists(root_path + '.tar'):
         with subprocess.Popen(['tar', 'xSOf', root_path + '.tar'],
                 stdout=subprocess.PIPE) as tar:
-            vm.volumes['root'].import_data(stream=tar.stdout)
+            vm.volumes['root'].import_data_with_size(
+                stream=tar.stdout, size=root_size)
         if tar.returncode != 0:
             raise qubesadmin.exc.QubesException('root.img extraction failed')
     elif os.path.exists(root_path):
@@ -131,16 +131,8 @@ def import_root_img(vm, source_dir):
                 vm.log.info('root.img already in place, do not re-import')
                 return
         with open(root_path, 'rb') as root_file:
-            vm.volumes['root'].import_data(stream=root_file)
-
-    if vm.volumes['root'].size > root_size:
-        try:
-            vm.volumes['root'].resize(root_size)
-        except qubesadmin.exc.QubesException as err:
-            vm.log.warning(
-                'Failed to resize root volume of {} from {} to {} after '
-                'import: {}'.format(vm.name, vm.volumes['root'].size,
-                    root_size, str(err)))
+            vm.volumes['root'].import_data_with_size(
+                stream=root_file, size=root_size)
 
 
 def reset_private_img(vm):

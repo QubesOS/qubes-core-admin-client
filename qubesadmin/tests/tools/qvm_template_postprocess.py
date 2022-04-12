@@ -58,24 +58,10 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('test-vm', 'admin.vm.volume.List', None,
                 None)] = \
             b'0\0root\nprivate\nvolatile\nkernel\n'
-        self.app.expected_calls[
-            ('test-vm', 'admin.vm.volume.Info', 'root', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-test-vm-root\n' \
-            b'size=10737418240\n' \
-            b'usage=0\n' \
-            b'rw=True\n' \
-            b'source=\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=3\n' \
-            b'is_outdated=False\n'
-        self.app.expected_calls[('test-vm', 'admin.vm.volume.Resize', 'root',
-                str(len(volume_data)).encode())] = \
-            b'0\0'
 
-        self.app.expected_calls[('test-vm', 'admin.vm.volume.Import', 'root',
-            volume_data)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.volume.ImportWithSize', 'root',
+            str(len(volume_data)).encode() + b'\n' + volume_data)] = b'0\0'
         vm = self.app.domains['test-vm']
         qubesadmin.tools.qvm_template_postprocess.import_root_img(
             vm, self.source_dir.name)
@@ -95,27 +81,13 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
-        self.app.expected_calls[
-            ('test-vm', 'admin.vm.volume.Info', 'root', None)] = \
-            b'0\x00pool=lvm\n' \
-            b'vid=qubes_dom0/vm-test-vm-root\n' \
-            b'size=10737418240\n' \
-            b'usage=0\n' \
-            b'rw=True\n' \
-            b'source=\n' \
-            b'save_on_stop=True\n' \
-            b'snap_on_start=False\n' \
-            b'revisions_to_keep=3\n' \
-            b'is_outdated=False\n'
         self.app.expected_calls[('test-vm', 'admin.vm.volume.List', None,
                 None)] = \
             b'0\0root\nprivate\nvolatile\nkernel\n'
-        self.app.expected_calls[('test-vm', 'admin.vm.volume.Resize', 'root',
-                str(len(volume_data)).encode())] = \
-            b'0\0'
 
-        self.app.expected_calls[('test-vm', 'admin.vm.volume.Import', 'root',
-            volume_data)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.volume.ImportWithSize', 'root',
+            str(len(volume_data)).encode() + b'\n' + volume_data)] = b'0\0'
         vm = self.app.domains['test-vm']
         qubesadmin.tools.qvm_template_postprocess.import_root_img(
             vm, self.source_dir.name)
