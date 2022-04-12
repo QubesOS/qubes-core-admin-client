@@ -8,6 +8,8 @@ include:
 
 checks:tests:
   stage: checks
+  tags:
+    - docker
   variables:
     ENABLE_SLOW_TESTS: 1
     USER: gitlab-runner
@@ -22,6 +24,8 @@ checks:tests:
 
 checks:pylint:
   stage: checks
+  tags:
+    - docker
   before_script:
     - sudo dnf install -y python3-rpm
     - pip3 install --quiet -r ci/requirements.txt
