@@ -23,6 +23,7 @@ disable=
   useless-object-inheritance,
   consider-using-set-comprehension,
   consider-using-dict-comprehension,
+  consider-using-f-string,
   not-an-iterable
 
 [REPORTS]
