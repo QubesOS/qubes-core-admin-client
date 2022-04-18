@@ -1,0 +1,11 @@
+host:
+  rpm:
+    spec:
+    - rpm_spec/qubes-core-admin-client.spec
+vm:
+  rpm:
+    spec:
+    - rpm_spec/qubes-core-admin-client.spec
+  deb:
+    build:
+    - debian
