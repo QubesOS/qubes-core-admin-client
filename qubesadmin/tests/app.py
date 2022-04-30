@@ -32,6 +32,7 @@ import tempfile
 
 import qubesadmin.exc
 import qubesadmin.tests
+import qubesadmin.events
 
 
 class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
@@ -784,6 +785,58 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         with self.assertRaises(qubesadmin.exc.QubesException):
             new_vm = self.app.clone_vm('test-vm', 'new-name')
 
+        self.assertAllCalled()
+
+    def test_050_automatic_reset_cache(self):
+        self.app.cache_enabled = True
+        self.dispatcher = qubesadmin.events.EventsDispatcher(self.app)
+        # first get few properties directly
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00vm1 class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('vm1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\0qid default=False type=int 1\n' \
+            b'name default=False type=str vm1\n' \
+            b'memory default=False type=int 400\n' \
+            b'kernel default=False type=str 1.2.3\n'
+
+        vm = self.app.domains['vm1']
+        self.assertEqual(vm.memory, 400)
+        self.assertEqual(vm.get_power_state(), 'Halted')
+        self.assertAllCalled()
+        # cache should be cleared when events connection is established
+        self.dispatcher.handle(None, 'connection-established')
+        self.app.actual_calls = []
+        self.app.expected_calls[('vm1', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running mem=400000 mem_static_max=400000 cputime=0'
+        self.app.expected_calls[
+            ('vm1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\0qid default=False type=int 1\n' \
+            b'name default=False type=str vm1\n' \
+            b'memory default=False type=int 500\n' \
+            b'kernel default=False type=str 1.2.3\n'
+        self.assertEqual(vm.memory, 500)
+        self.assertEqual(vm.get_power_state(), 'Running')
+        # should get the same instance
+        self.assertIs(vm, self.app.domains['vm1'])
+        self.assertAllCalled()
+        self.app.actual_calls = []
+        del self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)]
+        del self.app.expected_calls[
+            ('vm1', 'admin.vm.property.GetAll', None, None)]
+        self.app.expected_calls[
+            ('vm1', 'admin.vm.property.Get', 'memory', None)] = \
+            b'0\0default=False type=int 600'
+        # this one is cached already
+        del self.app.expected_calls[('vm1', 'admin.vm.CurrentState', None, None)]
+        self.dispatcher.handle('vm1', 'property-set:memory',
+            name='memory', newvalue='600', oldvalue='500')
+        self.assertEqual(vm.memory, 600)
+        self.assertEqual(vm.get_power_state(), 'Running')
+        # update cached power state based on event
+        self.dispatcher.handle('vm1', 'domain-shutdown')
+        self.assertEqual(vm.get_power_state(), 'Halted')
         self.assertAllCalled()
 
 

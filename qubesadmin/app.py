@@ -678,6 +678,27 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         # pylint: disable=protected-access
         subject._power_state_cache = power_state
 
+    def _invalidate_cache_all(self):
+        """ Invalidate all cached data
+
+
+        This method is designed to be hooked as an event handler
+        for 'connection-established' handler. This is done in
+        :py:class:`qubesadmin.events.EventsDispatcher` class
+        directly, before calling other handlers.
+
+        There is no guarantee about events delivery before this point,
+        so anything cached before needs to be discarded.
+
+        :return: none
+        """
+        # pylint: disable=protected-access
+        self.domains.clear_cache()
+        for vm in self.domains._vm_objects.values():
+            vm._power_state_cache = None
+            vm._properties_cache = {}
+        self._properties_cache = {}
+
 
 class QubesLocal(QubesBase):
     """Application object communicating through local socket.
