@@ -642,7 +642,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     def _update_power_state_cache(self, subject, event, **kwargs):
         """ Update cached VM power state.
 
-        This method is designed to be hooed as an event handler for:
+        This method is designed to be hooked as an event handler for:
         - domain-pre-start
         - domain-start
         - domain-shutdown
