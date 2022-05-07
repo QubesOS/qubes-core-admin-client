@@ -1866,7 +1866,7 @@ class BackupRestore(object):
     def _handle_volume_data(self, vm, volume, stream):
         '''Wrap volume data import with logging'''
         try:
-            volume.import_data(stream)
+            volume.import_data_with_size(stream=stream, size=volume.size)
         except Exception as err:  # pylint: disable=broad-except
             self.log.error('Failed to restore volume %s of VM %s: %s',
                 volume.name, vm.name, err)
@@ -1874,8 +1874,7 @@ class BackupRestore(object):
     def _handle_volume_size(self, vm, volume, size):
         '''Wrap volume resize with logging'''
         try:
-            if volume.size < size:
-                volume.resize(size)
+            volume.resize(size)
         except Exception as err:  # pylint: disable=broad-except
             self.log.error('Failed to resize volume %s of VM %s to %d: %s',
                 volume.name, vm.name, size, err)
