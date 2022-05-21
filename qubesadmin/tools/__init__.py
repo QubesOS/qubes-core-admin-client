@@ -164,6 +164,8 @@ class VmNameAction(QubesAction):
                 parser.error('--exclude can only be used with --all')
 
             if self.nargs == argparse.OPTIONAL:
+                if getattr(namespace, 'dispvm', None) is not None:
+                    return
                 vm_name = getattr(namespace, self.dest, None)
                 if vm_name is not None:
                     try:
