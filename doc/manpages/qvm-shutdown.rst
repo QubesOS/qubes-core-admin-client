@@ -46,6 +46,10 @@ Options
    force qube shutdown, regardless of whether there exist any connected domains
    (such as those using it as network VM)
 
+.. option:: --dry-run
+
+   don't really shutdown or kill the domains; useful with :option:`--wait`
+
 
 Authors
 -------
