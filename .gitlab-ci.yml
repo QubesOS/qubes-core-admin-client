@@ -16,6 +16,7 @@ checks:tests:
   before_script:
     - sudo dnf install -y openssl python3-rpm
     - pip3 install --quiet -r ci/requirements.txt
+    - git config --global --add safe.directory "$PWD"
   script:
     - python3 setup.py build
     - ./run-tests
