@@ -899,7 +899,10 @@ def download(
                     done = True
                     break
                 except ConnectionError:
-                    os.remove(target_temp)
+                    try:
+                        os.remove(target_temp)
+                    except FileNotFoundError:
+                        pass
                     if attempt + 1 < args.retries:
                         print(f"'{spec}' download failed, retrying...",
                               file=sys.stderr)

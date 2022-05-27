@@ -4023,6 +4023,41 @@ test-vm : Qubes template for fedora-31
                           '/tmp/keyring.gpg', template_name='fedora-31'),
             ])
 
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
+    def test_191_download_fail(self, mock_qrexec, mock_dllist,
+                               mock_verify_rpm):
+        def f(*args, **kwargs):
+            raise ConnectionError
+        mock_qrexec.side_effect = f
+        with tempfile.TemporaryDirectory() as dir:
+            args = argparse.Namespace(
+                retries=1,
+                repo_files=[],
+                keyring='/tmp/keyring.gpg',
+                releasever='4.1',
+                nogpgcheck=False,
+                downloaddir=dir
+            )
+            with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                with self.assertRaises(SystemExit):
+                    qubesadmin.tools.qvm_template.download(
+                        args, self.app, None, {
+                            'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
+                                ('1', '2', '3'), 'qubes-templates-itl', 1048576)
+                        })
+                self.assertEqual(mock_err.getvalue().count('retrying...'), 0)
+                self.assertTrue('download failed' in mock_err.getvalue())
+            self.assertEqual(mock_verify_rpm.mock_calls, [])
+            self.assertEqual(mock_qrexec.mock_calls, [
+                mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
+                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    '/tmp/keyring.gpg',
+                    1048576),
+            ])
+            self.assertEqual(mock_dllist.mock_calls, [])
+
     def _mock_qrexec_download_short(self, args, app, spec, path,
                               key, dlsize=None, refresh=False):
         self.assertFalse(os.path.exists(path),
