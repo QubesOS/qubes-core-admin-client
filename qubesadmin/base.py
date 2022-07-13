@@ -44,6 +44,8 @@ class PropertyHolder(object):
         self._method_dest = method_dest
         self._properties = None
         self._properties_help = None
+        # the cache is maintained by EventsDispatcher(),
+        # through helper functions in QubesBase()
         self._properties_cache = {}
 
     def clear_cache(self):

@@ -56,6 +56,8 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         super().__init__(app, 'admin.vm.property.', name)
         self._volumes = None
         self._klass = klass
+        # the cache is maintained by EventsDispatcher(),
+        # through helper functions in QubesBase()
         self._power_state_cache = power_state
         self.log = logging.getLogger(name)
         self.tags = qubesadmin.tags.Tags(self)

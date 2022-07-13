@@ -244,6 +244,10 @@ class EventsDispatcher(object):
         elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
                        'domain-paused', 'domain-unpaused'):
             self.app._update_power_state_cache(subject, event, **kwargs)
+        elif event == 'connection-established':
+            # on (re)connection, clear cache completely - we don't have
+            # guarantee about not missing any events before this point
+            self.app._invalidate_cache_all()
 
         handlers = [h_func for h_name, h_func_set in self.handlers.items()
             for h_func in h_func_set

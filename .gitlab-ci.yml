@@ -1,3 +1,16 @@
+include:
+- file: /r4.1/gitlab-base.yml
+  project: QubesOS/qubes-continuous-integration
+- file: /r4.1/gitlab-dom0.yml
+  project: QubesOS/qubes-continuous-integration
+- file: /r4.1/gitlab-vm.yml
+  project: QubesOS/qubes-continuous-integration
+- file: /r4.2/gitlab-base.yml
+  project: QubesOS/qubes-continuous-integration
+- file: /r4.2/gitlab-host.yml
+  project: QubesOS/qubes-continuous-integration
+- file: /r4.2/gitlab-vm.yml
+  project: QubesOS/qubes-continuous-integration
 checks:pylint:
   before_script:
   - sudo dnf install -y python3-rpm
@@ -13,6 +26,7 @@ checks:tests:
   before_script:
   - sudo dnf install -y openssl python3-rpm
   - pip3 install --quiet -r ci/requirements.txt
+  - git config --global --add safe.directory "$PWD"
   script:
   - python3 setup.py build
   - ./run-tests
@@ -22,16 +36,3 @@ checks:tests:
   variables:
     ENABLE_SLOW_TESTS: 1
     USER: gitlab-runner
-include:
-- file: /r4.1/gitlab-base.yml
-  project: QubesOS/qubes-continuous-integration
-- file: /r4.1/gitlab-dom0.yml
-  project: QubesOS/qubes-continuous-integration
-- file: /r4.1/gitlab-vm.yml
-  project: QubesOS/qubes-continuous-integration
-- file: /r4.2/gitlab-base.yml
-  project: QubesOS/qubes-continuous-integration
-- file: /r4.2/gitlab-host.yml
-  project: QubesOS/qubes-continuous-integration
-- file: /r4.2/gitlab-vm.yml
-  project: QubesOS/qubes-continuous-integration
