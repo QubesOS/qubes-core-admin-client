@@ -643,3 +643,237 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'qubes.VMShell', b'command; exit\n')
         ])
         self.assertAllCalled()
+
+    def test_022_no_shell(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Paused\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--no-shell', 'test-vm', 'command'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMExec+command', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMExec+command', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_023_dispvm_no_shell(self):
+        self.app.expected_calls[
+            ('$dispvm:test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--no-shell', '--dispvm=test-vm', 'command'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm:test-vm', 'qubes.VMExec+command', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm:test-vm', 'qubes.VMExec+command', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_024_no_shell_dashdash(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Paused\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--no-shell', 'test-vm', 'command', '--', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMExec+command+arg', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMExec+command+arg', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_025_no_shell_double_dashdash(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Paused\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--no-shell', 'test-vm', 'command', '--', '--', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMExec+command+----+arg', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMExec+command+----+arg', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_026_no_shell_double_dashdash(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Paused\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--no-shell', '--', 'test-vm', 'command', '--', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMExec+command+----+arg', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMExec+command+----+arg', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_027_no_shell_dispvm(self):
+        self.app.expected_calls[
+            ('$dispvm:test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--dispvm=test-vm', 'command', '--', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm:test-vm', 'qubes.VMExec+command+arg', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm:test-vm', 'qubes.VMExec+command+arg', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_028_argparse_bug_workaround(self):
+        self.app.expected_calls[
+            ('$dispvm:test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--dispvm=test-vm', 'command', '--', '--'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm:test-vm', 'qubes.VMExec+command+----', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm:test-vm', 'qubes.VMExec+command+----', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_029_command_is_dashdash(self):
+        self.app.expected_calls[
+            ('$dispvm:test-vm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--dispvm=test-vm', '--no-shell', '--', '--'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm:test-vm', 'qubes.VMExec+----', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm:test-vm', 'qubes.VMExec+----', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_030_no_shell_dispvm(self):
+        self.app.expected_calls[
+            ('$dispvm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--dispvm', '--', 'test-vm', 'command', 'arg'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm', 'qubes.VMExec+test--vm+command+arg', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm', 'qubes.VMExec+test--vm+command+arg', b'')
+        ])
+        self.assertAllCalled()
+
+    def test_031_argparse_bug_workaround(self):
+        self.app.expected_calls[
+            ('$dispvm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--dispvm', '--', 'test-vm', 'command', '--'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm', 'qubes.VMExec+test--vm+command+----', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm', 'qubes.VMExec+test--vm+command+----', b'')
+        ])
+        self.assertAllCalled()
+
+    @unittest.expectedFailure
+    def test_032_argparse_bug_workaround_unnamed_dispvm(self):
+        self.app.expected_calls[
+            ('$dispvm', 'admin.vm.feature.CheckWithTemplate',
+             'vmexec', None)] = \
+            b'0\x001'
+        ret = qubesadmin.tools.qvm_run.main(
+            ['--no-gui', '--dispvm', 'test-vm', 'command', '--'],
+            app=self.app)
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('$dispvm', 'qubes.VMExec+test--vm+command+----', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('$dispvm', 'qubes.VMExec+test--vm+command+----', b'')
+        ])
+        self.assertAllCalled()

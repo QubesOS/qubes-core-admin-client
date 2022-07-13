@@ -19,6 +19,7 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 ''' qvm-run tool'''
+import argparse
 import contextlib
 import os
 import shlex
@@ -101,7 +102,7 @@ target_parser.add_argument('--dispvm', action='store', nargs='?',
     const=True, metavar='BASE_APPVM',
     help='start a service in new Disposable VM; '
          'optionally specify base AppVM for DispVM')
-target_parser.add_argument('VMNAME',
+parser.add_argument('VMNAME',
     nargs='?',
     action=qubesadmin.tools.VmNameAction)
 
@@ -116,7 +117,8 @@ parser.add_argument('--exclude', action='append', default=[],
 parser.add_argument('cmd', metavar='COMMAND',
     help='command or service to run')
 
-parser.add_argument('cmd_args', nargs='*', metavar='ARG',
+# use argparse.REMAINDER here, not '*' ― the latter swallows a leading "--".
+parser.add_argument('cmd_args', nargs=argparse.REMAINDER, metavar='ARG',
     help='command arguments (implies --no-shell)')
 
 def copy_stdin(stream):
@@ -172,6 +174,13 @@ def run_command_single(args, vm):
         # simultaneous vchan connections
         run_kwargs['wait'] = False
 
+    # Ugly hack: if args.dispvm is not None, then args.VMNAME is actually the
+    # command, and args.command the first argument to the command.
+    if args.dispvm is not None and args.VMNAME is not None:
+        args.cmd_args.insert(0, args.cmd)
+        args.cmd = args.VMNAME
+        args.VMNAME = None
+
     use_exec = len(args.cmd_args) > 0 or args.no_shell
 
     copy_proc = None
@@ -223,6 +232,15 @@ def run_command_single(args, vm):
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
     args = parser.parse_args(args, app=app)
+    # pylint: disable=unidiomatic-typecheck
+    if type(args.cmd) is not str:
+        # pylint: disable=unidiomatic-typecheck
+        if type(args.cmd) is list and not args.cmd:
+            # Work around an argparse bug: if COMMAND is literally "--", it is
+            # misparsed as an empty list!
+            args.cmd = '--'
+        else:
+            raise AssertionError('args.cmd misparsed somehow?  (this is a bug)')
     if args.passio:
         if args.color_output is None and args.filter_esc:
             args.color_output = 31
