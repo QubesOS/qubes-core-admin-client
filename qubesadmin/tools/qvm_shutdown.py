@@ -55,6 +55,19 @@ parser.add_argument(
     action='store_true', default=False,
     help='force shutdown regardless of connected domains; use with caution')
 
+parser.add_argument(
+    '--dry-run',
+    action='store_true', dest='dry_run', default=False,
+    help='don\'t really shutdown or kill the domains; useful with --wait')
+
+
+def failed_domains(vms):
+    '''Find the domains that have not successfully been shut down'''
+
+    # DispVM might have been deleted before we check them, so NA is acceptable.
+    return [vm for vm in vms
+            if not (vm.get_power_state() == 'Halted'
+                or (vm.klass == 'DispVM' and vm.get_power_state() == 'NA'))]
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
@@ -69,16 +82,17 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         if not this_round_domains:
             break
         remaining_domains = set()
-        for vm in this_round_domains:
-            try:
-                vm.shutdown(force=force)
-            except qubesadmin.exc.QubesVMNotStartedError:
-                pass
-            except qubesadmin.exc.QubesException as e:
-                if not args.wait:
-                    vm.log.error('Shutdown error: {}'.format(e))
-                else:
-                    remaining_domains.add(vm)
+        if not args.dry_run:
+            for vm in this_round_domains:
+                try:
+                    vm.shutdown(force=force)
+                except qubesadmin.exc.QubesVMNotStartedError:
+                    pass
+                except qubesadmin.exc.QubesException as e:
+                    if not args.wait:
+                        vm.log.error('Shutdown error: {}'.format(e))
+                    else:
+                        remaining_domains.add(vm)
         if not args.wait:
             if remaining_domains:
                 parser.error_runtime(
@@ -98,7 +112,32 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                         this_round_domains),
                     args.timeout))
             except asyncio.TimeoutError:
-                for vm in this_round_domains:
+                if not args.dry_run:
+                    for vm in this_round_domains:
+                        try:
+                            vm.kill()
+                        except qubesadmin.exc.QubesVMNotStartedError:
+                            # already shut down
+                            pass
+                        except qubesadmin.exc.QubesException as e:
+                            parser.error_runtime(e)
+        else:
+            timeout = args.timeout
+            current_vms = list(sorted(this_round_domains))
+            while timeout >= 0:
+                current_vms = failed_domains(current_vms)
+                if not current_vms:
+                    break
+                args.app.log.info('Waiting for shutdown ({}): {}'.format(
+                    timeout, ', '.join([str(vm) for vm in current_vms])))
+                time.sleep(1)
+                timeout -= 1
+            if not args.dry_run:
+                if current_vms:
+                    args.app.log.info(
+                        'Killing remaining qubes: {}'
+                        .format(', '.join([str(vm) for vm in current_vms])))
+                for vm in current_vms:
                     try:
                         vm.kill()
                     except qubesadmin.exc.QubesVMNotStartedError:
@@ -106,42 +145,11 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                         pass
                     except qubesadmin.exc.QubesException as e:
                         parser.error_runtime(e)
-        else:
-            timeout = args.timeout
-            current_vms = list(sorted(this_round_domains))
-            while timeout >= 0:
-                current_vms = [vm for vm in current_vms
-                    if vm.get_power_state() != 'Halted']
-                if not current_vms:
-                    break
-                args.app.log.info('Waiting for shutdown ({}): {}'.format(
-                    timeout, ', '.join([str(vm) for vm in current_vms])))
-                time.sleep(1)
-                timeout -= 1
-            if current_vms:
-                args.app.log.info(
-                    'Killing remaining qubes: {}'
-                    .format(', '.join([str(vm) for vm in current_vms])))
-            for vm in current_vms:
-                try:
-                    vm.kill()
-                except qubesadmin.exc.QubesVMNotStartedError:
-                    # already shut down
-                    pass
-                except qubesadmin.exc.QubesException as e:
-                    parser.error_runtime(e)
 
     if args.wait:
         if have_events:
             loop.close()
-        failed = []
-        for vm in args.domains:
-            power_state = vm.get_power_state()
-            # DispVM might have been deleted before we check them,
-            # so NA is acceptable.
-            if not (power_state == 'Halted' or
-                    (vm.klass == 'DispVM' and power_state == 'NA')):
-                failed.append(vm)
+        failed = failed_domains(args.domains)
         if failed:
             parser.error_runtime(
                 'Failed to shut down: ' +
