@@ -1,3 +1,25 @@
+qubes-core-admin-client (4.1.24-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * ci: make git happy about source clone owned by a different user
+
+  [ Demi Marie Obenour ]
+  * Catch FileNotFoundError when download fails
+
+  [ ambdroid ]
+  * qvm_shutdown: add --dry-run
+  * doc: add --dry-run
+
+  [ Demi Marie Obenour ]
+  * Fix qvm-run argument parsing
+  * More argparse bug workarounds
+
+  [ Frédéric Pierret (fepitre) ]
+  * Add Qubes Builder v2 integration
+  * .qubesbuilder: replace 'spec' by 'build'
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 19 Jul 2022 17:43:42 +0200
+
 qubes-core-admin-client (4.1.23-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
