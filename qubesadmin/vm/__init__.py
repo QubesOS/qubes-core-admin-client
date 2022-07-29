@@ -191,7 +191,8 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             if self.app.cache_enabled:
                 self._power_state_cache = power_state
             return power_state
-        except qubesadmin.exc.QubesDaemonNoResponseError:
+        except (qubesadmin.exc.QubesDaemonNoResponseError,
+                qubesadmin.exc.QubesVMNotFoundError):
             return 'NA'
 
     def get_mem(self):
