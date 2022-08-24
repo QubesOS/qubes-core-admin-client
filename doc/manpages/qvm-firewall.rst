@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add *RULE*
+:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add [--before=*RULE_NUMBER*]   *RULE*
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* del [--rule-no=*RULE_NUMBER*] [*RULE*]
 
@@ -102,4 +102,4 @@ Authors
 
 | For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
 
-.. vim: ts=3 sw=3 et tw=80
+.. vim: ts=3 sw=3 et tw=80*RULE_NUMBER*
