@@ -102,4 +102,4 @@ Authors
 
 | For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
 
-.. vim: ts=3 sw=3 et tw=80*RULE_NUMBER*
+.. vim: ts=3 sw=3 et tw=80
