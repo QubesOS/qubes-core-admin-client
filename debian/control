@@ -12,6 +12,8 @@ Build-Depends:
  python3-docutils,
  python3-dbus,
  python3-lxml,
+ python3-tqdm,
+ python3-yaml,
 Standards-Version: 3.9.5
 Homepage: https://www.qubes-os.org/
 #Vcs-Git: git://github.com/QubesOS/qubes-core-admin-client.git
