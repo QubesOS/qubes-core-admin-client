@@ -59,11 +59,19 @@ Options
 
    Specify cache directory. (default: ~/.cache/qvm-template)
 
+.. option:: --keep-cache
+
+   Keep downloaded packages in the cache dir (by default are removed after install).
+
 .. option:: --yes
 
    Assume "yes" to questions.
 
-.. option:: --quiet
+.. option:: --verbose, -v
+
+   Increase verbosity.
+
+.. option:: --quiet, -q
 
    Decrease verbosity.
 
@@ -144,6 +152,10 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 
    Show help message and exit.
 
+.. option:: --nogpgcheck
+
+   Disable signature checks.
+
 .. option:: --downloaddir DOWNLOADDIR
 
    Specify download directory. (default: .)
@@ -185,6 +197,10 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 .. option:: --upgrades
 
    Show available upgrades.
+
+.. option:: --all-versions
+
+   Show all available versions, not only the latest.
 
 .. option:: --machine-readable
 
@@ -266,6 +282,10 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 .. option:: --upgrades
 
    Show available upgrades.
+
+.. option:: --all-versions
+
+   Show all available versions, not only the latest.
 
 .. option:: --machine-readable
 
