@@ -165,7 +165,7 @@ qubesadmin\.tools\.qvm\_start module
     :show-inheritance:
 
 qubesadmin\.tools\.qvm\_start\_daemon module
------------------------------------------
+--------------------------------------------
 
 .. automodule:: qubesadmin.tools.qvm_start_daemon
     :members:

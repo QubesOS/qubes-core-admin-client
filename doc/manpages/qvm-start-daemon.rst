@@ -1,7 +1,7 @@
 .. program:: qvm-start-daemon
 
 :program:`qvm-start-daemon` -- start GUI/AUDIO for qube(s)
-=========================================================
+==========================================================
 
 .. note::
 

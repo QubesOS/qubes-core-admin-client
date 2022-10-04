@@ -22,9 +22,9 @@
 '''Qubes CLI spinner
 
 A novice asked the master: “In the east there is a great tree-structure that
-men call `Corporate Headquarters'. It is bloated out of shape with vice
-presidents and accountants. It issues a multitude of memos, each saying `Go,
-Hence!' or `Go, Hither!' and nobody knows what is meant. Every year new names
+men call 'Corporate Headquarters'. It is bloated out of shape with vice
+presidents and accountants. It issues a multitude of memos, each saying 'Go,
+Hence!' or 'Go, Hither!' and nobody knows what is meant. Every year new names
 are put onto the branches, but all to no avail. How can such an unnatural
 entity be?"
 
