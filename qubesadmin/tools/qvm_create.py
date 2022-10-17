@@ -190,10 +190,8 @@ def main(args=None, app=None):
     if root_source_path:
         try:
             root_size = os.path.getsize(root_source_path)
-            if root_size > vm.volumes['root'].size:
-                vm.volumes['root'].resize(root_size)
             with open(root_source_path, 'rb') as root_file:
-                vm.volumes['root'].import_data(root_file)
+                vm.volumes['root'].import_data_with_size(root_file, root_size)
             if args.root_move_from:
                 os.unlink(root_source_path)
         except qubesadmin.exc.QubesException as e:
