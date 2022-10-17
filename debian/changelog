@@ -1,3 +1,25 @@
+qubes-core-admin-client (4.1.25-1) unstable; urgency=medium
+
+  [ Rusty Bird ]
+  * vm: fix 'qvm-shutdown --wait' for DispVM
+
+  [ unman ]
+  * Update manpage for qvm-firewall
+  * Fix aberrant paste
+
+  [ Demi Marie Obenour ]
+  * Add missing GUI daemon options
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix regex formatting
+  * Fix docs formatting
+  * Include runtime deps in build deps for documentation build
+  * doc: document remaining qvm-template options
+  * dochelpers: parse man page with aliased subcommands
+  * qvm-create: fix creating qube with smaller than default root.img
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 17 Oct 2022 14:55:29 +0200
+
 qubes-core-admin-client (4.1.24-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
