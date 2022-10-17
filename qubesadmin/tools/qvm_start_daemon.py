@@ -46,6 +46,7 @@ QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
 GUI_DAEMON_OPTIONS = [
     ('allow_fullscreen', 'bool'),
     ('override_redirect_protection', 'bool'),
+    ('override_redirect', 'str'),
     ('allow_utf8_titles', 'bool'),
     ('secure_copy_sequence', 'str'),
     ('secure_paste_sequence', 'str'),
