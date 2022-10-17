@@ -177,18 +177,24 @@ class CommandCheckVisitor(docutils.nodes.SparseNodeVisitor):
         if title.upper() == SUBCOMMANDS_TITLE:
             return
 
-        sub_cmd = self.command + ' ' + title
+        sub_cmds = [title]
+        if '{' in title:
+            sub_cmds = title.strip('{}').split(',')
 
-        try:
-            args = self.sub_commands[title]
-            options_visitor = OptionsCheckVisitor(sub_cmd, args, self.document)
-            node.walkabout(options_visitor)
-            options_visitor.check_undocumented_arguments(
-                {'--help', '--quiet', '--verbose', '-h', '-q', '-v'})
-            del self.sub_commands[title]
-        except KeyError:
-            raise sphinx.errors.SphinxError(
-                'No such sub-command {!r}'.format(sub_cmd))
+        for cmd in sub_cmds:
+            sub_cmd = self.command + ' ' + cmd
+
+            try:
+                args = self.sub_commands[cmd]
+                options_visitor = OptionsCheckVisitor(
+                    sub_cmd, args, self.document)
+                node.walkabout(options_visitor)
+                options_visitor.check_undocumented_arguments(
+                    {'--help', '--quiet', '--verbose', '-h', '-q', '-v'})
+                del self.sub_commands[cmd]
+            except KeyError:
+                raise sphinx.errors.SphinxError(
+                    'No such sub-command {!r}'.format(sub_cmd))
 
     def visit_Text(self, node):
         """ If the visited text node starts with 'alias: ', all the provided

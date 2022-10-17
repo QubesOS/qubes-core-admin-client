@@ -8,7 +8,7 @@ Synopsis
 
 :command:`qvm-template` [-h] [--repo-files *REPO_FILES*] [--keyring *KEYRING*] [--updatevm *UPDATEVM*] [--enablerepo *REPOID*] [--disablerepo *REPOID*] [--repoid *REPOID*] [--releasever *RELEASEVER*] [--refresh] [--cachedir *CACHEDIR*] [--yes] [--quiet] *SUBCOMMAND*
 
-See Section `Subcommands`_ for available subcommands.
+See Section `Commands`_ for available subcommands.
 
 Options
 -------
@@ -59,31 +59,32 @@ Options
 
    Specify cache directory. (default: ~/.cache/qvm-template)
 
+.. option:: --keep-cache
+
+   Keep downloaded packages in the cache dir (by default are removed after install).
+
 .. option:: --yes
 
    Assume "yes" to questions.
 
-.. option:: --quiet
+.. option:: --verbose, -v
+
+   Increase verbosity.
+
+.. option:: --quiet, -q
 
    Decrease verbosity.
 
-Subcommands
-===========
+Commands
+--------
 
 install
--------
+^^^^^^^
+
+| :command:`qvm-template install` [-h] [--pool *POOL*] [--nogpgcheck] [--allow-pv] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Install template packages.
-
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template install` [-h] [--pool *POOL*] [--nogpgcheck] [--allow-pv] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
-
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
@@ -110,19 +111,13 @@ Options
    Specify maximum number of retries for downloads. (default: 5)
 
 {reinstall,downgrade,upgrade}
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+| :command:`qvm-template {reinstall,downgrade,upgrade}` [-h] [--nogpgcheck] [--allow-pv] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Reinstall/downgrade/upgrade template packages.
 
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template {reinstall,downgrade,upgrade}` [-h] [--nogpgcheck] [--allow-pv] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
-
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
@@ -145,23 +140,21 @@ Options
    Specify maximum number of retries for downloads. (default: 5)
 
 download
---------
+^^^^^^^^
+
+| :command:`qvm-template download` [-h] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Download template packages.
 
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template download` [-h] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
-
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
    Show help message and exit.
+
+.. option:: --nogpgcheck
+
+   Disable signature checks.
 
 .. option:: --downloaddir DOWNLOADDIR
 
@@ -172,19 +165,13 @@ Options
    Specify maximum number of retries for downloads. (default: 5)
 
 list
-----
+^^^^
+
+| :command:`qvm-template list` [-h] [--all] [--installed] [--available] [--extras] [--upgrades] [--machine-readable | --machine-readable-json] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 List templates.
 
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template list` [-h] [--all] [--installed] [--available] [--extras] [--upgrades] [--machine-readable | --machine-readable-json] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
-
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
@@ -210,6 +197,10 @@ Options
 .. option:: --upgrades
 
    Show available upgrades.
+
+.. option:: --all-versions
+
+   Show all available versions, not only the latest.
 
 .. option:: --machine-readable
 
@@ -259,19 +250,13 @@ Options
        ``{epoch}:{version}-{release}``.
 
 info
-----
+^^^^
+
+| :command:`qvm-template list` [-h] [--all] [--installed] [--available] [--extras] [--upgrades] [--machine-readable | --machine-readable-json] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Display details about templates.
 
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template list` [-h] [--all] [--installed] [--available] [--extras] [--upgrades] [--machine-readable | --machine-readable-json] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
-
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
@@ -297,6 +282,10 @@ Options
 .. option:: --upgrades
 
    Show available upgrades.
+
+.. option:: --all-versions
+
+   Show all available versions, not only the latest.
 
 .. option:: --machine-readable
 
@@ -355,17 +344,11 @@ Options
        %H:%M:%S`` format in UTC.
 
 search
-------
+^^^^^^
+
+| :command:`qvm-template search` [-h] [--all] [*PATTERN* [*PATTERN* ...]]
 
 Search template details for the given string.
-
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template search` [-h] [--all] [*PATTERN* [*PATTERN* ...]]
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
@@ -377,17 +360,11 @@ Options
    are evaluated with OR instead of AND.
 
 remove
-------
+^^^^^^
+
+| :command:`qvm-template remove` [-h] [--disassoc] [*TEMPLATE* [*TEMPLATE* ...]]
 
 Remove installed templates.
-
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template remove` [-h] [--disassoc] [*TEMPLATE* [*TEMPLATE* ...]]
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
@@ -399,51 +376,33 @@ Options
    creates a *dummy* template for the VMs to link with.
 
 purge
------
+^^^^^
+
+| :command:`qvm-template purge` [-h] [*TEMPLATE* [*TEMPLATE* ...]]
 
 Remove installed templates and associated VMs.
-
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template purge` [-h] [*TEMPLATE* [*TEMPLATE* ...]]
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
    Show help message and exit.
 
 clean
------
+^^^^^
+
+| :command:`qvm-template clean` [-h]
 
 Remove locally cached packages.
-
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template clean` [-h]
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 
    Show help message and exit.
 
 repolist
---------
-
-Show configured repositories.
-
-Synopsis
 ^^^^^^^^
 
-:command:`qvm-template repolist` [-h] [--all | --enabled | --disabled] [*REPOS* [*REPOS* ...]]
+| :command:`qvm-template repolist` [-h] [--all | --enabled | --disabled] [*REPOS* [*REPOS* ...]]
 
-Options
-^^^^^^^
+Show configured repositories.
 
 .. option:: -h, --help
 
@@ -462,20 +421,14 @@ Options
    Show only disabled repos.
 
 migrate-from-rpmdb
-------------------
+^^^^^^^^^^^^^^^^^^
+
+| :command:`qvm-template migrate-from-rpmdb` [-h]
 
 Migrate templates metadata from R4.0 format. This makes template originally
 installed via rpm (qubes-dom0-update) available for qvm-template.
 All templates gets `installed_by_rpm` property set to false.
 If the operation fails for any reason, it is safe to retry.
-
-Synopsis
-^^^^^^^^
-
-:command:`qvm-template migrate-from-rpmdb` [-h]
-
-Options
-^^^^^^^
 
 .. option:: -h, --help
 

@@ -149,8 +149,7 @@ def escape_config_string(value):
 
 
 # "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
-REGEX_OUTPUT = re.compile(r"""
-        (?x)                           # ignore whitespace
+REGEX_OUTPUT = re.compile(r"""(?x)                           # ignore whitespace
         ^                              # start of string
         (?P<output>[A-Za-z0-9\-]*)[ ]  # LVDS VGA etc
         (?P<connect>(dis)?connected)   # dis/connected
