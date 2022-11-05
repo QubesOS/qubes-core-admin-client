@@ -1142,7 +1142,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         tar = subprocess.Popen(tar_cmdline, stdout=subprocess.PIPE)
         if encrypted:
             encryptor = subprocess.Popen(
-                ["openssl", "enc", "-e", "-aes-256-cbc", "-pass", "pass:qubes"],
+                ["openssl", "enc", "-e", "-aes-256-cbc",
+                 "-md", "MD5", "-pass", "pass:qubes"],
                 stdin=tar.stdout,
                 stdout=subprocess.PIPE)
             tar.stdout.close()

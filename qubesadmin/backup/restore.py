@@ -679,6 +679,8 @@ class ExtractWorker3(Process):
                         ["openssl", "enc",
                          "-d",
                          "-" + self.crypto_algorithm,
+                         "-md",
+                         "MD5",
                          "-pass",
                          "pass:" + self.passphrase],
                         stdin=subprocess.PIPE,
