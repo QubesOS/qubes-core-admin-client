@@ -1170,7 +1170,8 @@ class BackupRestore(object):
         if hasattr(p, 'pty'):
             p.pty.close()
         if p.returncode != 0:
-            os.unlink(fulloutput)
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(fulloutput)
             raise QubesException('failed to decrypt {}: {}'.format(
                 fullname, stderr))
         # encrypted file is no longer needed
