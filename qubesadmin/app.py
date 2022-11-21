@@ -648,6 +648,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         - domain-shutdown
         - domain-paused
         - domain-unpaused
+        - domain-start-failed
 
         This is done in :py:class:`qubesadmin.events.EventsDispatcher` class
         directly, before calling other handlers.
@@ -671,6 +672,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             power_state = 'Paused'
         elif event == 'domain-unpaused':
             power_state = 'Running'
+        elif event == 'domain-start-failed':
+            power_state = 'Halted'
         else:
             # unknown power state change, drop cached power state
             power_state = None

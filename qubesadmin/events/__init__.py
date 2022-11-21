@@ -242,7 +242,8 @@ class EventsDispatcher(object):
                 event.startswith('property-reset:'):
             self.app._invalidate_cache(subject, event, **kwargs)
         elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
-                       'domain-paused', 'domain-unpaused'):
+                       'domain-paused', 'domain-unpaused',
+                       'domain-start-failed'):
             self.app._update_power_state_cache(subject, event, **kwargs)
         elif event == 'connection-established':
             # on (re)connection, clear cache completely - we don't have
