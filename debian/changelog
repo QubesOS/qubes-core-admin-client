@@ -1,3 +1,13 @@
+qubes-core-admin-client (4.1.27-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Fix cache invalidation for domain-start-failed
+
+  [ Rusty Bird ]
+  * backup/restore: hardcode MD5 algo for format v2/v3 decryption
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 29 Nov 2022 03:12:57 +0100
+
 qubes-core-admin-client (4.1.26-1) unstable; urgency=medium
 
   * backup: do not fail on removing non-existing file
