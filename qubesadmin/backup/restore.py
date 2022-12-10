@@ -2042,12 +2042,16 @@ class BackupRestore(object):
                     continue
 
             # restore this property early to be ready for dependent DispVMs
-            prop = 'template_for_dispvms'
-            value = vm.properties.get(prop, None)
-            if value is not None:
-                self._restore_property(new_vm, prop, value)
+            if not self.options.verify_only:
+                prop = 'template_for_dispvms'
+                value = vm.properties.get(prop, None)
+                if value is not None:
+                    self._restore_property(new_vm, prop, value)
 
             restore_info[vm.name].restored_vm = new_vm
+
+        if self.options.verify_only:
+            return
 
         for vm in vms.values():
             if self.canceled:
