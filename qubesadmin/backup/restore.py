@@ -908,7 +908,7 @@ class BackupRestore(object):
 
     def __init__(self, app, backup_location, backup_vm, passphrase,
                  location_is_service=False, force_compression_filter=None,
-                 tmpdir="/var/tmp"):
+                 tmpdir=None):
         super().__init__()
 
         #: qubes.Qubes instance
@@ -936,9 +936,16 @@ class BackupRestore(object):
         #: passphrase protecting backup integrity and optionally decryption
         self.passphrase = passphrase
 
+        if tmpdir is None:
+            # put it here, to enable qfile-unpacker even on SELinux-enabled
+            # system
+            tmpdir = os.path.expanduser("~/QubesIncoming")
         #: temporary directory used to extract the data before moving to the
         # final location
-        self.tmpdir = tempfile.mkdtemp(prefix="restore", dir=tmpdir)
+        # due to possible location in ~/QubesIncoming, the prefix should not be
+        # a valid VM name
+        os.makedirs(tmpdir, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(prefix="backup#restore-", dir=tmpdir)
 
         #: list of processes (Popen objects) to kill on cancel
         self.processes_to_kill_on_cancel = []
