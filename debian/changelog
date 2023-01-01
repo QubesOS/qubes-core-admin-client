@@ -1,3 +1,13 @@
+qubes-core-admin-client (4.1.28-1) unstable; urgency=medium
+
+  [ Maja Kądziołka ]
+  * qvm-backup-restore --verify-only: don't overwrite VM properties
+
+  [ Marek Marczykowski-Górecki ]
+  * backup: use ~/QubesIncoming as default restore tmpdir
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 01 Jan 2023 21:19:45 +0100
+
 qubes-core-admin-client (4.1.27-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
