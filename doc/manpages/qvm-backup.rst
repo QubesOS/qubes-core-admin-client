@@ -72,8 +72,16 @@ Arguments
 
 The first positional parameter is the backup location (absolute directory path,
 or command to pipe backup to). After that you may specify the qubes you'd
-like to backup. If not specified, the default list based on the VM's "include 
+like to backup. If not specified, the default list based on the VM's "include
 in backups" property will be used.
+
+Notes
+-----
+
+The backup always contains the names and metadata of VMs on the system, in an
+effort to preserve the dependencies between them as best as possible. As such,
+using ``qvm-backup`` to export a subset of VMs on your system and share them
+might inadvertently leak sensitive information.
 
 Authors
 -------
