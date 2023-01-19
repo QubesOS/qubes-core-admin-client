@@ -1,3 +1,10 @@
+qubes-core-admin-client (4.1.29-1) unstable; urgency=medium
+
+  [ Maja Kądziołka ]
+  * man qvm-backup: Warn about potential metadata leakage
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 19 Jan 2023 18:31:45 +0100
+
 qubes-core-admin-client (4.1.28-1) unstable; urgency=medium
 
   [ Maja Kądziołka ]
