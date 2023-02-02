@@ -22,6 +22,7 @@ Requires:   python%{python3_pkgversion}-yaml
 Requires:   qubes-repo-templates
 Requires:   scrypt
 Requires:   qubes-rpm-oxide >= 0.2.3
+Requires:   xrandr
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 Conflicts:  qubes-core-agent < 4.1.9
