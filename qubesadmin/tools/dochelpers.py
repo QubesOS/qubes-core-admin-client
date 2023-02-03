@@ -307,6 +307,7 @@ def check_man_args(app, doctree, docname):
 
 def break_to_pdb(app, *_dummy):
     """DEBUG"""
+    # pylint: disable=forgotten-debug-statement
     if not app.config.break_to_pdb:
         return
     import pdb
