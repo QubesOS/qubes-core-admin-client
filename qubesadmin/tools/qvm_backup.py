@@ -180,7 +180,7 @@ def main(args=None, app=None):
             if args.passphrase_file == '-':
                 passphrase = sys.stdin.readline().rstrip()
             else:
-                with open(args.passphrase_file) as pass_f:
+                with open(args.passphrase_file, encoding='utf-8') as pass_f:
                     passphrase = pass_f.readline().rstrip()
         else:
             prompt = ("Please enter the passphrase that will be used to "
