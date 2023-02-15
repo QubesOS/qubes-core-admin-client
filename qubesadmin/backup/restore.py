@@ -38,6 +38,8 @@ import sys
 import tempfile
 import termios
 import time
+# only for a python bug workaround
+import concurrent.futures.thread
 
 import collections
 
@@ -300,28 +302,16 @@ def launch_scrypt(action, input_name, output_name, passphrase):
     p.pty = pty
     return p
 
-def _fix_logging_lock_after_fork():
+def _fix_threading_after_fork():
     """
-    HACK:
-    This is running in a child process, parent might hold some lock
-    while fork was called (but will be released only in a parent
-    process). This specifically applies to a logging module and
-    results in a deadlock (if one is unlucky). "Fix" this by
-    reinitialize a lock on all registered logging handlers
-    just after a fork() call, until fixed upstream:
+    HACK
+    Clear thread queues after fork (threads are gone at this point),
+    otherwise atexit callback will crash.
 
-    https://bugs.python.org/issue6721
+    https://github.com/python/cpython/issues/88110
     """
-    if not hasattr(logging, '_handlerList'):
-        return
-
     # pylint: disable=protected-access
-    for handler_ref in logging._handlerList:
-        handler = handler_ref()
-        if handler is None:
-            continue
-        if handler.lock:
-            handler.lock = type(handler.lock)()
+    concurrent.futures.thread._threads_queues.clear()
 
 
 class ExtractWorker3(Process):
@@ -437,7 +427,7 @@ class ExtractWorker3(Process):
 
     def run(self):
         try:
-            _fix_logging_lock_after_fork()
+            _fix_threading_after_fork()
             self.__run__()
         except Exception:
             # Cleanup children
