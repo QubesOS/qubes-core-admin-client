@@ -1,3 +1,16 @@
+qubes-core-admin-client (4.2.0-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Make pylint happy
+
+  [ Demi Marie Obenour ]
+  * Set selinux feature if template.conf specifies it
+
+  [ Marek Marczykowski-Górecki ]
+  * Replace one python bug workaround with another
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 18 Feb 2023 02:36:29 +0100
+
 qubes-core-admin-client (4.1.30-1) unstable; urgency=medium
 
   * rpm: depend on xrandr
