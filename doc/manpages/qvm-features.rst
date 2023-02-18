@@ -205,6 +205,7 @@ Choose video card modes emulated by QEMU for this qube. For available values see
 libvirt documentation about <video><model type=...> element:
 https://libvirt.org/formatdomain.html#elementsVideo
 Some systems (Windows) works better with 'cirrus' model set here.
+Setting this feature to `none` disables emulated video card.
 
 Default: vga
 
@@ -275,6 +276,29 @@ qubes-agent-version
 Qubes agent version installed in the template/standalone. It contains just
 major.minor number (no patch number). Can be used to check if template was
 updated to the current qubes version after importing from older release.
+
+stubdom-qrexec
+^^^^^^^^^^^^^^
+
+Set this to value `1` to enable qrexec agent in the stubdomain. This feature can
+be set on a qube with virt_mode HVM, to support USB passthrough via stubdomain.
+It is ignored on non-HVM qubes. Useful for Windows qube for example.
+
+audio-model
+^^^^^^^^^^^
+
+Enable emulated audio for this qube. This feature can be set on a qube with
+virt_mode HVM to support audio passthrough (both input and output) via emulated
+device instead of audio agent installed in the qube itself. The value is audio
+model to be emulated, supported values are `ich6`, `sb16`, `ac97`, `es1370`.
+Recommended is `ich6`. This is useful to get audio in a Windows qube.
+
+uefi
+^^^^
+
+Boot the HVM qube via UEFI boot, instead of legacy one. Support for this boot
+mode is experimental and may not work in all the cases. It is ignored for
+non-HVM qubes.
 
 Authors
 -------
