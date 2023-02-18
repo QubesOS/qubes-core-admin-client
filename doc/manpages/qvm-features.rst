@@ -269,6 +269,12 @@ the VM itself). Supported RPC service `x` is noted as `supported-rpc.x`
 with value of `1`. Not supported RPC service is not listed at all. Other values
 are not supported.
 
+qubes-agent-version
+^^^^^^^^^^^^^^^^^^^
+
+Qubes agent version installed in the template/standalone. It contains just
+major.minor number (no patch number). Can be used to check if template was
+updated to the current qubes version after importing from older release.
 
 Authors
 -------
