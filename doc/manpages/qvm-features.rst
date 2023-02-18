@@ -240,6 +240,35 @@ set-created-guivm
 When a qube with this feature create a new VM, it sets to the new VM its `guivm`
 property value to `set-created-guivm` feature value.
 
+supported-feature.*
+^^^^^^^^^^^^^^^^^^^
+
+Advertised "features" as supported by given VM. Template-based qubes support all
+features advertised by their template (in other words, to check for features
+supported by a template-based qube, look at `supported-feature.*` on its
+template). Supported feature `x` is noted as `supported-feature.x` with value of
+`1`. Not supported feature is not listed at all. Other values are not supported.
+
+supported-service.*
+^^^^^^^^^^^^^^^^^^^
+
+Advertised "qvm-services" as supported by given VM. Template-based qubes support all
+services advertised by their template (in other words, to check for features
+supported by a template-based qube, look at `supported-service.*` on its
+template). Supported qvm-service `x` is noted as `supported-service.x` with value of
+`1`. Not supported service is not listed at all. Other values are not supported.
+
+supported-rpc.*
+^^^^^^^^^^^^^^^
+
+Advertised RPC services as supported by given VM. Template-based qubes support
+all services advertised by their template, in addition to services advertised by
+this very VM (in other words, to check for features supported by a
+template-based qube, look at `supported-rpc.*` on both its template and
+the VM itself). Supported RPC service `x` is noted as `supported-rpc.x`
+with value of `1`. Not supported RPC service is not listed at all. Other values
+are not supported.
+
 
 Authors
 -------
