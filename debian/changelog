@@ -1,3 +1,11 @@
+qubes-core-admin-client (4.2.1-1) unstable; urgency=medium
+
+  * Document supported-* features in qvm-features man page
+  * Document qubes-agent-version feature
+  * Document few more features in qvm-features man page
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 02 Mar 2023 02:38:06 +0100
+
 qubes-core-admin-client (4.2.0-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
