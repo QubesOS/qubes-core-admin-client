@@ -193,8 +193,8 @@ provides_network
 qrexec_timeout
     Accepted values: timeout in seconds
 
-    How log to wait for VM boot and qrexec agent connection. After this timeout,
-    if qrexec agent is still not connected, VM is forcefully shut down.
+    How long to wait for VM boot and qrexec agent connection. After this
+    timeout, if qrexec agent is still not connected, VM is forcefully shut down.
     Ignored if qrexec not installed at all (`qrexec` feature not set, see
     :manpage:`qvm-features(1)`).
 
