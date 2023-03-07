@@ -110,9 +110,25 @@ aliases: extend
 revert
 ^^^^^^
 
-| :command:`qvm-volume revert` [-h] [--verbose] [--quiet] *VMNAME:VOLUME*
+| :command:`qvm-volume revert` [-h] [--verbose] [--quiet] *VMNAME:VOLUME* [rev]
 
-Revert a volume to previous revision.
+Revert a volume to a previous revision.  If *rev* is specified, reverts the
+volume to that specific revision (discarding the current volume contents
+and possibly deleting any newer revisions). If *rev* is not specified, the
+contents of the volume are reverted to the latest known revision.  Your storage
+driver must support revisions and its `revisions_to_keep` property must be
+greater than `0`.
+
+Generally, revisions are only created for volumes which have the `save_on_stop`
+property set.  Revision creation is storage driver implementation-dependent,
+but the general practice is that a revision is only created when a volume is
+clean.  Paradoxically and despite the `save_on_stop` name, revisions in these
+volumes are created prior to its owning qube starting, rather than when its
+owning qube stops.
+
+You may not revert a volume while it is in use.  This includes its owning qube
+running.  With some storage drivers, this also extends to cases when the volume
+is currently being exported to use in a `qvm-clone` operation.
 
 aliases: rv, r
 
