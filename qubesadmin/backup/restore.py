@@ -38,6 +38,7 @@ import sys
 import tempfile
 import termios
 import time
+import threading
 # only for a python bug workaround
 import concurrent.futures.thread
 
@@ -309,9 +310,18 @@ def _fix_threading_after_fork():
     otherwise atexit callback will crash.
 
     https://github.com/python/cpython/issues/88110
+
+    And initialize DummyThread locks:
+    https://github.com/python/cpython/issues/102512
     """
     # pylint: disable=protected-access
     concurrent.futures.thread._threads_queues.clear()
+    thread = threading.current_thread()
+    if isinstance(thread, threading._DummyThread) and \
+            getattr(thread, '_tstate_lock', "missing") is None:
+        # mimic threading._after_fork()
+        thread._set_tstate_lock()
+
 
 
 class ExtractWorker3(Process):
