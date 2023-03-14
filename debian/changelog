@@ -1,3 +1,16 @@
+qubes-core-admin-client (4.2.2-1) unstable; urgency=medium
+
+  [ Kamil Aronowski ]
+  * Typo: How log -> How long
+
+  [ Manuel Amador (Rudd-O) ]
+  * Document that qvm-volume revert can revert to a specific revision.
+
+  [ Marek Marczykowski-Górecki ]
+  * Yet another disgusting hack for python 3.11.2 bug
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 14 Mar 2023 05:31:34 +0100
+
 qubes-core-admin-client (4.2.1-1) unstable; urgency=medium
 
   * Document supported-* features in qvm-features man page
