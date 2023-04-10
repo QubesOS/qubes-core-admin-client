@@ -1392,11 +1392,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                         b'internal=True\n' \
                         b'revisions_to_keep=3\n'
                     self.app.expected_calls[
-                        (name, 'admin.vm.volume.Resize', 'root',
-                        str(vm.get('root_size', 2097664)).encode())] = \
-                        b'0\0'
-                    self.app.expected_calls[
-                        (name, 'admin.vm.volume.Import', 'root',
+                        (name, 'admin.vm.volume.ImportWithSize', 'root',
                         name.encode() + b'/root')] = \
                         b'0\0'
 
@@ -1412,10 +1408,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     b'save_on_stop=True\n' \
                     b'revisions_to_keep=3\n'
                 self.app.expected_calls[
-                    (name, 'admin.vm.volume.Resize', 'private', b'2097152')] = \
-                    b'0\0'
-                self.app.expected_calls[
-                    (name, 'admin.vm.volume.Import', 'private',
+                    (name, 'admin.vm.volume.ImportWithSize', 'private',
                     name.encode() + b'/private')] = \
                     b'0\0'
                 self.app.expected_calls[
@@ -2043,11 +2036,6 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
-        del self.app.expected_calls[
-            ('test-work', 'admin.vm.volume.Resize', 'private', b'2097152')]
-        self.app.expected_calls[
-            ('test-work', 'admin.vm.volume.Resize', 'private', b'2147483648')] = \
-            b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
