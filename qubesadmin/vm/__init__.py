@@ -368,6 +368,10 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     @staticmethod
     def _get_derived_vms(vm):
+        """
+        Return `set` of all domains based on the current TemplateVM
+        at any level of inheritance.
+        """
         result = set(vm.appvms)
         for appvm in vm.appvms:
             result.update(QubesVM._get_derived_vms(appvm))
