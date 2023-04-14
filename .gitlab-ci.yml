@@ -30,6 +30,7 @@ checks:tests:
   script:
   - python3 setup.py build
   - ./run-tests
+  - python3 -m coverage xml
   stage: checks
   tags:
   - docker
