@@ -121,11 +121,11 @@ Legacy mode: :command:`qvm-pool` [-h] [--verbose] [--quiet] --set *POOL_NAME* -o
 Examples
 --------
 
-Create a pool backed by the `file` driver.
+Create a pool backed by the `file-reflink` driver.
 
 ::
 
-    qvm-pool add foo file -o dir_path=/mnt/foo
+    qvm-pool add foo file-reflink -o dir_path=/mnt/foo
 
 Have pool ``lvm`` encrypt its volatile volumes with an ephemeral key for
 anti-forensics:
