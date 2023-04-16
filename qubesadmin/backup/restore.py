@@ -26,6 +26,7 @@ import fcntl
 import functools
 import getpass
 import grp
+import inspect
 import logging
 import multiprocessing
 from multiprocessing import Queue, Process
@@ -339,12 +340,6 @@ class ExtractWorker3(Process):
         :py:obj:`QUEUE_ERROR` to end data processing (either cleanly,
         or forcefully).
 
-        Handlers are given as a map filename -> (data_func, size_func),
-        where data_func is called with file-like object to process,
-        and size_func is called with file size as argument. Note that
-        data_func and size_func may be called simultaneusly, in a different
-        processes.
-
         :param multiprocessing.Queue queue: a queue with filenames to
         process; those files needs to be given as full path, inside *base_dir*
         :param str base_dir: directory where all files to process live
@@ -369,11 +364,12 @@ class ExtractWorker3(Process):
         self.base_dir = base_dir
         #: passphrase to decrypt/authenticate data
         self.passphrase = passphrase
-        #: handlers for files; it should be dict filename -> (data_function,
-        # size_function),
-        # where data_function will get file-like object as the only argument and
-        # might be called in a separate process (multiprocessing.Process),
-        # and size_function will get file size (when known) in bytes
+        #: handlers for files; it should be dict filename -> data_function
+        # where data_function (which might be called in a separate
+        # multiprocessing.Process) will get a file-like object as the first
+        # argument. If the data_function signature accepts a keyword-only
+        # argument named file_size, it will also get the size in bytes when
+        # known.
         self.handlers = handlers
         #: is the backup encrypted?
         self.encrypted = encrypted
@@ -459,16 +455,18 @@ class ExtractWorker3(Process):
         :param dirname: directory path to handle (relative to backup root),
             without trailing slash
         '''
-        for fname, (data_func, size_func) in self.handlers.items():
+        for fname, data_func in self.handlers.items():
             if not fname.startswith(dirname + '/'):
                 continue
             if not os.path.exists(fname):
                 # for example firewall.xml
                 continue
-            if size_func is not None:
-                size_func(os.path.getsize(fname))
             with open(fname, 'rb') as input_file:
-                data_func(input_file)
+                data_func_kwargs = {}
+                if 'file_size' in inspect.getfullargspec(data_func).kwonlyargs:
+                    data_func_kwargs['file_size'] = \
+                        os.stat(input_file.fileno()).st_size
+                data_func(input_file, **data_func_kwargs)
             os.unlink(fname)
         shutil.rmtree(dirname)
 
@@ -512,8 +510,7 @@ class ExtractWorker3(Process):
             self.tar2_current_file = None
         self.tar2_process = None
 
-    def _data_import_wrapper(self, close_fds, data_func, size_func,
-            tar2_process):
+    def _data_import_wrapper(self, close_fds, data_func, tar2_process):
         '''Close not needed file descriptors, handle output size reported
         by tar (if needed) then call data_func(tar2_process.stdout).
 
@@ -533,7 +530,8 @@ class ExtractWorker3(Process):
         # not read data from tar's stdout at this point, it will
         # hang if it tries to output file content before
         # reporting its size on stderr first
-        if size_func:
+        data_func_kwargs = {}
+        if 'file_size' in inspect.getfullargspec(data_func).kwonlyargs:
             # process lines on stderr until we get file size
             # search for first file size reported by tar -
             # this is used only when extracting single-file archive, so don't
@@ -553,13 +551,12 @@ class ExtractWorker3(Process):
                 else:
                     match = _tar_file_size_re.match(line)
                     if match:
-                        file_size = int(match.groups()[0])
-                        size_func(file_size)
+                        data_func_kwargs['file_size'] = int(match.groups()[0])
                         break
                     self.log.warning(
                         'unexpected tar output (no file size report): %s', line)
 
-        return data_func(tar2_process.stdout)
+        return data_func(tar2_process.stdout, **data_func_kwargs)
 
     def feed_tar2(self, filename, input_pipe):
         '''Feed data from *filename* to *input_pipe*
@@ -705,11 +702,11 @@ class ExtractWorker3(Process):
 
                 if inner_name in self.handlers:
                     assert redirect_stdout is subprocess.PIPE
-                    data_func, size_func = self.handlers[inner_name]
+                    data_func = self.handlers[inner_name]
                     self.import_process = multiprocessing.Process(
                         target=self._data_import_wrapper,
                         args=([input_pipe.fileno()],
-                        data_func, size_func, self.tar2_process))
+                        data_func, self.tar2_process))
 
                     self.import_process.start()
                     self.tar2_process.stdout.close()
@@ -1368,9 +1365,7 @@ class BackupRestore(object):
 
         qubes_xml_path = os.path.join(self.tmpdir, 'qubes-restored.xml')
         handlers = {
-            'qubes.xml': (
-                functools.partial(self._save_qubes_xml, qubes_xml_path),
-                None)
+            'qubes.xml': functools.partial(self._save_qubes_xml, qubes_xml_path)
             }
         extract_proc = self._start_inner_extraction_worker(queue, handlers)
         extract_proc.join()
@@ -1873,22 +1868,16 @@ class BackupRestore(object):
             self.log.error(
                 'Failed to set application list for %s: %s', vm.name, e)
 
-    def _handle_volume_data(self, vm, volume, stream):
+    def _handle_volume_data(self, vm, volume, stream, *, file_size=None):
         '''Wrap volume data import with logging'''
         try:
-            volume.import_data(stream)
+            if file_size is None:
+                volume.import_data(stream)
+            else:
+                volume.import_data_with_size(stream, file_size)
         except Exception as err:  # pylint: disable=broad-except
-            self.log.error('Failed to restore volume %s of VM %s: %s',
-                volume.name, vm.name, err)
-
-    def _handle_volume_size(self, vm, volume, size):
-        '''Wrap volume resize with logging'''
-        try:
-            if volume.size < size:
-                volume.resize(size)
-        except Exception as err:  # pylint: disable=broad-except
-            self.log.error('Failed to resize volume %s of VM %s to %d: %s',
-                volume.name, vm.name, size, err)
+            self.log.error('Failed to restore volume %s (size %s) of VM %s: %s',
+                volume.name, file_size, vm.name, err)
 
     def check_disk_space(self):
         """
@@ -1942,7 +1931,7 @@ class BackupRestore(object):
                     if self.options.verify_only:
                         continue
 
-                    handlers[vm_info.subdir] = (self._handle_dom0, None)
+                    handlers[vm_info.subdir] = self._handle_dom0
                 else:
                     vms_size += int(vm_info.size)
                     vms_dirs.append(vm_info.subdir)
@@ -1955,16 +1944,13 @@ class BackupRestore(object):
                             continue
                         data_func = functools.partial(
                             self._handle_volume_data, vm, volume)
-                        size_func = functools.partial(
-                            self._handle_volume_size, vm, volume)
                         img_path = os.path.join(vm_info.subdir, name + '.img')
-                        handlers[img_path] = (data_func, size_func)
-                    handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = (
-                        functools.partial(vm_info.vm.handle_firewall_xml, vm),
-                        None)
+                        handlers[img_path] = data_func
+                    handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = \
+                        functools.partial(vm_info.vm.handle_firewall_xml, vm)
                     handlers[os.path.join(vm_info.subdir,
-                        'whitelisted-appmenus.list')] = (
-                        functools.partial(self._handle_appmenus_list, vm), None)
+                        'whitelisted-appmenus.list')] = \
+                        functools.partial(self._handle_appmenus_list, vm)
         try:
             self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
                 handlers=handlers)
