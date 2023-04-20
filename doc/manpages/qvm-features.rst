@@ -284,6 +284,14 @@ Set this to value `1` to enable qrexec agent in the stubdomain. This feature can
 be set on a qube with virt_mode HVM, to support USB passthrough via stubdomain.
 It is ignored on non-HVM qubes. Useful for Windows qube for example.
 
+vm-config.*
+^^^^^^^^^^^
+
+These features are exposed to qubesdb inside the qube in the `/vm-config` tree.
+Can be used to pass external configuration to inside the qube. To read, use
+`qubesdb-read`: for a feature named `vm-config.feature_name` use
+`qubesdb-read /vm-config/feature_name`.
+
 audio-model
 ^^^^^^^^^^^
 
