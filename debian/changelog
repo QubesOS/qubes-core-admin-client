@@ -1,3 +1,23 @@
+qubes-core-admin-client (4.2.3-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Switch to new codecov uploader
+
+  [ Rusty Bird ]
+  * doc: use file-reflink instead of deprecated file in 'qvm-pool add'
+    example
+  * backup/restore: fix import of volumes with small or unaligned size
+  * make pylint happy
+
+  [ Piotr Bartman ]
+  * add derived_vms property
+  * add missing docstring
+
+  [ Marta Marczykowska-Górecka ]
+  * Add documentation for vm-config features
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 27 Apr 2023 17:21:34 +0200
+
 qubes-core-admin-client (4.2.2-1) unstable; urgency=medium
 
   [ Kamil Aronowski ]
