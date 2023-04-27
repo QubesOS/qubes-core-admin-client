@@ -354,6 +354,25 @@ class QubesVM(qubesadmin.base.PropertyHolder):
                 pass
 
     @property
+    def derived_vms(self):
+        """
+        Return list of all domains based on the current TemplateVM
+        at any level of inheritance.
+        """
+        return list(QubesVM._get_derived_vms(self))
+
+    @staticmethod
+    def _get_derived_vms(vm):
+        """
+        Return `set` of all domains based on the current TemplateVM
+        at any level of inheritance.
+        """
+        result = set(vm.appvms)
+        for appvm in vm.appvms:
+            result.update(QubesVM._get_derived_vms(appvm))
+        return result
+
+    @property
     def connected_vms(self):
         ''' Return a generator containing all domains connected to the current
             NetVM.
