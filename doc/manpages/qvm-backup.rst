@@ -14,7 +14,8 @@ Options
 
 .. option:: --profile
 
-   Specify backup profile to use. This option is mutually exclusive with all
+   Specify backup profile to use, which must be in /etc/qubes/backup/, without
+   the file path or file extension. This option is mutually exclusive with all
    other options. This is also the only working mode when running from non-dom0.
 
 .. option:: --save-profile
