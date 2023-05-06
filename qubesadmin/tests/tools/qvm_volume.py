@@ -416,7 +416,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             'revisions_to_keep  3\n'
             'ephemeral          False\n'
             'is_outdated        False\n'
-            'Available revisions (for revert):\n'
+            'List of available revisions (for revert):\n'
             '  200101010000\n'
             '  200201010000\n'
             '  200301010000\n')
@@ -460,7 +460,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             'revisions_to_keep  0\n'
             'ephemeral          True\n'
             'is_outdated        False\n'
-            'Available revisions (for revert): none\n')
+            'List of available revisions (for revert): none\n')
         self.assertAllCalled()
 
     def test_042_info_single_prop(self):
@@ -549,7 +549,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             'revisions_to_keep  3\n'
             'ephemeral          False\n'
             'is_outdated        False\n'
-            'Available revisions (for revert):\n'
+            'List of available revisions (for revert):\n'
             '  200101010000\n'
             '  200201010000\n'
             '  200301010000\n')

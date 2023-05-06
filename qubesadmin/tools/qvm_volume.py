@@ -121,11 +121,11 @@ def info_volume(args):
         qubesadmin.tools.print_table(info.items())
         revisions = volume.revisions
         if revisions:
-            print('Available revisions (for revert):')
+            print('List of available revisions (for revert):')
             for rev in revisions:
                 print('  ' + rev)
         else:
-            print('Available revisions (for revert): none')
+            print('List of available revisions (for revert): none')
 
 
 def config_volume(args):
