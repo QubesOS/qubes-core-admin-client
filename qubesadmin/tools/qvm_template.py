@@ -1312,7 +1312,7 @@ def list_templates(args: argparse.Namespace,
         elif command == 'list':
             tpl_list = list_to_human_output(tpl_list)
         for status, grp in tpl_list:
-            print(status.title())
+            print(status.title(), flush=True)
             qubesadmin.tools.print_table(grp)
 
 
