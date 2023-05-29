@@ -225,7 +225,8 @@ class EventsDispatcher(object):
         else:
             # handle cache refreshing on best-effort basis
             if event in ['domain-add', 'domain-delete']:
-                self.app.domains.clear_cache()
+                vm = kwargs['vm']
+                self.app.domains.clear_cache(invalidate_name=str(vm))
             subject = None
         # deserialize known attributes
         if event.startswith('device-') and 'device' in kwargs:
