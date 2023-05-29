@@ -50,9 +50,14 @@ class VMCollection(object):
         self._vm_list = None
         self._vm_objects = {}
 
-    def clear_cache(self):
-        """Clear cached list of VMs"""
+    def clear_cache(self, invalidate_name=None):
+        """Clear cached list of VMs
+        If *invalidate_name* is given, remove that object from cache
+        explicitly too.
+        """
         self._vm_list = None
+        if invalidate_name:
+            self._vm_objects.pop(invalidate_name, None)
 
     def refresh_cache(self, force=False):
         """Refresh cached list of VMs"""

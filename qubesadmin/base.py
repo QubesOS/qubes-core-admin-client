@@ -416,9 +416,14 @@ class WrapperObjectsCollection(object):
         #: returned objects cache
         self._objects = {}
 
-    def clear_cache(self):
-        '''Clear cached list of names'''
+    def clear_cache(self, invalidate_name=None):
+        """Clear cached list of names.
+        If *invalidate_name* is given, remove that object from cache
+        explicitly too.
+        """
         self._names_list = None
+        if invalidate_name:
+            self._objects.pop(invalidate_name, None)
 
     def refresh_cache(self, force=False):
         '''Refresh cached list of names'''
