@@ -1,3 +1,19 @@
+qubes-core-admin-client (4.2.4-1) unstable; urgency=medium
+
+  [ Per Christian Gaustad ]
+  * Specify format of --profile parameter for qvm-backup
+
+  [ Rusty Bird ]
+  * tools/qvm-volume: clarify available revisions
+
+  [ Oni ]
+  * Fix title order when qvm-template output is piped to another command
+
+  [ Marek Marczykowski-Górecki ]
+  * Invalidate cache on domain add/delete
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 02 Jun 2023 05:15:13 +0200
+
 qubes-core-admin-client (4.2.3-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
