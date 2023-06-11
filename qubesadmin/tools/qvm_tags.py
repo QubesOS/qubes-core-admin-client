@@ -19,7 +19,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-features - Manage domain's tags'''
+'''qvm-tags - Manage domain's tags'''
 
 from __future__ import print_function
 
