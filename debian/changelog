@@ -1,3 +1,30 @@
+qubes-core-admin-client (4.1.31-1) unstable; urgency=medium
+
+  [ Maja Kądziołka ]
+  * qvm-backup-restore --verify-only: don't overwrite VM properties
+  * man qvm-backup: Warn about potential metadata leakage
+
+  [ Kamil Aronowski ]
+  * Typo: How log -> How long
+
+  [ Manuel Amador (Rudd-O) ]
+  * Document that qvm-volume revert can revert to a specific revision.
+
+  [ Rusty Bird ]
+  * backup/restore: fix import of volumes with small or unaligned size
+
+  [ Per Christian Gaustad ]
+  * Specify format of --profile parameter for qvm-backup
+
+  [ Oni ]
+  * Fix title order when qvm-template output is piped to another command
+
+  [ Marek Marczykowski-Górecki ]
+  * Invalidate cache on domain add/delete
+  * Make pylint happy
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 22 Jun 2023 06:03:56 +0200
+
 qubes-core-admin-client (4.1.27-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
