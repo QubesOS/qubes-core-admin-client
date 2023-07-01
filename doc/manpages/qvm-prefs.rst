@@ -99,7 +99,7 @@ default_user
     Default user used by :manpage:`qvm-run(1)`. Note that it make sense only on
     non-standard template, as the standard one always have "user" account.
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 template_for_dispvms
     Property type: bool
@@ -125,7 +125,7 @@ kernel
     Kernel version to use. Setting to empty value will use bootloader installed
     in root volume (of VM's template) - available only for HVM.
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 kernelopts
     Accepted values: string
@@ -136,7 +136,7 @@ kernelopts
     Some helpful options (for debugging purposes): ``earlyprintk=xen``,
     ``init=/bin/bash``
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 label
     Accepted values: ``red``, ``orange``, ``yellow``, ``green``, ``gray``,
@@ -161,7 +161,7 @@ maxmem
     qmemman disabled, this will be overridden by *memory* property (at VM
     startup).
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 memory
     Accepted values: memory size in MB
@@ -170,7 +170,7 @@ memory
     - before qmemman starts managing memory for this VM. For VM with qmemman
     disabled, this is static memory size.
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 name
     Accepted values: alphanumerical name
@@ -198,7 +198,7 @@ qrexec_timeout
     Ignored if qrexec not installed at all (`qrexec` feature not set, see
     :manpage:`qvm-features(1)`).
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 stubdom_mem
     Accepted values: memory in MB
@@ -210,7 +210,7 @@ stubdom_mem
 template
     Property type: VM
 
-    TemplateVM on which VM base. It can be changed only when VM isn't running.
+    TemplateVM on which VM is based. It can be changed only when VM isn't running.
 
 vcpus
     Accepted values: no of CPUs
@@ -218,15 +218,15 @@ vcpus
     Number of CPU (cores) available to VM. Some VM types (eg DispVM) will not
     work properly with more than one CPU.
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 virt_mode
-    Accepted values: ``hvm``, ``pv``
+    Accepted values: ``hvm``, ``pvh``, ``pv``
 
-    Virtualisation mode in VM should be started. ``hvm`` allow to install
-    operating system without Xen-specific integration.
+    Virtualisation mode in which VM should be started. ``hvm`` allows
+    installation of operating system without Xen-specific integration.
 
-    TemplateBasedVM use its template's value as a default.
+    TemplateBasedVM uses its template's value as a default.
 
 Authors
 -------
