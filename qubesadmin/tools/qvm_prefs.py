@@ -116,7 +116,7 @@ def process_actions(parser, args, target):
 
         return 0
     else:
-        args.property = args.property.replace('-', '_')
+        args.property = args.property.lower().replace('-', '_')
 
     if args.value is not None:
         if str(args.value).lower() == "none":
