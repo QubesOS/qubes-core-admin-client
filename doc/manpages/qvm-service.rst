@@ -158,6 +158,29 @@ guivm-vnc:
 
     When enabled, it starts VNC GuiVM specific functionality.
 
+tracker:
+    Default: disabled
+
+    When enabled, GNOME Tracker is started.  This provides desktop search
+    features for the GNOME desktop and for certain GNOME applications  By
+    default, it will parse and index files in:
+
+    - ~/Documents, ~/Pictures, ~/Music, and ~/Videos, including all subdirectories
+      of these directories.
+
+    - The directories ~ and ~/Downloads, but _not_ including any subdirectories
+      thereof.
+
+    If GNOME Tracker is not installed in the qube, this has no effect.
+
+evolution-data-server:
+    Default: disabled
+
+    When enabled, Evolution Data Server is started.  This provides
+    an API for applications to integrate with the Evolution mail and calendar
+    client, and is mostly used by GNOME applications.  If Evolution Data
+    Server is not installed in the qube, this has no effect.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
