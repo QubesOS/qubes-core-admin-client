@@ -179,6 +179,8 @@ class KeyboardLayout:
         self.languages = split_string[2].decode().split(',')
         self.variants = split_string[3].decode().split(',')
         self.options = split_string[4].decode()
+        self.options = ",".join(opt for opt in self.options.split(",")
+                                if not opt.endswith("_toggle"))
 
     def get_property(self, layout_num):
         """Return the selected keyboard layout as formatted for keyboard_layout
