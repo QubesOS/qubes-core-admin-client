@@ -16,6 +16,7 @@ checks:pylint:
   - sudo dnf install -y python3-rpm
   - pip3 install --quiet -r ci/requirements.txt
   script:
+  - export PATH="$HOME/.local/bin:$PATH"
   - PYTHONPATH=test-packages pylint --extension-pkg-whitelist=rpm,lxml qubesadmin
   stage: checks
   tags:
