@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-create` [-h] [--verbose] [--quiet] [--force-root] [--class *CLS*] [--property *NAME*=*VALUE*] [--pool *POOL_NAME:VOLUME_NAME*] [--template *VALUE*] --label *VALUE* [--root-copy-from *FILENAME* | --root-move-from *FILENAME*] *VMNAME*
+:command:`qvm-create` [-h] [--verbose] [--quiet] [--force-root] [--class *CLS*] [--property *NAME*\ =\ *VALUE*] [--pool *POOL_NAME:VOLUME_NAME*] [--template *VALUE*] --label *VALUE* [--root-copy-from *FILENAME* | --root-move-from *FILENAME*] *VMNAME*
 :command:`qvm-create` --help-classes
 
 Options
