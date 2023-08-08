@@ -529,7 +529,8 @@ class _HelpColumnsAction(argparse.Action):
             for column in sorted(Column.columns.values()))
         text += '\n\nAdditionally any VM property may be used as a column, ' \
                 'see qvm-prefs --help-properties for available values'
-        parser.exit(message=text + '\n')
+        print(text + '\n')
+        sys.exit(0)
 
 
 class _HelpFormatsAction(argparse.Action):
@@ -553,7 +554,9 @@ class _HelpFormatsAction(argparse.Action):
             '  {fmt:{width}s}  {columns}\n'.format(
                 fmt=fmt, columns=','.join(formats[fmt]).upper(), width=width)
             for fmt in sorted(formats))
-        parser.exit(message=text)
+        print(text)
+        sys.exit(0)
+
 
 
 # common VM power states for easy command-line filtering
