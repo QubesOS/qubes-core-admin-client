@@ -35,7 +35,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super(TC_00_qvm_start_gui, self).setUp()
         self.launcher = \
-            qubesadmin.tools.qvm_start_daemon.DAEMONLauncher(self.app)
+            qubesadmin.tools.qvm_start_daemon.DAEMONLauncher(self.app, ["guivm"])
 
     @unittest.mock.patch('subprocess.check_output')
     def test_000_kde_args(self, proc_mock):
