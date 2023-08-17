@@ -196,7 +196,6 @@ def simple_flag(field, letter, attr, doc=None):
 
 class FlagsColumn(Column):
     '''Some fancy flags that describe general status of the domain.'''
-    # pylint: disable=no-self-use
 
     def __init__(self):
         super().__init__(head='FLAGS', doc=self.__class__.__doc__)

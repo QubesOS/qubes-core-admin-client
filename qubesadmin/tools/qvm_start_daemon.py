@@ -349,7 +349,6 @@ class DAEMONLauncher:
         :param startup:
         :return: None
         """
-        # pylint: disable=no-self-use
         if vm.features.check_with_template('no-monitor-layout', False) \
                 or not vm.is_running():
             return
@@ -548,7 +547,6 @@ class DAEMONLauncher:
 
         :param vm: VM for which start AUDIO daemon
         """
-        # pylint: disable=no-self-use
         pacat_cmd = [PACAT_DAEMON_PATH, '-l', self.pacat_domid(vm), vm.name]
         vm.log.info('Starting AUDIO')
 

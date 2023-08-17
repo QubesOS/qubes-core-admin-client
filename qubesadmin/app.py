@@ -662,7 +662,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param event: name of the event
         :param kwargs: other arguments
         :return:
-        """  # pylint: disable=unused-argument,no-self-use
+        """  # pylint: disable=unused-argument
 
         if not self.app.cache_enabled:
             return
