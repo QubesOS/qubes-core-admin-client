@@ -62,6 +62,35 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         ])
         self.assertAllCalled()
 
+    def test_000_run_single_auto_nogui(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        try:
+            orig_display = os.environ.pop("DISPLAY", None)
+            ret = qubesadmin.tools.qvm_run.main(
+                ['test-vm', 'command'],
+                app=self.app)
+        finally:
+            if orig_display is not None:
+                os.environ["DISPLAY"] = orig_display
+        self.assertEqual(ret, 0)
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.VMShell', {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+                'user': None,
+            }),
+            ('test-vm', 'qubes.VMShell', b'command; exit\n')
+        ])
+        self.assertAllCalled()
+
     def test_001_run_multiple(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
