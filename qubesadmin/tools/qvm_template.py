@@ -44,6 +44,7 @@ import xdg.BaseDirectory
 import rpm
 
 import qubesadmin
+import qubesadmin.exc
 import qubesadmin.vm
 import qubesadmin.utils
 import qubesadmin.tools
@@ -1087,7 +1088,8 @@ def install(
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
             print(f'Installing template \'{name}\'...', file=sys.stderr)
             if not extract_rpm(name, rpmfile, target):
-                raise Exception(f'Failed to extract {name} template')
+                raise qubesadmin.exc.QubesException(
+                    f'Failed to extract {name} template')
             cmdline = [
                 'qvm-template-postprocess',
                 '--really',

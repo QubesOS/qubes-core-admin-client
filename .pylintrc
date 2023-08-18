@@ -22,6 +22,7 @@ disable=
   consider-using-set-comprehension,
   consider-using-dict-comprehension,
   consider-using-f-string,
+  superfluous-parens,
   not-an-iterable
 
 [REPORTS]

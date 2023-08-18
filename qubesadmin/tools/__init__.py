@@ -442,7 +442,6 @@ class QubesArgumentParser(argparse.ArgumentParser):
         elif verbose >= 1:
             qubesadmin.log.enable()
 
-    # pylint: disable=no-self-use
     def print_error(self, *args, **kwargs):
         ''' Print to ``sys.stderr``'''
         print(*args, file=sys.stderr, **kwargs)
