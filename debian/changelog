@@ -1,3 +1,32 @@
+qubes-core-admin-client (4.2.5-1) unstable; urgency=medium
+
+  [ unman ]
+  * Minor changes to qvm-prefs manpage. Closes QubesOS/qubes-
+    issues#8310.
+
+  [ Demi Marie Obenour ]
+  * Document evolution-data-server and tracker services
+
+  [ Marek Marczykowski-Górecki ]
+  * Filter-out keyboard layout switching options
+  * ci: fix PATH
+
+  [ jamke ]
+  * Fix markup issue in qvm-create.rst: *NAME*=*VALUE*
+
+  [ Marek Marczykowski-Górecki ]
+  * Make pylint happy
+
+  [ jamke ]
+  * Fix markup issue in qvm-create.rst: *NAME*=*VALUE*
+  * Fix: qvm-ls outputs to stderr for --help-* calls
+  * Improve layout filtering of options for setxkbmap
+
+  [ Marek Marczykowski-Górecki ]
+  * Make qvm-run --nogui default if DISPLAY is not set
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 20 Aug 2023 08:48:44 +0200
+
 qubes-core-admin-client (4.2.4-1) unstable; urgency=medium
 
   [ Per Christian Gaustad ]
