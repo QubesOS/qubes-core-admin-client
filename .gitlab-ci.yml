@@ -30,6 +30,8 @@ checks:tests:
   - git config --global --add safe.directory "$PWD"
   script:
   - python3 setup.py build
+  # simulate "normal" qubes env for most tests
+  - export DISPLAY=:0
   - ./run-tests
   - python3 -m coverage xml
   stage: checks

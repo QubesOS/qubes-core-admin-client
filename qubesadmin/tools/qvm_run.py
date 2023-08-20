@@ -56,8 +56,8 @@ parser.add_argument('--localcmd', metavar='COMMAND',
     help='with --pass-io, pass stdio to the given program')
 
 parser.add_argument('--gui',
-    action='store_true', default=True,
-    help='run the command with GUI (default on)')
+    action='store_true', default=None,
+    help='run the command with GUI (default on if "DISPLAY" is set)')
 
 parser.add_argument('--no-gui', '--nogui',
     action='store_false', dest='gui',
@@ -229,6 +229,7 @@ def run_command_single(args, vm):
     return proc, copy_proc, local_proc
 
 
+# pylint: disable=too-many-statements
 def main(args=None, app=None):
     '''Main function of qvm-run tool'''
     args = parser.parse_args(args, app=app)
@@ -263,6 +264,9 @@ def main(args=None, app=None):
     verbose = args.verbose - args.quiet
     if args.passio:
         verbose -= 1
+
+    if args.gui is None:
+        args.gui = (os.environ.get("DISPLAY") is not None)
 
     # --all and --exclude are handled by QubesArgumentParser
     domains = args.domains
