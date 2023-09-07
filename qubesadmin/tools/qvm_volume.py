@@ -249,8 +249,8 @@ def init_list_parser(sub_parsers):
     # pylint: disable=protected-access
     list_parser = sub_parsers.add_parser('list', aliases=('ls', 'l'),
                                          help='list storage volumes')
-    list_parser.add_argument('-p', '--pool', dest='pools',
-                             action=qubesadmin.tools.PoolsAction)
+    list_parser.add_argument('-p', '--pool', metavar="POOL_NAME",
+                             dest='pools', action=qubesadmin.tools.PoolsAction)
     list_parser.add_argument(
         '--full', action='store_true',
         help='print full line for each POOL_NAME:VOLUME_ID & vm combination')
