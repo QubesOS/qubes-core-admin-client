@@ -229,7 +229,7 @@ def revert_volume(args):
 
 
 def extend_volumes(args):
-    """ Called by the parser to execute the :program:`qvm-block extend`
+    """ Called by the parser to execute the :program:`qvm-volume extend`
         subcommand
     """
     volume = args.volume
@@ -245,7 +245,7 @@ def extend_volumes(args):
 
 
 def init_list_parser(sub_parsers):
-    """ Configures the parser for the :program:`qvm-block list` subcommand """
+    """ Configures the parser for the :program:`qvm-volume list` subcommand """
     # pylint: disable=protected-access
     list_parser = sub_parsers.add_parser('list', aliases=('ls', 'l'),
                                          help='list storage volumes')
