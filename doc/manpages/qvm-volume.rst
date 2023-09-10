@@ -1,6 +1,6 @@
 .. program:: qvm-volume
 
-:program:`qvm-volume` -- Qubes volume and block device managment
+:program:`qvm-volume` -- Qubes volume and block device management
 ================================================================
 
 Synopsis
