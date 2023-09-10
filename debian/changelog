@@ -1,3 +1,15 @@
+qubes-core-admin-client (4.2.6-1) unstable; urgency=medium
+
+  [ Gonzalo Bulnes Guilpain ]
+  * Minor fix misspelling in docstring
+
+  [ Kamil Aronowski ]
+  * Replace qvm-block references in qvm_volume.py
+  * Add the "POOL_NAME" metavar to -p/--pool
+  * Fix a typo: managment -> management
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 10 Sep 2023 10:57:18 +0200
+
 qubes-core-admin-client (4.2.5-1) unstable; urgency=medium
 
   [ unman ]
