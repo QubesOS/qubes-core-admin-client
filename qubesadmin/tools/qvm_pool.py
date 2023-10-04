@@ -183,7 +183,8 @@ def get_parser():
 def uses_legacy_options(args, app):
     ''' Checks if legacy options and used, and invokes the legacy tool '''
     parser = argparse.ArgumentParser(description=__doc__,
-                                     usage=argparse.SUPPRESS)
+                                     usage=argparse.SUPPRESS,
+                                     add_help=False)
 
     parser.add_argument('-a', '--add',
                         dest='has_legacy_options', action='store_true',
