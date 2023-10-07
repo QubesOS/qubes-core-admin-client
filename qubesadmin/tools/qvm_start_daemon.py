@@ -547,7 +547,14 @@ class DAEMONLauncher:
 
         :param vm: VM for which start AUDIO daemon
         """
-        pacat_cmd = [PACAT_DAEMON_PATH, '-l', self.pacat_domid(vm), vm.name]
+        # pipewire with low latency causes a lot of underruns on some systems
+        low_latency = not vm.features.check_with_template(
+            'supported-service.pipewire', False)
+        low_latency = vm.features.check_with_template(
+            'audio-low-latency', low_latency)
+        pacat_cmd = [PACAT_DAEMON_PATH, self.pacat_domid(vm), vm.name]
+        if low_latency:
+            pacat_cmd.insert(1, "-l")
         vm.log.info('Starting AUDIO')
 
         await asyncio.create_subprocess_exec(*pacat_cmd)
