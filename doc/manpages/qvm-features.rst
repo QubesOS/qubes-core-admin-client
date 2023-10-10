@@ -218,6 +218,20 @@ memory. Refer to Xen documentation for details.
 
 Default: yes if qube has any PCI device, otherwise no
 
+memory-hotplug
+^^^^^^^^^^^^^^
+
+Use memory hotplug for dynamic memory balancing. When enabled, qube will be
+started with only initial memory assigned and qmemman may give it more memory
+later via hotplug. When disabled, qube is started with maximum memory assigned
+and balloon driver in qube's kernel returns unused memory at startup (this does
+delay qube startup by few seconds).
+Support is detected by looking for `memory-hotplug-supported` (empty) file in
+dom0-provided kernel directory, or for `supported-feature.memory-hotplug`
+feature - for in-qube kernel.
+
+Default: yes if support in the qube kernel is detected, otherwise no.
+
 linux-stubdom
 ^^^^^^^^^^^^^
 
