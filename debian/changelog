@@ -1,3 +1,14 @@
+qubes-core-admin-client (4.2.7-1) unstable; urgency=medium
+
+  [ Kez ]
+  * Supress legacy help text
+
+  [ Marek Marczykowski-Górecki ]
+  * Add readthedocs config
+  * Do not enable "low latency" mode for pipewire
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 10 Oct 2023 19:37:13 +0200
+
 qubes-core-admin-client (4.2.6-1) unstable; urgency=medium
 
   [ Gonzalo Bulnes Guilpain ]
