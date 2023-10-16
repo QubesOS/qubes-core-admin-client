@@ -306,6 +306,18 @@ Can be used to pass external configuration to inside the qube. To read, use
 `qubesdb-read`: for a feature named `vm-config.feature_name` use
 `qubesdb-read /vm-config/feature_name`.
 
+app-dispvm.*
+^^^^^^^^^^^^
+
+These features are used to cause a given application (identified by app ID)
+to open files and URLs in a disposable VM.  It works by changing the value of
+`XDG_DATA_DIRS` so that applications see `qvm-open-in-dvm.desktop` as the only
+way to open any file or URL.  It is known to work with Thunderbird
+(app ID `mozilla-thunderbird.desktop`) and Element (app ID `im.riot.Riot` for
+the flatpak and `io.element.Element` for the non-flatpak version).  It may
+break icons in some applications.  Please report a bug if `app-dispvm.*`
+breaks an application.
+
 audio-model
 ^^^^^^^^^^^
 
@@ -328,6 +340,7 @@ Authors
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
 | Marek Marczykowski-Górecki <marmarek at invisiblethingslab dot com>
 | Wojtek Porczyk <woju at invisiblethingslab dot com>
+| Demi Marie Obenour <demi at invisiblethingslab dot com>
 
 | For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
 
