@@ -326,7 +326,7 @@ Authors
 -------
 
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
-| Marek Marczykowski <marmarek at invisiblethingslab dot com>
+| Marek Marczykowski-Górecki <marmarek at invisiblethingslab dot com>
 | Wojtek Porczyk <woju at invisiblethingslab dot com>
 
 | For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
