@@ -1395,6 +1395,9 @@ class BackupRestore(object):
         :param handlers: handlers for restored files - see
         :py:class:`ExtractWorker3` for details
         '''
+        self.log.debug("Working in temporary dir: %s", self.tmpdir)
+        self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
+
         # Currently each VM consists of at most 7 archives (count
         # file_to_backup calls in backup_prepare()), but add some safety
         # margin for further extensions. Each archive is divided into 100MB
@@ -1406,8 +1409,6 @@ class BackupRestore(object):
         if self.options.ignore_size_limit:
             limit_count = '0'
             vms_size = 0
-        self.log.debug("Working in temporary dir: %s", self.tmpdir)
-        self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
 
         # retrieve backup from the backup stream (either VM, or dom0 file)
         (retrieve_proc, filelist_pipe, error_pipe) = \
