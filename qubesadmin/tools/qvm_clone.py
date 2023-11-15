@@ -74,7 +74,7 @@ def main(args=None, app=None):
                 pools[volume_name] = pool_name
             except ValueError:
                 parser.error(
-                    'Pool argument must be of form: -P volume_name=pool_name')
+                    'Pool argument must be of form: -p volume_name=pool_name')
 
     try:
         app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools,

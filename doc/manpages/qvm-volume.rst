@@ -82,7 +82,7 @@ Set property of given volume. Properties currently possible to change:
     revision, and the oldest revisions are remove so that only
     `revisions_to_keep` are left. Set to `0` to not leave any previous versions.
   - `ephemeral` - should the volume be encrypted with en ephemeral key? This can
-    be enabled only on a volume with `save_on_stop=False` and `snap_on_start=True`
+    be enabled only on a volume with `save_on_stop=False` and `snap_on_start=False`
     - which is only `volatile` volume. When set, it provides a bit more
     anti-forensics protection against attacker with access to the LUKS disk key.
     In majority of use cases, it only degrades performance due to additional

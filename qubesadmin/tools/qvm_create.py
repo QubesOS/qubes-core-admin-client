@@ -116,7 +116,7 @@ def main(args=None, app=None):
                 pools[volume_name] = pool_name
             except ValueError:
                 parser.error(
-                    'Pool argument must be of form: -P volume_name=pool_name')
+                    'Pool argument must be of form: -p volume_name=pool_name')
     if args.one_pool:
         pool = args.one_pool
 
