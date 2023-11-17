@@ -130,7 +130,8 @@ def get_parser() -> argparse.ArgumentParser:
         help=('Specify files containing DNF repository configuration.'
             ' Can be used more than once.'))
     parser_main.add_argument('--keyring',
-        default='/etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-4.1-primary',
+        default='/etc/qubes/repo-templates/keys/'
+                f'RPM-GPG-KEY-qubes-{qubes_release()}-primary',
         help='Specify a file containing default RPM public key. '
              'Individual repositories may point at repo-specific key '
              'using \'gpgkey\' option')
