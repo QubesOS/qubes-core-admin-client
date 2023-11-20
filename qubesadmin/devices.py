@@ -31,6 +31,17 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 :py:class:`str`.
 """
 
+# TODO:
+# Proposed device events:
+# - device-list-changed: device-added
+# - device-list-changed: device-remove
+# - device-property-changed: property_name
+# - device-assignment-changed: created
+# - device-assignment-changed: removed
+# - device-assignment-changed: attached
+# - device-assignment-changed: detached
+# - device-assignment-changed: property-set [? this is not great]
+
 
 class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
     """ Maps a device to a frontend_domain. """
@@ -73,6 +84,54 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
         """Get DeviceInfo object corresponding to this DeviceAssignment"""
         return self.backend_domain.devices[self.devclass][self.ident]
 
+    #### NEW API
+    @property
+    def backend_domain(self):
+        """
+        Which domain provides this device
+        :return: VM
+        """
+
+    @property
+    def frontend_domain(self):
+        """
+        Which domain the device is attached to.
+        :return:
+        """
+
+    @property
+    def device_id(self):
+        """
+        Per-backend-qube unique device identifier
+        :return: str
+        """
+
+    @property
+    def required(self):
+        """
+        Is the presence of this device required for the domain to start? If yes,
+        it will be attached automatically.
+        TODO: this possibly should not be available for usb device? or always False?
+        TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
+        :return: bool
+        """
+
+    @property
+    def attach_automatically(self):
+        """
+        Should this device automatically connect to the frontend domain when
+        available and not connected to other qubes?
+        TODO: this possibly should not be available for usb device? or always False?
+        TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
+        :return: bool
+        """
+
+    @property
+    def options(self):
+        """
+        Device options (same as in the old API)5
+        :return: Dict[str, Any]
+        """
 
 class DeviceInfo(object):
     """ Holds all information about a device """
@@ -105,6 +164,72 @@ class DeviceInfo(object):
 
     def __str__(self):
         return '{!s}:{!s}'.format(self.backend_domain, self.ident)
+
+    ### NEW API
+    @property
+    def manufacturer(self):
+        """
+        Device manufacturer
+        :return: str
+        """
+
+    @property
+    def name(self):
+        """
+        Device name
+        :return: str
+        """
+
+    @property
+    def devtype(self):
+        """
+        Type of device, such as "USB Camera", "USB Keyboard", "Microphone" etc.
+        :return: str
+        """
+        # TODO: perhaps this should be an Enum of possible types?
+
+    @property
+    def devclass(self):
+        """
+        Device class, for compatibility with previous API:
+        :return: str, one of 'usb', 'pci', 'mic'
+        """
+
+    @property
+    def id(self):
+        """
+        Device id (unique per backend qube)
+        :return: str
+        """
+
+    @property
+    def parent_device(self):
+        """
+        If the device is part of another device (e.g. it's a single
+        partition of a usb stick), the parent device id should be here
+        :return: Optional[str]
+        """
+
+    @property
+    def backend_domain(self):
+        """
+        Which domain provides this device.
+        :return: VM
+        """
+
+    @property
+    def port_id(self):
+        """
+        Which port the device is connected to.
+        :return: str
+        """
+
+    @property
+    def attachments(self):
+        """
+        Device attachments
+        :return: List[DeviceAssignment]
+        """
 
 
 class UnknownDevice(DeviceInfo):
