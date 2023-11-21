@@ -24,12 +24,16 @@
 
 Main concept is that some domain main
 expose (potentially multiple) devices, which can be attached to other domains.
-Devices can be of different classes (like 'pci', 'usb', etc). Each device
+Devices can be of different classes (like 'pci', 'usb', etc.). Each device
 class is implemented by an extension.
 
 Devices are identified by pair of (backend domain, `ident`), where `ident` is
 :py:class:`str`.
 """
+from typing import Optional, Dict, Any, List
+
+import qubesadmin.vm
+
 
 # TODO:
 # Proposed device events:
@@ -42,31 +46,69 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 # - device-assignment-changed: detached
 # - device-assignment-changed: property-set [? this is not great]
 
+class Device:
+    def __init__(self, backend_domain, ident, devclass=None):
+        self.__backend_domain = backend_domain
+        self.__ident = ident
+        self.__bus = devclass
 
-class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
-    """ Maps a device to a frontend_domain. """
+    def __hash__(self):
+        return hash((str(self.backend_domain), self.ident))
 
-    def __init__(self, backend_domain, ident, options=None, persistent=False,
-                 frontend_domain=None, devclass=None):
-        self.backend_domain = backend_domain
-        self.ident = ident
-        self.devclass = devclass
-        self.options = options or {}
-        self.persistent = persistent
-        self.frontend_domain = frontend_domain
+    def __eq__(self, other):
+        return (
+            self.backend_domain == other.backend_domain and
+            self.ident == other.ident
+        )
 
     def __repr__(self):
         return "[%s]:%s" % (self.backend_domain, self.ident)
 
-    def __hash__(self):
-        return hash((self.backend_domain, self.ident))
+    def __str__(self):
+        return '{!s}:{!s}'.format(self.backend_domain, self.ident)
 
-    def __eq__(self, other):
-        if not isinstance(self, other.__class__):
-            return NotImplemented
+    @property
+    def ident(self) -> str:
+        """
+        Immutable device identifier.
 
-        return self.backend_domain == other.backend_domain \
-               and self.ident == other.ident
+        Unique for given domain and device type.
+        """
+        return self.__ident
+
+    @property
+    def backend_domain(self) -> 'qubesadmin.vm.QubesVM':
+        """ Which domain provides this device. (immutable)"""
+        return self.__backend_domain
+
+    @property
+    def devclass(self) -> Optional[str]:
+        """ Immutable* Device class such like: 'usb', 'pci' etc.
+
+        * see `@devclass.setter`
+        """
+        return self.__bus
+
+    @devclass.setter
+    def devclass(self, devclass: str):
+        """ Once a value is set, it should not be overridden.
+
+        However, if it has not been set, i.e., the value is `None`,
+        we can override it."""
+        if self.__bus != None:
+            raise TypeError("Attribute devclass is immutable")
+        self.__bus = devclass
+
+
+class DeviceAssignment(Device):
+    """ Maps a device to a frontend_domain. """
+
+    def __init__(self, backend_domain, ident, options=None, persistent=False,
+                 frontend_domain=None, devclass=None):
+        super().__init__(backend_domain, ident, devclass)
+        self.__options = options or {}
+        self.persistent = persistent
+        self.__frontend_domain = frontend_domain
 
     def clone(self):
         """Clone object instance"""
@@ -80,156 +122,129 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
         )
 
     @property
-    def device(self):
+    def device(self) -> 'DeviceInfo':
         """Get DeviceInfo object corresponding to this DeviceAssignment"""
         return self.backend_domain.devices[self.devclass][self.ident]
 
-    #### NEW API
     @property
-    def backend_domain(self):
-        """
-        Which domain provides this device
-        :return: VM
-        """
+    def frontend_domain(self) -> Optional['qubesadmin.vm.QubesVM']:
+        """ Which domain the device is attached to. """
+        return self.__frontend_domain
+
+    @frontend_domain.setter
+    def frontend_domain(
+            self, frontend_domain: Optional['qubesadmin.vm.QubesVM']
+    ):
+        """ Which domain the device is attached to. """
+        self.__frontend_domain = frontend_domain
 
     @property
-    def frontend_domain(self):
-        """
-        Which domain the device is attached to.
-        :return:
-        """
-
-    @property
-    def device_id(self):
-        """
-        Per-backend-qube unique device identifier
-        :return: str
-        """
-
-    @property
-    def required(self):
+    def required(self) -> bool:
         """
         Is the presence of this device required for the domain to start? If yes,
         it will be attached automatically.
         TODO: this possibly should not be available for usb device? or always False?
         TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
-        :return: bool
         """
+        return self.persistent  # TODO
+
+    @required.setter
+    def required(self, required: bool):
+        self.persistent = required  # TODO
 
     @property
-    def attach_automatically(self):
+    def attach_automatically(self) -> bool:
         """
         Should this device automatically connect to the frontend domain when
         available and not connected to other qubes?
         TODO: this possibly should not be available for usb device? or always False?
         TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
-        :return: bool
         """
+        return self.persistent  # TODO
+
+    @attach_automatically.setter
+    def attach_automatically(self, attach_automatically: bool):
+        self.persistent = attach_automatically  # TODO
 
     @property
-    def options(self):
-        """
-        Device options (same as in the old API)5
-        :return: Dict[str, Any]
-        """
+    def options(self) -> Dict[str, Any]:
+        """ Device options (same as in the legacy API). """
+        return self.__options
 
-class DeviceInfo(object):
+    @options.setter
+    def options(self, options: Optional[Dict[str, Any]]):
+        """ Device options (same as in the legacy API). """
+        self.__options = options or {}
+
+
+class DeviceInfo(Device):
     """ Holds all information about a device """
 
     # pylint: disable=too-few-public-methods
     def __init__(self, backend_domain, devclass, ident, description=None,
                  **kwargs):
-        #: domain providing this device
-        self.backend_domain = backend_domain
-        #: device class
-        self.devclass = devclass
-        #: device identifier (unique for given domain and device type)
-        self.ident = ident
-        #: human readable description/name of the device
+        super().__init__(backend_domain, ident, devclass)
+        #: human-readable description/name of the device
         self.description = description
         self.data = kwargs
 
-    def __hash__(self):
-        return hash((str(self.backend_domain), self.ident))
-
-    def __eq__(self, other):
-        try:
-            return (
-                    self.devclass == other.devclass and
-                    self.backend_domain == other.backend_domain and
-                    self.ident == other.ident
-            )
-        except AttributeError:
-            return False
-
-    def __str__(self):
-        return '{!s}:{!s}'.format(self.backend_domain, self.ident)
-
-    ### NEW API
-    @property
-    def manufacturer(self):
-        """
-        Device manufacturer
-        :return: str
-        """
+    # @property
+    # def manufacturer(self):
+    #     """
+    #     Device manufacturer
+    #     :return: str
+    #     """
+    #
+    # @property
+    # def name(self):
+    #     """
+    #     Device name
+    #     :return: str
+    #     """
+    #
+    # @property
+    # def devtype(self):
+    #     """
+    #     Type of device, such as "USB Camera", "USB Keyboard", "Microphone" etc.
+    #     :return: str
+    #     """
+    #     # TODO: perhaps this should be an Enum of possible types?
 
     @property
-    def name(self):
+    def parent_device(self) -> Optional[str]:
         """
-        Device name
-        :return: str
-        """
+        The parent device if any.
 
-    @property
-    def devtype(self):
-        """
-        Type of device, such as "USB Camera", "USB Keyboard", "Microphone" etc.
-        :return: str
-        """
-        # TODO: perhaps this should be an Enum of possible types?
-
-    @property
-    def devclass(self):
-        """
-        Device class, for compatibility with previous API:
-        :return: str, one of 'usb', 'pci', 'mic'
-        """
-
-    @property
-    def id(self):
-        """
-        Device id (unique per backend qube)
-        :return: str
-        """
-
-    @property
-    def parent_device(self):
-        """
         If the device is part of another device (e.g. it's a single
-        partition of a usb stick), the parent device id should be here
-        :return: Optional[str]
+        partition of an usb stick), the parent device id should be here.
         """
+        # TODO
+        return None
 
     @property
-    def backend_domain(self):
+    def subdevices(self) -> List[str]:
         """
-        Which domain provides this device.
-        :return: VM
-        """
+        The list of children device if any.
 
-    @property
-    def port_id(self):
+        If the device has subdevices (e.g. partitions of an usb stick),
+        the subdevices id should be here.
         """
-        Which port the device is connected to.
-        :return: str
-        """
+        # TODO
+        return []
 
-    @property
-    def attachments(self):
-        """
-        Device attachments
-        :return: List[DeviceAssignment]
-        """
+    # @property
+    # def port_id(self):
+    #     """
+    #     Which port the device is connected to.
+    #     :return: str
+    #     """
+    #
+    # @property
+    # def attachments(self):
+    #     """
+    #     Device attachments
+    #     :return: List[DeviceAssignment]
+    #     """
 
 
 class UnknownDevice(DeviceInfo):

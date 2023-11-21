@@ -120,7 +120,7 @@ class SinglePropertyAction(argparse.Action):
 
 
 class VmNameAction(QubesAction):
-    ''' Action for parsing one ore multiple domains from provided VMNAMEs '''
+    """ Action for parsing one or multiple domains from provided VMNAMEs """
 
     # pylint: disable=too-few-public-methods,redefined-builtin
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
