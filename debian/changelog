@@ -1,3 +1,17 @@
+qubes-core-admin-client (4.2.9-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * Marek's name got changed
+  * Document making applications open stuff in disposable VMs
+
+  [ Rusty Bird ]
+  * tools: fix -p syntax error message in qvm-create and qvm-clone
+  * doc: fix ephemeral property requirement in qvm-volume manpage
+  * backup/restore: always use backup-size as an estimate
+  * qvm-template: fix hardcoded '4.1' in default RPM keyring location
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 21 Nov 2023 02:55:43 +0100
+
 qubes-core-admin-client (4.2.8-1) unstable; urgency=medium
 
   * doc: document memory-hotplug feature
