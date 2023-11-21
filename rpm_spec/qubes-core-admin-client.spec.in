@@ -31,7 +31,7 @@ Conflicts:  qubes-core-agent < 4.1.9
 Conflicts:  qubes-gui-daemon < 4.1.7
 
 %description
-This package include managemt tools, like qvm-*.
+This package include management tools, like qvm-*.
 
 %package -n python%{python3_pkgversion}-qubesadmin
 Summary:    Python%{python3_pkgversion} module qubesadmin

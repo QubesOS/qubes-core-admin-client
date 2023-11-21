@@ -21,7 +21,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""Qubes volume and block device managment"""
+"""Qubes volume and block device management"""
 
 import argparse
 import os
@@ -35,14 +35,14 @@ import qubesadmin.devices
 
 def prepare_table(dev_list):
     """ Converts a list of :py:class:`qubes.devices.DeviceInfo` objects to a
-    list of tupples for the :py:func:`qubes.tools.print_table`.
+    list of tuples for the :py:func:`qubes.tools.print_table`.
 
-    If :program:`qvm-devices` is running in a TTY, it will ommit duplicate
+    If :program:`qvm-devices` is running in a TTY, it will omit duplicate
     data.
 
     :param iterable dev_list: List of :py:class:`qubes.devices.DeviceInfo`
         objects.
-    :returns: list of tupples
+    :returns: list of tuples
     """
     output = []
     header = []
