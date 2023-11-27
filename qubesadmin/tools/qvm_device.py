@@ -151,6 +151,21 @@ def detach_device(args):
             vm.devices[args.devclass].detach(device_assignment)
 
 
+def info_device(args):
+    """ Called by the parser to execute the :program:`qvm-devices info`
+        subcommand.
+    """
+    vm = args.domains[0]
+    if args.device_assignment:
+        print("description:", args.device_assignment.device.description)
+        print("data:", args.device_assignment.device.data)
+    else:
+        for device_assignment in vm.devices[args.devclass].assignments():
+            print("device_assignment:", device_assignment)
+            print("description:", device_assignment.device.description)
+            print("data:", device_assignment.device.data)
+
+
 def init_list_parser(sub_parsers):
     """ Configures the parser for the :program:`qvm-devices list` subcommand """
     # pylint: disable=protected-access
@@ -174,8 +189,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                  required=True, allow_unknown=False, **kwargs):
         # pylint: disable=redefined-builtin
         self.allow_unknown = allow_unknown
-        super().__init__(help=help, required=required,
-                                           **kwargs)
+        super().__init__(help=help, required=required, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         """ Set ``namespace.device_assignment`` to ``values`` """
@@ -242,10 +256,14 @@ def get_parser(device_class=None):
         'attach', help="Attach device to domain", aliases=('at', 'a'))
     detach_parser = sub_parsers.add_parser(
         "detach", help="Detach device from domain", aliases=('d', 'dt'))
+    info_parser = sub_parsers.add_parser(
+        "info", help="Show info about device from domain", aliases=('i',))
 
     attach_parser.add_argument('VMNAME', nargs=1,
                                action=qubesadmin.tools.VmNameAction)
     detach_parser.add_argument('VMNAME', nargs=1,
+                               action=qubesadmin.tools.VmNameAction)
+    info_parser.add_argument('VMNAME', nargs=1,
                                action=qubesadmin.tools.VmNameAction)
 
     attach_parser.add_argument(metavar='BACKEND:DEVICE_ID',
@@ -255,6 +273,9 @@ def get_parser(device_class=None):
                                dest='device_assignment',
                                nargs=argparse.OPTIONAL,
                                action=DeviceAction, allow_unknown=True)
+    info_parser.add_argument(metavar='BACKEND:DEVICE_ID',
+                               dest='device_assignment',
+                               action=DeviceAction)
 
     attach_parser.add_argument('--option', '-o', action='append',
                                help="Set option for the device in opt=value "
@@ -273,6 +294,7 @@ def get_parser(device_class=None):
 
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
+    info_parser.set_defaults(func=info_device)
 
     parser.add_argument('--list-device-classes', action='store_true',
                         default=False)
