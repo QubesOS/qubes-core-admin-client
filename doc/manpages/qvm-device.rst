@@ -9,7 +9,8 @@ Synopsis
 | :command:`qvm-device` *DEVICE_CLASS* {list,ls,l} [*options*] <*vm-name*>
 | :command:`qvm-device` *DEVICE_CLASS* {attach,at,a} [*options*] <*vm-name*> <*device*>
 | :command:`qvm-device` *DEVICE_CLASS* {detach,dt,d} [*options*] <*vm-name*> [<*device*>]
-| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d} [*options*] <*vmname*> ...
+| :command:`qvm-device` *DEVICE_CLASS* {info,i} [*options*] <*vm-name*> [<*device*>]
+| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d,info,i} [*options*] <*vmname*> ...
 
 .. note:: :command:`qvm-block`, :command:`qvm-usb` and :command:`qvm-pci` are just aliases for :command:`qvm-device block`, :command:`qvm-device usb` and :command:`qvm-device pci` respectively.
 
@@ -87,6 +88,14 @@ If no device is given, detach all *DEVICE_CLASS* devices.
 
 aliases: d, dt
 
+info
+^^^^
+
+| :command:`qvm-device` *DEVICE_CLASS* info [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+
+Show info about the device with *DEVICE_ID* from *BACKEND_DOMAIN* attached to the domain *VMNAME*
+
+aliases: i
 
 Device classes
 ==============
@@ -127,5 +136,6 @@ Authors
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
 | Frédéric Pierret <frederic.pierret at qubes dash os dot org>
+| Piotr Bartman-Szwarc <prbartman at invisiblethingslab dot com>
 
 | For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git
