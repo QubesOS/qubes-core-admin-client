@@ -30,6 +30,9 @@ class is implemented by an extension.
 Devices are identified by pair of (backend domain, `ident`), where `ident` is
 :py:class:`str`.
 """
+import base64
+import itertools
+from enum import Enum
 from typing import Optional, Dict, Any, List
 
 import qubesadmin.vm
@@ -61,6 +64,12 @@ class Device:
             self.ident == other.ident
         )
 
+    def __lt__(self, other):
+        if isinstance(other, Device):
+            return (self.backend_domain, self.ident) < \
+                   (other.backend_domain, other.ident)
+        return NotImplemented
+
     def __repr__(self):
         return "[%s]:%s" % (self.backend_domain, self.ident)
 
@@ -85,7 +94,7 @@ class Device:
     def devclass(self) -> Optional[str]:
         """ Immutable* Device class such like: 'usb', 'pci' etc.
 
-        * see `@devclass.setter`
+        *see `@devclass.setter`
         """
         return self.__bus
 
@@ -98,6 +107,287 @@ class Device:
         if self.__bus != None:
             raise TypeError("Attribute devclass is immutable")
         self.__bus = devclass
+
+
+class DeviceInterface(Enum):
+    # USB interfaces:
+    # https://www.usb.org/defined-class-codes#anchor_BaseClass03h
+    Other = "******"
+    USB_Audio = "01****"
+    USB_CDC = "02****"  # Communications Device Class
+    USB_HID = "03****"
+    USB_HID_Keyboard = "03**01"
+    USB_HID_Mouse = "03**02"
+    # USB_Physical = "05****"
+    # USB_Still_Imaging = "06****"  # Camera
+    USB_Printer = "07****"
+    USB_Mass_Storage = "08****"
+    USB_Hub = "09****"
+    USB_CDC_Data = "0a****"
+    USB_Smart_Card = "0b****"
+    # USB_Content_Security = "0d****"
+    USB_Video = "0e****"  # Video Camera
+    # USB_Personal_Healthcare = "0f****"
+    USB_Audio_Video = "10****"
+    # USB_Billboard = "11****"
+    # USB_C_Bridge = "12****"
+    # and more...
+
+    @staticmethod
+    def from_str(interface_encoding: str) -> 'DeviceInterface':
+        result = DeviceInterface.Other
+        best_score = 0
+
+        for interface in DeviceInterface:
+            pattern = interface.value
+            score = 0
+            for t, p in zip(interface_encoding, pattern):
+                if t == p:
+                    score += 1
+                elif p != "*":
+                    score = -1  # inconsistent with pattern
+                    break
+
+            if score > best_score:
+                best_score = score
+                result = interface
+
+        return result
+
+
+class DeviceInfo(Device):
+    """ Holds all information about a device """
+
+    # pylint: disable=too-few-public-methods
+    def __init__(
+            self,
+            backend_domain: qubesadmin.vm.QubesVM,  # TODO
+            ident: str,
+            devclass: Optional[str] = None,
+            vendor: Optional[str] = None,
+            product: Optional[str] = None,
+            manufacturer: Optional[str] = None,
+            name: Optional[str] = None,
+            serial: Optional[str] = None,
+            interfaces: Optional[List[DeviceInterface]] = None,
+            **kwargs
+    ):
+        super().__init__(backend_domain, ident, devclass)
+
+        # it's always better to print "unknown" than "None" or empty string.
+        self._vendor = vendor or "unknown"
+        self._product = product or "unknown"
+        self._manufacturer = manufacturer or "unknown"
+        self._name = name or "unknown"
+        self._serial = serial or "unknown"
+        self._interfaces = interfaces or [DeviceInterface.Other]
+
+        self.data = kwargs
+
+    @property
+    def vendor(self) -> str:
+        """
+        Device vendor name from local database.
+
+        Could be empty string or "unknown".
+
+        Override this method to return proper name from `/usr/share/hwdata/*`.
+        """
+        return self._vendor
+
+    @property
+    def product(self) -> str:
+        """
+        Device name from local database.
+
+        Could be empty string or "unknown".
+
+        Override this method to return proper name from `/usr/share/hwdata/*`.
+        """
+        return self._product
+
+    @property
+    def manufacturer(self) -> str:
+        """
+        The name of the manufacturer of the device introduced by device itself.
+
+        Could be empty string or "unknown".
+
+        Override this method to return proper name directly from device itself.
+        """
+        return self._manufacturer
+
+    @property
+    def name(self) -> str:
+        """
+        The name of the device it introduced itself with.
+
+        Could be empty string or "unknown".
+
+        Override this method to return proper name directly from device itself.
+        """
+        return self._name
+
+    @property
+    def serial(self) -> str:
+        """
+        The serial number of the device it introduced itself with.
+
+        Could be empty string or "unknown".
+
+        Override this method to return proper name directly from device itself.
+        """
+        return self._serial
+
+    @property
+    def description(self) -> str:
+        """
+        Short human-readable description.
+
+        For unknown device returns `unknown device (no data)`.
+        For unknown USB device returns `unknown usb device (no data)`.
+        For unknown USB device with known serial number returns
+            `unknown usb device (<serial>)`.
+        """
+        if self.product and self.product != "unknown":
+            prod = self.product
+        elif self.name and self.name != "unknown":
+            prod = self.name
+        else:
+            prod = f"unknown device {self.devclass if self.devclass else ''}"
+
+        if self.vendor and self.vendor != "unknown":
+            vendor = self.vendor
+        elif self.manufacturer and self.manufacturer != "unknown":
+            vendor = self.manufacturer
+        elif self.serial and self.vendor != "unknown":
+            vendor = self.serial
+        else:
+            vendor = "no data"
+
+        return f"{prod} ({vendor})"
+
+    @property
+    def interfaces(self) -> List[DeviceInterface]:
+        """
+        Non-empty list of device interfaces.
+
+        Every device should have at least one interface.
+        """
+        return self._interfaces
+
+    @property
+    def parent_device(self) -> Optional['DeviceInfo']:
+        """
+        The parent device if any.
+
+        If the device is part of another device (e.g. it's a single
+        partition of an usb stick), the parent device id should be here.
+        """
+        return None
+
+    @property
+    def subdevices(self) -> List['DeviceInfo']:
+        """
+        The list of children devices if any.
+
+        If the device has subdevices (e.g. partitions of an usb stick),
+        the subdevices id should be here.
+        """
+        return [dev for dev in self.backend_domain.devices[self.devclass]
+                if dev.parent_device == self.ident]
+
+    # @property
+    # def port_id(self) -> str:
+    #     """
+    #     Which port the device is connected to.
+    #     """
+    #     return self.ident  # TODO: ???
+
+    @property
+    def attachments(self) -> List['DeviceAssignment']:
+        """
+        Device attachments
+        """
+        return []  # TODO
+
+    def serialize(self) -> bytes:
+        """
+        Serialize object to be transmitted via Qubes API.
+        """
+        # 'backend_domain' and 'interfaces' are not string so they need
+        # special treatment
+        default_attrs = {
+            'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
+            'serial', }
+        # to_skip_attrs = {
+        #     'parent_device', 'description', 'regex', 'parent_device',
+        #     'attachments', 'subdevices', 'serialize', 'deserialize'}
+        # rest_attrs = set(
+        #     attr for attr in dir(self)
+        #     if not attr.startswith('_')).difference(
+        #     default_attrs + to_skip_attrs)
+        properties = b' '.join(
+            base64.b64encode(f'{prop}={value!s}'.encode('ascii'))
+            for prop, value in itertools.chain(
+                ((key, getattr(self, key)) for key in default_attrs),
+                # # keep description as the last one, according to API
+                # # specification
+                # (('description', self.description),)
+            ))
+
+        backend_domain_name = self.backend_domain.name
+        backend_domain_prop = (b'backend_domain=' +
+                               backend_domain_name.encode('ascii'))
+        properties += b' ' + base64.b64encode(backend_domain_prop)
+
+        interfaces = ''.join(ifc.value for ifc in self._interfaces)
+        interfaces_prop = b'interfaces=' + str(interfaces).encode('ascii')
+
+        properties += b' ' + base64.b64encode(interfaces_prop)
+        return properties
+
+    @classmethod
+    def deserialize(
+            cls,
+            serialization: bytes,
+            expected_backend_domain: 'qubes.vm.qubesvm.QubesVM',
+            expected_devclass: Optional[str] = None,
+    ) -> 'DeviceInfo':
+        properties_str = [
+            base64.b64decode(line).decode('ascii', errors='ignore')
+            for line in serialization.split(b' ')]
+
+        properties = dict()
+        for line in properties_str:
+            key, _, param = line.partition("=")
+            properties[key] = param
+
+        if properties['backend_domain'] != expected_backend_domain.name:
+            raise ValueError("TODO")  # TODO
+        properties['backend_domain'] = expected_backend_domain
+        if expected_devclass and properties['devclass'] != expected_devclass:
+            raise ValueError("TODO")  # TODO
+
+        interfaces = properties['interfaces']
+        interfaces = [
+            DeviceInterface.from_str(interfaces[i:i + 6])
+            for i in range(0, len(interfaces), 6)]
+        properties['interfaces'] = interfaces
+        return cls(**properties)
+
+
+class UnknownDevice(DeviceInfo):
+    # pylint: disable=too-few-public-methods
+    """Unknown device - for example exposed by domain not running currently"""
+
+    def __init__(self, backend_domain, devclass, ident, description=None,
+                 **kwargs):
+        if description is None:
+            description = "Unknown device"
+        super().__init__(
+            backend_domain, devclass, ident, description, **kwargs
+        )
 
 
 class DeviceAssignment(Device):
@@ -122,7 +412,7 @@ class DeviceAssignment(Device):
         )
 
     @property
-    def device(self) -> 'DeviceInfo':
+    def device(self) -> DeviceInfo:
         """Get DeviceInfo object corresponding to this DeviceAssignment"""
         return self.backend_domain.devices[self.devclass][self.ident]
 
@@ -175,88 +465,6 @@ class DeviceAssignment(Device):
     def options(self, options: Optional[Dict[str, Any]]):
         """ Device options (same as in the legacy API). """
         self.__options = options or {}
-
-
-class DeviceInfo(Device):
-    """ Holds all information about a device """
-
-    # pylint: disable=too-few-public-methods
-    def __init__(self, backend_domain, devclass, ident, description=None,
-                 **kwargs):
-        super().__init__(backend_domain, ident, devclass)
-        #: human-readable description/name of the device
-        self.description = description
-        self.data = kwargs
-
-    # @property
-    # def manufacturer(self):
-    #     """
-    #     Device manufacturer
-    #     :return: str
-    #     """
-    #
-    # @property
-    # def name(self):
-    #     """
-    #     Device name
-    #     :return: str
-    #     """
-    #
-    # @property
-    # def devtype(self):
-    #     """
-    #     Type of device, such as "USB Camera", "USB Keyboard", "Microphone" etc.
-    #     :return: str
-    #     """
-    #     # TODO: perhaps this should be an Enum of possible types?
-
-    @property
-    def parent_device(self) -> Optional[str]:
-        """
-        The parent device if any.
-
-        If the device is part of another device (e.g. it's a single
-        partition of an usb stick), the parent device id should be here.
-        """
-        # TODO
-        return None
-
-    @property
-    def subdevices(self) -> List[str]:
-        """
-        The list of children device if any.
-
-        If the device has subdevices (e.g. partitions of an usb stick),
-        the subdevices id should be here.
-        """
-        # TODO
-        return []
-
-    # @property
-    # def port_id(self):
-    #     """
-    #     Which port the device is connected to.
-    #     :return: str
-    #     """
-    #
-    # @property
-    # def attachments(self):
-    #     """
-    #     Device attachments
-    #     :return: List[DeviceAssignment]
-    #     """
-
-
-class UnknownDevice(DeviceInfo):
-    # pylint: disable=too-few-public-methods
-    """Unknown device - for example exposed by domain not running currently"""
-
-    def __init__(self, backend_domain, devclass, ident, description=None,
-                 **kwargs):
-        if description is None:
-            description = "Unknown device"
-        super().__init__(backend_domain, devclass, ident,
-                                            description, **kwargs)
 
 
 class DeviceCollection(object):
@@ -371,19 +579,14 @@ class DeviceCollection(object):
 
     def available(self):
         """List devices exposed by this vm"""
-        devices_str = \
-            self._vm.qubesd_call(None,
-                                 'admin.vm.device.{}.Available'.format(
-                                     self._class)).decode()
-        for dev_str in devices_str.splitlines():
-            ident, _, info = dev_str.partition(' ')
-            # description is special that it can contain spaces
-            info, _, description = info.partition('description=')
-            info_dict = dict(info_single.split('=', 1)
-                             for info_single in info.split(' ') if info_single)
-            yield DeviceInfo(self._vm, self._class, ident,
-                             description=description,
-                             **info_dict)
+        devices: bytes = self._vm.qubesd_call(
+            None, 'admin.vm.device.{}.Available'.format(self._class))
+        for dev_serialized in devices.splitlines():
+            yield DeviceInfo.deserialize(
+                serialization=dev_serialized,
+                expected_backend_domain=self._vm,
+                expected_devclass=self._class,
+            )
 
     def update_persistent(self, device, persistent):
         """Update `persistent` flag of already attached device.
