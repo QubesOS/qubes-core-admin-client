@@ -46,8 +46,8 @@ Options
 
 .. option:: --all
 
-   Run the command on all qubes. You can use :option:`--exclude` to limit the
-   qubes set. Command is never run on the dom0.
+   Run the command on all running qubes. You can use :option:`--exclude` to limit the
+   qubes set. Command is never run on dom0.
 
 .. option:: --exclude
 
