@@ -35,8 +35,6 @@ import itertools
 from enum import Enum
 from typing import Optional, Dict, Any, List
 
-import qubesadmin.vm
-
 
 # TODO:
 # Proposed device events:
@@ -161,7 +159,7 @@ class DeviceInfo(Device):
     # pylint: disable=too-few-public-methods
     def __init__(
             self,
-            backend_domain: qubesadmin.vm.QubesVM,  # TODO
+            backend_domain: 'qubesadmin.vm.QubesVM',  # TODO
             ident: str,
             devclass: Optional[str] = None,
             vendor: Optional[str] = None,
@@ -356,7 +354,7 @@ class DeviceInfo(Device):
     ) -> 'DeviceInfo':
         properties_str = [
             base64.b64decode(line).decode('ascii', errors='ignore')
-            for line in serialization.split(b' ')]
+            for line in serialization.split(b' ')[1:]]
 
         properties = dict()
         for line in properties_str:
@@ -366,8 +364,8 @@ class DeviceInfo(Device):
         if properties['backend_domain'] != expected_backend_domain.name:
             raise ValueError("TODO")  # TODO
         properties['backend_domain'] = expected_backend_domain
-        if expected_devclass and properties['devclass'] != expected_devclass:
-            raise ValueError("TODO")  # TODO
+        # if expected_devclass and properties['devclass'] != expected_devclass:
+        #     raise ValueError("TODO")  # TODO
 
         interfaces = properties['interfaces']
         interfaces = [
@@ -376,18 +374,17 @@ class DeviceInfo(Device):
         properties['interfaces'] = interfaces
         return cls(**properties)
 
+    @property
+    def frontend_domain(self):
+        return self.data.get("frontend_domain", None)
+
 
 class UnknownDevice(DeviceInfo):
     # pylint: disable=too-few-public-methods
     """Unknown device - for example exposed by domain not running currently"""
 
-    def __init__(self, backend_domain, devclass, ident, description=None,
-                 **kwargs):
-        if description is None:
-            description = "Unknown device"
-        super().__init__(
-            backend_domain, devclass, ident, description, **kwargs
-        )
+    def __init__(self, backend_domain, devclass, ident, **kwargs):
+        super().__init__(backend_domain, ident, devclass=devclass, **kwargs)
 
 
 class DeviceAssignment(Device):
