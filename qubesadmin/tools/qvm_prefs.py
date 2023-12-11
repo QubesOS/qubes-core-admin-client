@@ -125,7 +125,7 @@ def process_actions(parser, args, target):
                 args.value = ''
         try:
             setattr(target, args.property, args.value)
-        except AttributeError:
+        except qubesadmin.exc.QubesNoSuchPropertyError:
             parser.error('no such property: {!r}'.format(args.property))
         except qubesadmin.exc.QubesException as e:
             parser.error_runtime(e)
@@ -134,7 +134,7 @@ def process_actions(parser, args, target):
     if args.delete:
         try:
             delattr(target, args.property)
-        except AttributeError:
+        except qubesadmin.exc.QubesNoSuchPropertyError:
             parser.error('no such property: {!r}'.format(args.property))
         except qubesadmin.exc.QubesException as e:
             parser.error_runtime(e)
@@ -144,7 +144,7 @@ def process_actions(parser, args, target):
         value = getattr(target, args.property)
         if value is not None:
             print(str(value))
-    except AttributeError:
+    except qubesadmin.exc.QubesNoSuchPropertyError:
         parser.error('no such property: {!r}'.format(args.property))
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(e)
