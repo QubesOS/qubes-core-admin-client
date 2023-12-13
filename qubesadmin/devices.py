@@ -32,19 +32,20 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 """
 import base64
 import itertools
+import sys
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Type
 
 
 # TODO:
 # Proposed device events:
-# - device-list-changed: device-added
-# - device-list-changed: device-remove
+## - device-list-changed: device-added
+## - device-list-changed: device-remove
 # - device-property-changed: property_name
-# - device-assignment-changed: created
-# - device-assignment-changed: removed
-# - device-assignment-changed: attached
-# - device-assignment-changed: detached
+## - device-assignment-changed: created
+## - device-assignment-changed: removed
+## - device-assignment-changed: attached
+## - device-assignment-changed: detached
 # - device-assignment-changed: property-set [? this is not great]
 
 class Device:
@@ -89,12 +90,24 @@ class Device:
         return self.__backend_domain
 
     @property
-    def devclass(self) -> Optional[str]:
+    def devclass(self) -> str:
         """ Immutable* Device class such like: 'usb', 'pci' etc.
+
+        For unknown devices "peripheral" is returned.
 
         *see `@devclass.setter`
         """
-        return self.__bus
+        if self.__bus:
+            return self.__bus
+        else:
+            return "peripheral"
+
+    @property
+    def devclass_is_set(self) -> bool:
+        """
+        Returns true if devclass is already initialised.
+        """
+        return bool(self.__bus)
 
     @devclass.setter
     def devclass(self, devclass: str):
@@ -242,26 +255,26 @@ class DeviceInfo(Device):
         """
         Short human-readable description.
 
-        For unknown device returns `unknown device (no data)`.
-        For unknown USB device returns `unknown usb device (no data)`.
+        For unknown device returns `unknown device (unknown vendor)`.
+        For unknown USB device returns `unknown usb device (unknown vendor)`.
         For unknown USB device with known serial number returns
-            `unknown usb device (<serial>)`.
+            `<serial> (unknown vendor)`.
         """
         if self.product and self.product != "unknown":
             prod = self.product
         elif self.name and self.name != "unknown":
             prod = self.name
+        elif self.serial and self.serial != "unknown":
+            prod = self.serial
         else:
-            prod = f"unknown device {self.devclass if self.devclass else ''}"
+            prod = f"unknown {self.devclass if self.devclass else ''} device"
 
         if self.vendor and self.vendor != "unknown":
             vendor = self.vendor
         elif self.manufacturer and self.manufacturer != "unknown":
             vendor = self.manufacturer
-        elif self.serial and self.vendor != "unknown":
-            vendor = self.serial
         else:
-            vendor = "no data"
+            vendor = "unknown vendor"
 
         return f"{prod} ({vendor})"
 
@@ -313,7 +326,7 @@ class DeviceInfo(Device):
         """
         Serialize object to be transmitted via Qubes API.
         """
-        # 'backend_domain' and 'interfaces' are not string so they need
+        # 'backend_domain' and 'interfaces' are not string, so they need
         # special treatment
         default_attrs = {
             'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
@@ -352,9 +365,31 @@ class DeviceInfo(Device):
             expected_backend_domain: 'qubes.vm.qubesvm.QubesVM',
             expected_devclass: Optional[str] = None,
     ) -> 'DeviceInfo':
+        try:
+            ident, _, serialization = serialization.partition(b' ')
+            result = DeviceInfo._deserialize(
+                cls, serialization, expected_backend_domain, expected_devclass)
+        except Exception as exc:
+            print(exc, file=sys.stderr)
+            ident = serialization.split(b' ')[0].decode(
+                'ascii', errors='ignore')  # TODO
+            result = UnknownDevice(
+                backend_domain=expected_backend_domain,
+                ident=ident,
+                devclass=expected_devclass,
+            )
+        return result
+
+    @staticmethod
+    def _deserialize(
+            cls: Type,
+            serialization: bytes,
+            expected_backend_domain: 'qubes.vm.qubesvm.QubesVM',
+            expected_devclass: Optional[str] = None,
+    ) -> 'DeviceInfo':
         properties_str = [
             base64.b64decode(line).decode('ascii', errors='ignore')
-            for line in serialization.split(b' ')[1:]]
+            for line in serialization.split(b' ')]
 
         properties = dict()
         for line in properties_str:
@@ -372,6 +407,7 @@ class DeviceInfo(Device):
             DeviceInterface.from_str(interfaces[i:i + 6])
             for i in range(0, len(interfaces), 6)]
         properties['interfaces'] = interfaces
+
         return cls(**properties)
 
     @property
@@ -490,10 +526,12 @@ class DeviceCollection(object):
         else:
             assert device_assignment.frontend_domain == self._vm, \
                 "Trying to attach DeviceAssignment belonging to other domain"
-        if device_assignment.devclass is None:
+        if not device_assignment.devclass_is_set:
             device_assignment.devclass = self._class
-        else:
-            assert device_assignment.devclass == self._class
+        elif device_assignment.devclass != self._class:
+            raise ValueError(
+                f"Device assignment class does not match to expected: "
+                f"{device_assignment.devclass=}!={self._class=}")
 
         options = device_assignment.options.copy()
         if device_assignment.persistent:
@@ -518,10 +556,12 @@ class DeviceCollection(object):
         else:
             assert device_assignment.frontend_domain == self._vm, \
                 "Trying to detach DeviceAssignment belonging to other domain"
-        if device_assignment.devclass is None:
+        if not device_assignment.devclass_is_set:
             device_assignment.devclass = self._class
-        else:
-            assert device_assignment.devclass == self._class
+        elif device_assignment.devclass != self._class:
+            raise ValueError(
+                f"Device assignment class does not match to expected: "
+                f"{device_assignment.devclass=}!={self._class=}")
 
         self._vm.qubesd_call(None,
                              'admin.vm.device.{}.Detach'.format(self._class),
