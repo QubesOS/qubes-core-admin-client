@@ -77,7 +77,7 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
             b'0\x00dom0 class=AdminVM state=Running\n'
         self.app.expected_calls[
             ('dom0', 'admin.vm.property.Get', 'no_such_property', None)] = \
-            b'2\x00AttributeError\x00\x00no_such_property\x00'
+            b'2\x00QubesNoSuchPropertyError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:
                 qubesadmin.tools.qvm_prefs.main([
@@ -92,7 +92,7 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
             b'0\x00dom0 class=AdminVM state=Running\n'
         self.app.expected_calls[
             ('dom0', 'admin.vm.property.Set', 'no_such_property', b'value')] = \
-            b'2\x00AttributeError\x00\x00no_such_property\x00'
+            b'2\x00QubesNoSuchPropertyError\x00\x00no_such_property\x00'
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:
                 qubesadmin.tools.qvm_prefs.main([
