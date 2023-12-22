@@ -15,6 +15,7 @@ install:
 	install -m 0644 etc/qvm-start-daemon-kde.desktop $(DESTDIR)/etc/xdg/autostart/
 	install -d $(DESTDIR)/usr/bin
 	ln -sf qvm-start-daemon $(DESTDIR)/usr/bin/qvm-start-gui
+	for i in block usb pci; do ln -sf qvm-device $(DESTDIR)/usr/bin/"qvm-$$i"; done
 	install -m 0755 scripts/qubes-guivm-session $(DESTDIR)/usr/bin/
 	install -d $(DESTDIR)/etc/qubes/post-install.d
 	install -m 0755 scripts/30-keyboard-layout-service.sh \

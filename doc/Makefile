@@ -228,4 +228,5 @@ dummy:
 install: man
 	mkdir -p $(DESTDIR)/usr/share/man/man1
 	cp $(BUILDDIR)/man/* $(DESTDIR)/usr/share/man/man1/
+	for i in block usb pci; do ln -sf -- qvm-device.1 $(DESTDIR)/"usr/share/man/man1/qvm-$$i.1"; done
 
