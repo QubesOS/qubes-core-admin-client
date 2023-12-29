@@ -277,8 +277,8 @@ class DeviceInfo(Device):
             prod = self.name
         elif self.serial and self.serial != "unknown":
             prod = self.serial
-        elif self.parent_device is not None:
-            return f"partition of {self.parent_device}"
+        elif self._parent is not None:
+            return f"sub-device of {self._parent}"
         else:
             prod = f"unknown {self.devclass if self.devclass else ''} device"
 
@@ -303,17 +303,14 @@ class DeviceInfo(Device):
         return self._interfaces
 
     @property
-    def parent_device(self) -> Optional['DeviceInfo']:
+    def parent_device(self) -> Optional[Device]:
         """
         The parent device if any.
 
         If the device is part of another device (e.g. it's a single
         partition of an usb stick), the parent device id should be here.
         """
-        if self._parent is None:
-            return None
-        return self.backend_domain.devices.get(
-            self._parent.devclass, {}).get(self._parent.ident, None)
+        return self._parent
 
     @property
     def subdevices(self) -> List['DeviceInfo']:
