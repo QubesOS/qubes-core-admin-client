@@ -210,13 +210,13 @@ class VolumeInfo:
             result += 'vid=1.1\n'
             result += 'size=0\n'
             result += 'usage=0\n'
-            result += "rw=True\n"
+            result += "rw=False\n"
         else:
             result = "pool=vm-pool\n"
             result += f'vid=qubes_dom0/vm-{self.qube_name}-{self.volume_type}\n'
             result += 'size=123456\n'
             result += 'usage=0\n'
-            result += "rw=False\n"
+            result += "rw=True\n"
 
         if self.volume_type == 'root':
             result += "source=qubes_dom0/vm-template-root\n"
@@ -475,19 +475,23 @@ class MockAdminVM(MockQube):
 class MockDevice:
     """helper for adding a device to a qubes test instance"""
     def __init__(self, qapp: QubesTest, dev_class: str,
-                 description: str, dev_id: str, backend_vm: str):
+                 description: str, dev_id: str, backend_vm: str,
+                 attached: Optional[str] = None):
         """
         :param qapp: QubesTest object
         :param dev_class: block / mic / usb
         :param description: device description
         :param dev_id: dev id (such as sda, 2-1, mic)
         :param backend_vm: name of the vm providing this device
+        :param attached: name of the qube to which the device is attached,
+        if any
         """
         self.qapp = qapp
         self.dev_class = dev_class
         self.description = description
         self.dev_id = dev_id
         self.backend_vm = backend_vm
+        self.attached = attached
 
         # modify call
         current_response = self.qapp.expected_calls[
@@ -498,9 +502,14 @@ class MockDevice:
             (self.backend_vm, f"admin.vm.device.{self.dev_class}.Available",
              None, None)] = current_response + self.device_string().encode()
 
-        current_response = self.qapp.expected_calls[
-            (self.backend_vm, f"admin.vm.device.{self.dev_class}.Available",
-             None, None)]
+        if self.attached:
+            current_response = self.qapp.expected_calls[
+                (self.attached, f"admin.vm.device.{self.dev_class}.List",
+                 None, None)]
+            self.qapp.expected_calls[
+                (self.attached, f"admin.vm.device.{self.dev_class}.List",
+                 None, None)] = current_response + \
+                                self.attachment_string().encode()
 
     def device_string(self):
         if self.dev_class == 'block':
@@ -509,6 +518,8 @@ class MockDevice:
         else:
             return f'{self.dev_id} description={self.description}\n'
 
+    def attachment_string(self):
+        return f'{self.backend_vm}+{self.dev_id} persistent=no\n'
 
 class QubesTestWrapper(QubesTest):
     def __init__(self):
@@ -636,7 +647,8 @@ class MockQubesComplete(MockQubes):
 
         # also add a bunch of devices
         self._devices = [
-            MockDevice(self, 'mic', 'Internal Microphone', 'mic', 'dom0'),
+            MockDevice(self, 'mic', 'Internal Microphone', 'mic', 'dom0',
+                       attached='test-blue'),
             # the usb stick appears as multiple devices, as they are wont to
             MockDevice(self, 'usb', 'My USB Drive', '2-1', 'sys-usb'),
             MockDevice(self, 'block', ' ()', 'sda', 'sys-usb'),
