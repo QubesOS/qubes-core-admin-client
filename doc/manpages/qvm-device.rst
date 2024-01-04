@@ -72,9 +72,17 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
    Alias for the `read-only=yes` option. If you specify both `--ro` and
    `--option read-only=no`, `--ro` takes precedence.
 
+.. option:: --required, -r
+
+   Assign device persistently which means it will be required to the qube's startup and then automatically attached.
+
 .. option:: --persistent, -p
 
-   Attach device persistently, which means have it attached also after qube restart.
+   Alias for `--required` for backward compatibility.
+
+.. option:: --auto-attach, -a
+
+   Assign the device to a qube. It will be automatically attached upon the qube's startup or connection. The device will not be automatically attached if it has been manually detached or is already attached to another qube.
 
 aliases: a, at
 

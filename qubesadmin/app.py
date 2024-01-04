@@ -543,12 +543,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             try:
                 for devclass in src_vm.devices:
                     for assignment in src_vm.devices[devclass].assignments(
-                            persistent=True):
+                            required=True):
                         new_assignment = qubesadmin.devices.DeviceAssignment(
                             backend_domain=assignment.backend_domain,
                             ident=assignment.ident,
                             options=assignment.options,
-                            persistent=assignment.persistent)
+                            required=assignment.required)
                         dst_vm.devices[devclass].attach(new_assignment)
             except qubesadmin.exc.QubesException:
                 if not ignore_errors:

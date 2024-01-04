@@ -1435,7 +1435,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             for bus, devices in vm['devices'].items():
                 for (backend_domain, ident), options in devices.items():
                     all_options = options.copy()
-                    all_options['persistent'] = True
+                    all_options['required'] = True
+                    # all_options['attach_automatically'] = True  # TODO
                     encoded_options = ' '.join('{}={}'.format(key, value) for
                         key, value in all_options.items()).encode()
                     self.app.expected_calls[
