@@ -25,7 +25,7 @@ checks:tests:
   after_script:
   - ci/codecov-wrapper
   before_script:
-  - sudo dnf install -y openssl python3-rpm
+  - sudo dnf install -y openssl python3-rpm sequoia-sqv
   - pip3 install --quiet -r ci/requirements.txt
   - git config --global --add safe.directory "$PWD"
   script:
