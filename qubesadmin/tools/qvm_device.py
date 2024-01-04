@@ -134,7 +134,7 @@ def attach_device(args):
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
-    device_assignment.persistent = args.persistent
+    device_assignment.required = args.required
     device_assignment.options = options
     vm.devices[args.devclass].attach(device_assignment)
 
@@ -286,11 +286,21 @@ def get_parser(device_class=None):
                                help="Attach device read-only (alias for "
                                     "read-only=yes option, "
                                     "takes precedence)")
-    attach_parser.add_argument('--persistent', '-p', action='store_true',
+    attach_parser.add_argument('--persistent', '--required', '-p', '-r',
+                               dest='required',
+                               action='store_true',
                                default=False,
-                               help="Attach device persistently (so it will "
-                                    "be automatically "
-                                    "attached at qube startup)")
+                               help="Assign device persistently (so it will "
+                                    "be required to the qube's startup and then"
+                                    " automatically attached)")
+    attach_parser.add_argument('--auto-attach', '-a', action='store_true',
+                               default=False,
+                               help="Assign the device to a qube. It will be "
+                                    "automatically attached upon the qube's "
+                                    "startup or connection. The device will not"
+                                    " be automatically attached if it has been "
+                                    "manually detached or is already attached "
+                                    "to another qube.")
 
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)

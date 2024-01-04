@@ -552,12 +552,11 @@ class UnknownDevice(DeviceInfo):
 class DeviceAssignment(Device):
     """ Maps a device to a frontend_domain. """
 
-    def __init__(self, backend_domain, ident, options=None, persistent=False,
+    def __init__(self, backend_domain, ident, options=None,
                  frontend_domain=None, devclass=None,
                  required=False, attach_automatically=False):
         super().__init__(backend_domain, ident, devclass)
         self.__options = options or {}
-        self.persistent = persistent
         self.__required = required
         self.__attach_automatically = attach_automatically
         self.__frontend_domain = frontend_domain
@@ -565,12 +564,13 @@ class DeviceAssignment(Device):
     def clone(self):
         """Clone object instance"""
         return self.__class__(
-            self.backend_domain,
-            self.ident,
-            self.options,
-            self.persistent,
-            self.frontend_domain,
-            self.devclass,
+            backend_domain=self.backend_domain,
+            ident=self.ident,
+            options=self.options,
+            required=self.required,
+            attach_automatically=self.attach_automatically,
+            frontend_domain=self.frontend_domain,
+            devclass=self.devclass,
         )
 
     @property
@@ -595,28 +595,24 @@ class DeviceAssignment(Device):
         """
         Is the presence of this device required for the domain to start? If yes,
         it will be attached automatically.
-        TODO: this possibly should not be available for usb device? or always False?
-        TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
         """
-        return self.persistent  # TODO
+        return self.__required
 
     @required.setter
     def required(self, required: bool):
-        self.persistent = required  # TODO
+        self.__required = required
 
     @property
     def attach_automatically(self) -> bool:
         """
         Should this device automatically connect to the frontend domain when
         available and not connected to other qubes?
-        TODO: this possibly should not be available for usb device? or always False?
-        TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
         """
-        return self.persistent  # TODO
+        return self.__attach_automatically
 
     @attach_automatically.setter
     def attach_automatically(self, attach_automatically: bool):
-        self.persistent = attach_automatically  # TODO
+        self.__attach_automatically = attach_automatically
 
     @property
     def options(self) -> Dict[str, Any]:
@@ -663,8 +659,10 @@ class DeviceCollection(object):
                 f"{device_assignment.devclass=}!={self._class=}")
 
         options = device_assignment.options.copy()
-        if device_assignment.persistent:
-            options['persistent'] = 'True'
+        if device_assignment.required:
+            options['required'] = 'True'
+        # if device_assignment.attach_automatically:
+        #     options['attach_automatically'] = 'True'
         options_str = ' '.join('{}={}'.format(opt, val)
                                for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,
@@ -698,16 +696,17 @@ class DeviceCollection(object):
                                  device_assignment.backend_domain,
                                  device_assignment.ident))
 
-    def assignments(self, persistent=None):
+    def assignments(self, required=None):
         """List assignments for devices which are (or may be) attached to the
            vm.
 
+        # TODO: handle auto-attach
         Devices may be attached persistently (so they are included in
         :file:`qubes.xml`) or not. Device can also be in :file:`qubes.xml`,
         but be temporarily detached.
 
-        :param bool persistent: only include devices which are or are not
-            attached persistently.
+        :param bool required: only include devices which are or are not
+            required to start qube.
         """
 
         assignments_str = self._vm.qubesd_call(None,
@@ -719,28 +718,28 @@ class DeviceCollection(object):
             options = dict(opt_single.split('=', 1)
                            for opt_single in options_all.split(' ') if
                            opt_single)
-            dev_persistent = (options.pop('persistent', False) in
+            dev_required = (options.pop('required', False) in
                               ['True', 'yes', True])
-            if persistent is not None and dev_persistent != persistent:
+            dev_auto_attach = (options.pop('attach_automatically', False) in
+                              ['True', 'yes', True])  # TODO
+            if required is not None and dev_required != required:
                 continue
             backend_domain = self._vm.app.domains.get_blind(backend_domain)
             yield DeviceAssignment(backend_domain, ident, options,
-                                   persistent=dev_persistent,
+                                   required=dev_required,
                                    frontend_domain=self._vm,
                                    devclass=self._class)
 
     def attached(self):
         """List devices which are (or may be) attached to this vm """
-
         for assignment in self.assignments():
             yield assignment.device
 
-    def persistent(self):
+    def required(self):
         """ Devices persistently attached and safe to access before libvirt
             bootstrap.
         """
-
-        for assignment in self.assignments(True):
+        for assignment in self.assignments(required=True):
             yield assignment.device
 
     def available(self):
@@ -754,11 +753,11 @@ class DeviceCollection(object):
                 expected_devclass=self._class,
             )
 
-    def update_persistent(self, device, persistent):
-        """Update `persistent` flag of already attached device.
+    def update_required(self, device: DeviceInfo, required: bool):  # TODO: update auto-attach
+        """Update `required` flag of already attached device.
 
-        :param DeviceInfo device: device for which change persistent flag
-        :param bool persistent: new persistent flag
+        :param DeviceInfo device: device for which change required flag
+        :param bool required: new required flag
         """
 
         self._vm.qubesd_call(None,
@@ -766,7 +765,7 @@ class DeviceCollection(object):
                                  self._class),
                              '{!s}+{!s}'.format(device.backend_domain,
                                                 device.ident),
-                             str(persistent).encode('utf-8'))
+                             str(required).encode('utf-8'))
 
     __iter__ = available
 

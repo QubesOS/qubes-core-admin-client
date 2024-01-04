@@ -736,11 +736,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.pci.List', None, None)] = \
             b'0\0test-vm2+dev1 ro=True\n' \
-            b'test-vm3+dev2 persistent=True\n'
+            b'test-vm3+dev2 required=True\n'
 
         self.app.expected_calls[
             ('new-name', 'admin.vm.device.pci.Attach', 'test-vm3+dev2',
-             b'persistent=True')] = b'0\0'
+             b'required=True')] = b'0\0'
 
         new_vm = self.app.clone_vm('test-vm', 'new-name')
         self.assertEqual(new_vm.name, 'new-name')
@@ -772,11 +772,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.pci.List', None, None)] = \
             b'0\0test-vm2+dev1 ro=True\n' \
-            b'test-vm3+dev2 persistent=True\n'
+            b'test-vm3+dev2 required=True\n'
 
         self.app.expected_calls[
             ('new-name', 'admin.vm.device.pci.Attach', 'test-vm3+dev2',
-             b'persistent=True')] = \
+             b'required=True')] = \
             b'2\0QubesException\0\0something happened\0'
 
         self.app.expected_calls[
