@@ -24,6 +24,7 @@
 """Qubes volume and block device management"""
 
 import argparse
+import itertools
 import os
 import sys
 
@@ -84,15 +85,17 @@ def list_devices(args):
     try:
         if hasattr(args, 'domains') and args.domains:
             for domain in args.domains:
-                for dev in domain.devices[args.devclass].attached():
+                for dev in domain.devices[args.devclass].get_assigned_devices():
                     devices.add(dev)
-                for dev in domain.devices[args.devclass].available():
+                for dev in domain.devices[args.devclass].get_attached_devices():
+                    devices.add(dev)
+                for dev in domain.devices[args.devclass].get_exposed_devices():
                     devices.add(dev)
 
         else:
             for domain in app.domains:
                 try:
-                    for dev in domain.devices[args.devclass].available():
+                    for dev in domain.devices[args.devclass].get_exposed_devices():
                         devices.add(dev)
                 except qubesadmin.exc.QubesVMNotFoundError:
                     continue
@@ -109,7 +112,8 @@ def list_devices(args):
                 continue
 
             try:
-                for assignment in domain.devices[args.devclass].assignments():
+                for assignment in (
+                        domain.devices[args.devclass].get_dedicated_devices()):
                     if dev != assignment:
                         continue
                     if assignment.options:
@@ -129,14 +133,18 @@ def attach_device(args):
     """ Called by the parser to execute the :program:`qvm-devices attach`
         subcommand.
     """
-    device_assignment = args.device_assignment
     vm = args.domains[0]
+    device = args.device
+    device_assignment = qubesadmin.devices.DeviceAssignment(
+        device.backend_domain, device.ident)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
-    device_assignment.required = args.required
     device_assignment.options = options
     vm.devices[args.devclass].attach(device_assignment)
+    if args.required:
+        device_assignment.required = args.required
+        vm.devices[args.devclass].assign(device_assignment)
 
 
 def detach_device(args):
@@ -144,11 +152,48 @@ def detach_device(args):
         subcommand.
     """
     vm = args.domains[0]
-    if args.device_assignment:
-        vm.devices[args.devclass].detach(args.device_assignment)
+    if args.device:
+        device = args.device
+        device_assignment = qubesadmin.devices.DeviceAssignment(
+            device.backend_domain, device.ident)
+        vm.devices[args.devclass].detach(device_assignment)
     else:
-        for device_assignment in vm.devices[args.devclass].assignments():
+        for device_assignment in (
+                vm.devices[args.devclass].get_attached_devices()):
             vm.devices[args.devclass].detach(device_assignment)
+
+
+def assign_device(args):
+    """ Called by the parser to execute the :program:`qvm-devices assign`
+        subcommand.
+    """
+    vm = args.domains[0]
+    device = args.device
+    device_assignment = qubesadmin.devices.DeviceAssignment(
+        device.backend_domain, device.ident)
+    options = dict(opt.split('=', 1) for opt in args.option or [])
+    if args.ro:
+        options['read-only'] = 'yes'
+    device_assignment.attach_automatically = True
+    device_assignment.required = args.required
+    device_assignment.options = options
+    vm.devices[args.devclass].assign(device_assignment)
+
+
+def unassign_device(args):
+    """ Called by the parser to execute the :program:`qvm-devices unassign`
+        subcommand.
+    """
+    vm = args.domains[0]
+    if args.device:
+        device = args.device
+        device_assignment = qubesadmin.devices.DeviceAssignment(
+            device.backend_domain, device.ident)
+        vm.devices[args.devclass].unassign(device_assignment)
+    else:
+        for device_assignment in (
+                vm.devices[args.devclass].get_assigned_devices()):
+            vm.devices[args.devclass].unassign(device_assignment)
 
 
 def info_device(args):
@@ -156,11 +201,15 @@ def info_device(args):
         subcommand.
     """
     vm = args.domains[0]
-    if args.device_assignment:
-        print("description:", args.device_assignment.device.description)
-        print("data:", args.device_assignment.device.data)
+    if args.device:
+        device = args.device
+        device_assignment = qubesadmin.devices.DeviceAssignment(
+            device.backend_domain, device.ident)
+        print("description:", device_assignment.device.description)
+        print("data:", device_assignment.device.data)
     else:
-        for device_assignment in vm.devices[args.devclass].assignments():
+        for device_assignment in (
+                vm.devices[args.devclass].get_dedicated_devices()):
             print("device_assignment:", device_assignment)
             print("description:", device_assignment.device.description)
             print("data:", device_assignment.device.data)
@@ -181,7 +230,7 @@ def init_list_parser(sub_parsers):
 
 class DeviceAction(qubesadmin.tools.QubesAction):
     """ Action for argument parser that gets the
-        :py:class:``qubesadmin.device.DeviceAssignment`` from a
+        :py:class:``qubesadmin.device.Device`` from a
         BACKEND:DEVICE_ID string.
     """  # pylint: disable=too-few-public-methods
 
@@ -192,7 +241,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
         super().__init__(help=help, required=required, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        """ Set ``namespace.device_assignment`` to ``values`` """
+        """ Set ``namespace.device`` to ``values`` """
         setattr(namespace, self.dest, values)
 
     def parse_qubes_app(self, parser, namespace):
@@ -219,9 +268,8 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                 parser.error_runtime(
                     "backend vm {!r} doesn't expose device {!r}".format(
                         vmname, device_id))
-            device_assignment = qubesadmin.devices.DeviceAssignment(
-                vm, device_id)
-            setattr(namespace, self.dest, device_assignment)
+            device = qubesadmin.devices.Device(vm, device_id)
+            setattr(namespace, self.dest, device)
         except ValueError:
             parser.error(
                 'expected a backend vm & device id combination like foo:bar '
@@ -256,6 +304,14 @@ def get_parser(device_class=None):
         'attach', help="Attach device to domain", aliases=('at', 'a'))
     detach_parser = sub_parsers.add_parser(
         "detach", help="Detach device from domain", aliases=('d', 'dt'))
+    assign_parser = sub_parsers.add_parser(
+        'assign',
+        help="Assign device to domain or edit existing assignment",
+        aliases=('s',))
+    unassign_parser = sub_parsers.add_parser(
+        "unassign",
+        help="Remove assignment of device from domain",
+        aliases=('u',))
     info_parser = sub_parsers.add_parser(
         "info", help="Show info about device from domain", aliases=('i',))
 
@@ -263,47 +319,67 @@ def get_parser(device_class=None):
                                action=qubesadmin.tools.VmNameAction)
     detach_parser.add_argument('VMNAME', nargs=1,
                                action=qubesadmin.tools.VmNameAction)
-    info_parser.add_argument('VMNAME', nargs=1,
+    assign_parser.add_argument('VMNAME', nargs=1,
                                action=qubesadmin.tools.VmNameAction)
+    unassign_parser.add_argument('VMNAME', nargs=1,
+                                 action=qubesadmin.tools.VmNameAction)
+    info_parser.add_argument('VMNAME', nargs=1,
+                             action=qubesadmin.tools.VmNameAction)
 
     attach_parser.add_argument(metavar='BACKEND:DEVICE_ID',
-                               dest='device_assignment',
+                               dest='device',
                                action=DeviceAction)
     detach_parser.add_argument(metavar='BACKEND:DEVICE_ID',
-                               dest='device_assignment',
+                               dest='device',
                                nargs=argparse.OPTIONAL,
                                action=DeviceAction, allow_unknown=True)
-    info_parser.add_argument(metavar='BACKEND:DEVICE_ID',
-                               dest='device_assignment',
+    assign_parser.add_argument(metavar='BACKEND:DEVICE_ID',
+                               dest='device',
                                action=DeviceAction)
+    unassign_parser.add_argument(metavar='BACKEND:DEVICE_ID',
+                                 dest='device',
+                                 action=DeviceAction)
+    info_parser.add_argument(metavar='BACKEND:DEVICE_ID',
+                             dest='device',
+                             nargs=argparse.OPTIONAL,
+                             action=DeviceAction, allow_unknown=True)
 
     attach_parser.add_argument('--option', '-o', action='append',
                                help="Set option for the device in opt=value "
                                     "form (can be specified "
                                     "multiple times), see man qvm-device for "
                                     "details")
+    assign_parser.add_argument('--option', '-o', action='append',
+                               help="Set option for the device in opt=value "
+                                    "form (can be specified "
+                                    "multiple times), see man qvm-device for "
+                                    "details")  # TODO
     attach_parser.add_argument('--ro', action='store_true', default=False,
                                help="Attach device read-only (alias for "
                                     "read-only=yes option, "
                                     "takes precedence)")
-    attach_parser.add_argument('--persistent', '--required', '-p', '-r',
+    assign_parser.add_argument('--ro', action='store_true', default=False,
+                               help="Attach device read-only (alias for "
+                                    "read-only=yes option, "
+                                    "takes precedence)")  # TODO
+    attach_parser.add_argument('--persistent', '-p',
                                dest='required',
                                action='store_true',
                                default=False,
-                               help="Assign device persistently (so it will "
+                               help="Alias to `assign --required` for backward "
+                                    "compatibility")
+    assign_parser.add_argument('--required', '-r',
+                               dest='required',
+                               action='store_true',
+                               default=False,
+                               help="Mark device as required so it will "
                                     "be required to the qube's startup and then"
                                     " automatically attached)")
-    attach_parser.add_argument('--auto-attach', '-a', action='store_true',
-                               default=False,
-                               help="Assign the device to a qube. It will be "
-                                    "automatically attached upon the qube's "
-                                    "startup or connection. The device will not"
-                                    " be automatically attached if it has been "
-                                    "manually detached or is already attached "
-                                    "to another qube.")
 
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
+    assign_parser.set_defaults(func=assign_device)
+    unassign_parser.set_defaults(func=unassign_device)
     info_parser.set_defaults(func=info_device)
 
     parser.add_argument('--list-device-classes', action='store_true',

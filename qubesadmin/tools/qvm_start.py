@@ -196,7 +196,7 @@ def main(args=None, app=None):
 
             if drive_assignment:
                 # don't reconnect this device after VM reboot
-                domain.devices['block'].update_required(
+                domain.devices['block'].update_assignment(
                     drive_assignment.device, False)
         except (IOError, OSError, qubesadmin.exc.QubesException,
                 ValueError) as e:

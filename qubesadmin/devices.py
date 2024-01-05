@@ -34,7 +34,7 @@ import base64
 import itertools
 import sys
 from enum import Enum
-from typing import Optional, Dict, Any, List, Type
+from typing import Optional, Dict, Any, List, Type, Iterable
 
 
 # TODO:
@@ -422,13 +422,6 @@ class DeviceInfo(Device):
         return [dev for dev in self.backend_domain.devices[self.devclass]
                 if dev.parent_device.ident == self.ident]
 
-    # @property
-    # def port_id(self) -> str:
-    #     """
-    #     Which port the device is connected to.
-    #     """
-    #     return self.ident  # TODO: ???
-
     @property
     def attachments(self) -> List['DeviceAssignment']:
         """
@@ -561,17 +554,21 @@ class DeviceAssignment(Device):
         self.__attach_automatically = attach_automatically
         self.__frontend_domain = frontend_domain
 
-    def clone(self):
-        """Clone object instance"""
-        return self.__class__(
-            backend_domain=self.backend_domain,
-            ident=self.ident,
-            options=self.options,
-            required=self.required,
-            attach_automatically=self.attach_automatically,
-            frontend_domain=self.frontend_domain,
-            devclass=self.devclass,
-        )
+    def clone(self, **kwargs):
+        """
+        Clone object and substitute attributes with explicitly given.
+        """
+        attr = {
+            "backend_domain": self.backend_domain,
+            "ident": self.ident,
+            "options": self.options,
+            "required": self.required,
+            "attach_automatically": self.attach_automatically,
+            "frontend_domain": self.frontend_domain,
+            "devclass": self.devclass,
+        }
+        attr.update(kwargs)
+        return self.__class__(**attr)
 
     @property
     def device(self) -> DeviceInfo:
@@ -625,7 +622,7 @@ class DeviceAssignment(Device):
         self.__options = options or {}
 
 
-class DeviceCollection(object):
+class DeviceCollection:
     """Bag for devices.
 
     Used as default value for :py:meth:`DeviceManager.__missing__` factory.
@@ -640,8 +637,9 @@ class DeviceCollection(object):
         self._class = class_
         self._dev_cache = {}
 
-    def attach(self, device_assignment):
-        """Attach (add) device to domain.
+    def attach(self, device_assignment: DeviceAssignment) -> None:
+        """
+        Attach (add) device to domain.
 
         :param DeviceAssignment device_assignment: device object
         """
@@ -659,10 +657,6 @@ class DeviceCollection(object):
                 f"{device_assignment.devclass=}!={self._class=}")
 
         options = device_assignment.options.copy()
-        if device_assignment.required:
-            options['required'] = 'True'
-        # if device_assignment.attach_automatically:
-        #     options['attach_automatically'] = 'True'
         options_str = ' '.join('{}={}'.format(opt, val)
                                for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,
@@ -672,8 +666,9 @@ class DeviceCollection(object):
                                  device_assignment.ident),
                              options_str.encode('utf-8'))
 
-    def detach(self, device_assignment):
-        """Detach (remove) device from domain.
+    def detach(self, device_assignment: DeviceAssignment) -> None:
+        """
+        Detach (remove) device from domain.
 
         :param DeviceAssignment device_assignment: device to detach
             (obtained from :py:meth:`assignments`)
@@ -696,22 +691,77 @@ class DeviceCollection(object):
                                  device_assignment.backend_domain,
                                  device_assignment.ident))
 
-    def assignments(self, required=None):
-        """List assignments for devices which are (or may be) attached to the
-           vm.
+    def assign(self, device_assignment: DeviceAssignment) -> None:
+        """
+        Assign device to domain (add to :file:`qubes.xml`).
 
-        # TODO: handle auto-attach
-        Devices may be attached persistently (so they are included in
-        :file:`qubes.xml`) or not. Device can also be in :file:`qubes.xml`,
-        but be temporarily detached.
-
-        :param bool required: only include devices which are or are not
-            required to start qube.
+        :param DeviceAssignment device_assignment: device object
         """
 
-        assignments_str = self._vm.qubesd_call(None,
-                                               'admin.vm.device.{}.List'.format(
-                                                   self._class)).decode()
+        if not device_assignment.frontend_domain:
+            device_assignment.frontend_domain = self._vm
+        else:
+            assert device_assignment.frontend_domain == self._vm, \
+                "Trying to assign DeviceAssignment belonging to other domain"
+        if not device_assignment.devclass_is_set:
+            device_assignment.devclass = self._class
+        elif device_assignment.devclass != self._class:
+            raise ValueError(
+                f"Device assignment class does not match to expected: "
+                f"{device_assignment.devclass=}!={self._class=}")
+
+        options = device_assignment.options.copy()
+        if device_assignment.required:
+            options['required'] = 'True'
+        options_str = ' '.join('{}={}'.format(opt, val)
+                               for opt, val in sorted(options.items()))
+        self._vm.qubesd_call(None,
+                             'admin.vm.device.{}.Assign'.format(self._class),
+                             '{!s}+{!s}'.format(
+                                 device_assignment.backend_domain,
+                                 device_assignment.ident),
+                             options_str.encode('utf-8'))
+
+    def unassign(self, device_assignment: DeviceAssignment) -> None:
+        """
+        Unassign device from domain (remove from :file:`qubes.xml`).
+
+        :param DeviceAssignment device_assignment: device to unassign
+            (obtained from :py:meth:`assignments`)
+        """
+        if not device_assignment.frontend_domain:
+            device_assignment.frontend_domain = self._vm
+        else:
+            assert device_assignment.frontend_domain == self._vm, \
+                "Trying to unassign DeviceAssignment belonging to other domain"
+        if not device_assignment.devclass_is_set:
+            device_assignment.devclass = self._class
+        elif device_assignment.devclass != self._class:
+            raise ValueError(
+                f"Device assignment class does not match to expected: "
+                f"{device_assignment.devclass=}!={self._class=}")
+
+        self._vm.qubesd_call(None,
+                             'admin.vm.device.{}.Unassign'.format(self._class),
+                             '{!s}+{!s}'.format(
+                                 device_assignment.backend_domain,
+                                 device_assignment.ident))
+
+    def get_dedicated_devices(self) -> Iterable[DeviceAssignment]:
+        """
+        List devices which are attached or assigned to this vm.
+        """
+        dedicated = {dev for dev in itertools.chain(
+            self.get_attached_devices(), self.get_assigned_devices())}
+        for dev in dedicated:
+            yield dev
+
+    def get_attached_devices(self) -> Iterable[DeviceAssignment]:
+        """
+        List devices which are attached to this vm.
+        """
+        assignments_str = self._vm.qubesd_call(
+            None, 'admin.vm.device.{}.Attached'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
             device, _, options_all = assignment_str.partition(' ')
             backend_domain, ident = device.split('+', 1)
@@ -719,31 +769,49 @@ class DeviceCollection(object):
                            for opt_single in options_all.split(' ') if
                            opt_single)
             dev_required = (options.pop('required', False) in
-                              ['True', 'yes', True])
+                            ['True', 'yes', True])
             dev_auto_attach = (options.pop('attach_automatically', False) in
-                              ['True', 'yes', True])  # TODO
-            if required is not None and dev_required != required:
+                               ['True', 'yes', True])
+            backend_domain = self._vm.app.domains.get_blind(backend_domain)
+            yield DeviceAssignment(backend_domain, ident, options,
+                                   required=dev_required,
+                                   attach_automatically=dev_auto_attach,
+                                   frontend_domain=self._vm,
+                                   devclass=self._class)
+
+    def get_assigned_devices(
+            self, required_only: bool = False
+    ) -> Iterable[DeviceAssignment]:
+        """
+        Devices assigned to this vm (included in :file:`qubes.xml`).
+
+        Safe to access before libvirt bootstrap.
+        """
+        assignments_str = self._vm.qubesd_call(
+            None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
+        for assignment_str in assignments_str.splitlines():
+            device, _, options_all = assignment_str.partition(' ')
+            backend_domain, ident = device.split('+', 1)
+            options = dict(opt_single.split('=', 1)
+                           for opt_single in options_all.split(' ') if
+                           opt_single)
+            dev_required = (options.pop('required', False) in
+                            ['True', 'yes', True])
+            dev_auto_attach = (options.pop('attach_automatically', False) in
+                               ['True', 'yes', True])
+            if required_only is not None and dev_required != required_only:
                 continue
             backend_domain = self._vm.app.domains.get_blind(backend_domain)
             yield DeviceAssignment(backend_domain, ident, options,
                                    required=dev_required,
+                                   attach_automatically=dev_auto_attach,
                                    frontend_domain=self._vm,
                                    devclass=self._class)
 
-    def attached(self):
-        """List devices which are (or may be) attached to this vm """
-        for assignment in self.assignments():
-            yield assignment.device
-
-    def required(self):
-        """ Devices persistently attached and safe to access before libvirt
-            bootstrap.
+    def get_exposed_devices(self) -> Iterable[DeviceInfo]:
         """
-        for assignment in self.assignments(required=True):
-            yield assignment.device
-
-    def available(self):
-        """List devices exposed by this vm"""
+        List devices exposed by this vm.
+        """
         devices: bytes = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Available'.format(self._class))
         for dev_serialized in devices.splitlines():
@@ -753,24 +821,29 @@ class DeviceCollection(object):
                 expected_devclass=self._class,
             )
 
-    def update_required(self, device: DeviceInfo, required: bool):  # TODO: update auto-attach
-        """Update `required` flag of already attached device.
+    def update_assignment(self, device: DeviceInfo, required: Optional[bool]):
+        """
+        Update assignment of already attached device.
 
         :param DeviceInfo device: device for which change required flag
-        :param bool required: new required flag
+        :param bool required: new assignment:
+                              `None` -> unassign device from qube
+                              `False` -> device will be auto-attached to qube
+                              `True` -> device is required to start qube
         """
+        self._vm.qubesd_call(
+            None,
+            'admin.vm.device.{}.Set.assignment'.format(self._class),
+            '{!s}+{!s}'.format(device.backend_domain, device.ident),
+            repr(required).encode('utf-8')
+        )
 
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Set.persistent'.format(
-                                 self._class),
-                             '{!s}+{!s}'.format(device.backend_domain,
-                                                device.ident),
-                             str(required).encode('utf-8'))
-
-    __iter__ = available
+    __iter__ = get_exposed_devices
 
     def clear_cache(self):
-        """Clear cache of available devices"""
+        """
+        Clear cache of available devices.
+        """
         self._dev_cache.clear()
 
     def __getitem__(self, item):
@@ -787,7 +860,7 @@ class DeviceCollection(object):
         if item in self._dev_cache:
             return self._dev_cache[item]
         # then look for available devices
-        for dev in self.available():
+        for dev in self.get_exposed_devices():
             if dev.ident == item:
                 self._dev_cache[item] = dev
                 return dev

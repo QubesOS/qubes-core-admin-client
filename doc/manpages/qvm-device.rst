@@ -72,17 +72,9 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
    Alias for the `read-only=yes` option. If you specify both `--ro` and
    `--option read-only=no`, `--ro` takes precedence.
 
-.. option:: --required, -r
-
-   Assign device persistently which means it will be required to the qube's startup and then automatically attached.
-
 .. option:: --persistent, -p
 
-   Alias for `--required` for backward compatibility.
-
-.. option:: --auto-attach, -a
-
-   Assign the device to a qube. It will be automatically attached upon the qube's startup or connection. The device will not be automatically attached if it has been manually detached or is already attached to another qube.
+   Alias for `assign --required` for backward compatibility.
 
 aliases: a, at
 
@@ -95,6 +87,40 @@ Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
 If no device is given, detach all *DEVICE_CLASS* devices.
 
 aliases: d, dt
+
+assign
+^^^^^^
+
+| :command:`qvm-device` *DEVICE_CLASS* assign [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+
+Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
+
+.. option:: --option, -o
+
+   Specify device-class specific option, use `name=value` format. You can
+   specify this option multiple times. See below for options specific to
+   different device classes.
+
+.. option:: --ro
+
+   Alias for the `read-only=yes` option. If you specify both `--ro` and
+   `--option read-only=no`, `--ro` takes precedence.
+
+.. option:: --required, -r
+
+   Assign device persistently which means it will be required to the qube's startup and then automatically attached.
+
+aliases: s
+
+unassign
+^^^^^^^^
+
+| :command:`qvm-device` *DEVICE_CLASS* unassign [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+
+Remove assignment of device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
+If no device is given, remove assignments of all *DEVICE_CLASS* devices.
+
+aliases: u
 
 info
 ^^^^

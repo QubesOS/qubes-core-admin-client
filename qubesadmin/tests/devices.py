@@ -35,7 +35,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev1\n'
-        devices = list(self.vm.devices['test'].available())
+        devices = list(self.vm.devices['test'].get_exposed_devices())
         self.assertEqual(len(devices), 1)
         dev = devices[0]
         self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
@@ -51,7 +51,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev1 description=This is description\n'
-        devices = list(self.vm.devices['test'].available())
+        devices = list(self.vm.devices['test'].get_exposed_devices())
         self.assertEqual(len(devices), 1)
         dev = devices[0]
         self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
@@ -65,7 +65,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev1 ro=True other=123 description=This is description\n'
-        devices = list(self.vm.devices['test'].available())
+        devices = list(self.vm.devices['test'].get_exposed_devices())
         self.assertEqual(len(devices), 1)
         dev = devices[0]
         self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
@@ -155,7 +155,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_040_assignments(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.List', None, None)] = \
+            ('test-vm', 'admin.vm.device.test.Attached', None, None)] = \
             b'0\0test-vm2+dev1\n' \
             b'test-vm3+dev2\n'
         self.app.expected_calls[
@@ -164,7 +164,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm3', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev2 description=desc\n'
-        assigns = list(self.vm.devices['test'].assignments())
+        assigns = list(self.vm.devices['test'].get_dedicated_devices())
         self.assertEqual(len(assigns), 2)
         self.assertIsInstance(assigns[0], qubesadmin.devices.DeviceAssignment)
         self.assertEqual(assigns[0].backend_domain,
@@ -192,10 +192,10 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_041_assignments_options(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.List', None, None)] = \
+            ('test-vm', 'admin.vm.device.test.Attached', None, None)] = \
             b'0\0test-vm2+dev1 ro=True\n' \
             b'test-vm3+dev2 ro=False required=True\n'
-        assigns = list(self.vm.devices['test'].assignments())
+        assigns = list(self.vm.devices['test'].get_dedicated_devices())
         self.assertEqual(len(assigns), 2)
         self.assertIsInstance(assigns[0], qubesadmin.devices.DeviceAssignment)
         self.assertEqual(assigns[0].backend_domain,
@@ -224,7 +224,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.List', None, None)] = \
             b'0\0test-vm2+dev1\n' \
             b'test-vm3+dev2 required=True\n'
-        assigns = list(self.vm.devices['test'].assignments(True))
+        assigns = list(self.vm.devices['test'].get_assignet_devices(
+            required_only=True))
         self.assertEqual(len(assigns), 1)
         self.assertIsInstance(assigns[0], qubesadmin.devices.DeviceAssignment)
         self.assertEqual(assigns[0].backend_domain,
@@ -242,7 +243,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.List', None, None)] = \
             b'0\0test-vm2+dev1\n' \
             b'test-vm3+dev2 required=True\n'
-        assigns = list(self.vm.devices['test'].assignments(False))
+        assigns = list(self.vm.devices['test'].get_assigned_devices(
+            required_only=False))
         self.assertEqual(len(assigns), 1)
         self.assertIsInstance(assigns[0], qubesadmin.devices.DeviceAssignment)
         self.assertEqual(assigns[0].backend_domain,
@@ -256,13 +258,14 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_050_required(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.List', None, None)] = \
+            ('test-vm', 'admin.vm.device.test.Assigned', None, None)] = \
             b'0\0test-vm2+dev1\n' \
             b'test-vm3+dev2 required=True\n'
         self.app.expected_calls[
             ('test-vm3', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev2\n'
-        devs = list(self.vm.devices['test'].required())
+        devs = list(self.vm.devices['test'].get_assigned_devices(
+            required_only=True))
         self.assertEqual(len(devs), 1)
         self.assertIsInstance(devs[0], qubesadmin.devices.DeviceInfo)
         self.assertEqual(devs[0].backend_domain, self.app.domains['test-vm3'])
@@ -271,16 +274,16 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_060_attached(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.List', None, None)] = \
+            ('test-vm', 'admin.vm.device.test.Attached', None, None)] = \
             b'0\0test-vm2+dev1\n' \
-            b'test-vm3+dev2 required=True\n'
+            b'test-vm3+dev2\n'
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev1\n'
         self.app.expected_calls[
             ('test-vm3', 'admin.vm.device.test.Available', None, None)] = \
             b'0\0dev2\n'
-        devs = list(self.vm.devices['test'].attached())
+        devs = list(self.vm.devices['test'].get_attached_devices())
         self.assertEqual(len(devs), 2)
         self.assertIsInstance(devs[0], qubesadmin.devices.DeviceInfo)
         self.assertEqual(devs[0].backend_domain, self.app.domains['test-vm2'])
@@ -290,22 +293,22 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(devs[1].ident, 'dev2')
         self.assertAllCalled()
 
-    def test_070_update_required(self):
+    def test_070_update_assignment(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Set.persistent', 'test-vm2+dev1',
+            ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'True')] = b'0\0'
         dev = qubesadmin.devices.DeviceInfo(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
-        self.vm.devices['test'].update_required(dev, True)
+        self.vm.devices['test'].update_assignment(dev, True)
         self.assertAllCalled()
 
-    def test_071_update_required_false(self):
+    def test_071_update_assignment_false(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Set.persistent', 'test-vm2+dev1',
+            ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'False')] = b'0\0'
         dev = qubesadmin.devices.DeviceInfo(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
-        self.vm.devices['test'].update_required(dev, False)
+        self.vm.devices['test'].update_assignment(dev, False)
         self.assertAllCalled()
 
     def test_072_list(self):
