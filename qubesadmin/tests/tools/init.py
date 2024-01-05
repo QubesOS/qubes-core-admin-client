@@ -32,8 +32,8 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
         parser.set_defaults(properties={'defaultprop': 'defaultvalue'})
 
         args = parser.parse_args([])
-        self.assertDictContainsSubset(
-            {'defaultprop': 'defaultvalue'}, args.properties)
+        self.assertIn(
+            ('defaultprop', 'defaultvalue'), args.properties.items())
 
     def test_001_set_prop(self):
         parser = argparse.ArgumentParser()
@@ -41,8 +41,8 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
             action=qubesadmin.tools.PropertyAction)
 
         args = parser.parse_args(['-p', 'testprop=testvalue'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue'}, args.properties)
+        self.assertIn(
+            ('testprop', 'testvalue'), args.properties.items())
 
     def test_002_set_prop_2(self):
         parser = argparse.ArgumentParser()
@@ -52,8 +52,8 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
 
         args = parser.parse_args(
             ['-p', 'testprop=testvalue', '-p', 'testprop2=testvalue2'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue', 'testprop2': 'testvalue2'},
+        self.assertEqual(
+            {'testprop': 'testvalue', 'testprop2': 'testvalue2'} | args.properties,
             args.properties)
 
     def test_003_set_prop_with_default(self):
@@ -63,8 +63,8 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
         parser.set_defaults(properties={'defaultprop': 'defaultvalue'})
 
         args = parser.parse_args(['-p', 'testprop=testvalue'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue', 'defaultprop': 'defaultvalue'},
+        self.assertEqual(
+            {'testprop': 'testvalue', 'defaultprop': 'defaultvalue'} | args.properties,
             args.properties)
 
     def test_003_set_prop_override_default(self):
@@ -75,9 +75,9 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
         parser.set_defaults(properties={'testprop': 'defaultvalue'})
 
         args = parser.parse_args(['-p', 'testprop=testvalue'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue'},
-            args.properties)
+        self.assertIn(
+            ('testprop', 'testvalue'),
+            args.properties.items())
 
 
 class TC_01_SinglePropertyAction(qubesadmin.tests.QubesTestCase):
@@ -101,24 +101,24 @@ class TC_01_SinglePropertyAction(qubesadmin.tests.QubesTestCase):
         parser.set_defaults(properties={'testprop': 'defaultvalue'})
 
         args = parser.parse_args([])
-        self.assertDictContainsSubset(
-            {'testprop': 'defaultvalue'}, args.properties)
+        self.assertIn(
+            ('testprop', 'defaultvalue'), args.properties.items())
 
     def test_101_set_prop(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--testprop', '-T',
             action=qubesadmin.tools.SinglePropertyAction)
         args = parser.parse_args(['-T', 'testvalue'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue'}, args.properties)
+        self.assertIn(
+            ('testprop', 'testvalue'), args.properties.items())
 
     def test_102_set_prop_dest(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--testprop', '-T', dest='otherprop',
             action=qubesadmin.tools.SinglePropertyAction)
         args = parser.parse_args(['-T', 'testvalue'])
-        self.assertDictContainsSubset(
-            {'otherprop': 'testvalue'}, args.properties)
+        self.assertIn(
+            ('otherprop', 'testvalue'), args.properties.items())
 
     def test_103_set_prop_const(self):
         parser = argparse.ArgumentParser()
@@ -126,13 +126,13 @@ class TC_01_SinglePropertyAction(qubesadmin.tests.QubesTestCase):
             action=qubesadmin.tools.SinglePropertyAction,
             const='testvalue')
         args = parser.parse_args(['-T'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue'}, args.properties)
+        self.assertIn(
+            ('testprop', 'testvalue'), args.properties.items())
 
     def test_104_set_prop_positional(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('testprop',
             action=qubesadmin.tools.SinglePropertyAction)
         args = parser.parse_args(['testvalue'])
-        self.assertDictContainsSubset(
-            {'testprop': 'testvalue'}, args.properties)
+        self.assertIn(
+            ('testprop', 'testvalue'), args.properties.items())
