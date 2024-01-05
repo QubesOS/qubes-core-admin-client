@@ -575,7 +575,7 @@ def print_table(table, stream=None):
 
     # for tests...
     if stream != sys.__stdout__:
-        with subprocess.Popen(cmd + ['-c', '80'], stdin=subprocess.PIPE,
+        with subprocess.Popen(cmd + ['-c', '88'], stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE) as p:
             p.stdin.write(text_table.encode())
             (out, _) = p.communicate()
