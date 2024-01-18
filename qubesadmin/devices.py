@@ -135,6 +135,7 @@ class DeviceCategory(Enum):
     Printer = ("u07****",)
     Scanner = ("p0903**",)
     # Multimedia = Audio, Video, Displays etc.
+    Microphone = ("m******",)
     Multimedia = ("u01****", "u0e****", "u06****", "u10****", "p03****",
                   "p04****")
     Wireless = ("ue0****", "p0d****")
@@ -185,7 +186,8 @@ class DeviceInterface:
                 )
             ifc_full = devclass[0] + ifc_padded
         else:
-            known_devclasses = {'p': 'pci', 'u': 'usb', 'b': 'block'}
+            known_devclasses = {
+                'p': 'pci', 'u': 'usb', 'b': 'block', 'm': 'mic'}
             devclass = known_devclasses.get(interface_encoding[0], None)
             if len(ifc_padded) > 7:
                 print(
