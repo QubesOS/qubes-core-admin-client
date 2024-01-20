@@ -395,12 +395,15 @@ def main(args=None, app=None):
     if basename.startswith('qvm-') and basename != 'qvm-device':
         devclass = basename[4:]
 
-    parser = get_parser(devclass)
-    args = parser.parse_args(args, app=app)
-
-    if args.list_device_classes:
+    # Special treatment for '--list-device-classes' (alias --list-classes)
+    curr_action = sys.argv[1:]
+    if set(curr_action).intersection(
+            {'--list-device-classes', '--list-classes'}):
         print('\n'.join(qubesadmin.Qubes().list_deviceclass()))
         return 0
+
+    parser = get_parser(devclass)
+    args = parser.parse_args(args, app=app)
 
     try:
         args.func(args)
@@ -411,10 +414,4 @@ def main(args=None, app=None):
 
 
 if __name__ == '__main__':
-    # Special treatment for '--list-device-classes' (alias --list-classes)
-    curr_action = sys.argv[1:]
-    if set(curr_action).intersection(
-            {'--list-device-classes', '--list-classes'}):
-        sys.exit(main(args=['', '--list-device-classes']))
-
     sys.exit(main())
