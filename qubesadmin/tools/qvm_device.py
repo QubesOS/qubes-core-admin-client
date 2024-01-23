@@ -338,7 +338,7 @@ def get_parser(device_class=None):
                                action=DeviceAction)
     unassign_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                                  dest='device',
-                                 action=DeviceAction)
+                                 action=DeviceAction, allow_unknown=True)
     info_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                              dest='device',
                              nargs=argparse.OPTIONAL,
