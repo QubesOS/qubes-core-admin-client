@@ -299,6 +299,8 @@ class MockQube:
             self.properties["icon"].value = self.klass.lower() + "-" + \
                                             self.properties["label"].value
 
+        if self.klass == 'TemplateVM':
+            self.features['service.updates-proxy-setup'] = 1
         self.update_calls()
 
     def __setattr__(self, key, value):
