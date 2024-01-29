@@ -297,7 +297,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'True')] = b'0\0'
-        dev = qubesadmin.devices.DeviceInfo(
+        dev = qubesadmin.devices.DeviceAssignment(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
         self.vm.devices['test'].update_assignment(dev, True)
         self.assertAllCalled()
@@ -306,9 +306,9 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'False')] = b'0\0'
-        dev = qubesadmin.devices.DeviceInfo(
+        dev = qubesadmin.devices.DeviceAssignment(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
-        self.vm.devices['test'].update_assignment(dev, False)
+        self.vm.devices['test'].update_assignment(dev, None)  # TODO: false
         self.assertAllCalled()
 
     def test_072_list(self):

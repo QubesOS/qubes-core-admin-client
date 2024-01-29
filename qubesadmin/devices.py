@@ -31,6 +31,7 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 :py:class:`str`.
 """
 import itertools
+import string
 import sys
 import qubesadmin
 from enum import Enum
@@ -39,6 +40,10 @@ from typing import Optional, Dict, Any, List, Type, Iterable
 
 # TODO:
 # Proposed device events:
+# sometimes event can be fired twice, we can ignore it
+# e.g. if device is plugged out and in in short time we can have doubled
+# detaching and attaching, to avoid this we need more sequential operation
+# which we don't want
 # - device-list-changed: device-added -> device-added{devclass}
 # - device-list-changed: device-remove -> device-removed{devclass}
 # - device-property-changed: property_name
@@ -52,6 +57,33 @@ class UnexpectedDeviceProperty(qubesadmin.exc.QubesException, ValueError):
     """
     Device has unexpected property such as backend_domain, devclass etc.
     """
+
+
+class ProtocolError(AssertionError):  # TODO
+    """
+    Raised when something is wrong with data received.
+    """
+
+
+def qbool(value):  # TODO
+    """
+    Property setter for boolean properties.
+
+    It accepts (case-insensitive) ``'0'``, ``'no'`` and ``false`` as
+    :py:obj:`False` and ``'1'``, ``'yes'`` and ``'true'`` as
+    :py:obj:`True`.
+    """
+
+    if isinstance(value, str):
+        lcvalue = value.lower()
+        if lcvalue in ('0', 'no', 'false', 'off'):
+            return False
+        if lcvalue in ('1', 'yes', 'true', 'on'):
+            return True
+        raise qubesadmin.exc.QubesValueError(
+            'Invalid literal for boolean property: {!r}'.format(value))
+
+    return bool(value)
 
 
 class Device:
@@ -447,27 +479,27 @@ class DeviceInfo(Device):
             'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
             'serial'}
         properties = b' '.join(
-            f'{prop}={self.serialize_str(value)}'.encode('ascii')
+            f'{prop}={serialize_str(value)}'.encode('ascii')
             for prop, value in (
                 (key, getattr(self, key)) for key in default_attrs)
         )
 
-        back_name = self.serialize_str(self.backend_domain.name)
+        back_name = serialize_str(self.backend_domain.name)
         backend_domain_prop = (b"backend_domain=" + back_name.encode('ascii'))
         properties += b' ' + backend_domain_prop
 
-        interfaces = self.serialize_str(
+        interfaces = serialize_str(
             ''.join(repr(ifc) for ifc in self.interfaces))
         interfaces_prop = (b'interfaces=' + interfaces.encode('ascii'))
         properties += b' ' + interfaces_prop
 
         if self.parent_device is not None:
-            parent_ident = self.serialize_str(self.parent_device.ident)
+            parent_ident = serialize_str(self.parent_device.ident)
             parent_prop = (b'parent=' + parent_ident.encode('ascii'))
             properties += b' ' + parent_prop
 
         data = b' '.join(
-            f'_{prop}={self.serialize_str(value)}'.encode('ascii')
+            f'_{prop}={serialize_str(value)}'.encode('ascii')
             for prop, value in ((key, self.data[key]) for key in self.data)
         )
         if data:
@@ -504,7 +536,7 @@ class DeviceInfo(Device):
             expected_devclass: Optional[str] = None,
     ) -> 'DeviceInfo':
         decoded = serialization.decode('ascii', errors='ignore')
-        _ident, _, rest = decoded.partition(' ')
+        ident, _, rest = decoded.partition(' ')
         keys = []
         values = []
         key, _, rest = rest.partition("='")
@@ -512,10 +544,10 @@ class DeviceInfo(Device):
         while "='" in rest:
             value_key, _, rest = rest.partition("='")
             value, _, key = value_key.rpartition("' ")
-            values.append(DeviceInfo.deserialize_str(value))
+            values.append(deserialize_str(value))
             keys.append(key)
         value = rest[:-1]  # ending '
-        values.append(DeviceInfo.deserialize_str(value))
+        values.append(deserialize_str(value))
 
         properties = dict()
         for key, value in zip(keys, values):
@@ -530,10 +562,16 @@ class DeviceInfo(Device):
                 f"Got device exposed by {properties['backend_domain']}"
                 f"when expected devices from {expected_backend_domain.name}.")
         properties['backend_domain'] = expected_backend_domain
+
         if expected_devclass and properties['devclass'] != expected_devclass:
             raise UnexpectedDeviceProperty(
                 f"Got {properties['devclass']} device "
                 f"when expected {expected_devclass}.")
+
+        if properties["ident"] != ident:
+            raise UnexpectedDeviceProperty(
+                f"Got device with id: {properties['ident']} "
+                f"when expected id: {ident}.")
 
         interfaces = properties['interfaces']
         interfaces = [
@@ -549,17 +587,42 @@ class DeviceInfo(Device):
 
         return cls(**properties)
 
-    @staticmethod
-    def serialize_str(string: str):
-        return repr(string)
-
-    @staticmethod
-    def deserialize_str(string: str):
-        return string.replace("\\\'", "'")
-
     @property
     def frontend_domain(self):
         return self.data.get("frontend_domain", None)
+
+
+def serialize_str(value: str):
+    return repr(str(value))
+
+
+def deserialize_str(value: str):
+    return value.replace("\\\'", "'")
+
+
+def sanitize_str(
+        untrusted_value: str,
+        allowed_chars: str,
+        replace_char: str = None,
+        error_message: str = ""
+) -> str:
+    """
+    Sanitize given untrusted string.
+
+    If `replace_char` is not None, ignore `error_message` and replace invalid
+    characters with the string.
+    """
+    if replace_char is None:
+        if any(x not in allowed_chars for x in untrusted_value):
+            raise ProtocolError(error_message)
+        return untrusted_value
+    result = ""
+    for char in untrusted_value:
+        if char in allowed_chars:
+            result += char
+        else:
+            result += replace_char
+    return result
 
 
 class UnknownDevice(DeviceInfo):
@@ -649,6 +712,122 @@ class DeviceAssignment(Device):
         """ Device options (same as in the legacy API). """
         self.__options = options or {}
 
+    def serialize(self) -> bytes:
+        properties = b' '.join(
+            f'{prop}={serialize_str(value)}'.encode('ascii')
+            for prop, value in (
+                ('required', 'yes' if self.required else 'no'),
+                ('attach_automatically',
+                 'yes' if self.attach_automatically else 'no'),
+                ('ident', self.ident),
+                ('devclass', self.devclass)
+            )
+        )
+
+        back_name = serialize_str(self.backend_domain.name)
+        backend_domain_prop = (b"backend_domain=" + back_name.encode('ascii'))
+        properties += b' ' + backend_domain_prop
+
+        if self.frontend_domain is not None:
+            front_name = serialize_str(self.frontend_domain.name)
+            frontend_domain_prop = (
+                    b"frontend_domain=" + front_name.encode('ascii'))
+            properties += b' ' + frontend_domain_prop
+
+        if self.options:
+            properties += b' ' + b' '.join(
+                f'_{prop}={serialize_str(value)}'.encode('ascii')
+                for prop, value in self.options.items()
+            )
+
+        return properties
+
+    @classmethod
+    def deserialize(
+            cls,
+            serialization: bytes,
+            expected_backend_domain: 'qubes.vm.BaseVM',
+            expected_ident: str,
+            expected_devclass: Optional[str] = None,
+    ) -> 'DeviceAssignment':
+        try:
+            result = DeviceAssignment._deserialize(
+                cls, serialization,
+                expected_backend_domain, expected_ident, expected_devclass
+            )
+        except Exception as exc:
+            raise ProtocolError() from exc
+        return result
+
+    @staticmethod
+    def _deserialize(
+            cls: Type,
+            untrusted_serialization: bytes,
+            expected_backend_domain: 'qubes.vm.BaseVM',
+            expected_ident: str,
+            expected_devclass: Optional[str] = None,
+    ) -> 'DeviceAssignment':
+        options = {}
+        allowed_chars_key = string.digits + string.ascii_letters + '-_.'
+        allowed_chars_value = allowed_chars_key + ',+:'
+
+        untrusted_decoded = untrusted_serialization.decode('ascii', 'strict')
+        keys = []
+        values = []
+        untrusted_key, _, untrusted_rest = untrusted_decoded.partition("='")
+
+        key = sanitize_str(
+            untrusted_key, allowed_chars_key,
+            error_message='Invalid chars in property name')
+        keys.append(key)
+        while "='" in untrusted_rest:
+            ut_value_key, _, untrusted_rest = untrusted_rest.partition("='")
+            untrusted_value, _, untrusted_key = ut_value_key.rpartition("' ")
+            value = sanitize_str(
+                deserialize_str(untrusted_value), allowed_chars_value,
+                error_message='Invalid chars in property value')
+            values.append(value)
+            key = sanitize_str(
+                untrusted_key, allowed_chars_key,
+                error_message='Invalid chars in property name')
+            keys.append(key)
+        untrusted_value = untrusted_rest[:-1]  # ending '
+        value = sanitize_str(
+            deserialize_str(untrusted_value), allowed_chars_value,
+            error_message='Invalid chars in property value')
+        values.append(value)
+
+        properties = dict()
+        for key, value in zip(keys, values):
+            if key.startswith("_"):
+                options[key[1:]] = value
+            else:
+                properties[key] = value
+
+        properties['options'] = options
+
+        if properties['backend_domain'] != expected_backend_domain.name:
+            raise UnexpectedDeviceProperty(
+                f"Got device exposed by {properties['backend_domain']}"
+                f"when expected devices from {expected_backend_domain.name}.")
+        properties['backend_domain'] = expected_backend_domain
+
+        if properties["ident"] != expected_ident:
+            raise UnexpectedDeviceProperty(
+                f"Got device with id: {properties['ident']} "
+                f"when expected id: {expected_ident}.")
+
+        if expected_devclass and properties['devclass'] != expected_devclass:
+            raise UnexpectedDeviceProperty(
+                f"Got {properties['devclass']} device "
+                f"when expected {expected_devclass}.")
+
+        properties['attach_automatically'] = qbool(
+            properties['attach_automatically'])
+        properties['required'] = qbool(properties['required'])
+
+        return cls(**properties)
+
 
 class DeviceCollection:
     """Bag for devices.
@@ -684,15 +863,12 @@ class DeviceCollection:
                 f"Device assignment class does not match to expected: "
                 f"{device_assignment.devclass=}!={self._class=}")
 
-        options = device_assignment.options.copy()
-        options_str = ' '.join('{}={}'.format(opt, val)
-                               for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,
                              'admin.vm.device.{}.Attach'.format(self._class),
                              '{!s}+{!s}'.format(
                                  device_assignment.backend_domain,
                                  device_assignment.ident),
-                             options_str.encode('utf-8'))
+                             device_assignment.serialize())
 
     def detach(self, device_assignment: DeviceAssignment) -> None:
         """
@@ -738,17 +914,12 @@ class DeviceCollection:
                 f"Device assignment class does not match to expected: "
                 f"{device_assignment.devclass=}!={self._class=}")
 
-        options = device_assignment.options.copy()
-        if device_assignment.required:
-            options['required'] = 'True'
-        options_str = ' '.join('{}={}'.format(opt, val)
-                               for opt, val in sorted(options.items()))
         self._vm.qubesd_call(None,
                              'admin.vm.device.{}.Assign'.format(self._class),
                              '{!s}+{!s}'.format(
                                  device_assignment.backend_domain,
                                  device_assignment.ident),
-                             options_str.encode('utf-8'))
+                             device_assignment.serialize())
 
     def unassign(self, device_assignment: DeviceAssignment) -> None:
         """
@@ -791,21 +962,16 @@ class DeviceCollection:
         assignments_str = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Attached'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
-            device, _, options_all = assignment_str.partition(' ')
-            backend_domain, ident = device.split('+', 1)
-            options = dict(opt_single.split('=', 1)
-                           for opt_single in options_all.split(' ') if
-                           opt_single)
-            dev_required = (options.pop('required', False) in
-                            ['True', 'yes', True])
-            dev_auto_attach = (options.pop('attach_automatically', False) in
-                               ['True', 'yes', True])
-            backend_domain = self._vm.app.domains.get_blind(backend_domain)
-            yield DeviceAssignment(backend_domain, ident, options,
-                                   required=dev_required,
-                                   attach_automatically=dev_auto_attach,
-                                   frontend_domain=self._vm,
-                                   devclass=self._class)
+            device, _, untrusted_rest = assignment_str.partition(' ')
+            backend_domain_name, ident = device.split('+', 1)
+            backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
+
+            yield DeviceAssignment.deserialize(
+                untrusted_rest.encode('ascii'),
+                expected_backend_domain=backend_domain,
+                expected_ident=ident,
+                expected_devclass=None
+            )
 
     def get_assigned_devices(
             self, required_only: bool = False
@@ -818,23 +984,16 @@ class DeviceCollection:
         assignments_str = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
-            device, _, options_all = assignment_str.partition(' ')
-            backend_domain, ident = device.split('+', 1)
-            options = dict(opt_single.split('=', 1)
-                           for opt_single in options_all.split(' ') if
-                           opt_single)
-            dev_required = (options.pop('required', False) in
-                            ['True', 'yes', True])
-            dev_auto_attach = (options.pop('attach_automatically', False) in
-                               ['True', 'yes', True])
-            if required_only is not None and dev_required != required_only:
-                continue
-            backend_domain = self._vm.app.domains.get_blind(backend_domain)
-            yield DeviceAssignment(backend_domain, ident, options,
-                                   required=dev_required,
-                                   attach_automatically=dev_auto_attach,
-                                   frontend_domain=self._vm,
-                                   devclass=self._class)
+            device, _, untrusted_rest = assignment_str.partition(' ')
+            backend_domain_name, ident = device.split('+', 1)
+            backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
+
+            yield DeviceAssignment.deserialize(
+                untrusted_rest.encode('ascii'),
+                expected_backend_domain=backend_domain,
+                expected_ident=ident,
+                expected_devclass=None
+            )
 
     def get_exposed_devices(self) -> Iterable[DeviceInfo]:
         """
@@ -849,11 +1008,11 @@ class DeviceCollection:
                 expected_devclass=self._class,
             )
 
-    def update_assignment(self, device: DeviceInfo, required: Optional[bool]):
+    def update_assignment(self, device: Device, required: Optional[bool]):
         """
         Update assignment of already attached device.
 
-        :param DeviceInfo device: device for which change required flag
+        :param Device device: device for which change required flag
         :param bool required: new assignment:
                               `None` -> unassign device from qube
                               `False` -> device will be auto-attached to qube
