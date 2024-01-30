@@ -105,7 +105,7 @@ class Device:
         if isinstance(other, Device):
             return (self.backend_domain, self.ident) < \
                    (other.backend_domain, other.ident)
-        return NotImplemented
+        return NotImplemented()
 
     def __repr__(self):
         return "[%s]:%s" % (self.backend_domain, self.ident)
@@ -160,9 +160,10 @@ class Device:
 
 class DeviceCategory(Enum):
     """
+    Category of peripheral device.
+
     Arbitrarily selected interfaces that are important to users,
     thus deserving special recognition such as a custom icon, etc.
-
     """
     Other = "*******"
 
@@ -212,12 +213,16 @@ class DeviceCategory(Enum):
 
 
 class DeviceInterface:
+    """
+    Peripheral device interface wrapper.
+    """
+
     def __init__(self, interface_encoding: str, devclass: Optional[str] = None):
         ifc_padded = interface_encoding.ljust(6, '*')
         if devclass:
             if len(ifc_padded) > 6:
                 print(
-                    f"interface_encoding is too long "
+                    f"{interface_encoding=} is too long "
                     f"(is {len(interface_encoding)}, expected max. 6) "
                     f"for given {devclass=}",
                     file=sys.stderr
@@ -229,7 +234,7 @@ class DeviceInterface:
             devclass = known_devclasses.get(interface_encoding[0], None)
             if len(ifc_padded) > 7:
                 print(
-                    f"interface_encoding is too long "
+                    f"{interface_encoding=} is too long "
                     f"(is {len(interface_encoding)}, expected max. 7)",
                     file=sys.stderr
                 )
@@ -258,18 +263,26 @@ class DeviceInterface:
         """ Value for unknown device interface. """
         return cls("?******")
 
-    @property
     def __repr__(self):
         return self._interface_encoding
 
-    @property
     def __str__(self):
         if self.devclass == "block":
             return "Block device"
         if self.devclass in ("usb", "pci"):
-            self._load_classes(self.devclass).get(
-                self._interface_encoding[1:],
-                f"Unclassified {self.devclass} device")
+            result = self._load_classes(self.devclass).get(
+                self._interface_encoding[1:], None)
+            if result is None:
+                result = self._load_classes(self.devclass).get(
+                    self._interface_encoding[1:-2] + '**', None)
+            if result is None:
+                result = self._load_classes(self.devclass).get(
+                    self._interface_encoding[1:-4] + '****', None)
+            if result is None:
+                result = f"Unclassified {self.devclass} device"
+            return result
+        if self.devclass == 'mic':
+            return "Microphone"
         return repr(self)
 
     @staticmethod
@@ -591,6 +604,27 @@ class DeviceInfo(Device):
     def frontend_domain(self):
         return self.data.get("frontend_domain", None)
 
+    @property
+    def full_identity(self) -> str:
+        """
+        Get user understandable identification of device not related to ports.
+
+        In addition to the description returns presented interfaces.
+        It is used to auto-attach usb devices, so an attacking device needs to
+        mimic not only a name, but also interfaces of trusted device (and have
+        to be plugged to the same port). For a common user it is all the data
+        she uses to recognize the device.
+        """
+        allowed_chars = string.digits + string.ascii_letters + '-_.'
+        description = ""
+        for char in self.description:
+            if char in allowed_chars:
+                description += char
+            else:
+                description += "_"
+        interfaces = ''.join(repr(ifc) for ifc in self.interfaces)
+        return f'{description}:{interfaces}'
+
 
 def serialize_str(value: str):
     return repr(str(value))
@@ -771,7 +805,8 @@ class DeviceAssignment(Device):
         allowed_chars_key = string.digits + string.ascii_letters + '-_.'
         allowed_chars_value = allowed_chars_key + ',+:'
 
-        untrusted_decoded = untrusted_serialization.decode('ascii', 'strict')
+        untrusted_decoded = untrusted_serialization.decode(
+            'ascii', 'strict').strip()
         keys = []
         values = []
         untrusted_key, _, untrusted_rest = untrusted_decoded.partition("='")
@@ -808,7 +843,7 @@ class DeviceAssignment(Device):
 
         if properties['backend_domain'] != expected_backend_domain.name:
             raise UnexpectedDeviceProperty(
-                f"Got device exposed by {properties['backend_domain']}"
+                f"Got device exposed by {properties['backend_domain']} "
                 f"when expected devices from {expected_backend_domain.name}.")
         properties['backend_domain'] = expected_backend_domain
 
@@ -895,31 +930,31 @@ class DeviceCollection:
                                  device_assignment.backend_domain,
                                  device_assignment.ident))
 
-    def assign(self, device_assignment: DeviceAssignment) -> None:
+    def assign(self, assignment: DeviceAssignment) -> None:
         """
         Assign device to domain (add to :file:`qubes.xml`).
 
-        :param DeviceAssignment device_assignment: device object
+        :param DeviceAssignment assignment: device object
         """
 
-        if not device_assignment.frontend_domain:
-            device_assignment.frontend_domain = self._vm
+        if not assignment.frontend_domain:
+            assignment.frontend_domain = self._vm
         else:
-            assert device_assignment.frontend_domain == self._vm, \
+            assert assignment.frontend_domain == self._vm, \
                 "Trying to assign DeviceAssignment belonging to other domain"
-        if not device_assignment.devclass_is_set:
-            device_assignment.devclass = self._class
-        elif device_assignment.devclass != self._class:
-            raise ValueError(
+        if not assignment.devclass_is_set:
+            assignment.devclass = self._class
+        elif assignment.devclass != self._class:
+            raise qubesadmin.ext.QubesValueError(
                 f"Device assignment class does not match to expected: "
-                f"{device_assignment.devclass=}!={self._class=}")
+                f"{assignment.devclass=}!={self._class=}")
 
         self._vm.qubesd_call(None,
                              'admin.vm.device.{}.Assign'.format(self._class),
                              '{!s}+{!s}'.format(
-                                 device_assignment.backend_domain,
-                                 device_assignment.ident),
-                             device_assignment.serialize())
+                                 assignment.backend_domain,
+                                 assignment.ident),
+                             assignment.serialize())
 
     def unassign(self, device_assignment: DeviceAssignment) -> None:
         """

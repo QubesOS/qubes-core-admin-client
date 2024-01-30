@@ -9,8 +9,10 @@ Synopsis
 | :command:`qvm-device` *DEVICE_CLASS* {list,ls,l} [*options*] <*vm-name*>
 | :command:`qvm-device` *DEVICE_CLASS* {attach,at,a} [*options*] <*vm-name*> <*device*>
 | :command:`qvm-device` *DEVICE_CLASS* {detach,dt,d} [*options*] <*vm-name*> [<*device*>]
+| :command:`qvm-device` *DEVICE_CLASS* {assign,s} [*options*] <*vm-name*> <*device*>
+| :command:`qvm-device` *DEVICE_CLASS* {unassign,u} [*options*] <*vm-name*> [<*device*>]
 | :command:`qvm-device` *DEVICE_CLASS* {info,i} [*options*] <*vm-name*> [<*device*>]
-| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d,info,i} [*options*] <*vmname*> ...
+| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d,assign,s,unassign,u,info,i} [*options*] <*vmname*> ...
 
 .. note:: :command:`qvm-block`, :command:`qvm-usb` and :command:`qvm-pci` are just aliases for :command:`qvm-device block`, :command:`qvm-device usb` and :command:`qvm-device pci` respectively.
 

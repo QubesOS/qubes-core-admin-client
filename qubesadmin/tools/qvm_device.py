@@ -174,6 +174,8 @@ def assign_device(args):
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
+    if device.devclass == 'usb':
+        options['identity'] = device.full_identity
     device_assignment.attach_automatically = True
     device_assignment.required = args.required
     device_assignment.options = options
@@ -266,10 +268,10 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                     raise KeyError(device_id)
             except KeyError:
                 parser.error_runtime(
-                    "backend vm {!r} doesn't expose device {!r}".format(
-                        vmname, device_id))
-            device = qubesadmin.devices.Device(vm, device_id)
-            setattr(namespace, self.dest, device)
+                    f"backend vm {vmname!r} doesn't expose "
+                    f"{devclass} device {device_id!r}")
+                dev = qubesadmin.devices.Device(vm, device_id, devclass)
+            setattr(namespace, self.dest, dev)
         except ValueError:
             parser.error(
                 'expected a backend vm & device id combination like foo:bar '
