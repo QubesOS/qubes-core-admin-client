@@ -128,8 +128,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1',
              b'required=True')] = b'0\0'
         assign = qubesadmin.devices.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1')
-        assign.required = True
+            self.app.domains['test-vm2'], 'dev1', required=True)
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
@@ -138,8 +137,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1',
              b'required=True ro=True')] = b'0\0'
         assign = qubesadmin.devices.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1')
-        assign.required = True
+            self.app.domains['test-vm2'], 'dev1', required=True)
         assign.options['ro'] = True
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
