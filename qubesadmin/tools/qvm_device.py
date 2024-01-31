@@ -136,14 +136,16 @@ def attach_device(args):
     vm = args.domains[0]
     device = args.device
     device_assignment = qubesadmin.devices.DeviceAssignment(
-        device.backend_domain, device.ident)
+        device.backend_domain, device.ident,
+        # backward compatibility
+        attach_automatically=args.required, required=args.required)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
     device_assignment.options = options
     vm.devices[args.devclass].attach(device_assignment)
+    # backward compatibility
     if args.required:
-        device_assignment.required = args.required
         vm.devices[args.devclass].assign(device_assignment)
 
 
@@ -170,14 +172,13 @@ def assign_device(args):
     vm = args.domains[0]
     device = args.device
     device_assignment = qubesadmin.devices.DeviceAssignment(
-        device.backend_domain, device.ident)
+        device.backend_domain, device.ident,
+        required=args.required, attach_automatically=True)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
     if device.devclass == 'usb':
         options['identity'] = device.full_identity
-    device_assignment.attach_automatically = True
-    device_assignment.required = args.required
     device_assignment.options = options
     vm.devices[args.devclass].assign(device_assignment)
 
