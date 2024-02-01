@@ -321,10 +321,9 @@ class DeviceInterface:
 class DeviceInfo(Device):
     """ Holds all information about a device """
 
-    # pylint: disable=too-few-public-methods
     def __init__(
             self,
-            backend_domain: 'qubes.vm.qubesvm.QubesVM',  # TODO
+            backend_domain: 'qubes.vm.BaseVM',
             ident: str,
             devclass: Optional[str] = None,
             vendor: Optional[str] = None,
@@ -334,6 +333,7 @@ class DeviceInfo(Device):
             serial: Optional[str] = None,
             interfaces: Optional[List[DeviceInterface]] = None,
             parent: Optional[Device] = None,
+            attachment: Optional['qubes.vm.BaseVM'] = None,
             **kwargs
     ):
         super().__init__(backend_domain, ident, devclass)
@@ -345,6 +345,7 @@ class DeviceInfo(Device):
         self._serial = serial
         self._interfaces = interfaces
         self._parent = parent
+        self._attachment = attachment
 
         self.data = kwargs
 
@@ -476,17 +477,17 @@ class DeviceInfo(Device):
                 if dev.parent_device.ident == self.ident]
 
     @property
-    def attachments(self) -> List['DeviceAssignment']:
+    def attachment(self) -> Optional['qubes.vm.BaseVM']:
         """
-        Device attachments
+        VM to which device is attached (frontend domain).
         """
-        return []  # TODO
+        return self._attachment
 
     def serialize(self) -> bytes:
         """
         Serialize object to be transmitted via Qubes API.
         """
-        # 'backend_domain', 'interfaces', 'data', 'parent_device'
+        # 'backend_domain', 'attachment', 'interfaces', 'data', 'parent_device'
         # are not string, so they need special treatment
         default_attrs = {
             'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
@@ -497,9 +498,14 @@ class DeviceInfo(Device):
                 (key, getattr(self, key)) for key in default_attrs)
         )
 
-        back_name = serialize_str(self.backend_domain.name)
-        backend_domain_prop = (b"backend_domain=" + back_name.encode('ascii'))
-        properties += b' ' + backend_domain_prop
+        qname = serialize_str(self.backend_domain.name)
+        backend_prop = (b"backend_domain=" + qname.encode('ascii'))
+        properties += b' ' + backend_prop
+
+        if self.attachment:
+            qname = serialize_str(self.attachment.name)
+            attachment_prop = (b"attachment=" + qname.encode('ascii'))
+            properties += b' ' + attachment_prop
 
         interfaces = serialize_str(
             ''.join(repr(ifc) for ifc in self.interfaces))
@@ -576,6 +582,13 @@ class DeviceInfo(Device):
                 f"when expected devices from {expected_backend_domain.name}.")
         properties['backend_domain'] = expected_backend_domain
 
+        if 'attachment' not in properties or not properties['attachment']:
+            properties['attachment'] = None
+        else:
+            app = expected_backend_domain.app
+            properties['attachment'] = app.domains.get_blind(
+                properties['attachment'])
+
         if expected_devclass and properties['devclass'] != expected_devclass:
             raise UnexpectedDeviceProperty(
                 f"Got {properties['devclass']} device "
@@ -599,10 +612,6 @@ class DeviceInfo(Device):
             )
 
         return cls(**properties)
-
-    @property
-    def frontend_domain(self):
-        return self.data.get("frontend_domain", None)
 
     @property
     def full_identity(self) -> str:
@@ -720,9 +729,9 @@ class DeviceAssignment(Device):
         """
         return self.__required
 
-    # @required.setter
-    # def required(self, required: bool):
-    #     self.__required = required
+    @required.setter
+    def required(self, required: bool):
+        self.__required = required
 
     @property
     def attach_automatically(self) -> bool:
@@ -732,9 +741,9 @@ class DeviceAssignment(Device):
         """
         return self.__attach_automatically
 
-    # @attach_automatically.setter
-    # def attach_automatically(self, attach_automatically: bool):
-    #     self.__attach_automatically = attach_automatically
+    @attach_automatically.setter
+    def attach_automatically(self, attach_automatically: bool):
+        self.__attach_automatically = attach_automatically
 
     @property
     def options(self) -> Dict[str, Any]:
