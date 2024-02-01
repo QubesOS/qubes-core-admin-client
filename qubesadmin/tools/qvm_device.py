@@ -6,6 +6,7 @@
 # Copyright (C) 2016 Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>
 # Copyright (C) 2016 Marek Marczykowski-Górecki
 #                              <marmarek@invisiblethingslab.com>
+# Copyright (C) 2024 Piotr Bartman-Szwarc <prbartman@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -181,6 +182,8 @@ def assign_device(args):
         options['identity'] = device.full_identity
     device_assignment.options = options
     vm.devices[args.devclass].assign(device_assignment)
+    if vm.is_running() and not device_assignment.attached:
+        print("Assigned. Now you can manually attach device or restart domain.")
 
 
 def unassign_device(args):
@@ -191,12 +194,18 @@ def unassign_device(args):
     if args.device:
         device = args.device
         device_assignment = qubesadmin.devices.DeviceAssignment(
-            device.backend_domain, device.ident)
+            device.backend_domain, device.ident, frontend_domain=vm)
         vm.devices[args.devclass].unassign(device_assignment)
+        if device_assignment.attached:
+            print("Unassigned. Now you can manually detach device "
+                  "or restart domain.")
     else:
         for device_assignment in (
                 vm.devices[args.devclass].get_assigned_devices()):
             vm.devices[args.devclass].unassign(device_assignment)
+            if device_assignment.attached:
+                print("Unassigned. Now you can manually detach device "
+                      "or restart domain.")
 
 
 def info_device(args):
@@ -347,24 +356,19 @@ def get_parser(device_class=None):
                              nargs=argparse.OPTIONAL,
                              action=DeviceAction, allow_unknown=True)
 
-    attach_parser.add_argument('--option', '-o', action='append',
-                               help="Set option for the device in opt=value "
-                                    "form (can be specified "
-                                    "multiple times), see man qvm-device for "
-                                    "details")
-    assign_parser.add_argument('--option', '-o', action='append',
-                               help="Set option for the device in opt=value "
-                                    "form (can be specified "
-                                    "multiple times), see man qvm-device for "
-                                    "details")  # TODO
-    attach_parser.add_argument('--ro', action='store_true', default=False,
-                               help="Attach device read-only (alias for "
-                                    "read-only=yes option, "
-                                    "takes precedence)")
-    assign_parser.add_argument('--ro', action='store_true', default=False,
-                               help="Attach device read-only (alias for "
-                                    "read-only=yes option, "
-                                    "takes precedence)")  # TODO
+    option = (('--option', '-o',),
+               {'action': 'append',
+                'help': "Set option for the device in opt=value form "
+                        "(can be specified multiple times), "
+                        "see man qvm-device for details"})
+    attach_parser.add_argument(*option[0], **option[1])
+    assign_parser.add_argument(*option[0], **option[1])
+    read_only = (('--ro',),
+                 {'action': 'store_true', 'default': False,
+                  'help': "Attach device read-only (alias for read-only=yes "
+                          "option, takes precedence)"})
+    attach_parser.add_argument(*read_only[0], **read_only[1])
+    assign_parser.add_argument(*read_only[0], **read_only[1])
     attach_parser.add_argument('--persistent', '-p',
                                dest='required',
                                action='store_true',
