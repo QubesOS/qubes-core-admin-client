@@ -6,6 +6,7 @@
 # Copyright (C) 2016       Bahtiar `kalkin-` Gadimov <bahtiar@gadimov.de>
 # Copyright (C) 2017 Marek Marczykowski-Górecki
 #                               <marmarek@invisiblethingslab.com>
+# Copyright (C) 2024 Piotr Bartman-Szwarc <prbartman@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -42,11 +43,10 @@ from typing import Optional, Dict, Any, List, Type, Iterable
 # Proposed device events:
 # sometimes event can be fired twice, we can ignore it
 # e.g. if device is plugged out and in in short time we can have doubled
-# detaching and attaching, to avoid this we need more sequential operation
-# which we don't want
+# detaching and attaching...
 # - device-list-changed: device-added -> device-added{devclass}
 # - device-list-changed: device-remove -> device-removed{devclass}
-# - device-property-changed: property_name
+# - device-property-changed: property_name: TODO?
 # - device-assignment-changed: created -> device-assign:{devclass}
 # - device-assignment-changed: removed -> device-unassign:{devclass}
 # - device-assignment-changed: attached -> device-attach:{devclass}
@@ -59,13 +59,13 @@ class UnexpectedDeviceProperty(qubesadmin.exc.QubesException, ValueError):
     """
 
 
-class ProtocolError(AssertionError):  # TODO
+class ProtocolError(AssertionError):
     """
     Raised when something is wrong with data received.
     """
 
 
-def qbool(value):  # TODO
+def qbool(value):
     """
     Property setter for boolean properties.
 
@@ -722,6 +722,15 @@ class DeviceAssignment(Device):
         self.__frontend_domain = frontend_domain
 
     @property
+    def attached(self) -> bool:
+        """
+        Is the device attached to the fronted domain?
+
+        Returns False if device is attached to different domain
+        """
+        return self.device.attachment == self.frontend_domain
+
+    @property
     def required(self) -> bool:
         """
         Is the presence of this device required for the domain to start? If yes,
@@ -888,56 +897,22 @@ class DeviceCollection:
         self._class = class_
         self._dev_cache = {}
 
-    def attach(self, device_assignment: DeviceAssignment) -> None:
+    def attach(self, assignment: DeviceAssignment) -> None:
         """
         Attach (add) device to domain.
 
-        :param DeviceAssignment device_assignment: device object
+        :param DeviceAssignment assignment: device object
         """
+        self._add(assignment, 'attach')
 
-        if not device_assignment.frontend_domain:
-            device_assignment.frontend_domain = self._vm
-        else:
-            assert device_assignment.frontend_domain == self._vm, \
-                "Trying to attach DeviceAssignment belonging to other domain"
-        if not device_assignment.devclass_is_set:
-            device_assignment.devclass = self._class
-        elif device_assignment.devclass != self._class:
-            raise ValueError(
-                f"Device assignment class does not match to expected: "
-                f"{device_assignment.devclass=}!={self._class=}")
-
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Attach'.format(self._class),
-                             '{!s}+{!s}'.format(
-                                 device_assignment.backend_domain,
-                                 device_assignment.ident),
-                             device_assignment.serialize())
-
-    def detach(self, device_assignment: DeviceAssignment) -> None:
+    def detach(self, assignment: DeviceAssignment) -> None:
         """
         Detach (remove) device from domain.
 
-        :param DeviceAssignment device_assignment: device to detach
+        :param DeviceAssignment assignment: device to detach
             (obtained from :py:meth:`assignments`)
         """
-        if not device_assignment.frontend_domain:
-            device_assignment.frontend_domain = self._vm
-        else:
-            assert device_assignment.frontend_domain == self._vm, \
-                "Trying to detach DeviceAssignment belonging to other domain"
-        if not device_assignment.devclass_is_set:
-            device_assignment.devclass = self._class
-        elif device_assignment.devclass != self._class:
-            raise ValueError(
-                f"Device assignment class does not match to expected: "
-                f"{device_assignment.devclass=}!={self._class=}")
-
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Detach'.format(self._class),
-                             '{!s}+{!s}'.format(
-                                 device_assignment.backend_domain,
-                                 device_assignment.ident))
+        self._remove(assignment, 'detach')
 
     def assign(self, assignment: DeviceAssignment) -> None:
         """
@@ -945,50 +920,53 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
+        self._add(assignment, 'assign')
 
+    def unassign(self, assignment: DeviceAssignment) -> None:
+        """
+        Unassign device from domain (remove from :file:`qubes.xml`).
+
+        :param DeviceAssignment assignment: device to unassign
+            (obtained from :py:meth:`assignments`)
+        """
+        self._remove(assignment, 'unassign')
+
+
+    def _add(self, assignment: DeviceAssignment, action: str) -> None:
         if not assignment.frontend_domain:
             assignment.frontend_domain = self._vm
-        else:
-            assert assignment.frontend_domain == self._vm, \
-                "Trying to assign DeviceAssignment belonging to other domain"
+        elif assignment.frontend_domain != self._vm:
+            raise qubesadmin.exc.QubesValueError(
+                f"Trying to {action} device belonging to other domain:"
+                f" {assignment.frontend_domain}")
         if not assignment.devclass_is_set:
             assignment.devclass = self._class
         elif assignment.devclass != self._class:
             raise qubesadmin.ext.QubesValueError(
-                f"Device assignment class does not match to expected: "
+                f"Device class does not match to expected: "
                 f"{assignment.devclass=}!={self._class=}")
 
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Assign'.format(self._class),
-                             '{!s}+{!s}'.format(
-                                 assignment.backend_domain,
-                                 assignment.ident),
-                             assignment.serialize())
+        self._vm.qubesd_call(
+            None, f'admin.vm.device.{self._class}.{action.capitalize()}',
+            f'{assignment.backend_domain!s}+{assignment.ident!s}',
+            assignment.serialize()
+        )
 
-    def unassign(self, device_assignment: DeviceAssignment) -> None:
-        """
-        Unassign device from domain (remove from :file:`qubes.xml`).
+    def _remove(self, assignment: DeviceAssignment, action: str) -> None:
+        if (assignment.frontend_domain
+                and assignment.frontend_domain != self._vm):
+            raise qubesadmin.exc.QubesValueError(
+                f"Trying to {action} device belonging to other domain:"
+                f" {assignment.frontend_domain}")
+        if assignment.devclass_is_set and assignment.devclass != self._class:
+            raise qubesadmin.exc.QubesValueError(
+                f"Device class does not match to expected: "
+                f"{assignment.devclass=}!={self._class=}")
 
-        :param DeviceAssignment device_assignment: device to unassign
-            (obtained from :py:meth:`assignments`)
-        """
-        if not device_assignment.frontend_domain:
-            device_assignment.frontend_domain = self._vm
-        else:
-            assert device_assignment.frontend_domain == self._vm, \
-                "Trying to unassign DeviceAssignment belonging to other domain"
-        if not device_assignment.devclass_is_set:
-            device_assignment.devclass = self._class
-        elif device_assignment.devclass != self._class:
-            raise ValueError(
-                f"Device assignment class does not match to expected: "
-                f"{device_assignment.devclass=}!={self._class=}")
-
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Unassign'.format(self._class),
-                             '{!s}+{!s}'.format(
-                                 device_assignment.backend_domain,
-                                 device_assignment.ident))
+        self._vm.qubesd_call(
+            None, f'admin.vm.device.{self._class}.{action.capitalize()}',
+            f'{assignment.backend_domain!s}+{assignment.ident!s}'
+        )
 
     def get_dedicated_devices(self) -> Iterable[DeviceAssignment]:
         """
@@ -1032,12 +1010,14 @@ class DeviceCollection:
             backend_domain_name, ident = device.split('+', 1)
             backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
 
-            yield DeviceAssignment.deserialize(
+            assignment = DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
                 expected_backend_domain=backend_domain,
                 expected_ident=ident,
                 expected_devclass=None
             )
+            if not required_only or assignment.required:
+                yield assignment
 
     def get_exposed_devices(self) -> Iterable[DeviceInfo]:
         """
