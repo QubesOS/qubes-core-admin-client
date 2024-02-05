@@ -1,3 +1,25 @@
+qubes-core-admin-client (4.2.10-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix man page about qvm-run --all
+
+  [ Simon Gaiser ]
+  * qvm-prefs: Don't falsely report 'no such property'
+
+  [ Marta Marczykowska-Górecka ]
+  * Add a mock Qubes object with improved contents
+  * Add attaching devices to mock API
+
+  [ Marek Marczykowski-Górecki ]
+  * Update tests for Python 3.12
+  * tests: increase qvm-firewall width
+  * Switch to sequoia for codecov signature check
+
+  [ Demi Marie Obenour ]
+  * Revert "Do not enable "low latency" mode for pipewire"
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 06 Feb 2024 00:21:21 +0100
+
 qubes-core-admin-client (4.2.9-1) unstable; urgency=medium
 
   [ Demi Marie Obenour ]
