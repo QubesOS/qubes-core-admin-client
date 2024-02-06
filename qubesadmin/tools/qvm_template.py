@@ -743,13 +743,13 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
     with open(path, 'rb') as pkg_f:
         with subprocess.Popen(['rpm2archive', "-"],
                 stdin=pkg_f,
-                stdout=subprocess.PIPE) as rpm2cpio:
+                stdout=subprocess.PIPE) as rpm2archive:
             # `-D` is GNUism
             with subprocess.Popen([
                     'tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/'
-                    ], stdin=rpm2cpio.stdout, stdout=subprocess.DEVNULL) as tar:
+                    ], stdin=rpm2archive.stdout, stdout=subprocess.DEVNULL) as tar:
                 pass
-    return rpm2cpio.returncode == 0 and tar.returncode == 0
+    return rpm2archive.returncode == 0 and tar.returncode == 0
 
 
 def filter_version(
