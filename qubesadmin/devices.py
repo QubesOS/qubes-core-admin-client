@@ -920,6 +920,16 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
+        if (assignment.devclass not in ('pci', 'testclass')
+                and assignment.required):
+            raise qubesadmin.exc.QubesValueError(
+                "Only pci devices can be assigned as required.")
+        if (assignment.devclass not in ('pci', 'testclass', 'usb')
+                and assignment.attach_automatically):
+            raise qubesadmin.exc.QubesValueError(
+                "Only pci and usb devices can be assigned "
+                "to be automatically attached.")
+
         self._add(assignment, 'assign')
 
     def unassign(self, assignment: DeviceAssignment) -> None:
