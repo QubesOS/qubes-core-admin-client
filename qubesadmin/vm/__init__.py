@@ -428,6 +428,20 @@ class DispVMWrapper(QubesVM):
             except qubesadmin.exc.QubesVMNotRunningError:
                 pass
 
+    def start(self):
+        """Start this DispVM"""
+        # create dispvm
+        if self._method_dest.startswith('$dispvm'):
+            if self._method_dest.startswith('$dispvm:'):
+                method_dest = self._method_dest[len('$dispvm:'):]
+            else:
+                method_dest = 'dom0'
+            dispvm = self.app.qubesd_call(method_dest,
+                'admin.vm.CreateDisposable')
+            dispvm = dispvm.decode('ascii')
+            self._method_dest = dispvm
+        super().start()
+
 
 class DispVM(QubesVM):
     '''Disposable VM'''
