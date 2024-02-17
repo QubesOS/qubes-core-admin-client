@@ -334,6 +334,7 @@ class DeviceInfo(Device):
             interfaces: Optional[List[DeviceInterface]] = None,
             parent: Optional[Device] = None,
             attachment: Optional['qubes.vm.BaseVM'] = None,
+            self_identity: Optional[str] = None,
             **kwargs
     ):
         super().__init__(backend_domain, ident, devclass)
@@ -346,6 +347,7 @@ class DeviceInfo(Device):
         self._interfaces = interfaces
         self._parent = parent
         self._attachment = attachment
+        self._self_identity = self_identity
 
         self.data = kwargs
 
@@ -491,7 +493,7 @@ class DeviceInfo(Device):
         # are not string, so they need special treatment
         default_attrs = {
             'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
-            'serial'}
+            'serial', 'self_identity'}
         properties = b' '.join(
             f'{prop}={serialize_str(value)}'.encode('ascii')
             for prop, value in (
@@ -614,9 +616,14 @@ class DeviceInfo(Device):
         return cls(**properties)
 
     @property
-    def full_identity(self) -> str:
+    def self_identity(self) -> str:
         """
-        Get user understandable identification of device not related to ports.
+        Get additional identification of device presented by device itself.
+
+        For pci/usb we expect:
+        <vendor_id>:<product_id>:<serial if any>:<interface1interface2...>
+        For block devices:
+        <parent_ident>:<interface number if any>
 
         In addition to the description returns presented interfaces.
         It is used to auto-attach usb devices, so an attacking device needs to
@@ -624,15 +631,9 @@ class DeviceInfo(Device):
         to be plugged to the same port). For a common user it is all the data
         she uses to recognize the device.
         """
-        allowed_chars = string.digits + string.ascii_letters + '-_.'
-        description = ""
-        for char in self.description:
-            if char in allowed_chars:
-                description += char
-            else:
-                description += "_"
-        interfaces = ''.join(repr(ifc) for ifc in self.interfaces)
-        return f'{description}:{interfaces}'
+        if not self._self_identity:
+            return "unknown:unknown:unknown:?******"
+        return self._self_identity
 
 
 def serialize_str(value: str):
@@ -924,10 +925,10 @@ class DeviceCollection:
                 and assignment.required):
             raise qubesadmin.exc.QubesValueError(
                 "Only pci devices can be assigned as required.")
-        if (assignment.devclass not in ('pci', 'testclass', 'usb')
+        if (assignment.devclass not in ('pci', 'testclass', 'usb', 'block')
                 and assignment.attach_automatically):
             raise qubesadmin.exc.QubesValueError(
-                "Only pci and usb devices can be assigned "
+                f"{assignment.devclass} devices cannot be assigned "
                 "to be automatically attached.")
 
         self._add(assignment, 'assign')
