@@ -173,13 +173,12 @@ def assign_device(args):
     vm = args.domains[0]
     device = args.device
     device_assignment = qubesadmin.devices.DeviceAssignment(
-        device.backend_domain, device.ident,
+        device.backend_domain, device.ident, devclass=device.devclass,
         required=args.required, attach_automatically=True)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
-    if device.devclass == 'usb':
-        options['identity'] = device.full_identity
+    options['identity'] = device.self_identity
     device_assignment.options = options
     vm.devices[args.devclass].assign(device_assignment)
     if vm.is_running() and not device_assignment.attached:
