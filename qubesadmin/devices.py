@@ -939,10 +939,10 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
-        if (assignment.devclass not in ('pci', 'testclass')
+        if (assignment.devclass not in ('pci', 'testclass', 'block')
                 and assignment.required):
             raise qubesadmin.exc.QubesValueError(
-                "Only pci devices can be assigned as required.")
+                "Only pci and block devices can be assigned as required.")
         if (assignment.devclass not in ('pci', 'testclass', 'usb', 'block')
                 and assignment.attach_automatically):
             raise qubesadmin.exc.QubesValueError(
