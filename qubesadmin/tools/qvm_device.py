@@ -136,18 +136,18 @@ def attach_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    device_assignment = qubesadmin.devices.DeviceAssignment(
-        device.backend_domain, device.ident,
+    assignment = qubesadmin.devices.DeviceAssignment.from_device(
+        device,
         # backward compatibility
         attach_automatically=args.required, required=args.required)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
-    device_assignment.options = options
-    vm.devices[args.devclass].attach(device_assignment)
+    assignment.options = options
+    vm.devices[args.devclass].attach(assignment)
     # backward compatibility
     if args.required:
-        vm.devices[args.devclass].assign(device_assignment)
+        vm.devices[args.devclass].assign(assignment)
 
 
 def detach_device(args):
@@ -157,9 +157,8 @@ def detach_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        device_assignment = qubesadmin.devices.DeviceAssignment(
-            device.backend_domain, device.ident)
-        vm.devices[args.devclass].detach(device_assignment)
+        assignment = qubesadmin.devices.DeviceAssignment.from_device(device)
+        vm.devices[args.devclass].detach(assignment)
     else:
         for device_assignment in (
                 vm.devices[args.devclass].get_attached_devices()):
@@ -172,16 +171,15 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    device_assignment = qubesadmin.devices.DeviceAssignment(
-        device.backend_domain, device.ident, devclass=device.devclass,
-        required=args.required, attach_automatically=True)
+    assignment = qubesadmin.devices.DeviceAssignment.from_device(
+        device, required=args.required, attach_automatically=True)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
     options['identity'] = device.self_identity
-    device_assignment.options = options
-    vm.devices[args.devclass].assign(device_assignment)
-    if vm.is_running() and not device_assignment.attached:
+    assignment.options = options
+    vm.devices[args.devclass].assign(assignment)
+    if vm.is_running() and not assignment.attached:
         print("Assigned. Now you can manually attach device or restart domain.")
 
 
@@ -192,10 +190,10 @@ def unassign_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        device_assignment = qubesadmin.devices.DeviceAssignment(
-            device.backend_domain, device.ident, frontend_domain=vm)
-        vm.devices[args.devclass].unassign(device_assignment)
-        if device_assignment.attached:
+        assignment = qubesadmin.devices.DeviceAssignment.from_device(
+            device, frontend_domain=vm)
+        vm.devices[args.devclass].unassign(assignment)
+        if assignment.attached:
             print("Unassigned. Now you can manually detach device "
                   "or restart domain.")
     else:
@@ -214,10 +212,9 @@ def info_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        device_assignment = qubesadmin.devices.DeviceAssignment(
-            device.backend_domain, device.ident)
-        print("description:", device_assignment.device.description)
-        print("data:", device_assignment.device.data)
+        assignment = qubesadmin.devices.DeviceAssignment.from_device(device)
+        print("description:", assignment.device.description)
+        print("data:", assignment.device.data)
     else:
         for device_assignment in (
                 vm.devices[args.devclass].get_dedicated_devices()):
