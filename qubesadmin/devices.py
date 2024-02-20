@@ -691,6 +691,8 @@ class DeviceAssignment(Device):
                  required=False, attach_automatically=False):
         super().__init__(backend_domain, ident, devclass)
         self.__options = options or {}
+        if required:
+            assert attach_automatically
         self.__required = required
         self.__attach_automatically = attach_automatically
         self.__frontend_domain = frontend_domain

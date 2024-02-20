@@ -159,6 +159,7 @@ def get_drive_assignment(app, drive_str):
         backend_domain,
         ident,
         options=options,
+        attach_automatically=True,
         required=True)
 
     return assignment

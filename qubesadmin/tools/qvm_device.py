@@ -177,6 +177,8 @@ def assign_device(args):
     if args.ro:
         options['read-only'] = 'yes'
     options['identity'] = device.self_identity
+    if args.port:
+        options['identity'] = 'any'
     assignment.options = options
     vm.devices[args.devclass].assign(assignment)
     if vm.is_running() and not assignment.attached:
@@ -378,7 +380,12 @@ def get_parser(device_class=None):
                                help="Mark device as required so it will "
                                     "be required to the qube's startup and then"
                                     " automatically attached)")
-
+    assign_parser.add_argument('--port',
+                               action='store_true',
+                               default=False,
+                               help="Ignore device presented identity and "
+                                    "attach any device connected to the given "
+                                    "port number")
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
     assign_parser.set_defaults(func=assign_device)
