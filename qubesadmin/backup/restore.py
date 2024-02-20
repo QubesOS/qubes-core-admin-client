@@ -2091,7 +2091,7 @@ class BackupRestore(object):
                         backend_domain=backend_domain,
                         ident=ident,
                         options=options,
-                        required=True)
+                        attach_automatically=True)
                     try:
                         if not self.options.verify_only:
                             new_vm.devices[bus].attach(assignment)

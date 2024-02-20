@@ -112,6 +112,10 @@ Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
    Assign device persistently which means it will be required to the qube's startup and then automatically attached.
 
+.. option:: --port
+
+   Ignore device presented identity and attach any device connected to the given port number.
+
 aliases: s
 
 unassign

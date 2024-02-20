@@ -137,22 +137,24 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
     def test_022_attach_required(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1',
-             b"required='yes' attach_automatically='no' ident='dev1' "
+             b"required='yes' attach_automatically='yes' ident='dev1' "
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm'")] = b'0\0'
         assign = qubesadmin.devices.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1', required=True)
+            self.app.domains['test-vm2'], 'dev1',
+            attach_automatically=True, required=True)
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
     def test_023_attach_required_options(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1',
-             b"required='yes' attach_automatically='no' ident='dev1' "
+             b"required='yes' attach_automatically='yes' ident='dev1' "
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm' _ro='True'")] = b'0\0'
         assign = qubesadmin.devices.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1', required=True)
+            self.app.domains['test-vm2'], 'dev1',
+            attach_automatically=True, required=True)
         assign.options['ro'] = True
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
