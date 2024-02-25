@@ -97,19 +97,20 @@ def import_root_img(vm, source_dir):
 
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
-        input_files = glob.glob(root_path + '.part.*')
-        with subprocess.Popen(['cat'] + sorted(input_files),
-                stdout=subprocess.PIPE) as cat:
-            with subprocess.Popen(['tar', 'xSOf', '-'],
-                    stdin=cat.stdout,
-                    stdout=subprocess.PIPE) as tar:
-                cat.stdout.close()
-                vm.volumes['root'].import_data_with_size(
-                    stream=tar.stdout, size=root_size)
-        if tar.returncode != 0:
-            raise qubesadmin.exc.QubesException(
-                'root.img extraction failed')
-        if cat.returncode != 0:
+        with open(os.path.join(source_dir, 'template.rpm'), 'rb') as pkg_f:
+            # TODO: ensure part files are in proper order in the tar stream?
+            with subprocess.Popen(['rpm2archive', '-'], stdin=pkg_f, stdout=subprocess.PIPE) as rpm2archive:
+                with subprocess.Popen(['tar', 'xzSOf', '-', '--wildcards', '*/root.img.part.*'],
+                        stdin=rpm2archive.stdout,
+                        stdout=subprocess.PIPE) as tar_parts:
+                    with subprocess.Popen(['tar', 'xSOf', '-'],
+                            stdin=tar_parts.stdout,
+                            stdout=subprocess.PIPE) as tar_root_img:
+                        rpm2archive.stdout.close()
+                        tar_parts.stdout.close()
+                        vm.volumes['root'].import_data_with_size(
+                            stream=tar_root_img.stdout, size=root_size)
+        if rpm2archive.returncode != 0 or tar_parts.returncode != 0 or tar_root_img.returncode != 0:
             raise qubesadmin.exc.QubesException(
                 'root.img extraction failed')
     elif os.path.exists(root_path + '.tar'):

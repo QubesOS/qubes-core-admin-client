@@ -58,6 +58,7 @@ CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/var/tmp/qvm-template.lck'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
+TAR_HEADER_BYTES = 512
 
 UPDATEVM = str('global UpdateVM')
 
@@ -733,6 +734,9 @@ def verify_rpm(path: str, key: str, *, nogpgcheck: bool = False,
 
 def extract_rpm(name: str, path: str, target: str) -> bool:
     """Extract a template RPM package.
+       If the package contains root.img file split across multiple parts,
+       only the first 512 bytes of the 00 part is retained (tar header) and
+       a symlink to the rpm file is created in target directory.
 
     :param name: Name of the template
     :param path: Location of the RPM package
@@ -745,11 +749,23 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
                 stdin=pkg_f,
                 stdout=subprocess.PIPE) as rpm2archive:
             # `-D` is GNUism
-            with subprocess.Popen(
-                    ['tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/'],
+            with subprocess.Popen(['tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/',
+                    '--exclude=root.img.part.?[!0]', '--exclude=root.img.part.[!0]0'],
                     stdin=rpm2archive.stdout, stdout=subprocess.DEVNULL) as tar:
                 pass
-    return rpm2archive.returncode == 0 and tar.returncode == 0
+    if rpm2archive.returncode != 0 or tar.returncode != 0:
+        return False
+
+    part_00_path = f'{target}/{PATH_PREFIX}/{name}/root.img.part.00'
+    if os.path.exists(part_00_path):
+        try:
+            # retain minimal data needed to interrogate root.img size
+            os.truncate(path=part_00_path, length=TAR_HEADER_BYTES)
+            # and create rpm file symlink
+            os.symlink(src=path, dst=f'{target}/{PATH_PREFIX}/{name}/template.rpm')
+        except OSError:
+            return False
+    return True
 
 
 def filter_version(
