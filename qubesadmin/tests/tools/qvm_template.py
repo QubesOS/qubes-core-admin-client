@@ -196,13 +196,15 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_ts.assert_called_once()
         self.assertAllCalled()
 
+    @mock.patch('os.path.exists')
     @mock.patch('subprocess.Popen')
-    def test_010_extract_rpm_success(self, mock_popen):
+    def test_010_extract_rpm_success(self, mock_popen, mock_path_exists):
         mock_popen.return_value.__enter__.return_value = mock_popen.return_value
         pipe = mock.Mock()
         mock_popen.return_value.stdout = pipe
         mock_popen.return_value.wait.return_value = 0
         mock_popen.return_value.returncode = 0
+        mock_path_exists.return_value = True
         with tempfile.NamedTemporaryFile() as fd, \
                 tempfile.TemporaryDirectory() as dir:
             path = fd.name
@@ -220,10 +222,18 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                     'xz',
                     '-C',
                     dirpath,
-                    './var/lib/qubes/vm-templates/test-vm/'
+                    './var/lib/qubes/vm-templates/test-vm/',
+                    '--exclude=root.img.part.?[!0]',
+                    '--exclude=root.img.part.[!0]0',
                 ], stdin=pipe, stdout=subprocess.DEVNULL),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
+            mock.call().__exit__(None, None, None),
+            mock.call(['truncate', '--size=512', dirpath + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00']),
+            mock.call().__enter__(),
+            mock.call().__exit__(None, None, None),
+            mock.call(['ln', '-s', path, dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm']),
+            mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
         ])
         self.assertAllCalled()
@@ -251,7 +261,9 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                     'xz',
                     '-C',
                     dirpath,
-                    './var/lib/qubes/vm-templates/test-vm/'
+                    './var/lib/qubes/vm-templates/test-vm/',
+                    '--exclude=root.img.part.?[!0]',
+                    '--exclude=root.img.part.[!0]0',
                 ], stdin=pipe, stdout=subprocess.DEVNULL),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),

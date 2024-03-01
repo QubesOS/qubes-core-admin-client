@@ -758,12 +758,15 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
 
     part_00_path = f'{target}/{PATH_PREFIX}/{name}/root.img.part.00'
     if os.path.exists(part_00_path):
-        try:
-            # retain minimal data needed to interrogate root.img size
-            os.truncate(path=part_00_path, length=TAR_HEADER_BYTES)
-            # and create rpm file symlink
-            os.symlink(src=path, dst=f'{target}/{PATH_PREFIX}/{name}/template.rpm')
-        except OSError:
+        # retain minimal data needed to interrogate root.img size
+        with subprocess.Popen(['truncate', f'--size={TAR_HEADER_BYTES}', part_00_path]) as truncate:
+            pass
+        if truncate.returncode != 0:
+            return False
+        # and create rpm file symlink
+        with subprocess.Popen(['ln', '-s', path, f'{target}/{PATH_PREFIX}/{name}/template.rpm']) as symlink:
+            pass
+        if symlink.returncode != 0:
             return False
     return True
 

@@ -25,6 +25,7 @@ import tempfile
 from unittest import mock
 import qubesadmin.tests
 import qubesadmin.tools.qvm_template_postprocess
+from qubesadmin.exc import QubesException
 
 
 class QubesLocalMock(qubesadmin.tests.QubesTest):
@@ -67,6 +68,36 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             vm, self.source_dir.name)
         self.assertAllCalled()
 
+    def test_001_import_root_img_tar_pre_mar_2024(self):
+        root_img = os.path.join(self.source_dir.name, 'root.img')
+        volume_data = b'volume data' * 1000
+        with open(root_img, 'wb') as f:
+            f.write(volume_data)
+
+        subprocess.check_call(['tar', 'cf', 'root.img.tar', 'root.img'],
+            cwd=self.source_dir.name)
+        subprocess.check_call(['split', '-d', '-b', '1024', 'root.img.tar',
+            'root.img.part.'], cwd=self.source_dir.name)
+        os.unlink(root_img)
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.volume.List', None,
+                None)] = \
+            b'0\0root\nprivate\nvolatile\nkernel\n'
+
+        self.app.expected_calls[(
+            'test-vm', 'admin.vm.volume.ImportWithSize', 'root',
+            str(len(volume_data)).encode() + b'\n' + volume_data)] = b'0\0'
+        vm = self.app.domains['test-vm']
+        try:
+            qubesadmin.tools.qvm_template_postprocess.import_root_img(
+                vm, self.source_dir.name)
+        except QubesException as e:
+            assert str(e).startswith('template.rpm symlink not found for multi-part image')
+        else:
+            assert False
+
     def test_001_import_root_img_tar(self):
         root_img = os.path.join(self.source_dir.name, 'root.img')
         volume_data = b'volume data' * 1000
@@ -78,6 +109,37 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         subprocess.check_call(['split', '-d', '-b', '1024', 'root.img.tar',
             'root.img.part.'], cwd=self.source_dir.name)
         os.unlink(root_img)
+
+        spec = os.path.join(self.source_dir.name, 'template.spec')
+        with open(spec, 'w') as f:
+            f.writelines((
+                '%define _rpmdir %{expand:%%(pwd)}/build\n',
+                'Name: test\n',
+                'Summary: testing\n',
+                'License: none\n',
+                'Version: 6.6.6\n',
+                'Release: 44\n',
+
+                '%description\n',
+                'test\n',
+
+                '%prep\n',
+                'mkdir -p $RPM_BUILD_ROOT\n',
+                'mv %{expand:%%(pwd)}/root.img.part.* $RPM_BUILD_ROOT\n',
+                'dd if=$RPM_BUILD_ROOT/root.img.part.00 count=1 of=%{expand:%%(pwd)}/root.img.part.00\n',
+                'ln -s %{expand:%%(pwd)}/build/i386/test-6.6.6-44.i386.rpm %{expand:%%(pwd)}/template.rpm\n',
+
+                '%files\n',
+                '/root.img.part.*\n',
+            ))
+        subprocess.check_call(['rpmbuild',
+                               '-bb',
+                               '--rmspec',
+                               '--target', 'i386-redhat-linux',
+                               '--clean',
+                               '-D', f'_topdir {self.source_dir.name}',
+                               spec
+                               ], cwd=self.source_dir.name)
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
