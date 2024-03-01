@@ -192,6 +192,6 @@ max-public-methods=100
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "Exception"
-overgeneral-exceptions=Exception,EnvironmentError
+overgeneral-exceptions=builtins.Exception,builtins.EnvironmentError
 
 # vim: ft=conf

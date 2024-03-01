@@ -459,8 +459,7 @@ class WrapperObjectsCollection(object):
 
     def __iter__(self):
         self.refresh_cache()
-        for key in self._names_list:
-            yield key
+        yield from self._names_list
 
     def keys(self):
         '''Get list of names.'''
