@@ -749,9 +749,11 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
                 stdin=pkg_f,
                 stdout=subprocess.PIPE) as rpm2archive:
             # `-D` is GNUism
-            with subprocess.Popen(['tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/',
-                    '--exclude=root.img.part.?[!0]', '--exclude=root.img.part.[!0]0'],
-                    stdin=rpm2archive.stdout, stdout=subprocess.DEVNULL) as tar:
+            with subprocess.Popen([
+                'tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/',
+                '--exclude=root.img.part.?[!0]',
+                '--exclude=root.img.part.[!0]0'
+            ], stdin=rpm2archive.stdout, stdout=subprocess.DEVNULL) as tar:
                 pass
     if rpm2archive.returncode != 0 or tar.returncode != 0:
         return False
@@ -759,12 +761,16 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
     part_00_path = f'{target}/{PATH_PREFIX}/{name}/root.img.part.00'
     if os.path.exists(part_00_path):
         # retain minimal data needed to interrogate root.img size
-        with subprocess.Popen(['truncate', f'--size={TAR_HEADER_BYTES}', part_00_path]) as truncate:
+        with subprocess.Popen([
+            'truncate', f'--size={TAR_HEADER_BYTES}', part_00_path
+        ]) as truncate:
             pass
         if truncate.returncode != 0:
             return False
         # and create rpm file symlink
-        with subprocess.Popen(['ln', '-s', path, f'{target}/{PATH_PREFIX}/{name}/template.rpm']) as symlink:
+        with subprocess.Popen([
+            'ln', '-s', path, f'{target}/{PATH_PREFIX}/{name}/template.rpm'
+        ]) as symlink:
             pass
         if symlink.returncode != 0:
             return False

@@ -97,18 +97,25 @@ def import_root_img(vm, source_dir):
 
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
-        template_symlink = os.path.join(source_dir, 'template.rpm')
-        if not os.path.exists(template_symlink) or not os.path.islink(template_symlink):
+        rpm_symlink = os.path.join(source_dir, 'template.rpm')
+        if not os.path.exists(rpm_symlink) or not os.path.islink(rpm_symlink):
             raise qubesadmin.exc.QubesException(
-                'template.rpm symlink not found for multi-part image, ' + 
+                'template.rpm symlink not found for multi-part image, ' +
                 'using up-to-date `qvm-template install ...` should help')
-        with open(template_symlink, 'rb') as pkg_f:
-            # note: part files assumed to be in proper order, which is OK (generated using an RPM spec file 
-            #    with a glob pattern POSIX-required to sort matching files + tar preserves order by default)
-            with subprocess.Popen(['rpm2archive', '-'], stdin=pkg_f, stdout=subprocess.PIPE) as rpm2archive:
-                with subprocess.Popen(['tar', 'xzSOf', '-', '--wildcards', '*/root.img.part.*'],
-                        stdin=rpm2archive.stdout,
-                        stdout=subprocess.PIPE) as tar_parts:
+        with open(rpm_symlink, 'rb') as pkg_f:
+            # note: part files assumed to be in proper order, which is OK
+            #    (generated using an RPM spec file with a glob pattern
+            #    POSIX-required to sort matching files + tar preserves order)
+            with subprocess.Popen(
+                ['rpm2archive', '-'],
+                stdin=pkg_f,
+                stdout=subprocess.PIPE
+            ) as rpm2archive:
+                with subprocess.Popen(
+                    ['tar', 'xzSOf', '-', '--wildcards', '*/root.img.part.*'],
+                    stdin=rpm2archive.stdout,
+                    stdout=subprocess.PIPE
+                ) as tar_parts:
                     with subprocess.Popen(['tar', 'xSOf', '-'],
                             stdin=tar_parts.stdout,
                             stdout=subprocess.PIPE) as tar_root_img:
@@ -116,7 +123,11 @@ def import_root_img(vm, source_dir):
                         tar_parts.stdout.close()
                         vm.volumes['root'].import_data_with_size(
                             stream=tar_root_img.stdout, size=root_size)
-        if rpm2archive.returncode != 0 or tar_parts.returncode != 0 or tar_root_img.returncode != 0:
+        if (
+            rpm2archive.returncode != 0 or
+            tar_parts.returncode != 0 or
+            tar_root_img.returncode != 0
+        ):
             raise qubesadmin.exc.QubesException(
                 'root.img extraction failed')
     elif os.path.exists(root_path + '.tar'):
