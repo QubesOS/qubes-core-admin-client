@@ -97,8 +97,14 @@ def import_root_img(vm, source_dir):
 
     root_path = os.path.join(source_dir, 'root.img')
     if os.path.exists(root_path + '.part.00'):
-        with open(os.path.join(source_dir, 'template.rpm'), 'rb') as pkg_f:
-            # TODO: ensure part files are in proper order in the tar stream?
+        template_symlink = os.path.join(source_dir, 'template.rpm')
+        if not os.path.exists(template_symlink) or not os.path.islink(template_symlink):
+            raise qubesadmin.exc.QubesException(
+                'template.rpm symlink not found for multi-part image, ' + 
+                'using up-to-date `qvm-template install ...` should help')
+        with open(template_symlink, 'rb') as pkg_f:
+            # note: part files assumed to be in proper order, which is OK (generated using an RPM spec file 
+            #    with a glob pattern POSIX-required to sort matching files + tar preserves order by default)
             with subprocess.Popen(['rpm2archive', '-'], stdin=pkg_f, stdout=subprocess.PIPE) as rpm2archive:
                 with subprocess.Popen(['tar', 'xzSOf', '-', '--wildcards', '*/root.img.part.*'],
                         stdin=rpm2archive.stdout,
