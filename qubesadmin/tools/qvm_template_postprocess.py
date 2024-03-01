@@ -279,7 +279,7 @@ async def post_install(args):
         vm = app.domains[args.name]
         if app.qubesd_connection_type == 'socket' and \
                 args.dir == '/var/lib/qubes/vm-templates/' + args.name:
-            # VM exists and use use the same directory as target vm - on
+            # VM exists and uses the same directory as target vm - on
             # final cleanup remove only some files, not the whole directory
             local_reinstall = True
     except KeyError:
