@@ -139,7 +139,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
                                '--clean',
                                '-D', f'_topdir {self.source_dir.name}',
                                spec
-                               ], cwd=self.source_dir.name)
+                               ], cwd=self.source_dir.name, stdout=subprocess.DEVNULL)
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
