@@ -1,11 +1,9 @@
 import re
 from unittest import mock, skipUnless
 import argparse
-import asyncio
 import datetime
 import io
 import os
-import pathlib
 import subprocess
 import tempfile
 from shutil import which
@@ -232,51 +230,90 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call([
                 'truncate',
                 '--size=512',
-                dirpath + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00']),
+                dirpath + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00'
+            ]),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
             mock.call([
                 'ln',
                 '-s',
                 path,
-                dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm']),
+                dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm'
+            ]),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
         ])
         self.assertAllCalled()
 
+    @mock.patch('os.path.exists')
     @mock.patch('subprocess.Popen')
-    def test_011_extract_rpm_fail(self, mock_popen):
-        mock_popen.return_value.__enter__.return_value = mock_popen.return_value
-        pipe = mock.Mock()
-        mock_popen.return_value.stdout = pipe
-        mock_popen.return_value.returncode = 1
-        with tempfile.NamedTemporaryFile() as fd, \
-                tempfile.TemporaryDirectory() as dir:
-            path = fd.name
-            dirpath = dir
-            ret = qubesadmin.tools.qvm_template.extract_rpm(
-                'test-vm', path, dirpath)
-        self.assertEqual(ret, False)
-        self.assertEqual(mock_popen.mock_calls, [
-            mock.call(['rpm2archive', '-'],
-                stdin=mock.ANY,
-                stdout=subprocess.PIPE),
-            mock.call().__enter__(),
-            mock.call([
-                    'tar',
-                    'xz',
-                    '-C',
-                    dirpath,
-                    './var/lib/qubes/vm-templates/test-vm/',
-                    '--exclude=root.img.part.?[!0]',
-                    '--exclude=root.img.part.[!0]0',
-                ], stdin=pipe, stdout=subprocess.DEVNULL),
-            mock.call().__enter__(),
-            mock.call().__exit__(None, None, None),
-            mock.call().__exit__(None, None, None),
-        ])
-        self.assertAllCalled()
+    def test_011_extract_rpm_fail(self, mock_popen, mock_path_exists):
+        for failing_call in range(1, 5):
+            mock_popen.reset_mock()
+            with self.subTest(failing_call=failing_call):
+                pipe = mock.Mock()
+
+                def side_effect(_, **__):
+                    side_effect.call_count += 1
+                    o = mock_popen.return_value
+                    o.__enter__.return_value = o
+                    o.stdout = pipe
+                    o.returncode = (
+                        1 if side_effect.call_count >= failing_call else
+                        0
+                    )
+                    return o
+
+                side_effect.call_count = 0
+
+                mock_popen.side_effect = side_effect
+                mock_path_exists.return_value = True
+
+                with tempfile.NamedTemporaryFile() as fd, \
+                        tempfile.TemporaryDirectory() as tmpdir:
+                    path = fd.name
+                    dirpath = tmpdir
+                    ret = qubesadmin.tools.qvm_template.extract_rpm(
+                        'test-vm', path, dirpath)
+                self.assertEqual(ret, False)
+                self.assertEqual(mock_popen.mock_calls, [
+                    mock.call(['rpm2archive', '-'],
+                        stdin=mock.ANY,
+                        stdout=subprocess.PIPE),
+                    mock.call().__enter__(),
+                    mock.call([
+                            'tar',
+                            'xz',
+                            '-C',
+                            dirpath,
+                            './var/lib/qubes/vm-templates/test-vm/',
+                            '--exclude=root.img.part.?[!0]',
+                            '--exclude=root.img.part.[!0]0',
+                        ], stdin=pipe, stdout=subprocess.DEVNULL),
+                    mock.call().__enter__(),
+                    mock.call().__exit__(None, None, None),
+                    mock.call().__exit__(None, None, None),
+                ] + ([] if failing_call < 3 else [
+                    mock.call([
+                        'truncate',
+                        '--size=512',
+                        dirpath
+                        + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00'
+                    ]),
+                    mock.call().__enter__(),
+                    mock.call().__exit__(None, None, None),
+                ]) + ([] if failing_call < 4 else [
+                    mock.call([
+                        'ln',
+                        '-s',
+                        path,
+                        dirpath
+                        + '//var/lib/qubes/vm-templates/test-vm/template.rpm'
+                    ]),
+                    mock.call().__enter__(),
+                    mock.call().__exit__(None, None, None),
+                ]))
+                self.assertAllCalled()
 
     @mock.patch('qubesadmin.tools.qvm_template.get_keys_for_repos')
     def test_090_install_lock(self, mock_get_keys):
