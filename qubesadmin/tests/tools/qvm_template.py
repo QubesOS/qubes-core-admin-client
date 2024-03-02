@@ -229,10 +229,17 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
             mock.call().__exit__(None, None, None),
-            mock.call(['truncate', '--size=512', dirpath + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00']),
+            mock.call([
+                'truncate',
+                '--size=512',
+                dirpath + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00']),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
-            mock.call(['ln', '-s', path, dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm']),
+            mock.call([
+                'ln',
+                '-s',
+                path,
+                dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm']),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
         ])

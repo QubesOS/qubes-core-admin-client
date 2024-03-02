@@ -94,7 +94,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_template_postprocess.import_root_img(
                 vm, self.source_dir.name)
         except QubesException as e:
-            assert str(e).startswith('template.rpm symlink not found for multi-part image')
+            assert str(e).startswith(
+                'template.rpm symlink not found for multi-part image')
         else:
             assert False
 
@@ -126,20 +127,23 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
                 '%prep\n',
                 'mkdir -p $RPM_BUILD_ROOT\n',
                 'mv %{expand:%%(pwd)}/root.img.part.* $RPM_BUILD_ROOT\n',
-                'dd if=$RPM_BUILD_ROOT/root.img.part.00 count=1 of=%{expand:%%(pwd)}/root.img.part.00\n',
-                'ln -s %{expand:%%(pwd)}/build/i386/test-6.6.6-44.i386.rpm %{expand:%%(pwd)}/template.rpm\n',
+                'dd',
+                ' if=$RPM_BUILD_ROOT/root.img.part.00',
+                ' count=1',
+                ' of=%{expand:%%(pwd)}/root.img.part.00\n',
+                'ln -s',
+                ' %{expand:%%(pwd)}/build/i386/test-6.6.6-44.i386.rpm',
+                ' %{expand:%%(pwd)}/template.rpm\n',
 
                 '%files\n',
                 '/root.img.part.*\n',
             ))
-        subprocess.check_call(['rpmbuild',
-                               '-bb',
-                               '--rmspec',
-                               '--target', 'i386-redhat-linux',
-                               '--clean',
-                               '-D', f'_topdir {self.source_dir.name}',
-                               spec
-                               ], cwd=self.source_dir.name, stdout=subprocess.DEVNULL)
+        subprocess.check_call([
+                'rpmbuild', '-bb', '--rmspec', '--target', 'i386-redhat-linux',
+                '--clean', '-D', f'_topdir {self.source_dir.name}', spec
+            ],
+            cwd=self.source_dir.name,
+            stdout=subprocess.DEVNULL)
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
