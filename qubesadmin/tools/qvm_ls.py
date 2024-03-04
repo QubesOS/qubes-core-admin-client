@@ -107,6 +107,8 @@ class Column(object):
                 ret = vm
                 for attrseg in self._attr.split('.'):
                     ret = getattr(ret, attrseg)
+                    if hasattr(ret, '__iter__') and not isinstance(ret, str):
+                        ret = ' '.join(map(str, ret))
             elif isinstance(self._attr, collections.abc.Callable):
                 ret = self._attr(vm)
 
