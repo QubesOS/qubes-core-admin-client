@@ -102,6 +102,7 @@ class Property:
 
 DEFAULT_VM_PROPERTIES = {
     "audiovm": Property("dom0", "vm", True),
+    "auto_cleanup": Property("False", "bool", True),
     "autostart": Property("False", "bool", True),
     "backup_timestamp": Property("", "int", True),
     "debug": Property("False", "bool", True),
@@ -179,7 +180,7 @@ DEFAULT_DOM0_FEATURES = {
 }
 
 ALL_KNOWN_FEATURES = [
-    'updates-available', 'internal'
+    'updates-available', 'internal', "servicevm", 'appmenus-dispvm'
 ]
 
 POSSIBLE_TAGS = ['whonix-updatevm', 'anon-gateway']
@@ -414,6 +415,8 @@ class MockQube:
 
         self.setup_device_calls()
 
+        self.qapp._invalidate_cache_all()
+
     def setup_volume_calls(self):
         self.qapp.expected_calls[
             (self.name, 'admin.vm.volume.List', None, None)] = \
@@ -584,7 +587,7 @@ class MockQubes(QubesTestWrapper):
                 running=True, template='fedora-36',
                 provides_network=True,
                 features={
-                    'service.qubes-updates-proxy': 1})
+                    'service.qubes-updates-proxy': 1, 'servicevm': '1'})
         self._qubes['fedora-36'] = MockQube(
                 name="fedora-36", qapp=self,
                 klass='TemplateVM', netvm='')
@@ -606,11 +609,12 @@ class MockQubesComplete(MockQubes):
         super().__init__()
         self._qubes['sys-firewall'] = MockQube(
             name="sys-firewall", qapp=self, netvm="sys-net",
-            provides_network=True)
+            provides_network=True, features={'servicevm': '1'})
 
         self._qubes['sys-usb'] = MockQube(
             name="sys-usb", qapp=self, running=True,
-            features={'supported-service.qubes-u2f-proxy': '1'})
+            features={'supported-service.qubes-u2f-proxy': '1',
+                      'servicevm': '1'})
 
         self._qubes['fedora-35'] = MockQube(
             name="fedora-35", qapp=self, klass='TemplateVM', netvm='',
@@ -620,7 +624,8 @@ class MockQubesComplete(MockQubes):
 
         self._qubes['default-dvm'] = MockQube(
             name="default-dvm", qapp=self, klass='DispVM',
-            template_for_dispvms='True', template='fedora-36')
+            template_for_dispvms='True', template='fedora-36',
+            features={'appmenus-dispvm': '1'})
 
         self._qubes['test-vm'] = MockQube(
             name="test-vm", qapp=self,
