@@ -181,8 +181,10 @@ def assign_device(args):
         options['identity'] = 'any'
     assignment.options = options
     vm.devices[args.devclass].assign(assignment)
-    if vm.is_running() and not assignment.attached:
-        print("Assigned. Now you can manually attach device or restart domain.")
+    if vm.is_running() and not assignment.attached and not args.quiet:
+        print("Assigned. To attach you can now restart domain or run: \n"
+              f"\tqvm-{assignment.devclass} attach {vm} "
+              f"{assignment.backend_domain}:{assignment.ident}")
 
 
 def unassign_device(args):
@@ -194,17 +196,18 @@ def unassign_device(args):
         device = args.device
         assignment = qubesadmin.devices.DeviceAssignment.from_device(
             device, frontend_domain=vm)
-        vm.devices[args.devclass].unassign(assignment)
-        if assignment.attached:
-            print("Unassigned. Now you can manually detach device "
-                  "or restart domain.")
+        _unassign_and_show_message(assignment, vm, args)
     else:
-        for device_assignment in (
-                vm.devices[args.devclass].get_assigned_devices()):
-            vm.devices[args.devclass].unassign(device_assignment)
-            if device_assignment.attached:
-                print("Unassigned. Now you can manually detach device "
-                      "or restart domain.")
+        for assignment in vm.devices[args.devclass].get_assigned_devices():
+            _unassign_and_show_message(assignment, vm, args)
+
+
+def _unassign_and_show_message(assignment, vm, args):
+    vm.devices[args.devclass].unassign(assignment)
+    if assignment.attached and not args.quiet:
+        print("Unassigned. To detach you can now restart domain or run: \n"
+              f"\tqvm-{assignment.devclass} detach {vm} "
+              f"{assignment.backend_domain}:{assignment.ident}")
 
 
 def info_device(args):
