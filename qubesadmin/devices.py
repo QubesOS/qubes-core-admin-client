@@ -39,20 +39,6 @@ from enum import Enum
 from typing import Optional, Dict, Any, List, Type, Iterable
 
 
-# TODO:
-# Proposed device events:
-# sometimes event can be fired twice, we can ignore it
-# e.g. if device is plugged out and in in short time we can have doubled
-# detaching and attaching...
-# - device-list-changed: device-added -> device-added{devclass}
-# - device-list-changed: device-remove -> device-removed{devclass}
-# - device-property-changed: property_name: TODO?
-# - device-assignment-changed: created -> device-assign:{devclass}
-# - device-assignment-changed: removed -> device-unassign:{devclass}
-# - device-assignment-changed: attached -> device-attach:{devclass}
-# - device-assignment-changed: detached -> device-detach:{devclass}
-# - device-assignment-changed: property-set -> device-assignment-changed:{devclass}
-
 class UnexpectedDeviceProperty(qubesadmin.exc.QubesException, ValueError):
     """
     Device has unexpected property such as backend_domain, devclass etc.
