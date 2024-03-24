@@ -158,9 +158,7 @@ class DeviceCollection:
 
             yield DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
-                expected_backend_domain=backend_domain,
-                expected_ident=ident,
-                expected_devclass=None
+                expected_device=Device(backend_domain, ident)
             )
 
     def get_assigned_devices(
@@ -180,9 +178,7 @@ class DeviceCollection:
 
             assignment = DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
-                expected_backend_domain=backend_domain,
-                expected_ident=ident,
-                expected_devclass=None
+                expected_device=Device(backend_domain, ident)
             )
             if not required_only or assignment.required:
                 yield assignment

@@ -32,7 +32,7 @@ import sys
 import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
-import qubesadmin.devices
+import qubesadmin.device_protocol
 
 
 def prepare_table(dev_list):
@@ -65,7 +65,7 @@ class Line(object):
     """Helper class to hold single device info for listing"""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, device: qubesadmin.devices.DeviceInfo, attached_to=None):
+    def __init__(self, device: qubesadmin.device_protocol.DeviceInfo, attached_to=None):
         self.ident = "{!s}:{!s}".format(device.backend_domain, device.ident)
         self.description = device.description
         self.attached_to = attached_to if attached_to else ""
@@ -136,7 +136,7 @@ def attach_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    assignment = qubesadmin.devices.DeviceAssignment.from_device(
+    assignment = qubesadmin.device_protocol.DeviceAssignment.from_device(
         device,
         # backward compatibility
         attach_automatically=args.required, required=args.required)
@@ -157,7 +157,7 @@ def detach_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = qubesadmin.devices.DeviceAssignment.from_device(device)
+        assignment = qubesadmin.device_protocol.DeviceAssignment.from_device(device)
         vm.devices[args.devclass].detach(assignment)
     else:
         for device_assignment in (
@@ -171,7 +171,7 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    assignment = qubesadmin.devices.DeviceAssignment.from_device(
+    assignment = qubesadmin.device_protocol.DeviceAssignment.from_device(
         device, required=args.required, attach_automatically=True)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
@@ -194,7 +194,7 @@ def unassign_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = qubesadmin.devices.DeviceAssignment.from_device(
+        assignment = qubesadmin.device_protocol.DeviceAssignment.from_device(
             device, frontend_domain=vm)
         _unassign_and_show_message(assignment, vm, args)
     else:
@@ -217,7 +217,7 @@ def info_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = qubesadmin.devices.DeviceAssignment.from_device(device)
+        assignment = qubesadmin.device_protocol.DeviceAssignment.from_device(device)
         print("description:", assignment.device.description)
         print("data:", assignment.device.data)
     else:
@@ -275,13 +275,13 @@ class DeviceAction(qubesadmin.tools.QubesAction):
             try:
                 dev = vm.devices[devclass][device_id]
                 if not self.allow_unknown and \
-                        isinstance(dev, qubesadmin.devices.UnknownDevice):
+                        isinstance(dev, qubesadmin.device_protocol.UnknownDevice):
                     raise KeyError(device_id)
             except KeyError:
                 parser.error_runtime(
                     f"backend vm {vmname!r} doesn't expose "
                     f"{devclass} device {device_id!r}")
-                dev = qubesadmin.devices.Device(vm, device_id, devclass)
+                dev = qubesadmin.device_protocol.Device(vm, device_id, devclass)
             setattr(namespace, self.dest, dev)
         except ValueError:
             parser.error(

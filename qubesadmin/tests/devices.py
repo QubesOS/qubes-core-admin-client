@@ -19,7 +19,7 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 import qubesadmin.tests
-import qubesadmin.devices
+import qubesadmin.device_protocol
 
 
 serialized_test_device = (
@@ -43,7 +43,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         devices = list(self.vm.devices['test'].get_exposed_devices())
         self.assertEqual(len(devices), 1)
         dev = devices[0]
-        self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
+        self.assertIsInstance(dev, qubesadmin.device_protocol.DeviceInfo)
         self.assertEqual(dev.backend_domain, self.vm)
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(
@@ -59,7 +59,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         devices = list(self.vm.devices['test'].get_exposed_devices())
         self.assertEqual(len(devices), 1)
         dev = devices[0]
-        self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
+        self.assertIsInstance(dev, qubesadmin.device_protocol.DeviceInfo)
         self.assertEqual(dev.backend_domain, self.vm)
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(dev.description, 'test-device (itl)')
@@ -73,7 +73,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         devices = list(self.vm.devices['test'].get_exposed_devices())
         self.assertEqual(len(devices), 1)
         dev = devices[0]
-        self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
+        self.assertIsInstance(dev, qubesadmin.device_protocol.DeviceInfo)
         self.assertEqual(dev.backend_domain, self.vm)
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(dev.description, 'test-device (itl)')
@@ -86,7 +86,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Available', None, None)] = \
             serialized_test_device + b"\n"
         dev = self.vm.devices['test']['dev1']
-        self.assertIsInstance(dev, qubesadmin.devices.DeviceInfo)
+        self.assertIsInstance(dev, qubesadmin.device_protocol.DeviceInfo)
         self.assertEqual(dev.backend_domain, self.vm)
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(dev.description, 'test-device (itl)')
@@ -99,7 +99,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Available', None, None)] = \
             serialized_test_device + b"\n"
         dev = self.vm.devices['test']['dev2']
-        self.assertIsInstance(dev, qubesadmin.devices.UnknownDevice)
+        self.assertIsInstance(dev, qubesadmin.device_protocol.UnknownDevice)
         self.assertEqual(dev.backend_domain, self.vm)
         self.assertEqual(dev.ident, 'dev2')
         self.assertEqual(dev.description,
@@ -115,7 +115,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm'")] = \
             b'0\0'
-        assign = qubesadmin.devices.DeviceAssignment(
+        assign = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1')
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
@@ -127,7 +127,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm' _ro='True' "
              b"_something='value'")] = b'0\0'
-        assign = qubesadmin.devices.DeviceAssignment(
+        assign = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1')
         assign.options['ro'] = True
         assign.options['something'] = 'value'
@@ -140,7 +140,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"required='yes' attach_automatically='yes' ident='dev1' "
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm'")] = b'0\0'
-        assign = qubesadmin.devices.DeviceAssignment(
+        assign = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1',
             attach_automatically=True, required=True)
         self.vm.devices['test'].attach(assign)
@@ -152,7 +152,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"required='yes' attach_automatically='yes' ident='dev1' "
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm' _ro='True'")] = b'0\0'
-        assign = qubesadmin.devices.DeviceAssignment(
+        assign = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1',
             attach_automatically=True, required=True)
         assign.options['ro'] = True
@@ -163,7 +163,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Detach', 'test-vm2+dev1',
              None)] = b'0\0'
-        assign = qubesadmin.devices.DeviceAssignment(
+        assign = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], 'dev1')
         self.vm.devices['test'].detach(assign)
         self.assertAllCalled()
@@ -188,7 +188,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         dedicated = sorted(list(
             self.vm.devices['test'].get_dedicated_devices()))
         self.assertEqual(len(dedicated), 2)
-        self.assertIsInstance(dedicated[0], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(dedicated[0], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(dedicated[0].backend_domain,
                          self.app.domains['test-vm2'])
         self.assertEqual(dedicated[0].ident, 'dev1')
@@ -199,7 +199,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(dedicated[0].device,
                          self.app.domains['test-vm2'].devices['test']['dev1'])
 
-        self.assertIsInstance(dedicated[1], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(dedicated[1], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(dedicated[1].backend_domain,
                          self.app.domains['test-vm3'])
         self.assertEqual(dedicated[1].ident, 'dev2')
@@ -226,7 +226,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         assigns = sorted(list(
             self.vm.devices['test'].get_dedicated_devices()))
         self.assertEqual(len(assigns), 2)
-        self.assertIsInstance(assigns[0], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(assigns[0], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(assigns[0].backend_domain,
                          self.app.domains['test-vm2'])
         self.assertEqual(assigns[0].ident, 'dev1')
@@ -236,7 +236,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(assigns[0].required, False)
         self.assertEqual(assigns[0].devclass, 'test')
 
-        self.assertIsInstance(assigns[1], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(assigns[1], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(assigns[1].backend_domain,
                          self.app.domains['test-vm3'])
         self.assertEqual(assigns[1].ident, 'dev2')
@@ -258,7 +258,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         devs = list(self.vm.devices['test'].get_assigned_devices(
             required_only=True))
         self.assertEqual(len(devs), 1)
-        self.assertIsInstance(devs[0], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(devs[0], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(devs[0].backend_domain, self.app.domains['test-vm3'])
         self.assertEqual(devs[0].ident, 'dev2')
         self.assertAllCalled()
@@ -272,10 +272,10 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"attach_automatically='yes' required='no'\n")
         devs = list(self.vm.devices['test'].get_attached_devices())
         self.assertEqual(len(devs), 2)
-        self.assertIsInstance(devs[0], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(devs[0], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(devs[0].backend_domain, self.app.domains['test-vm2'])
         self.assertEqual(devs[0].ident, 'dev1')
-        self.assertIsInstance(devs[1], qubesadmin.devices.DeviceAssignment)
+        self.assertIsInstance(devs[1], qubesadmin.device_protocol.DeviceAssignment)
         self.assertEqual(devs[1].backend_domain, self.app.domains['test-vm3'])
         self.assertEqual(devs[1].ident, 'dev2')
         self.assertAllCalled()
@@ -284,7 +284,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'True')] = b'0\0'
-        dev = qubesadmin.devices.DeviceAssignment(
+        dev = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
         self.vm.devices['test'].update_assignment(dev, True)
         self.assertAllCalled()
@@ -293,7 +293,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'False')] = b'0\0'
-        dev = qubesadmin.devices.DeviceAssignment(
+        dev = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
         self.vm.devices['test'].update_assignment(dev, False)
         self.assertAllCalled()
@@ -302,7 +302,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'None')] = b'0\0'
-        dev = qubesadmin.devices.DeviceAssignment(
+        dev = qubesadmin.device_protocol.DeviceAssignment(
             self.app.domains['test-vm2'], devclass='test', ident='dev1')
         self.vm.devices['test'].update_assignment(dev, None)
         self.assertAllCalled()

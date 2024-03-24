@@ -39,7 +39,7 @@ import qubesadmin.storage
 import qubesadmin.utils
 import qubesadmin.vm
 import qubesadmin.config
-import qubesadmin.devices
+import qubesadmin.device_protocol
 
 try:
     import qubesdb

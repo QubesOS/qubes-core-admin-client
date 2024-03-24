@@ -27,7 +27,7 @@ import subprocess
 
 import time
 
-import qubesadmin.devices
+import qubesadmin.device_protocol
 import qubesadmin.exc
 import qubesadmin.tools
 
@@ -79,7 +79,7 @@ parser_drive.add_argument('--install-windows-tools',
 
 
 def get_drive_assignment(app, drive_str):
-    ''' Prepare :py:class:`qubesadmin.devices.DeviceAssignment` object for a
+    ''' Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for a
     given drive.
 
     If running in dom0, it will also take care about creating appropriate
@@ -143,7 +143,7 @@ def get_drive_assignment(app, drive_str):
         # FIXME: convert this to waiting for event
         timeout = 10
         while isinstance(backend_domain.devices['block'][ident],
-                qubesadmin.devices.UnknownDevice):
+                qubesadmin.device_protocol.UnknownDevice):
             if timeout == 0:
                 raise qubesadmin.exc.QubesException(
                     'Timeout waiting for {}:{} device to appear'.format(
@@ -155,7 +155,7 @@ def get_drive_assignment(app, drive_str):
         'devtype': devtype,
         'read-only': devtype == 'cdrom'
     }
-    assignment = qubesadmin.devices.DeviceAssignment(
+    assignment = qubesadmin.device_protocol.DeviceAssignment(
         backend_domain,
         ident,
         options=options,

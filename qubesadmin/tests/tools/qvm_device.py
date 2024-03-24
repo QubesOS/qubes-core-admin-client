@@ -26,7 +26,7 @@
 import unittest.mock as mock
 import qubesadmin.tests
 import qubesadmin.tests.tools
-import qubesadmin.devices
+import qubesadmin.device_protocol
 import qubesadmin.tools.qvm_device
 
 
