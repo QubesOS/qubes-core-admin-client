@@ -74,8 +74,8 @@ def qbool(value):
 
 
 class Device:
-    ALLOWED_CHARS_KEY = string.digits + string.ascii_letters + '-_.'
-    ALLOWED_CHARS_PARAM = ALLOWED_CHARS_KEY + ',+:'
+    ALLOWED_CHARS_KEY = string.digits + string.ascii_letters + string.punctuation + ' '
+    ALLOWED_CHARS_PARAM = ALLOWED_CHARS_KEY + string.punctuation + ' '
 
     def __init__(self, backend_domain, ident, devclass=None):
         self.__backend_domain = backend_domain
@@ -380,7 +380,8 @@ class DeviceInterface:
 
 class DeviceInfo(Device):
     """ Holds all information about a device """
-    ALLOWED_CHARS_PARAM = Device.ALLOWED_CHARS_PARAM  + string.punctuation + ' '
+    ALLOWED_CHARS_KEY = Device.ALLOWED_CHARS_KEY + string.punctuation + ' '
+    ALLOWED_CHARS_PARAM = Device.ALLOWED_CHARS_PARAM + string.punctuation + ' '
 
     def __init__(
             self,
@@ -677,7 +678,10 @@ class DeviceInfo(Device):
 
 
 def serialize_str(value: str):
-    return repr(str(value))
+    result = repr(str(value))
+    if result.startswith('"'):
+        result = "'" + result[1:-1] + "'"
+    return result
 
 
 def deserialize_str(value: str):
