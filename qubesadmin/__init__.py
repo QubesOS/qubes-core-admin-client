@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Qubes OS management client.'''
+"""Qubes OS management client."""
 
 import os
 
@@ -28,7 +28,7 @@ import qubesadmin.app
 
 DEFAULT = qubesadmin.base.DEFAULT
 
-if os.path.exists('/etc/qubes-release'):
+if os.path.exists("/etc/qubes-release"):
     Qubes = qubesadmin.app.QubesLocal
 else:
     Qubes = qubesadmin.app.QubesRemote

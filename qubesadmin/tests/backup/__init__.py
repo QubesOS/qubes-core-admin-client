@@ -31,6 +31,7 @@ import qubesadmin.tests
 
 SIGNATURE_LEN = 512
 
+
 class BackupTestCase(qubesadmin.tests.QubesTestCase):
     class BackupErrorHandler(logging.Handler):
         def __init__(self, errors_queue, level=logging.NOTSET):
@@ -44,12 +45,12 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         try:
             return super(BackupTestCase, self).make_vm_name(name)
         except AttributeError:
-            return 'test-' + name
+            return "test-" + name
 
     def setUp(self):
         super(BackupTestCase, self).setUp()
         self.error_detected = multiprocessing.Queue()
-        self.log = logging.getLogger('qubesadmin.tests.backup')
+        self.log = logging.getLogger("qubesadmin.tests.backup")
         self.log.debug("Creating backupvm")
 
         self.backupdir = os.path.join(os.environ["HOME"], "test-backup")
@@ -57,34 +58,35 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
             shutil.rmtree(self.backupdir)
         os.mkdir(self.backupdir)
 
-        self.error_handler = self.BackupErrorHandler(self.error_detected,
-            level=logging.WARNING)
-        backup_log = logging.getLogger('qubesadmin.backup')
+        self.error_handler = self.BackupErrorHandler(
+            self.error_detected, level=logging.WARNING
+        )
+        backup_log = logging.getLogger("qubesadmin.backup")
         backup_log.addHandler(self.error_handler)
 
     def tearDown(self):
         super(BackupTestCase, self).tearDown()
         shutil.rmtree(self.backupdir)
 
-        backup_log = logging.getLogger('qubes.backup')
+        backup_log = logging.getLogger("qubes.backup")
         backup_log.removeHandler(self.error_handler)
 
-    def fill_image(self, path, size=None, sparse=False, signature=b''):
+    def fill_image(self, path, size=None, sparse=False, signature=b""):
         block_size = 4096
 
         self.log.debug("Filling %s" % path)
-        f = open(path, 'wb+')
+        f = open(path, "wb+")
         if size is None:
             f.seek(0, 2)
             size = f.tell()
         f.seek(0)
         f.write(signature)
-        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
+        f.write(b"\0" * (SIGNATURE_LEN - len(signature)))
 
-        for block_num in range(int(size/block_size)):
+        for block_num in range(int(size / block_size)):
             if sparse:
                 f.seek(block_size, 1)
-            f.write(b'a' * block_size)
+            f.write(b"a" * block_size)
 
         f.close()
 
@@ -93,50 +95,48 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         template = self.app.default_template
 
         vms = []
-        vmname = self.make_vm_name('test-net')
+        vmname = self.make_vm_name("test-net")
         self.log.debug("Creating %s" % vmname)
-        testnet = self.app.add_new_vm('AppVM',
-            name=vmname,
-            label='red')
+        testnet = self.app.add_new_vm("AppVM", name=vmname, label="red")
         testnet.provides_network = True
         testnet.create_on_disk(pool=pool)
-        testnet.features['services/ntpd'] = True
+        testnet.features["services/ntpd"] = True
         vms.append(testnet)
-        self.fill_image(testnet.storage.export('private'), 20*1024*1024)
+        self.fill_image(testnet.storage.export("private"), 20 * 1024 * 1024)
 
-        vmname = self.make_vm_name('test1')
+        vmname = self.make_vm_name("test1")
         self.log.debug("Creating %s" % vmname)
-        testvm1 = self.app.add_new_vm('AppVM',
-            name=vmname, template=template, label='red')
+        testvm1 = self.app.add_new_vm(
+            "AppVM", name=vmname, template=template, label="red"
+        )
         testvm1.uses_default_netvm = False
         testvm1.netvm = testnet
         testvm1.create_on_disk(pool=pool)
         vms.append(testvm1)
-        self.fill_image(testvm1.storage.export('private'), 100 * 1024 * 1024)
+        self.fill_image(testvm1.storage.export("private"), 100 * 1024 * 1024)
 
-        vmname = self.make_vm_name('testhvm1')
+        vmname = self.make_vm_name("testhvm1")
         self.log.debug("Creating %s" % vmname)
-        testvm2 = self.app.add_new_vm('StandaloneVM',
-                                      name=vmname,
-                                      label='red')
-        testvm2.virt_mode = 'hvm'
+        testvm2 = self.app.add_new_vm("StandaloneVM", name=vmname, label="red")
+        testvm2.virt_mode = "hvm"
         testvm2.create_on_disk(pool=pool)
-        self.fill_image(testvm2.storage.export('root'), 1024 * 1024 * 1024, \
-            True)
+        self.fill_image(
+            testvm2.storage.export("root"), 1024 * 1024 * 1024, True
+        )
         vms.append(testvm2)
 
-        vmname = self.make_vm_name('template')
+        vmname = self.make_vm_name("template")
         self.log.debug("Creating %s" % vmname)
-        testvm3 = self.app.add_new_vm('TemplateVM',
-            name=vmname, label='red')
+        testvm3 = self.app.add_new_vm("TemplateVM", name=vmname, label="red")
         testvm3.create_on_disk(pool=pool)
-        self.fill_image(testvm3.storage.export('root'), 100 * 1024 * 1024, True)
+        self.fill_image(testvm3.storage.export("root"), 100 * 1024 * 1024, True)
         vms.append(testvm3)
 
-        vmname = self.make_vm_name('custom')
+        vmname = self.make_vm_name("custom")
         self.log.debug("Creating %s" % vmname)
-        testvm4 = self.app.add_new_vm('AppVM',
-            name=vmname, template=testvm3, label='red')
+        testvm4 = self.app.add_new_vm(
+            "AppVM", name=vmname, template=testvm3, label="red"
+        )
         testvm4.create_on_disk(pool=pool)
         vms.append(testvm4)
 
@@ -155,8 +155,8 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
             else:
                 raise
 
-        if 'passphrase' not in kwargs:
-            backup.passphrase = 'qubes'
+        if "passphrase" not in kwargs:
+            backup.passphrase = "qubes"
         backup.target_dir = target
 
         try:
@@ -167,25 +167,37 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
             else:
                 raise
 
-    def restore_backup(self, source=None, appvm=None, options=None,
-                       expect_errors=None, manipulate_restore_info=None,
-                       passphrase='qubes', force_compression_filter=None,
-                       tmpdir=None):
+    def restore_backup(
+        self,
+        source=None,
+        appvm=None,
+        options=None,
+        expect_errors=None,
+        manipulate_restore_info=None,
+        passphrase="qubes",
+        force_compression_filter=None,
+        tmpdir=None,
+    ):
         if source is None:
-            backupfile = os.path.join(self.backupdir,
-                                      sorted(os.listdir(self.backupdir))[-1])
+            backupfile = os.path.join(
+                self.backupdir, sorted(os.listdir(self.backupdir))[-1]
+            )
         else:
             backupfile = source
 
         kwargs = {}
         if tmpdir:
-            kwargs['tmpdir'] = tmpdir
+            kwargs["tmpdir"] = tmpdir
 
         with self.assertNotRaises(qubesadmin.exc.QubesException):
             restore_op = qubesadmin.backup.restore.BackupRestore(
-                self.app, backupfile, appvm, passphrase,
+                self.app,
+                backupfile,
+                appvm,
+                passphrase,
                 force_compression_filter=force_compression_filter,
-                **kwargs)
+                **kwargs
+            )
             if options:
                 for key, value in options.items():
                     setattr(restore_op.options, key, value)
@@ -201,34 +213,38 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         if expect_errors is None:
             expect_errors = []
         else:
-            self.assertFalse(self.error_detected.empty(),
-                "Restore errors expected, but none detected")
+            self.assertFalse(
+                self.error_detected.empty(),
+                "Restore errors expected, but none detected",
+            )
         while not self.error_detected.empty():
             current_error = self.error_detected.get()
             if any(map(current_error.startswith, expect_errors)):
                 continue
             errors.append(current_error)
-        self.assertTrue(len(errors) == 0,
-                         "Error(s) detected during backup_restore_do: %s" %
-                         '\n'.join(errors))
+        self.assertTrue(
+            len(errors) == 0,
+            "Error(s) detected during backup_restore_do: %s"
+            % "\n".join(errors),
+        )
         if not appvm and not os.path.isdir(backupfile):
             os.unlink(backupfile)
 
-    def create_sparse(self, path, size, signature=b''):
+    def create_sparse(self, path, size, signature=b""):
         f = open(path, "wb")
         f.write(signature)
-        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
+        f.write(b"\0" * (SIGNATURE_LEN - len(signature)))
         f.truncate(size)
         f.close()
 
-    def create_full_image(self, path, size, signature=b''):
+    def create_full_image(self, path, size, signature=b""):
         f = open(path, "wb")
         f.write(signature)
-        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
-        block_size = 1024 ** 2
-        f.write(b'\0' * (block_size - SIGNATURE_LEN))
+        f.write(b"\0" * (SIGNATURE_LEN - len(signature)))
+        block_size = 1024**2
+        f.write(b"\0" * (block_size - SIGNATURE_LEN))
         for _ in range(size // block_size - 1):
-            f.write(b'\1' * block_size)
+            f.write(b"\1" * block_size)
         f.close()
 
     def vm_checksum(self, vms):
@@ -241,56 +257,85 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
                     continue
                 vol_path = vm.storage.get_pool(volume).export(volume)
                 hasher = hashlib.sha1()
-                with open(vol_path, 'rb') as afile:
-                    for buf in iter(lambda: afile.read(4096000), b''):
+                with open(vol_path, "rb") as afile:
+                    for buf in iter(lambda: afile.read(4096000), b""):
                         hasher.update(buf)
                 hashes[vm.name][name] = hasher.hexdigest()
         return hashes
 
     def assertCorrectlyRestored(self, orig_vms, orig_hashes):
-        ''' Verify if restored VMs are identical to those before backup.
+        """Verify if restored VMs are identical to those before backup.
 
         :param orig_vms: collection of original QubesVM objects
         :param orig_hashes: result of :py:meth:`vm_checksum` on original VMs,
             before backup
         :return:
-        '''
+        """
         for vm in orig_vms:
             self.assertIn(vm.name, self.app.domains)
             restored_vm = self.app.domains[vm.name]
-            for prop in ('name', 'kernel',
-                    'memory', 'maxmem', 'kernelopts',
-                    'services', 'vcpus', 'features'
-                    'include_in_backups', 'default_user', 'qrexec_timeout',
-                    'autostart', 'pci_strictreset', 'debug',
-                    'internal'):
+            for prop in (
+                "name",
+                "kernel",
+                "memory",
+                "maxmem",
+                "kernelopts",
+                "services",
+                "vcpus",
+                "features" "include_in_backups",
+                "default_user",
+                "qrexec_timeout",
+                "autostart",
+                "pci_strictreset",
+                "debug",
+                "internal",
+            ):
                 if not hasattr(vm, prop):
                     continue
                 self.assertEqual(
-                    getattr(vm, prop), getattr(restored_vm, prop),
+                    getattr(vm, prop),
+                    getattr(restored_vm, prop),
                     "VM {} - property {} not properly restored".format(
-                        vm.name, prop))
-            for prop in ('netvm', 'template', 'label'):
+                        vm.name, prop
+                    ),
+                )
+            for prop in ("netvm", "template", "label"):
                 if not hasattr(vm, prop):
                     continue
                 orig_value = getattr(vm, prop)
                 restored_value = getattr(restored_vm, prop)
                 if orig_value and restored_value:
-                    self.assertEqual(orig_value.name, restored_value.name,
+                    self.assertEqual(
+                        orig_value.name,
+                        restored_value.name,
                         "VM {} - property {} not properly restored".format(
-                            vm.name, prop))
+                            vm.name, prop
+                        ),
+                    )
                 else:
-                    self.assertEqual(orig_value, restored_value,
+                    self.assertEqual(
+                        orig_value,
+                        restored_value,
                         "VM {} - property {} not properly restored".format(
-                            vm.name, prop))
+                            vm.name, prop
+                        ),
+                    )
             for dev_class in vm.devices.keys():
                 for dev in vm.devices[dev_class]:
-                    self.assertIn(dev, restored_vm.devices[dev_class],
+                    self.assertIn(
+                        dev,
+                        restored_vm.devices[dev_class],
                         "VM {} - {} device not restored".format(
-                            vm.name, dev_class))
+                            vm.name, dev_class
+                        ),
+                    )
 
             if orig_hashes:
                 hashes = self.vm_checksum([restored_vm])[restored_vm.name]
-                self.assertEqual(orig_hashes[vm.name], hashes,
+                self.assertEqual(
+                    orig_hashes[vm.name],
+                    hashes,
                     "VM {} - disk images are not properly restored".format(
-                        vm.name))
+                        vm.name
+                    ),
+                )

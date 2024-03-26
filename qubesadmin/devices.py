@@ -33,10 +33,17 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 
 
 class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
-    """ Maps a device to a frontend_domain. """
+    """Maps a device to a frontend_domain."""
 
-    def __init__(self, backend_domain, ident, options=None, persistent=False,
-                 frontend_domain=None, devclass=None):
+    def __init__(
+        self,
+        backend_domain,
+        ident,
+        options=None,
+        persistent=False,
+        frontend_domain=None,
+        devclass=None,
+    ):
         self.backend_domain = backend_domain
         self.ident = ident
         self.devclass = devclass
@@ -54,8 +61,10 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
         if not isinstance(self, other.__class__):
             return NotImplemented
 
-        return self.backend_domain == other.backend_domain \
-               and self.ident == other.ident
+        return (
+            self.backend_domain == other.backend_domain
+            and self.ident == other.ident
+        )
 
     def clone(self):
         """Clone object instance"""
@@ -75,11 +84,12 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
 
 
 class DeviceInfo(object):
-    """ Holds all information about a device """
+    """Holds all information about a device"""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, backend_domain, devclass, ident, description=None,
-                 **kwargs):
+    def __init__(
+        self, backend_domain, devclass, ident, description=None, **kwargs
+    ):
         #: domain providing this device
         self.backend_domain = backend_domain
         #: device class
@@ -96,27 +106,27 @@ class DeviceInfo(object):
     def __eq__(self, other):
         try:
             return (
-                    self.devclass == other.devclass and
-                    self.backend_domain == other.backend_domain and
-                    self.ident == other.ident
+                self.devclass == other.devclass
+                and self.backend_domain == other.backend_domain
+                and self.ident == other.ident
             )
         except AttributeError:
             return False
 
     def __str__(self):
-        return '{!s}:{!s}'.format(self.backend_domain, self.ident)
+        return "{!s}:{!s}".format(self.backend_domain, self.ident)
 
 
 class UnknownDevice(DeviceInfo):
     # pylint: disable=too-few-public-methods
     """Unknown device - for example exposed by domain not running currently"""
 
-    def __init__(self, backend_domain, devclass, ident, description=None,
-                 **kwargs):
+    def __init__(
+        self, backend_domain, devclass, ident, description=None, **kwargs
+    ):
         if description is None:
             description = "Unknown device"
-        super().__init__(backend_domain, devclass, ident,
-                                            description, **kwargs)
+        super().__init__(backend_domain, devclass, ident, description, **kwargs)
 
 
 class DeviceCollection(object):
@@ -143,8 +153,9 @@ class DeviceCollection(object):
         if not device_assignment.frontend_domain:
             device_assignment.frontend_domain = self._vm
         else:
-            assert device_assignment.frontend_domain == self._vm, \
-                "Trying to attach DeviceAssignment belonging to other domain"
+            assert (
+                device_assignment.frontend_domain == self._vm
+            ), "Trying to attach DeviceAssignment belonging to other domain"
         if device_assignment.devclass is None:
             device_assignment.devclass = self._class
         else:
@@ -152,15 +163,18 @@ class DeviceCollection(object):
 
         options = device_assignment.options.copy()
         if device_assignment.persistent:
-            options['persistent'] = 'True'
-        options_str = ' '.join('{}={}'.format(opt, val)
-                               for opt, val in sorted(options.items()))
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Attach'.format(self._class),
-                             '{!s}+{!s}'.format(
-                                 device_assignment.backend_domain,
-                                 device_assignment.ident),
-                             options_str.encode('utf-8'))
+            options["persistent"] = "True"
+        options_str = " ".join(
+            "{}={}".format(opt, val) for opt, val in sorted(options.items())
+        )
+        self._vm.qubesd_call(
+            None,
+            "admin.vm.device.{}.Attach".format(self._class),
+            "{!s}+{!s}".format(
+                device_assignment.backend_domain, device_assignment.ident
+            ),
+            options_str.encode("utf-8"),
+        )
 
     def detach(self, device_assignment):
         """Detach (remove) device from domain.
@@ -171,18 +185,21 @@ class DeviceCollection(object):
         if not device_assignment.frontend_domain:
             device_assignment.frontend_domain = self._vm
         else:
-            assert device_assignment.frontend_domain == self._vm, \
-                "Trying to detach DeviceAssignment belonging to other domain"
+            assert (
+                device_assignment.frontend_domain == self._vm
+            ), "Trying to detach DeviceAssignment belonging to other domain"
         if device_assignment.devclass is None:
             device_assignment.devclass = self._class
         else:
             assert device_assignment.devclass == self._class
 
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Detach'.format(self._class),
-                             '{!s}+{!s}'.format(
-                                 device_assignment.backend_domain,
-                                 device_assignment.ident))
+        self._vm.qubesd_call(
+            None,
+            "admin.vm.device.{}.Detach".format(self._class),
+            "{!s}+{!s}".format(
+                device_assignment.backend_domain, device_assignment.ident
+            ),
+        )
 
     def assignments(self, persistent=None):
         """List assignments for devices which are (or may be) attached to the
@@ -196,34 +213,43 @@ class DeviceCollection(object):
             attached persistently.
         """
 
-        assignments_str = self._vm.qubesd_call(None,
-                                               'admin.vm.device.{}.List'.format(
-                                                   self._class)).decode()
+        assignments_str = self._vm.qubesd_call(
+            None, "admin.vm.device.{}.List".format(self._class)
+        ).decode()
         for assignment_str in assignments_str.splitlines():
-            device, _, options_all = assignment_str.partition(' ')
-            backend_domain, ident = device.split('+', 1)
-            options = dict(opt_single.split('=', 1)
-                           for opt_single in options_all.split(' ') if
-                           opt_single)
-            dev_persistent = (options.pop('persistent', False) in
-                              ['True', 'yes', True])
+            device, _, options_all = assignment_str.partition(" ")
+            backend_domain, ident = device.split("+", 1)
+            options = dict(
+                opt_single.split("=", 1)
+                for opt_single in options_all.split(" ")
+                if opt_single
+            )
+            dev_persistent = options.pop("persistent", False) in [
+                "True",
+                "yes",
+                True,
+            ]
             if persistent is not None and dev_persistent != persistent:
                 continue
             backend_domain = self._vm.app.domains.get_blind(backend_domain)
-            yield DeviceAssignment(backend_domain, ident, options,
-                                   persistent=dev_persistent,
-                                   frontend_domain=self._vm,
-                                   devclass=self._class)
+            yield DeviceAssignment(
+                backend_domain,
+                ident,
+                options,
+                persistent=dev_persistent,
+                frontend_domain=self._vm,
+                devclass=self._class,
+            )
 
     def attached(self):
-        """List devices which are (or may be) attached to this vm """
+        """List devices which are (or may be) attached to this vm"""
 
         for assignment in self.assignments():
             yield assignment.device
 
     def persistent(self):
-        """ Devices persistently attached and safe to access before libvirt
-            bootstrap.
+        """Devices persistently attached and safe to access before libvirt
+        bootstrap.
         """
 
         for assignment in self.assignments(True):
@@ -231,19 +257,25 @@ class DeviceCollection(object):
 
     def available(self):
         """List devices exposed by this vm"""
-        devices_str = \
-            self._vm.qubesd_call(None,
-                                 'admin.vm.device.{}.Available'.format(
-                                     self._class)).decode()
+        devices_str = self._vm.qubesd_call(
+            None, "admin.vm.device.{}.Available".format(self._class)
+        ).decode()
         for dev_str in devices_str.splitlines():
-            ident, _, info = dev_str.partition(' ')
+            ident, _, info = dev_str.partition(" ")
             # description is special that it can contain spaces
-            info, _, description = info.partition('description=')
-            info_dict = dict(info_single.split('=', 1)
-                             for info_single in info.split(' ') if info_single)
-            yield DeviceInfo(self._vm, self._class, ident,
-                             description=description,
-                             **info_dict)
+            info, _, description = info.partition("description=")
+            info_dict = dict(
+                info_single.split("=", 1)
+                for info_single in info.split(" ")
+                if info_single
+            )
+            yield DeviceInfo(
+                self._vm,
+                self._class,
+                ident,
+                description=description,
+                **info_dict
+            )
 
     def update_persistent(self, device, persistent):
         """Update `persistent` flag of already attached device.
@@ -252,12 +284,12 @@ class DeviceCollection(object):
         :param bool persistent: new persistent flag
         """
 
-        self._vm.qubesd_call(None,
-                             'admin.vm.device.{}.Set.persistent'.format(
-                                 self._class),
-                             '{!s}+{!s}'.format(device.backend_domain,
-                                                device.ident),
-                             str(persistent).encode('utf-8'))
+        self._vm.qubesd_call(
+            None,
+            "admin.vm.device.{}.Set.persistent".format(self._class),
+            "{!s}+{!s}".format(device.backend_domain, device.ident),
+            str(persistent).encode("utf-8"),
+        )
 
     __iter__ = available
 

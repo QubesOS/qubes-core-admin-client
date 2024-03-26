@@ -18,31 +18,34 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Qubes backup'''
+"""Qubes backup"""
 import collections
 
 
 class BackupApp(object):
-    '''Interface for backup collection'''
+    """Interface for backup collection"""
+
     # pylint: disable=too-few-public-methods
     def __init__(self, qubes_xml):
-        '''Initialize BackupApp object and load qubes.xml into it'''
+        """Initialize BackupApp object and load qubes.xml into it"""
         self.store = qubes_xml
         self.domains = {}
         self.globals = {}
         self.load()
 
     def load(self):
-        '''Load qubes.xml'''
+        """Load qubes.xml"""
         raise NotImplementedError
 
+
 class BackupVM(object):
-    '''Interface for a single VM in the backup'''
+    """Interface for a single VM in the backup"""
+
     # pylint: disable=too-few-public-methods
     def __init__(self):
-        '''Initialize empty BackupVM object'''
+        """Initialize empty BackupVM object"""
         #: VM class
-        self.klass = 'AppVM'
+        self.klass = "AppVM"
         #: VM name
         self.name = None
         #: VM template
@@ -65,9 +68,9 @@ class BackupVM(object):
 
     @property
     def included_in_backup(self):
-        '''Report whether a VM is included in the backup'''
+        """Report whether a VM is included in the backup"""
         return False
 
     def handle_firewall_xml(self, vm, stream):
-        '''Import appropriate format of firewall.xml'''
+        """Import appropriate format of firewall.xml"""
         raise NotImplementedError

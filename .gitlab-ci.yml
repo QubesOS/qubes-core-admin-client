@@ -21,6 +21,15 @@ checks:pylint:
   stage: checks
   tags:
   - docker
+checks:blacklint:
+  before_script:
+  - sudo dnf install -y python3-black
+  - pip3 install --quiet -r ci/requirements.txt
+  script:
+  - black -l 80 -v --diff --color --check qubesadmin
+  stage: checks
+  tags:
+  - docker
 checks:tests:
   after_script:
   - ci/codecov-wrapper

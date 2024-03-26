@@ -19,18 +19,20 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''Qubes logging routines
+"""Qubes logging routines
 
 See also: :py:attr:`qubes.vm.qubesvm.QubesVM.log`
-'''
+"""
 
 import logging
 import sys
 
-FORMAT_CONSOLE = '%(name)s: %(message)s'
-FORMAT_LOG = '%(asctime)s %(message)s'
-FORMAT_DEBUG = '%(asctime)s ' \
-    '[%(processName)s %(module)s.%(funcName)s:%(lineno)d] %(name)s: %(message)s'
+FORMAT_CONSOLE = "%(name)s: %(message)s"
+FORMAT_LOG = "%(asctime)s %(message)s"
+FORMAT_DEBUG = (
+    "%(asctime)s "
+    "[%(processName)s %(module)s.%(funcName)s:%(lineno)d] %(name)s: %(message)s"
+)
 
 formatter_console = logging.Formatter(FORMAT_CONSOLE)
 formatter_log = logging.Formatter(FORMAT_LOG)
@@ -38,7 +40,7 @@ formatter_debug = logging.Formatter(FORMAT_DEBUG)
 
 
 def enable():
-    '''Enable global logging
+    """Enable global logging
 
     Use :py:mod:`logging` module from standard library to log messages.
 
@@ -46,7 +48,7 @@ def enable():
     >>> qubes.log.enable()          # doctest: +SKIP
     >>> import logging
     >>> logging.warning('Foobar')   # doctest: +SKIP
-    '''
+    """
 
     if logging.root.handlers:
         return
@@ -59,10 +61,10 @@ def enable():
 
 
 def enable_debug():
-    '''Enable debug logging
+    """Enable debug logging
 
     Enable more messages and additional info to message format.
-    '''
+    """
 
     enable()
     logging.root.setLevel(logging.DEBUG)

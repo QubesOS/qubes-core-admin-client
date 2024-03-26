@@ -20,7 +20,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-''' Clone a domain '''
+""" Clone a domain """
 
 import sys
 
@@ -28,36 +28,49 @@ import qubesadmin.exc
 from qubesadmin.tools import QubesArgumentParser
 
 parser = QubesArgumentParser(description=__doc__, vmname_nargs=1)
-parser.add_argument('new_name',
-                    metavar='NEWVM',
-                    action='store',
-                    help='name of the domain to create')
+parser.add_argument(
+    "new_name",
+    metavar="NEWVM",
+    action="store",
+    help="name of the domain to create",
+)
 
-parser.add_argument('--class', '-C', dest='cls',
+parser.add_argument(
+    "--class",
+    "-C",
+    dest="cls",
     default=None,
-    help='specify the class of the new domain (default: same as source)')
+    help="specify the class of the new domain (default: same as source)",
+)
 
-parser.add_argument('--ignore-errors', action='store_true',
+parser.add_argument(
+    "--ignore-errors",
+    action="store_true",
     default=False,
-    help='log errors encountered during setting metadata'
-         'but continue clone operation')
+    help="log errors encountered during setting metadata"
+    "but continue clone operation",
+)
 
 group = parser.add_mutually_exclusive_group()
-group.add_argument('-P',
-                    metavar='POOL',
-                    dest='one_pool',
-                    default='',
-                    help='pool to use for the new domain')
+group.add_argument(
+    "-P",
+    metavar="POOL",
+    dest="one_pool",
+    default="",
+    help="pool to use for the new domain",
+)
 
-group.add_argument('-p',
-                    '--pool',
-                    action='append',
-                    metavar='VOLUME=POOL',
-                    help='specify the pool to use for the specific volume')
+group.add_argument(
+    "-p",
+    "--pool",
+    action="append",
+    metavar="VOLUME=POOL",
+    help="specify the pool to use for the specific volume",
+)
 
 
 def main(args=None, app=None):
-    ''' Clones an existing VM by copying all its disk files '''
+    """Clones an existing VM by copying all its disk files"""
     args = parser.parse_args(args, app=app)
     app = args.app
     src_vm = args.domains[0]
@@ -67,20 +80,28 @@ def main(args=None, app=None):
     pools = {}
     if args.one_pool:
         pool = args.one_pool
-    elif hasattr(args, 'pool') and args.pool:
+    elif hasattr(args, "pool") and args.pool:
         for pool_vol in args.pool:
             try:
-                volume_name, pool_name = pool_vol.split('=')
+                volume_name, pool_name = pool_vol.split("=")
                 pools[volume_name] = pool_name
             except ValueError:
                 parser.error(
-                    'Pool argument must be of form: -p volume_name=pool_name')
+                    "Pool argument must be of form: -p volume_name=pool_name"
+                )
 
     try:
-        app.clone_vm(src_vm, new_name, new_cls=args.cls, pool=pool, pools=pools,
-                     ignore_errors=args.ignore_errors)
+        app.clone_vm(
+            src_vm,
+            new_name,
+            new_cls=args.cls,
+            pool=pool,
+            pools=pools,
+            ignore_errors=args.ignore_errors,
+        )
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(e)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

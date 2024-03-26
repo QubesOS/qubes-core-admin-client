@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-''' Shutdown a qube '''
+""" Shutdown a qube """
 
 from __future__ import print_function
 
@@ -31,6 +31,7 @@ import asyncio
 
 try:
     import qubesadmin.events.utils
+
     have_events = True
 except ImportError:
     have_events = False
@@ -38,36 +39,54 @@ import qubesadmin.tools
 import qubesadmin.exc
 
 parser = qubesadmin.tools.QubesArgumentParser(
-    description=__doc__, vmname_nargs='+')
+    description=__doc__, vmname_nargs="+"
+)
 
-parser.add_argument('--wait',
-    action='store_true', default=False,
-    help='wait for the VMs to shut down')
+parser.add_argument(
+    "--wait",
+    action="store_true",
+    default=False,
+    help="wait for the VMs to shut down",
+)
 
-parser.add_argument('--timeout',
-    action='store', type=float,
+parser.add_argument(
+    "--timeout",
+    action="store",
+    type=float,
     default=60,
-    help='timeout after which domains are killed when using --wait'
-        ' (default: %(default)d)')
+    help="timeout after which domains are killed when using --wait"
+    " (default: %(default)d)",
+)
 
 parser.add_argument(
-    '--force',
-    action='store_true', default=False,
-    help='force shutdown regardless of connected domains; use with caution')
+    "--force",
+    action="store_true",
+    default=False,
+    help="force shutdown regardless of connected domains; use with caution",
+)
 
 parser.add_argument(
-    '--dry-run',
-    action='store_true', dest='dry_run', default=False,
-    help='don\'t really shutdown or kill the domains; useful with --wait')
+    "--dry-run",
+    action="store_true",
+    dest="dry_run",
+    default=False,
+    help="don't really shutdown or kill the domains; useful with --wait",
+)
 
 
 def failed_domains(vms):
-    '''Find the domains that have not successfully been shut down'''
+    """Find the domains that have not successfully been shut down"""
 
     # DispVM might have been deleted before we check them, so NA is acceptable.
-    return [vm for vm in vms
-            if not (vm.get_power_state() == 'Halted'
-                or (vm.klass == 'DispVM' and vm.get_power_state() == 'NA'))]
+    return [
+        vm
+        for vm in vms
+        if not (
+            vm.get_power_state() == "Halted"
+            or (vm.klass == "DispVM" and vm.get_power_state() == "NA")
+        )
+    ]
+
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
@@ -90,15 +109,16 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     pass
                 except qubesadmin.exc.QubesException as e:
                     if not args.wait:
-                        vm.log.error('Shutdown error: {}'.format(e))
+                        vm.log.error("Shutdown error: {}".format(e))
                     else:
                         remaining_domains.add(vm)
         if not args.wait:
             if remaining_domains:
                 parser.error_runtime(
-                    'Failed to shut down: ' +
-                    ', '.join(vm.name for vm in remaining_domains),
-                    len(remaining_domains))
+                    "Failed to shut down: "
+                    + ", ".join(vm.name for vm in remaining_domains),
+                    len(remaining_domains),
+                )
             return
         this_round_domains.difference_update(remaining_domains)
         if not this_round_domains:
@@ -107,10 +127,14 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         if have_events:
             try:
                 # pylint: disable=no-member
-                loop.run_until_complete(asyncio.wait_for(
-                    qubesadmin.events.utils.wait_for_domain_shutdown(
-                        this_round_domains),
-                    args.timeout))
+                loop.run_until_complete(
+                    asyncio.wait_for(
+                        qubesadmin.events.utils.wait_for_domain_shutdown(
+                            this_round_domains
+                        ),
+                        args.timeout,
+                    )
+                )
             except asyncio.TimeoutError:
                 if not args.dry_run:
                     for vm in this_round_domains:
@@ -128,15 +152,20 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 current_vms = failed_domains(current_vms)
                 if not current_vms:
                     break
-                args.app.log.info('Waiting for shutdown ({}): {}'.format(
-                    timeout, ', '.join([str(vm) for vm in current_vms])))
+                args.app.log.info(
+                    "Waiting for shutdown ({}): {}".format(
+                        timeout, ", ".join([str(vm) for vm in current_vms])
+                    )
+                )
                 time.sleep(1)
                 timeout -= 1
             if not args.dry_run:
                 if current_vms:
                     args.app.log.info(
-                        'Killing remaining qubes: {}'
-                        .format(', '.join([str(vm) for vm in current_vms])))
+                        "Killing remaining qubes: {}".format(
+                            ", ".join([str(vm) for vm in current_vms])
+                        )
+                    )
                 for vm in current_vms:
                     try:
                         vm.kill()
@@ -152,10 +181,10 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
         failed = failed_domains(args.domains)
         if failed:
             parser.error_runtime(
-                'Failed to shut down: ' +
-                ', '.join(vm.name for vm in failed),
-                len(failed))
+                "Failed to shut down: " + ", ".join(vm.name for vm in failed),
+                len(failed),
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

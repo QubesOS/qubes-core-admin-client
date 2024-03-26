@@ -19,7 +19,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-''' Remove domains from the system '''
+""" Remove domains from the system """
 
 import sys
 
@@ -27,11 +27,15 @@ import qubesadmin.exc
 from qubesadmin.tools import QubesArgumentParser
 import qubesadmin.utils
 
-parser = QubesArgumentParser(description=__doc__,
-                             vmname_nargs='+')
-parser.add_argument("--force", "-f", action="store_true", dest="no_confirm",
-    default=False, help="Do not prompt for confirmation")
-
+parser = QubesArgumentParser(description=__doc__, vmname_nargs="+")
+parser.add_argument(
+    "--force",
+    "-f",
+    action="store_true",
+    dest="no_confirm",
+    default=False,
+    help="Do not prompt for confirmation",
+)
 
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
@@ -50,9 +54,12 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
             except qubesadmin.exc.QubesVMInUseError as e:
                 dependencies = qubesadmin.utils.vm_dependencies(vm.app, vm)
                 if dependencies:
-                    print("VM {} cannot be removed. It is in use as:".format(
-                        vm.name))
-                    for (holder, prop) in dependencies:
+                    print(
+                        "VM {} cannot be removed. It is in use as:".format(
+                            vm.name
+                        )
+                    )
+                    for holder, prop in dependencies:
                         if holder:
                             print(" - {} for {}".format(prop, holder.name))
                         else:
@@ -68,6 +75,5 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     return retcode
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

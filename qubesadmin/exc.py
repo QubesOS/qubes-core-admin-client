@@ -18,20 +18,22 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Exception hierarchy.'''
+"""Exception hierarchy."""
 
 
 class QubesException(Exception):
-    '''Base exception for all Qubes-related errors.'''
+    """Base exception for all Qubes-related errors."""
+
     def __init__(self, message_format, *args, **kwargs):
         # TODO: handle translations
         super().__init__(
             message_format % tuple(int(d) if d.isdigit() else d for d in args),
-            **kwargs)
+            **kwargs
+        )
 
 
 class QubesVMNotFoundError(QubesException, KeyError):
-    '''Domain cannot be found in the system'''
+    """Domain cannot be found in the system"""
 
     def __str__(self):
         # KeyError overrides __str__ method
@@ -39,100 +41,100 @@ class QubesVMNotFoundError(QubesException, KeyError):
 
 
 class QubesVMError(QubesException):
-    '''Some problem with domain state.'''
+    """Some problem with domain state."""
 
 
 class QubesVMNotStartedError(QubesVMError):
-    '''Domain is not started.
+    """Domain is not started.
 
     This exception is thrown when machine is halted, but should be started
     (that is, either running or paused).
-    '''
+    """
 
 
 class QubesVMNotRunningError(QubesVMNotStartedError):
-    '''Domain is not running.
+    """Domain is not running.
 
     This exception is thrown when machine should be running but is either
     halted or paused.
-    '''
+    """
 
 
 class QubesVMNotPausedError(QubesVMNotStartedError):
-    '''Domain is not paused.
+    """Domain is not paused.
 
     This exception is thrown when machine should be paused, but is not.
-    '''
+    """
 
 
 class QubesVMNotSuspendedError(QubesVMError):
-    '''Domain is not suspended.
+    """Domain is not suspended.
 
     This exception is thrown when machine should be suspended but is either
     halted or running.
-    '''
+    """
 
 
 class QubesVMNotHaltedError(QubesVMError):
-    '''Domain is not halted.
+    """Domain is not halted.
 
     This exception is thrown when machine should be halted, but is not (either
     running or paused).
-    '''
+    """
 
 
 class QubesVMShutdownTimeout(QubesVMError):
-    ''' Domain shutdown haven't completed in expected timeframe'''
+    """Domain shutdown haven't completed in expected timeframe"""
 
 
 class QubesNoTemplateError(QubesVMError):
-    '''Cannot start domain, because there is no template'''
+    """Cannot start domain, because there is no template"""
 
 
 class QubesVMInUseError(QubesVMError):
-    '''VM is in use, cannot remove.'''
+    """VM is in use, cannot remove."""
 
 
 class QubesValueError(QubesException, ValueError):
-    '''Cannot set some value, because it is invalid, out of bounds, etc.'''
+    """Cannot set some value, because it is invalid, out of bounds, etc."""
 
 
 class QubesPropertyValueError(QubesValueError):
-    '''Cannot set value of qubes.property, because user-supplied value is wrong.
-    '''
+    """Cannot set value of qubes.property, because user-supplied value is wrong."""
 
 
 class QubesNoSuchPropertyError(QubesException, AttributeError):
-    '''Requested property does not exist
-    '''
+    """Requested property does not exist"""
 
 
 class QubesNotImplementedError(QubesException, NotImplementedError):
-    '''Thrown at user when some feature is not implemented'''
+    """Thrown at user when some feature is not implemented"""
 
 
 class BackupCancelledError(QubesException):
-    '''Thrown at user when backup was manually cancelled'''
+    """Thrown at user when backup was manually cancelled"""
 
 
 class BackupAlreadyRunningError(QubesException):
-    '''Thrown at user when they try to run the same backup twice at
-    the same time'''
+    """Thrown at user when they try to run the same backup twice at
+    the same time"""
 
 
 class QubesMemoryError(QubesException, MemoryError):
-    '''Cannot start domain, because not enough memory is available'''
+    """Cannot start domain, because not enough memory is available"""
 
 
 class QubesFeatureNotFoundError(QubesException, KeyError):
-    '''Feature not set for a given domain'''
+    """Feature not set for a given domain"""
+
     def __str__(self):
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
 
 class QubesTagNotFoundError(QubesException, KeyError):
-    '''Tag not set for a given domain'''
+    """Tag not set for a given domain"""
+
     def __str__(self):
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
@@ -140,44 +142,50 @@ class QubesTagNotFoundError(QubesException, KeyError):
 
 class QubesLabelNotFoundError(QubesException, KeyError):
     """Label does not exists"""
+
     def __str__(self):
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
 
 class StoragePoolException(QubesException):
-    ''' A general storage exception '''
+    """A general storage exception"""
 
 
 class QubesDaemonCommunicationError(QubesException):
-    '''Error while communicating with qubesd, may mean insufficient
-    permissions as well'''
+    """Error while communicating with qubesd, may mean insufficient
+    permissions as well"""
 
 
 class DeviceAlreadyAttached(QubesException, KeyError):
-    '''Trying to attach already attached device'''
+    """Trying to attach already attached device"""
+
     def __str__(self):
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
 
 class BackupRestoreError(QubesException):
-    '''Restoring a backup failed'''
+    """Restoring a backup failed"""
+
     def __init__(self, msg, backup_log=None):
         super().__init__(msg)
         self.backup_log = backup_log
 
+
 # pylint: disable=too-many-ancestors
 class QubesDaemonAccessError(QubesDaemonCommunicationError):
-    '''Got empty response from qubesd. This can be lack of permission,
-    or some server-side issue.'''
+    """Got empty response from qubesd. This can be lack of permission,
+    or some server-side issue."""
 
 
 class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
-    '''Failed to read/write property value, cause is unknown (insufficient
-    permissions, no such property, invalid value, other)'''
+    """Failed to read/write property value, cause is unknown (insufficient
+    permissions, no such property, invalid value, other)"""
+
     def __init__(self, prop):
-        super().__init__('Failed to access \'%s\' property' % prop)
+        super().__init__("Failed to access '%s' property" % prop)
+
 
 # legacy name
 QubesDaemonNoResponseError = QubesDaemonAccessError

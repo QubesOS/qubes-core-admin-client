@@ -27,29 +27,46 @@ import sys
 import qubesadmin.tools
 import qubesadmin.vm
 
-parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-                                              vmname_nargs='+')
-parser.add_argument("--running", action="store_true", dest="running",
-                    default=False,
-                    help="Determine if (any of given) VM is running")
-parser.add_argument("--paused", action="store_true", dest="paused",
-                    default=False,
-                    help="Determine if (any of given) VM is paused")
-parser.add_argument("--template", action="store_true", dest="template",
-                    default=False,
-                    help="Determine if (any of given) VM is a template")
-parser.add_argument("--networked", action="store_true", dest="networked",
-                    default=False,
-                    help="Determine if (any of given) VM can reach network")
+parser = qubesadmin.tools.QubesArgumentParser(
+    description=__doc__, vmname_nargs="+"
+)
+parser.add_argument(
+    "--running",
+    action="store_true",
+    dest="running",
+    default=False,
+    help="Determine if (any of given) VM is running",
+)
+parser.add_argument(
+    "--paused",
+    action="store_true",
+    dest="paused",
+    default=False,
+    help="Determine if (any of given) VM is paused",
+)
+parser.add_argument(
+    "--template",
+    action="store_true",
+    dest="template",
+    default=False,
+    help="Determine if (any of given) VM is a template",
+)
+parser.add_argument(
+    "--networked",
+    action="store_true",
+    dest="networked",
+    default=False,
+    help="Determine if (any of given) VM can reach network",
+)
 
 
 def print_msg(log, domains, status):
     """Print message in appropriate form about given domain(s)"""
     if not domains:
-        log.info("None of qubes: {!s}".format(', '.join(status)))
+        log.info("None of qubes: {!s}".format(", ".join(status)))
     else:
         for vm in sorted(list(domains)):
-            log.info("{!s}: {!s}".format(vm.name, ', '.join(status)))
+            log.info("{!s}: {!s}".format(vm.name, ", ".join(status)))
 
 
 def get_filters(args):
@@ -57,15 +74,17 @@ def get_filters(args):
     filters = []
 
     if args.running:
-        filters.append({'status': 'running', 'check': lambda x: x.is_running()})
+        filters.append({"status": "running", "check": lambda x: x.is_running()})
     if args.paused:
-        filters.append({'status': 'paused', 'check': lambda x: x.is_paused()})
+        filters.append({"status": "paused", "check": lambda x: x.is_paused()})
     if args.template:
         filters.append(
-            {'status': 'template', 'check': lambda x: x.klass == 'TemplateVM'})
+            {"status": "template", "check": lambda x: x.klass == "TemplateVM"}
+        )
     if args.networked:
         filters.append(
-            {'status': 'networked', 'check': lambda x: x.is_networked()})
+            {"status": "networked", "check": lambda x: x.is_networked()}
+        )
 
     return filters
 
@@ -84,10 +103,11 @@ def main(args=None, app=None):
     filtered_domains = set(domains)
     if filters:
         for filt in filters:
-            status.append(filt['status'])
-            check = filt['check']
+            status.append(filt["status"])
+            check = filt["check"]
             filtered_domains = filtered_domains.intersection(
-                [vm for vm in domains if check(vm)])
+                [vm for vm in domains if check(vm)]
+            )
 
         if set(domains) & set(filtered_domains) != set(domains):
             if not filtered_domains:
@@ -106,5 +126,5 @@ def main(args=None, app=None):
     return return_code
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Backup restore module'''
+"""Backup restore module"""
 
 import contextlib
 import errno
@@ -40,6 +40,7 @@ import tempfile
 import termios
 import time
 import threading
+
 # only for a python bug workaround
 import concurrent.futures.thread
 
@@ -59,13 +60,13 @@ from qubesadmin.utils import size_to_human
 QUEUE_FINISHED = "!!!FINISHED"
 QUEUE_ERROR = "!!!ERROR"
 
-HEADER_FILENAME = 'backup-header'
-DEFAULT_CRYPTO_ALGORITHM = 'aes-256-cbc'
+HEADER_FILENAME = "backup-header"
+DEFAULT_CRYPTO_ALGORITHM = "aes-256-cbc"
 # 'scrypt' is not exactly HMAC algorithm, but a tool we use to
 # integrity-protect the data
-DEFAULT_HMAC_ALGORITHM = 'scrypt'
-DEFAULT_COMPRESSION_FILTER = 'gzip'
-KNOWN_COMPRESSION_FILTERS = ('gzip', 'bzip2', 'xz')
+DEFAULT_HMAC_ALGORITHM = "scrypt"
+DEFAULT_COMPRESSION_FILTER = "gzip"
+KNOWN_COMPRESSION_FILTERS = ("gzip", "bzip2", "xz")
 # lazy loaded
 KNOWN_CRYPTO_ALGORITHMS = []
 # lazy loaded
@@ -79,16 +80,18 @@ HMAC_MAX_SIZE = 4096
 
 BLKSIZE = 512
 
-_re_alphanum = re.compile(r'^[A-Za-z0-9-]*$')
+_re_alphanum = re.compile(r"^[A-Za-z0-9-]*$")
 _tar_msg_re = re.compile(r".*#[0-9].*restore_pipe")
 _tar_file_size_re = re.compile(r"^[^ ]+ [^ ]+/[^ ]+ *([0-9]+) .*")
 
 
 class BackupCanceledError(QubesException):
-    '''Exception raised when backup/restore was cancelled'''
+    """Exception raised when backup/restore was cancelled"""
+
     def __init__(self, msg, tmpdir=None):
         super().__init__(msg)
         self.tmpdir = tmpdir
+
 
 def init_supported_hmac_and_crypto():
     """Collect supported hmac and crypto algorithms.
@@ -103,45 +106,55 @@ def init_supported_hmac_and_crypto():
 
 
 class BackupHeader(object):
-    '''Structure describing backup-header file included as the first file in
+    """Structure describing backup-header file included as the first file in
     backup archive
-    '''
-    Header = collections.namedtuple('Header', ['field', 't', 'validator'])
+    """
+
+    Header = collections.namedtuple("Header", ["field", "t", "validator"])
 
     known_headers = {
-        'version': Header(field='version', t=int,
-                          validator=lambda x: 1 <= x <= 4),
-        'encrypted': Header(field='encrypted', t=bool,
-                            validator=lambda x: True),
-        'compressed': Header(field='compressed', t=bool,
-                             validator=lambda x: True),
-        'compression-filter': Header(
-            field='compression_filter',
+        "version": Header(
+            field="version", t=int, validator=lambda x: 1 <= x <= 4
+        ),
+        "encrypted": Header(
+            field="encrypted", t=bool, validator=lambda x: True
+        ),
+        "compressed": Header(
+            field="compressed", t=bool, validator=lambda x: True
+        ),
+        "compression-filter": Header(
+            field="compression_filter",
             t=str,
-            validator=lambda x: x in KNOWN_COMPRESSION_FILTERS),
-        'crypto-algorithm': Header(
-            field='crypto_algorithm',
+            validator=lambda x: x in KNOWN_COMPRESSION_FILTERS,
+        ),
+        "crypto-algorithm": Header(
+            field="crypto_algorithm",
             t=str,
-            validator=lambda x: x.lower() in KNOWN_CRYPTO_ALGORITHMS),
-        'hmac-algorithm': Header(
-            field='hmac_algorithm',
+            validator=lambda x: x.lower() in KNOWN_CRYPTO_ALGORITHMS,
+        ),
+        "hmac-algorithm": Header(
+            field="hmac_algorithm",
             t=str,
-            validator=lambda x: x.lower() in KNOWN_HMAC_ALGORITHMS),
-        'backup-id': Header(
-            field='backup_id',
+            validator=lambda x: x.lower() in KNOWN_HMAC_ALGORITHMS,
+        ),
+        "backup-id": Header(
+            field="backup_id",
             t=str,
-            validator=lambda x: not x.startswith('-') and x != ''),
+            validator=lambda x: not x.startswith("-") and x != "",
+        ),
     }
 
-    def __init__(self,
-            header_data=None,
-            version=None,
-            encrypted=None,
-            compressed=None,
-            compression_filter=None,
-            hmac_algorithm=None,
-            crypto_algorithm=None,
-            backup_id=None):
+    def __init__(
+        self,
+        header_data=None,
+        version=None,
+        encrypted=None,
+        compressed=None,
+        compression_filter=None,
+        hmac_algorithm=None,
+        crypto_algorithm=None,
+        backup_id=None,
+    ):
         # repeat the list to help code completion...
         self.version = version
         self.encrypted = encrypted
@@ -169,15 +182,14 @@ class BackupHeader(object):
             so is security critical.
         """
         try:
-            untrusted_header_text = untrusted_header_text.decode('ascii')
+            untrusted_header_text = untrusted_header_text.decode("ascii")
         except UnicodeDecodeError:
-            raise QubesException(
-                "Non-ASCII characters in backup header")
+            raise QubesException("Non-ASCII characters in backup header")
         seen = set()
         for untrusted_line in untrusted_header_text.splitlines():
-            if untrusted_line.count('=') != 1:
+            if untrusted_line.count("=") != 1:
                 raise QubesException("Invalid backup header")
-            key, value = untrusted_line.strip().split('=', 1)
+            key, value = untrusted_line.strip().split("=", 1)
             if not _re_alphanum.match(key):
                 raise QubesException("Invalid backup header (key)")
             if key not in self.known_headers:
@@ -201,50 +213,59 @@ class BackupHeader(object):
             else:
                 raise QubesException("Unrecognized header type")
             if not header.validator(value):
-                if key == 'compression-filter':
+                if key == "compression-filter":
                     raise QubesException(
                         "Unusual compression filter '{f}' found. Use "
                         "--compression-filter={f} to use it anyway.".format(
-                            f=value))
+                            f=value
+                        )
+                    )
                 raise QubesException("Invalid value for header: {}".format(key))
             setattr(self, header.field, value)
 
         self.validate()
 
     def validate(self):
-        '''Validate header data, according to header version'''
+        """Validate header data, according to header version"""
         if self.version == 1:
             # header not really present
             pass
         elif self.version in [2, 3, 4]:
-            expected_attrs = ['version', 'encrypted', 'compressed',
-                'hmac_algorithm']
+            expected_attrs = [
+                "version",
+                "encrypted",
+                "compressed",
+                "hmac_algorithm",
+            ]
             if self.encrypted and self.version < 4:
-                expected_attrs += ['crypto_algorithm']
+                expected_attrs += ["crypto_algorithm"]
             if self.version >= 3 and self.compressed:
-                expected_attrs += ['compression_filter']
+                expected_attrs += ["compression_filter"]
             if self.version >= 4:
-                expected_attrs += ['backup_id']
+                expected_attrs += ["backup_id"]
             for key in expected_attrs:
                 if getattr(self, key) is None:
                     raise QubesException(
-                        "Backup header lack '{}' info".format(key))
+                        "Backup header lack '{}' info".format(key)
+                    )
         else:
             raise QubesException(
-                "Unsupported backup version {}".format(self.version))
+                "Unsupported backup version {}".format(self.version)
+            )
 
     def save(self, filename):
-        '''Save backup header into a file'''
-        with open(filename, "w", encoding='utf-8') as f_header:
+        """Save backup header into a file"""
+        with open(filename, "w", encoding="utf-8") as f_header:
             # make sure 'version' is the first key
-            f_header.write('version={}\n'.format(self.version))
+            f_header.write("version={}\n".format(self.version))
             for key, header in self.known_headers.items():
-                if key == 'version':
+                if key == "version":
                     continue
                 attr = header.field
                 if getattr(self, attr) is None:
                     continue
                 f_header.write("{!s}={!s}\n".format(key, getattr(self, attr)))
+
 
 def launch_proc_with_pty(args, stdin=None, stdout=None, stderr=None, echo=True):
     """Similar to pty.fork, but handle stdin/stdout according to parameters
@@ -254,7 +275,7 @@ def launch_proc_with_pty(args, stdin=None, stdout=None, stderr=None, echo=True):
     """
 
     def set_ctty(ctty_fd, master_fd):
-        '''Set controlling terminal'''
+        """Set controlling terminal"""
         os.setsid()
         os.close(master_fd)
         fcntl.ioctl(ctty_fd, termios.TIOCSCTTY, 0)
@@ -263,16 +284,22 @@ def launch_proc_with_pty(args, stdin=None, stdout=None, stderr=None, echo=True):
             # termios_p.c_lflags
             termios_p[3] &= ~termios.ECHO
             termios.tcsetattr(ctty_fd, termios.TCSANOW, termios_p)
+
     (pty_master, pty_slave) = os.openpty()
     # pylint: disable=subprocess-popen-preexec-fn,consider-using-with
-    p = subprocess.Popen(args, stdin=stdin, stdout=stdout,
+    p = subprocess.Popen(
+        args,
+        stdin=stdin,
+        stdout=stdout,
         stderr=stderr,
-        preexec_fn=lambda: set_ctty(pty_slave, pty_master))
+        preexec_fn=lambda: set_ctty(pty_slave, pty_master),
+    )
     os.close(pty_slave)
-    return p, open(pty_master, 'wb+', buffering=0)
+    return p, open(pty_master, "wb+", buffering=0)
+
 
 def launch_scrypt(action, input_name, output_name, passphrase):
-    '''
+    """
     Launch 'scrypt' process, pass passphrase to it and return
     subprocess.Popen object.
 
@@ -281,28 +308,32 @@ def launch_scrypt(action, input_name, output_name, passphrase):
     :param output_name: output path or '-' for stdout
     :param passphrase: passphrase
     :return: subprocess.Popen object
-    '''
-    command_line = ['scrypt', action, '-f', input_name, output_name]
-    (p, pty) = launch_proc_with_pty(command_line,
-        stdin=subprocess.PIPE if input_name == '-' else None,
-        stdout=subprocess.PIPE if output_name == '-' else None,
+    """
+    command_line = ["scrypt", action, "-f", input_name, output_name]
+    (p, pty) = launch_proc_with_pty(
+        command_line,
+        stdin=subprocess.PIPE if input_name == "-" else None,
+        stdout=subprocess.PIPE if output_name == "-" else None,
         stderr=subprocess.PIPE,
-        echo=False)
-    if action == 'enc':
-        prompts = (b'Please enter passphrase: ', b'Please confirm passphrase: ')
+        echo=False,
+    )
+    if action == "enc":
+        prompts = (b"Please enter passphrase: ", b"Please confirm passphrase: ")
     else:
-        prompts = (b'Please enter passphrase: ',)
+        prompts = (b"Please enter passphrase: ",)
     for prompt in prompts:
         actual_prompt = p.stderr.read(len(prompt))
         if actual_prompt != prompt:
             raise QubesException(
-                'Unexpected prompt from scrypt: {}'.format(actual_prompt))
-        pty.write(passphrase.encode('utf-8') + b'\n')
+                "Unexpected prompt from scrypt: {}".format(actual_prompt)
+            )
+        pty.write(passphrase.encode("utf-8") + b"\n")
         pty.flush()
     # save it here, so garbage collector would not close it (which would kill
     #  the child)
     p.pty = pty
     return p
+
 
 def _fix_threading_after_fork():
     """
@@ -318,21 +349,33 @@ def _fix_threading_after_fork():
     # pylint: disable=protected-access
     concurrent.futures.thread._threads_queues.clear()
     thread = threading.current_thread()
-    if isinstance(thread, threading._DummyThread) and \
-            getattr(thread, '_tstate_lock', "missing") is None:
+    if (
+        isinstance(thread, threading._DummyThread)
+        and getattr(thread, "_tstate_lock", "missing") is None
+    ):
         # mimic threading._after_fork()
         thread._set_tstate_lock()
 
 
-
 class ExtractWorker3(Process):
-    '''Process for handling inner tar layer of backup archive'''
+    """Process for handling inner tar layer of backup archive"""
+
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, queue, base_dir, passphrase, encrypted,
-                 progress_callback, vmproc=None,
-                 compressed=False, crypto_algorithm=DEFAULT_CRYPTO_ALGORITHM,
-                 compression_filter=None, verify_only=False, handlers=None):
-        '''Start inner tar extraction worker
+    def __init__(
+        self,
+        queue,
+        base_dir,
+        passphrase,
+        encrypted,
+        progress_callback,
+        vmproc=None,
+        compressed=False,
+        crypto_algorithm=DEFAULT_CRYPTO_ALGORITHM,
+        compression_filter=None,
+        verify_only=False,
+        handlers=None,
+    ):
+        """Start inner tar extraction worker
 
         The purpose of this class is to process files extracted from outer
         archive layer and pass to appropriate handlers. Input files are given
@@ -356,7 +399,7 @@ class ExtractWorker3(Process):
         :param str compression_filter: compression program, `gzip` by default
         :param bool verify_only: only verify data integrity, do not extract
         :param dict handlers: handlers for actual data
-        '''
+        """
         super().__init__()
         #: queue with files to extract
         self.queue = queue
@@ -399,24 +442,25 @@ class ExtractWorker3(Process):
         # extraction tool
         self.vmproc = vmproc
 
-        self.log = logging.getLogger('qubesadmin.backup.extract')
-        self.stderr_encoding = sys.stderr.encoding or 'utf-8'
+        self.log = logging.getLogger("qubesadmin.backup.extract")
+        self.stderr_encoding = sys.stderr.encoding or "utf-8"
         self.tar2_stderr = []
         self.compression_filter = compression_filter
 
     def collect_tar_output(self):
-        '''Retrieve tar stderr and handle it appropriately
+        """Retrieve tar stderr and handle it appropriately
 
         Log errors, process file size if requested.
         This use :py:attr:`tar2_process`.
-        '''
+        """
         if not self.tar2_process.stderr:
             return
 
         if self.tar2_process.poll() is None:
             try:
-                new_lines = self.tar2_process.stderr \
-                    .read(MAX_STDERR_BYTES).splitlines()
+                new_lines = self.tar2_process.stderr.read(
+                    MAX_STDERR_BYTES
+                ).splitlines()
             except IOError as e:
                 if e.errno == errno.EAGAIN:
                     return
@@ -427,7 +471,7 @@ class ExtractWorker3(Process):
         new_lines = [x.decode(self.stderr_encoding) for x in new_lines]
 
         debug_msg = [msg for msg in new_lines if _tar_msg_re.match(msg)]
-        self.log.debug('tar2_stderr: %s', '\n'.join(debug_msg))
+        self.log.debug("tar2_stderr: %s", "\n".join(debug_msg))
         new_lines = [msg for msg in new_lines if not _tar_msg_re.match(msg)]
         self.tar2_stderr += new_lines
 
@@ -437,46 +481,49 @@ class ExtractWorker3(Process):
             self.__run__()
         except Exception:
             # Cleanup children
-            for process in [self.decompressor_process,
-                    self.decryptor_process,
-                    self.tar2_process]:
+            for process in [
+                self.decompressor_process,
+                self.decryptor_process,
+                self.tar2_process,
+            ]:
                 if process:
                     try:
                         process.terminate()
                     except OSError:
                         pass
                     process.wait()
-            self.log.exception('ERROR')
+            self.log.exception("ERROR")
             raise
 
     def handle_dir(self, dirname):
-        ''' Relocate files in given director when it's already extracted
+        """Relocate files in given director when it's already extracted
 
         :param dirname: directory path to handle (relative to backup root),
             without trailing slash
-        '''
+        """
         for fname, data_func in self.handlers.items():
-            if not fname.startswith(dirname + '/'):
+            if not fname.startswith(dirname + "/"):
                 continue
             if not os.path.exists(fname):
                 # for example firewall.xml
                 continue
-            with open(fname, 'rb') as input_file:
+            with open(fname, "rb") as input_file:
                 data_func_kwargs = {}
-                if 'file_size' in inspect.getfullargspec(data_func).kwonlyargs:
-                    data_func_kwargs['file_size'] = \
-                        os.stat(input_file.fileno()).st_size
+                if "file_size" in inspect.getfullargspec(data_func).kwonlyargs:
+                    data_func_kwargs["file_size"] = os.stat(
+                        input_file.fileno()
+                    ).st_size
                 data_func(input_file, **data_func_kwargs)
             os.unlink(fname)
         shutil.rmtree(dirname)
 
     def cleanup_tar2(self, wait=True, terminate=False):
-        '''Cleanup running :py:attr:`tar2_process`
+        """Cleanup running :py:attr:`tar2_process`
 
         :param wait: wait for it termination, otherwise method exit early if
             process is still running
         :param terminate: terminate the process if still running
-        '''
+        """
         if self.tar2_process is None:
             return
         if terminate:
@@ -494,32 +541,34 @@ class ExtractWorker3(Process):
             self.tar2_process.stderr.close()
         if self.tar2_process.returncode != 0:
             self.log.error(
-                "ERROR: unable to extract files for %s, tar "
-                "output:\n  %s",
-                    self.tar2_current_file,
-                    "\n  ".join(self.tar2_stderr))
+                "ERROR: unable to extract files for %s, tar " "output:\n  %s",
+                self.tar2_current_file,
+                "\n  ".join(self.tar2_stderr),
+            )
         else:
             # Finished extracting the tar file
             # if that was whole-directory archive, handle
             # relocated files now
-            inner_name = self.tar2_current_file.rsplit('.', 1)[0] \
-                .replace(self.base_dir + '/', '')
-            if os.path.basename(inner_name) == '.':
-                self.handle_dir(
-                    os.path.dirname(inner_name))
+            inner_name = self.tar2_current_file.rsplit(".", 1)[0].replace(
+                self.base_dir + "/", ""
+            )
+            if os.path.basename(inner_name) == ".":
+                self.handle_dir(os.path.dirname(inner_name))
             self.tar2_current_file = None
         self.tar2_process = None
 
     def _data_import_wrapper(self, close_fds, data_func, tar2_process):
-        '''Close not needed file descriptors, handle output size reported
+        """Close not needed file descriptors, handle output size reported
         by tar (if needed) then call data_func(tar2_process.stdout).
 
         This is to prevent holding write end of a pipe in subprocess,
         preventing EOF transfer.
-        '''
+        """
         for fd in close_fds:
-            if fd in (tar2_process.stdout.fileno(),
-                    tar2_process.stderr.fileno()):
+            if fd in (
+                tar2_process.stdout.fileno(),
+                tar2_process.stderr.fileno(),
+            ):
                 continue
             try:
                 os.close(fd)
@@ -531,7 +580,7 @@ class ExtractWorker3(Process):
         # hang if it tries to output file content before
         # reporting its size on stderr first
         data_func_kwargs = {}
-        if 'file_size' in inspect.getfullargspec(data_func).kwonlyargs:
+        if "file_size" in inspect.getfullargspec(data_func).kwonlyargs:
             # process lines on stderr until we get file size
             # search for first file size reported by tar -
             # this is used only when extracting single-file archive, so don't
@@ -543,38 +592,40 @@ class ExtractWorker3(Process):
             while True:
                 line = tar2_process.stderr.readline()
                 if not line:
-                    self.log.warning('EOF from tar before got file size info')
+                    self.log.warning("EOF from tar before got file size info")
                     break
                 line = line.decode()
                 if _tar_msg_re.match(line):
-                    self.log.debug('tar2_stderr: %s', line)
+                    self.log.debug("tar2_stderr: %s", line)
                 else:
                     match = _tar_file_size_re.match(line)
                     if match:
-                        data_func_kwargs['file_size'] = int(match.groups()[0])
+                        data_func_kwargs["file_size"] = int(match.groups()[0])
                         break
                     self.log.warning(
-                        'unexpected tar output (no file size report): %s', line)
+                        "unexpected tar output (no file size report): %s", line
+                    )
 
         return data_func(tar2_process.stdout, **data_func_kwargs)
 
     def feed_tar2(self, filename, input_pipe):
-        '''Feed data from *filename* to *input_pipe*
+        """Feed data from *filename* to *input_pipe*
 
         Start a cat process to do that (do not block this process). Cat
         subprocess instance will be in :py:attr:`tar2_feeder`
-        '''
+        """
         assert self.tar2_feeder is None
 
         # pylint: disable=consider-using-with
-        self.tar2_feeder = subprocess.Popen(['cat', filename],
-            stdout=input_pipe)
+        self.tar2_feeder = subprocess.Popen(
+            ["cat", filename], stdout=input_pipe
+        )
 
     def check_processes(self, processes):
-        '''Check if any process failed.
+        """Check if any process failed.
 
         And if so, wait for other relevant processes to cleanup.
-        '''
+        """
         run_error = None
         for name, proc in processes.items():
             if proc is None:
@@ -598,8 +649,11 @@ class ExtractWorker3(Process):
                 self.decryptor_process.terminate()
                 self.decryptor_process.wait()
                 self.decryptor_process = None
-            self.log.error('Error while processing \'%s\': %s',
-                self.tar2_current_file, details)
+            self.log.error(
+                "Error while processing '%s': %s",
+                self.tar2_current_file,
+                details,
+            )
             self.cleanup_tar2(wait=True, terminate=True)
 
     def __run__(self):
@@ -618,33 +672,39 @@ class ExtractWorker3(Process):
 
             self.log.debug("Extracting file %s", filename)
 
-            if filename.endswith('.000'):
+            if filename.endswith(".000"):
                 # next file
                 if self.tar2_process is not None:
                     input_pipe.close()
                     self.cleanup_tar2(wait=True, terminate=False)
 
-                inner_name = filename[:-len('.000')].replace(
-                    self.base_dir + '/', '')
+                inner_name = filename[: -len(".000")].replace(
+                    self.base_dir + "/", ""
+                )
                 redirect_stdout = None
-                if os.path.basename(inner_name) == '.':
-                    if (inner_name in self.handlers or
-                            any(x.startswith(os.path.dirname(inner_name) + '/')
-                            for x in self.handlers)):
-                        tar2_cmdline = ['tar',
-                            '-%s' % ("t" if self.verify_only else "x"),
-                            inner_name]
+                if os.path.basename(inner_name) == ".":
+                    if inner_name in self.handlers or any(
+                        x.startswith(os.path.dirname(inner_name) + "/")
+                        for x in self.handlers
+                    ):
+                        tar2_cmdline = [
+                            "tar",
+                            "-%s" % ("t" if self.verify_only else "x"),
+                            inner_name,
+                        ]
                     else:
                         # ignore this directory
                         tar2_cmdline = None
                 elif os.path.dirname(inner_name) == "dom0-home":
-                    tar2_cmdline = ['cat']
+                    tar2_cmdline = ["cat"]
                     redirect_stdout = subprocess.PIPE
 
                 elif inner_name in self.handlers:
-                    tar2_cmdline = ['tar',
-                        '-%svvO' % ("t" if self.verify_only else "x"),
-                        inner_name]
+                    tar2_cmdline = [
+                        "tar",
+                        "-%svvO" % ("t" if self.verify_only else "x"),
+                        inner_name,
+                    ]
                     redirect_stdout = subprocess.PIPE
                 else:
                     # no handlers for this file, ignore it
@@ -665,29 +725,35 @@ class ExtractWorker3(Process):
                         # Replaces 'cat' for compressed dom0-home!
                         tar2_cmdline = [tar_compress_cmd, "-d"]
                     else:
-                        tar2_cmdline.insert(-1, "--use-compress-program=%s " %
-                                            tar_compress_cmd)
+                        tar2_cmdline.insert(
+                            -1, "--use-compress-program=%s " % tar_compress_cmd
+                        )
 
                 self.log.debug("Running command %s", str(tar2_cmdline))
                 # pylint: disable=consider-using-with
                 if self.encrypted:
                     # Start decrypt
                     self.decryptor_process = subprocess.Popen(
-                        ["openssl", "enc",
-                         "-d",
-                         "-" + self.crypto_algorithm,
-                         "-md",
-                         "MD5",
-                         "-pass",
-                         "pass:" + self.passphrase],
+                        [
+                            "openssl",
+                            "enc",
+                            "-d",
+                            "-" + self.crypto_algorithm,
+                            "-md",
+                            "MD5",
+                            "-pass",
+                            "pass:" + self.passphrase,
+                        ],
                         stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE)
+                        stdout=subprocess.PIPE,
+                    )
 
                     self.tar2_process = subprocess.Popen(
                         tar2_cmdline,
                         stdin=self.decryptor_process.stdout,
                         stdout=redirect_stdout,
-                        stderr=subprocess.PIPE)
+                        stderr=subprocess.PIPE,
+                    )
                     self.decryptor_process.stdout.close()
                     input_pipe = self.decryptor_process.stdin
                 else:
@@ -695,7 +761,8 @@ class ExtractWorker3(Process):
                         tar2_cmdline,
                         stdin=subprocess.PIPE,
                         stdout=redirect_stdout,
-                        stderr=subprocess.PIPE)
+                        stderr=subprocess.PIPE,
+                    )
                     input_pipe = self.tar2_process.stdin
 
                 self.feed_tar2(filename, input_pipe)
@@ -705,8 +772,12 @@ class ExtractWorker3(Process):
                     data_func = self.handlers[inner_name]
                     self.import_process = multiprocessing.Process(
                         target=self._data_import_wrapper,
-                        args=([input_pipe.fileno()],
-                        data_func, self.tar2_process))
+                        args=(
+                            [input_pipe.fileno()],
+                            data_func,
+                            self.tar2_process,
+                        ),
+                    )
 
                     self.import_process.start()
                     self.tar2_process.stdout.close()
@@ -719,15 +790,18 @@ class ExtractWorker3(Process):
                 continue
             else:
                 # os.path.splitext fails to handle 'something/..000'
-                (basename, ext) = self.tar2_current_file.rsplit('.', 1)
+                (basename, ext) = self.tar2_current_file.rsplit(".", 1)
                 previous_chunk_number = int(ext)
-                expected_filename = basename + '.%03d' % (
-                    previous_chunk_number+1)
+                expected_filename = basename + ".%03d" % (
+                    previous_chunk_number + 1
+                )
                 if expected_filename != filename:
                     self.cleanup_tar2(wait=True, terminate=True)
                     self.log.error(
-                        'Unexpected file in archive: %s, expected %s',
-                            filename, expected_filename)
+                        "Unexpected file in archive: %s, expected %s",
+                        filename,
+                        expected_filename,
+                    )
                     os.remove(filename)
                     continue
 
@@ -739,11 +813,11 @@ class ExtractWorker3(Process):
             self.tar2_feeder.wait()
             # check if any process failed
             processes = {
-                'target': self.tar2_feeder,
-                'vmproc': self.vmproc,
-                'addproc': self.tar2_process,
-                'data_import': self.import_process,
-                'decryptor': self.decryptor_process,
+                "target": self.tar2_feeder,
+                "vmproc": self.vmproc,
+                "addproc": self.tar2_process,
+                "data_import": self.import_process,
+                "decryptor": self.decryptor_process,
             }
             self.check_processes(processes)
             self.tar2_feeder = None
@@ -752,7 +826,7 @@ class ExtractWorker3(Process):
                 self.progress_callback(os.path.getsize(filename))
 
             # Delete the file as we don't need it anymore
-            self.log.debug('Removing file %s', filename)
+            self.log.debug("Removing file %s", filename)
             os.remove(filename)
 
         if self.tar2_process is not None:
@@ -764,59 +838,61 @@ class ExtractWorker3(Process):
                     self.decryptor_process = None
             self.cleanup_tar2(terminate=(filename == QUEUE_ERROR))
 
-        self.log.debug('Finished extracting thread')
+        self.log.debug("Finished extracting thread")
 
 
 def get_supported_hmac_algo(hmac_algorithm=None):
-    '''Generate a list of supported hmac algorithms
+    """Generate a list of supported hmac algorithms
 
     :param hmac_algorithm: default algorithm, if given, it is placed as a
         first element
-    '''
+    """
     # Start with provided default
     if hmac_algorithm:
         yield hmac_algorithm
-    if hmac_algorithm != 'scrypt':
-        yield 'scrypt'
+    if hmac_algorithm != "scrypt":
+        yield "scrypt"
     with subprocess.Popen(
-            'openssl list-message-digest-algorithms || '
-            'openssl list -digest-algorithms',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL) as proc:
+        "openssl list-message-digest-algorithms || "
+        "openssl list -digest-algorithms",
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    ) as proc:
         for algo in proc.stdout.readlines():
-            algo = algo.decode('ascii')
-            if '=>' in algo:
+            algo = algo.decode("ascii")
+            if "=>" in algo:
                 continue
             yield algo.strip().lower()
 
 
 def get_supported_crypto_algo(crypto_algorithm=None):
-    '''Generate a list of supported hmac algorithms
+    """Generate a list of supported hmac algorithms
 
     :param crypto_algorithm: default algorithm, if given, it is placed as a
         first element
-    '''
+    """
     # Start with provided default
     if crypto_algorithm:
         yield crypto_algorithm
-    if crypto_algorithm != 'scrypt':
-        yield 'scrypt'
+    if crypto_algorithm != "scrypt":
+        yield "scrypt"
     with subprocess.Popen(
-                          'openssl list-cipher-algorithms || '
-                          'openssl list -cipher-algorithms',
-                          shell=True,
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.DEVNULL) as proc:
+        "openssl list-cipher-algorithms || " "openssl list -cipher-algorithms",
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    ) as proc:
         for algo in proc.stdout.readlines():
-            algo = algo.decode('ascii')
-            if '=>' in algo:
+            algo = algo.decode("ascii")
+            if "=>" in algo:
                 continue
             yield algo.strip().lower()
 
 
 class BackupRestoreOptions(object):
-    '''Options for restore operation'''
+    """Options for restore operation"""
+
     # pylint: disable=too-few-public-methods
     def __init__(self):
         #: use default NetVM if the one referenced in backup do not exists on
@@ -847,6 +923,7 @@ class BackupRestoreOptions(object):
         #: ignore size limit calculated from backup metadata
         self.ignore_size_limit = False
 
+
 class BackupRestore(object):
     """Usage:
 
@@ -858,7 +935,8 @@ class BackupRestore(object):
     """
 
     class VMToRestore(object):
-        '''Information about a single VM to be restored'''
+        """Information about a single VM to be restored"""
+
         # pylint: disable=too-few-public-methods
         #: VM excluded from restore by user
         EXCLUDED = object()
@@ -879,8 +957,8 @@ class BackupRestore(object):
             self.size = vm.size
             self.problems = set()
             self.template = vm.template
-            if vm.properties.get('netvm', None):
-                self.netvm = vm.properties['netvm']
+            if vm.properties.get("netvm", None):
+                self.netvm = vm.properties["netvm"]
             else:
                 self.netvm = None
             self.orig_template = None
@@ -888,11 +966,12 @@ class BackupRestore(object):
 
         @property
         def good_to_go(self):
-            '''Is the VM ready for restore?'''
+            """Is the VM ready for restore?"""
             return len(self.problems) == 0
 
     class Dom0ToRestore(VMToRestore):
-        '''Information about dom0 home to restore'''
+        """Information about dom0 home to restore"""
+
         # pylint: disable=too-few-public-methods
         #: backup was performed on system with different dom0 username
         USERNAME_MISMATCH = object()
@@ -903,9 +982,16 @@ class BackupRestore(object):
                 self.subdir = subdir
                 self.username = os.path.basename(subdir)
 
-    def __init__(self, app, backup_location, backup_vm, passphrase,
-                 location_is_service=False, force_compression_filter=None,
-                 tmpdir=None):
+    def __init__(
+        self,
+        app,
+        backup_location,
+        backup_vm,
+        passphrase,
+        location_is_service=False,
+        force_compression_filter=None,
+        tmpdir=None,
+    ):
         super().__init__()
 
         #: qubes.Qubes instance
@@ -916,7 +1002,7 @@ class BackupRestore(object):
 
         #: VM from which backup should be retrieved
         self.backup_vm = backup_vm
-        if backup_vm and backup_vm.name == 'dom0':
+        if backup_vm and backup_vm.name == "dom0":
             self.backup_vm = None
 
         #: backup path, inside VM pointed by :py:attr:`backup_vm`
@@ -955,7 +1041,7 @@ class BackupRestore(object):
         # FIXME: convert to float [0,1]
         self.progress_callback = None
 
-        self.log = logging.getLogger('qubesadmin.backup')
+        self.log = logging.getLogger("qubesadmin.backup")
 
         #: basic information about the backup
         self.header_data = self._retrieve_backup_header()
@@ -983,10 +1069,13 @@ class BackupRestore(object):
             if self.location_is_service:
                 vmproc = self.backup_vm.run_service(self.backup_location)
             else:
-                vmproc = self.backup_vm.run_service('qubes.Restore')
+                vmproc = self.backup_vm.run_service("qubes.Restore")
                 vmproc.stdin.write(
-                    (self.backup_location.replace("\r", "").replace("\n",
-                        "") + "\n").encode())
+                    (
+                        self.backup_location.replace("\r", "").replace("\n", "")
+                        + "\n"
+                    ).encode()
+                )
                 vmproc.stdin.flush()
 
             # Send to tar2qfile the VMs that should be extracted
@@ -996,41 +1085,52 @@ class BackupRestore(object):
 
             backup_stdin = vmproc.stdout
             if isinstance(self.app, qubesadmin.app.QubesRemote):
-                qfile_unpacker_path = '/usr/lib/qubes/qfile-unpacker'
+                qfile_unpacker_path = "/usr/lib/qubes/qfile-unpacker"
             else:
-                qfile_unpacker_path = '/usr/libexec/qubes/qfile-dom0-unpacker'
+                qfile_unpacker_path = "/usr/libexec/qubes/qfile-dom0-unpacker"
             # keep at least 500M free for decryption of a previous chunk
-            tar1_command = [qfile_unpacker_path,
-                            str(os.getuid()), self.tmpdir, '-v',
-                            '-w', str(500 * 1024 * 1024)]
+            tar1_command = [
+                qfile_unpacker_path,
+                str(os.getuid()),
+                self.tmpdir,
+                "-v",
+                "-w",
+                str(500 * 1024 * 1024),
+            ]
         else:
-            backup_stdin = open(self.backup_location, 'rb')
+            backup_stdin = open(self.backup_location, "rb")
 
             block_size = os.statvfs(self.tmpdir).f_frsize
 
             # slow down the restore if there is too little space in the temp dir
-            checkpoint_command = \
-                'while [ $(stat -f --format=%a "{}") -lt {} ]; ' \
-                'do sleep 1; done' \
-                .format(self.tmpdir, 500 * 1024 * 1024 // block_size)
+            checkpoint_command = (
+                'while [ $(stat -f --format=%a "{}") -lt {} ]; '
+                "do sleep 1; done".format(
+                    self.tmpdir, 500 * 1024 * 1024 // block_size
+                )
+            )
 
-            tar1_command = ['tar',
-                            '-ixv',
-                            '--checkpoint=10000',
-                            '--checkpoint-action=exec=' + checkpoint_command,
-                            '--occurrence=1',
-                            '-C', self.tmpdir] + filelist
+            tar1_command = [
+                "tar",
+                "-ixv",
+                "--checkpoint=10000",
+                "--checkpoint-action=exec=" + checkpoint_command,
+                "--occurrence=1",
+                "-C",
+                self.tmpdir,
+            ] + filelist
 
         tar1_env = os.environ.copy()
-        tar1_env['UPDATES_MAX_BYTES'] = str(limit_bytes)
-        tar1_env['UPDATES_MAX_FILES'] = str(limit_count)
+        tar1_env["UPDATES_MAX_BYTES"] = str(limit_bytes)
+        tar1_env["UPDATES_MAX_FILES"] = str(limit_count)
         self.log.debug("Run command %s", str(tar1_command))
         command = subprocess.Popen(
             tar1_command,
             stdin=backup_stdin,
             stdout=vmproc.stdin if vmproc else subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env=tar1_env)
+            env=tar1_env,
+        )
         backup_stdin.close()
         self.processes_to_kill_on_cancel.append(command)
 
@@ -1053,7 +1153,7 @@ class BackupRestore(object):
         return command, filelist_pipe, error_pipe
 
     def _verify_hmac(self, filename, hmacfile, algorithm=None):
-        '''Verify hmac of a file using given algorithm.
+        """Verify hmac of a file using given algorithm.
 
         If algorithm is not specified, use the one from backup header (
         :py:attr:`header_data`).
@@ -1067,80 +1167,85 @@ class BackupRestore(object):
         :param filename: path to file to be verified
         :param hmacfile: path to hmac file for *filename*
         :param algorithm: override algorithm
-        '''
+        """
+
         def load_hmac(hmac_text):
-            '''Parse hmac output by openssl.
+            """Parse hmac output by openssl.
 
             Return just hmac, without filename and other metadata.
-            '''
+            """
             if any(ord(x) not in range(128) for x in hmac_text):
-                raise QubesException(
-                    "Invalid content of {}".format(hmacfile))
+                raise QubesException("Invalid content of {}".format(hmacfile))
             hmac_text = hmac_text.strip().split("=")
             if len(hmac_text) > 1:
                 hmac_text = hmac_text[1].strip()
             else:
-                raise QubesException(
-                    "ERROR: invalid hmac file content")
+                raise QubesException("ERROR: invalid hmac file content")
 
             return hmac_text
+
         if algorithm is None:
             algorithm = self.header_data.hmac_algorithm
-        passphrase = self.passphrase.encode('utf-8')
+        passphrase = self.passphrase.encode("utf-8")
         self.log.debug("Verifying file %s", filename)
 
-        if os.stat(os.path.join(self.tmpdir, hmacfile)).st_size > \
-                HMAC_MAX_SIZE:
-            raise QubesException('HMAC file {} too large'.format(
-                hmacfile))
+        if os.stat(os.path.join(self.tmpdir, hmacfile)).st_size > HMAC_MAX_SIZE:
+            raise QubesException("HMAC file {} too large".format(hmacfile))
 
         if hmacfile != filename + ".hmac":
             raise QubesException(
-                "ERROR: expected hmac for {}, but got {}".
-                format(filename, hmacfile))
+                "ERROR: expected hmac for {}, but got {}".format(
+                    filename, hmacfile
+                )
+            )
 
-        if algorithm == 'scrypt':
+        if algorithm == "scrypt":
             # in case of 'scrypt' _verify_hmac is only used for backup header
             assert filename == HEADER_FILENAME
-            self._verify_and_decrypt(hmacfile, HEADER_FILENAME + '.dec')
+            self._verify_and_decrypt(hmacfile, HEADER_FILENAME + ".dec")
             f_name = os.path.join(self.tmpdir, filename)
-            with open(f_name, 'rb') as f_one:
-                with open(f_name + '.dec', 'rb') as f_two:
+            with open(f_name, "rb") as f_one:
+                with open(f_name + ".dec", "rb") as f_two:
                     if f_one.read() != f_two.read():
                         raise QubesException(
-                            'Invalid hmac on {}'.format(filename))
+                            "Invalid hmac on {}".format(filename)
+                        )
                     return True
 
-        with open(os.path.join(self.tmpdir, filename), 'rb') as f_input:
+        with open(os.path.join(self.tmpdir, filename), "rb") as f_input:
             with subprocess.Popen(
-                    ["openssl", "dgst", "-" + algorithm, "-hmac", passphrase],
-                    stdin=f_input,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE) as hmac_proc:
+                ["openssl", "dgst", "-" + algorithm, "-hmac", passphrase],
+                stdin=f_input,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ) as hmac_proc:
                 hmac_stdout, hmac_stderr = hmac_proc.communicate()
 
         if hmac_stderr:
             raise QubesException(
-                "ERROR: verify file {0}: {1}".format(filename, hmac_stderr))
+                "ERROR: verify file {0}: {1}".format(filename, hmac_stderr)
+            )
         self.log.debug("Loading hmac for file %s", filename)
         try:
-            with open(os.path.join(self.tmpdir, hmacfile), 'r',
-                    encoding='ascii') as f_hmac:
+            with open(
+                os.path.join(self.tmpdir, hmacfile), "r", encoding="ascii"
+            ) as f_hmac:
                 hmac = load_hmac(f_hmac.read())
         except UnicodeDecodeError as err:
-            raise QubesException('Cannot load hmac file: ' + str(err))
-        if hmac and load_hmac(hmac_stdout.decode('ascii')) == hmac:
+            raise QubesException("Cannot load hmac file: " + str(err))
+        if hmac and load_hmac(hmac_stdout.decode("ascii")) == hmac:
             os.unlink(os.path.join(self.tmpdir, hmacfile))
-            self.log.debug(
-                "File verification OK -> Sending file %s", filename)
+            self.log.debug("File verification OK -> Sending file %s", filename)
             return True
         raise QubesException(
             "ERROR: invalid hmac for file {0}: {1}. "
-            "Is the passphrase correct?".
-            format(filename, load_hmac(hmac_stdout.decode('ascii'))))
+            "Is the passphrase correct?".format(
+                filename, load_hmac(hmac_stdout.decode("ascii"))
+            )
+        )
 
     def _verify_and_decrypt(self, filename, output=None):
-        '''Handle scrypt-wrapped file
+        """Handle scrypt-wrapped file
 
         Decrypt the file, and verify its integrity - both tasks handled by
         'scrypt' tool. Filename (without extension) is also validated.
@@ -1150,8 +1255,8 @@ class BackupRestore(object):
         :param output: Output file name (relative to :py:attr:`tmpdir`),
         use :py:obj:`None` to use *filename* without extension
         :return: *filename* without extension
-        '''
-        assert filename.endswith('.enc') or filename.endswith('.hmac')
+        """
+        assert filename.endswith(".enc") or filename.endswith(".hmac")
         fullname = os.path.join(self.tmpdir, filename)
         (origname, _) = os.path.splitext(filename)
         if output:
@@ -1159,47 +1264,51 @@ class BackupRestore(object):
         else:
             fulloutput = os.path.join(self.tmpdir, origname)
         if origname == HEADER_FILENAME:
-            passphrase = '{filename}!{passphrase}'.format(
-                filename=origname,
-                passphrase=self.passphrase)
+            passphrase = "{filename}!{passphrase}".format(
+                filename=origname, passphrase=self.passphrase
+            )
         else:
-            passphrase = '{backup_id}!{filename}!{passphrase}'.format(
+            passphrase = "{backup_id}!{filename}!{passphrase}".format(
                 backup_id=self.header_data.backup_id,
                 filename=origname,
-                passphrase=self.passphrase)
+                passphrase=self.passphrase,
+            )
         try:
-            p = launch_scrypt('dec', fullname, fulloutput, passphrase)
+            p = launch_scrypt("dec", fullname, fulloutput, passphrase)
         except OSError as err:
-            raise QubesException('failed to decrypt {}: {!s}'.format(
-                fullname, err))
+            raise QubesException(
+                "failed to decrypt {}: {!s}".format(fullname, err)
+            )
         (_, stderr) = p.communicate()
-        if hasattr(p, 'pty'):
+        if hasattr(p, "pty"):
             p.pty.close()
         if p.returncode != 0:
             with contextlib.suppress(FileNotFoundError):
                 os.unlink(fulloutput)
-            raise QubesException('failed to decrypt {}: {}'.format(
-                fullname, stderr))
+            raise QubesException(
+                "failed to decrypt {}: {}".format(fullname, stderr)
+            )
         # encrypted file is no longer needed
         os.unlink(fullname)
         return origname
 
     def _retrieve_backup_header_files(self, files, allow_none=False):
-        '''Retrieve backup header.
+        """Retrieve backup header.
 
         Start retrieval process (possibly involving network access from
         another VM). Returns a collection of retrieved file paths.
-        '''
-        (retrieve_proc, filelist_pipe, error_pipe) = \
-            self._start_retrieval_process(
-                files, len(files), 1024 * 1024)
+        """
+        (retrieve_proc, filelist_pipe, error_pipe) = (
+            self._start_retrieval_process(files, len(files), 1024 * 1024)
+        )
         filelist = filelist_pipe.read()
         filelist_pipe.close()
         retrieve_proc_returncode = retrieve_proc.wait()
         if retrieve_proc in self.processes_to_kill_on_cancel:
             self.processes_to_kill_on_cancel.remove(retrieve_proc)
         extract_stderr = error_pipe.read(MAX_STDERR_BYTES).decode(
-            'ascii', 'ignore')
+            "ascii", "ignore"
+        )
         error_pipe.close()
 
         # wait for other processes (if any)
@@ -1207,32 +1316,34 @@ class BackupRestore(object):
             if proc.wait() != 0:
                 raise QubesException(
                     "Backup header retrieval failed (exit code {}): {}".format(
-                        proc.wait(), extract_stderr)
+                        proc.wait(), extract_stderr
+                    )
                 )
 
         if retrieve_proc_returncode != 0:
-            if not filelist and 'Not found in archive' in extract_stderr:
+            if not filelist and "Not found in archive" in extract_stderr:
                 if allow_none:
                     return None
                 raise QubesException(
-                    "unable to read the qubes backup file {0} ({1}): {2}".
-                    format(
+                    "unable to read the qubes backup file {0} ({1}): {2}".format(
                         self.backup_location,
                         retrieve_proc.wait(),
-                        extract_stderr
-                    ))
-        actual_files = filelist.decode('ascii').splitlines()
+                        extract_stderr,
+                    )
+                )
+        actual_files = filelist.decode("ascii").splitlines()
         if sorted(actual_files) != sorted(files):
             raise QubesException(
-                'unexpected files in archive: got {!r}, expected {!r}'.format(
+                "unexpected files in archive: got {!r}, expected {!r}".format(
                     actual_files, files
-                ))
+                )
+            )
         for fname in files:
             if not os.path.exists(os.path.join(self.tmpdir, fname)):
                 if allow_none:
                     return None
                 raise QubesException(
-                    'Unable to retrieve file {} from backup {}: {}'.format(
+                    "Unable to retrieve file {} from backup {}: {}".format(
                         fname, self.backup_location, extract_stderr
                     )
                 )
@@ -1248,14 +1359,16 @@ class BackupRestore(object):
         """
 
         if not self.backup_vm and os.path.exists(
-                os.path.join(self.backup_location, 'qubes.xml')):
+            os.path.join(self.backup_location, "qubes.xml")
+        ):
             # backup format version 1 doesn't have header
             header_data = BackupHeader()
             header_data.version = 1
             return header_data
 
         header_files = self._retrieve_backup_header_files(
-            ['backup-header', 'backup-header.hmac'], allow_none=True)
+            ["backup-header", "backup-header.hmac"], allow_none=True
+        )
 
         if not header_files:
             # R2-Beta3 didn't have backup header, so if none is found,
@@ -1264,15 +1377,16 @@ class BackupRestore(object):
                 version=2,
                 # place explicitly this value, because it is what format_version
                 # 2 have
-                hmac_algorithm='SHA1',
-                crypto_algorithm='aes-256-cbc',
+                hmac_algorithm="SHA1",
+                crypto_algorithm="aes-256-cbc",
                 # TODO: set encrypted to something...
             )
         else:
             filename = HEADER_FILENAME
-            hmacfile = HEADER_FILENAME + '.hmac'
-            self.log.debug("Got backup header and hmac: %s, %s",
-                filename, hmacfile)
+            hmacfile = HEADER_FILENAME + ".hmac"
+            self.log.debug(
+                "Got backup header and hmac: %s, %s", filename, hmacfile
+            )
 
             file_ok = False
             hmac_algorithm = DEFAULT_HMAC_ALGORITHM
@@ -1283,18 +1397,23 @@ class BackupRestore(object):
                         break
                 except QubesException as err:
                     self.log.debug(
-                        'Failed to verify %s using %s: %r',
-                            hmacfile, hmac_algo, err)
+                        "Failed to verify %s using %s: %r",
+                        hmacfile,
+                        hmac_algo,
+                        err,
+                    )
                     # Ignore exception here, try the next algo
             if not file_ok:
                 raise QubesException(
                     "Corrupted backup header (hmac verification "
-                    "failed). Is the password correct?")
+                    "failed). Is the password correct?"
+                )
             filename = os.path.join(self.tmpdir, filename)
-            with open(filename, 'rb') as f_header:
+            with open(filename, "rb") as f_header:
                 header_data = BackupHeader(
                     f_header.read(),
-                    compression_filter=self.force_compression_filter)
+                    compression_filter=self.force_compression_filter,
+                )
             os.unlink(filename)
 
         return header_data
@@ -1311,37 +1430,41 @@ class BackupRestore(object):
         # Create the process here to pass it options extracted from
         # backup header
         extractor_params = {
-            'queue': queue,
-            'base_dir': self.tmpdir,
-            'passphrase': self.passphrase,
-            'encrypted': self.header_data.encrypted,
-            'compressed': self.header_data.compressed,
-            'crypto_algorithm': self.header_data.crypto_algorithm,
-            'verify_only': self.options.verify_only,
-            'progress_callback': self.progress_callback,
-            'handlers': handlers,
+            "queue": queue,
+            "base_dir": self.tmpdir,
+            "passphrase": self.passphrase,
+            "encrypted": self.header_data.encrypted,
+            "compressed": self.header_data.compressed,
+            "crypto_algorithm": self.header_data.crypto_algorithm,
+            "verify_only": self.options.verify_only,
+            "progress_callback": self.progress_callback,
+            "handlers": handlers,
         }
         self.log.debug(
-            'Starting extraction worker in %s, file handlers map: %s',
-            self.tmpdir, repr(handlers))
+            "Starting extraction worker in %s, file handlers map: %s",
+            self.tmpdir,
+            repr(handlers),
+        )
         format_version = self.header_data.version
         if format_version in [3, 4]:
-            extractor_params['compression_filter'] = \
+            extractor_params["compression_filter"] = (
                 self.header_data.compression_filter
+            )
             if format_version == 4:
                 # encryption already handled
-                extractor_params['encrypted'] = False
+                extractor_params["encrypted"] = False
             extract_proc = ExtractWorker3(**extractor_params)
         else:
             raise NotImplementedError(
-                "Backup format version %d not supported" % format_version)
+                "Backup format version %d not supported" % format_version
+            )
         extract_proc.start()
         return extract_proc
 
     @staticmethod
     def _save_qubes_xml(path, stream):
-        '''Handler for qubes.xml.000 content - just save the data to a file'''
-        with open(path, 'wb') as f_qubesxml:
+        """Handler for qubes.xml.000 content - just save the data to a file"""
+        with open(path, "wb") as f_qubesxml:
             f_qubesxml.write(stream.read())
 
     def _process_qubes_xml(self):
@@ -1350,29 +1473,31 @@ class BackupRestore(object):
         and :py:meth:`retrieve_backup_header` was called.
         """
         if self.header_data.version == 1:
-            raise NotImplementedError('Backup format version 1 not supported')
+            raise NotImplementedError("Backup format version 1 not supported")
         if self.header_data.version in [2, 3]:
             self._retrieve_backup_header_files(
-                ['qubes.xml.000', 'qubes.xml.000.hmac'])
+                ["qubes.xml.000", "qubes.xml.000.hmac"]
+            )
             self._verify_hmac("qubes.xml.000", "qubes.xml.000.hmac")
         else:
-            self._retrieve_backup_header_files(['qubes.xml.000.enc'])
-            self._verify_and_decrypt('qubes.xml.000.enc')
+            self._retrieve_backup_header_files(["qubes.xml.000.enc"])
+            self._verify_and_decrypt("qubes.xml.000.enc")
 
         queue = Queue()
         queue.put("qubes.xml.000")
         queue.put(QUEUE_FINISHED)
 
-        qubes_xml_path = os.path.join(self.tmpdir, 'qubes-restored.xml')
+        qubes_xml_path = os.path.join(self.tmpdir, "qubes-restored.xml")
         handlers = {
-            'qubes.xml': functools.partial(self._save_qubes_xml, qubes_xml_path)
-            }
+            "qubes.xml": functools.partial(self._save_qubes_xml, qubes_xml_path)
+        }
         extract_proc = self._start_inner_extraction_worker(queue, handlers)
         extract_proc.join()
         if extract_proc.exitcode != 0:
             raise QubesException(
                 "unable to extract the qubes backup. "
-                "Check extracting process errors.")
+                "Check extracting process errors."
+            )
 
         if self.header_data.version in [2, 3]:
             backup_app = Core2Qubes(qubes_xml_path)
@@ -1380,21 +1505,23 @@ class BackupRestore(object):
             backup_app = Core3Qubes(qubes_xml_path)
         else:
             raise QubesException(
-                'Unsupported qubes.xml format version: {}'.format(
-                    self.header_data.version))
+                "Unsupported qubes.xml format version: {}".format(
+                    self.header_data.version
+                )
+            )
         # Not needed anymore - all the data stored in backup_app
         os.unlink(qubes_xml_path)
         return backup_app
 
     def _restore_vm_data(self, vms_dirs, vms_size, handlers):
-        '''Restore data of VMs
+        """Restore data of VMs
 
         :param vms_dirs: list of directories to extract (skip others)
         :param vms_size: expected size (abort if source stream exceed this
         value)
         :param handlers: handlers for restored files - see
         :py:class:`ExtractWorker3` for details
-        '''
+        """
         self.log.debug("Working in temporary dir: %s", self.tmpdir)
         self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
 
@@ -1403,23 +1530,23 @@ class BackupRestore(object):
         # margin for further extensions. Each archive is divided into 100MB
         # chunks. Additionally each file have own hmac file. So assume upper
         # limit as 2*(10*COUNT_OF_VMS+TOTAL_SIZE/100MB)
-        limit_count = str(2 * (10 * len(vms_dirs) +
-                               int(vms_size / (100 * 1024 * 1024))))
+        limit_count = str(
+            2 * (10 * len(vms_dirs) + int(vms_size / (100 * 1024 * 1024)))
+        )
 
         if self.options.ignore_size_limit:
-            limit_count = '0'
+            limit_count = "0"
             vms_size = 0
 
         # retrieve backup from the backup stream (either VM, or dom0 file)
-        (retrieve_proc, filelist_pipe, error_pipe) = \
-            self._start_retrieval_process(
-                vms_dirs, limit_count, vms_size)
+        (retrieve_proc, filelist_pipe, error_pipe) = (
+            self._start_retrieval_process(vms_dirs, limit_count, vms_size)
+        )
 
         to_extract = Queue()
 
         # extract data retrieved by retrieve_proc
-        extract_proc = self._start_inner_extraction_worker(
-            to_extract, handlers)
+        extract_proc = self._start_inner_extraction_worker(to_extract, handlers)
 
         try:
             filename = None
@@ -1440,7 +1567,7 @@ class BackupRestore(object):
                 if nextfile is not None:
                     filename = nextfile
                 else:
-                    filename = filelist_pipe.readline().decode('ascii').strip()
+                    filename = filelist_pipe.readline().decode("ascii").strip()
 
                 self.log.debug("Getting new file: %s", filename)
 
@@ -1451,16 +1578,18 @@ class BackupRestore(object):
                 # tar prints filename before processing it, so wait for
                 # the next one to be sure that whole file was extracted
                 if not self.backup_vm:
-                    nextfile = filelist_pipe.readline().decode('ascii').strip()
+                    nextfile = filelist_pipe.readline().decode("ascii").strip()
 
                 if self.header_data.version in [2, 3]:
                     if not self.backup_vm:
                         hmacfile = nextfile
-                        nextfile = filelist_pipe.readline().\
-                            decode('ascii').strip()
+                        nextfile = (
+                            filelist_pipe.readline().decode("ascii").strip()
+                        )
                     else:
-                        hmacfile = filelist_pipe.readline().\
-                            decode('ascii').strip()
+                        hmacfile = (
+                            filelist_pipe.readline().decode("ascii").strip()
+                        )
 
                     if self.canceled:
                         break
@@ -1471,10 +1600,12 @@ class BackupRestore(object):
                         # vmproc exited with error
                         break
                 else:  # self.header_data.version == 4
-                    if not filename.endswith('.enc'):
+                    if not filename.endswith(".enc"):
                         raise qubesadmin.exc.QubesException(
-                            'Invalid file extension found in archive: {}'.
-                            format(filename))
+                            "Invalid file extension found in archive: {}".format(
+                                filename
+                            )
+                        )
 
                 if not any(filename.startswith(x) for x in vms_dirs):
                     self.log.debug("Ignoring VM not selected for restore")
@@ -1507,31 +1638,38 @@ class BackupRestore(object):
                     os.unlink(os.path.join(self.tmpdir, filename))
 
             if self.canceled:
-                raise BackupCanceledError("Restore canceled",
-                                          tmpdir=self.tmpdir)
+                raise BackupCanceledError(
+                    "Restore canceled", tmpdir=self.tmpdir
+                )
 
             if retrieve_proc.wait() != 0:
                 if retrieve_proc.returncode == errno.EDQUOT:
                     raise QubesException(
-                        'retrieved backup size exceed expected size, if you '
-                        'believe this is ok, use --ignore-size-limit option')
+                        "retrieved backup size exceed expected size, if you "
+                        "believe this is ok, use --ignore-size-limit option"
+                    )
                 raise QubesException(
-                    "unable to read the qubes backup file {} ({}): {}"
-                    .format(self.backup_location,
-                        retrieve_proc.returncode, error_pipe.read(
-                        MAX_STDERR_BYTES)))
+                    "unable to read the qubes backup file {} ({}): {}".format(
+                        self.backup_location,
+                        retrieve_proc.returncode,
+                        error_pipe.read(MAX_STDERR_BYTES),
+                    )
+                )
             # wait for other processes (if any)
             for proc in self.processes_to_kill_on_cancel:
                 proc.wait()
                 if proc.returncode != 0:
                     raise QubesException(
                         "Backup completed, "
-                        "but VM sending it reported an error (exit code {})".
-                        format(proc.returncode))
+                        "but VM sending it reported an error (exit code {})".format(
+                            proc.returncode
+                        )
+                    )
 
             if filename and filename != "EOF":
                 raise QubesException(
-                    "Premature end of archive, the last file was %s" % filename)
+                    "Premature end of archive, the last file was %s" % filename
+                )
         except:
             with contextlib.suppress(ProcessLookupError):
                 retrieve_proc.terminate()
@@ -1547,27 +1685,31 @@ class BackupRestore(object):
 
         self.log.debug("Waiting for the extraction process to finish...")
         extract_proc.join()
-        self.log.debug("Extraction process finished with code: %s",
-            extract_proc.exitcode)
+        self.log.debug(
+            "Extraction process finished with code: %s", extract_proc.exitcode
+        )
         if extract_proc.exitcode != 0:
             raise QubesException(
                 "unable to extract the qubes backup. "
-                "Check extracting process errors.")
+                "Check extracting process errors."
+            )
 
     def new_name_for_conflicting_vm(self, orig_name, restore_info):
-        '''Generate new name for conflicting VM
+        """Generate new name for conflicting VM
 
         Add a number suffix, until the name is unique. If no unique name can
         be found using this strategy, return :py:obj:`None`
-        '''
+        """
         number = 1
         if len(orig_name) > 29:
             orig_name = orig_name[0:29]
         new_name = orig_name
-        while (new_name in restore_info.keys() or
-               new_name in [x.name for x in restore_info.values()] or
-               new_name in self.app.domains):
-            new_name = str('{}{}'.format(orig_name, number))
+        while (
+            new_name in restore_info.keys()
+            or new_name in [x.name for x in restore_info.values()]
+            or new_name in self.app.domains
+        ):
+            new_name = str("{}{}".format(orig_name, number))
             number += 1
             if number == 100:
                 # give up
@@ -1575,11 +1717,11 @@ class BackupRestore(object):
         return new_name
 
     def restore_info_verify(self, restore_info):
-        '''Verify restore info - validate VM dependencies, name conflicts
+        """Verify restore info - validate VM dependencies, name conflicts
         etc.
-        '''
+        """
         for vm in restore_info.keys():
-            if vm in ['dom0']:
+            if vm in ["dom0"]:
                 continue
 
             vm_info = restore_info[vm]
@@ -1589,8 +1731,10 @@ class BackupRestore(object):
             if vm in self.options.exclude:
                 vm_info.problems.add(self.VMToRestore.EXCLUDED)
 
-            if not self.options.verify_only and \
-                    vm_info.name in self.app.domains:
+            if (
+                not self.options.verify_only
+                and vm_info.name in self.app.domains
+            ):
                 if self.options.rename_conflicting:
                     new_name = self.new_name_for_conflicting_vm(
                         vm, restore_info
@@ -1607,50 +1751,57 @@ class BackupRestore(object):
                 present_on_host = False
                 if vm_info.template in self.app.domains:
                     host_tpl = self.app.domains[vm_info.template]
-                    if vm_info.vm.klass == 'DispVM':
-                        present_on_host = (
-                            getattr(host_tpl, 'template_for_dispvms', False))
+                    if vm_info.vm.klass == "DispVM":
+                        present_on_host = getattr(
+                            host_tpl, "template_for_dispvms", False
+                        )
                     else:
-                        present_on_host = host_tpl.klass == 'TemplateVM'
+                        present_on_host = host_tpl.klass == "TemplateVM"
 
                 present_in_backup = False
                 if vm_info.template in restore_info:
                     bak_tpl = restore_info[vm_info.template]
                     if bak_tpl.good_to_go:
-                        if vm_info.vm.klass == 'DispVM':
-                            present_in_backup = (
-                                bak_tpl.vm.properties.get(
-                                    'template_for_dispvms', False))
+                        if vm_info.vm.klass == "DispVM":
+                            present_in_backup = bak_tpl.vm.properties.get(
+                                "template_for_dispvms", False
+                            )
                         else:
-                            present_in_backup = (
-                                bak_tpl.vm.klass == 'TemplateVM')
+                            present_in_backup = bak_tpl.vm.klass == "TemplateVM"
 
                 self.log.debug(
                     "vm=%s template=%s on_host=%s in_backup=%s",
-                    vm_info.name, vm_info.template,
-                    present_on_host, present_in_backup)
+                    vm_info.name,
+                    vm_info.template,
+                    present_on_host,
+                    present_in_backup,
+                )
 
                 if not present_on_host and not present_in_backup:
-                    if vm_info.vm.klass == 'DispVM':
+                    if vm_info.vm.klass == "DispVM":
                         default_template = self.app.default_dispvm
                     else:
                         default_template = self.app.default_template
 
-                    if (self.options.use_default_template
-                            and default_template is not None):
+                    if (
+                        self.options.use_default_template
+                        and default_template is not None
+                    ):
                         if vm_info.orig_template is None:
                             vm_info.orig_template = vm_info.template
                         vm_info.template = default_template.name
 
                         self.log.debug(
                             "vm=%s orig_template=%s -> default_template=%s",
-                            vm_info.name, vm_info.orig_template,
-                            default_template.name)
+                            vm_info.name,
+                            vm_info.orig_template,
+                            default_template.name,
+                        )
                     else:
                         vm_info.problems.add(self.VMToRestore.MISSING_TEMPLATE)
 
             # check netvm
-            if vm_info.vm.properties.get('netvm', None) is not None:
+            if vm_info.vm.properties.get("netvm", None) is not None:
                 netvm_name = vm_info.netvm
 
                 try:
@@ -1658,15 +1809,19 @@ class BackupRestore(object):
                 except KeyError:
                     netvm_on_host = None
 
-                present_on_host = (netvm_on_host is not None
-                        and netvm_on_host.provides_network)
-                present_in_backup = (netvm_name in restore_info.keys() and
-                    restore_info[netvm_name].good_to_go and
-                    restore_info[netvm_name].vm.properties.get(
-                        'provides_network', False))
+                present_on_host = (
+                    netvm_on_host is not None and netvm_on_host.provides_network
+                )
+                present_in_backup = (
+                    netvm_name in restore_info.keys()
+                    and restore_info[netvm_name].good_to_go
+                    and restore_info[netvm_name].vm.properties.get(
+                        "provides_network", False
+                    )
+                )
                 if not present_on_host and not present_in_backup:
                     if self.options.use_default_netvm:
-                        del vm_info.vm.properties['netvm']
+                        del vm_info.vm.properties["netvm"]
                     elif self.options.use_none_netvm:
                         vm_info.netvm = None
                     else:
@@ -1675,11 +1830,11 @@ class BackupRestore(object):
         return restore_info
 
     def get_restore_info(self):
-        '''Get restore info
+        """Get restore info
 
         Return information about what is included in the backup.
         That dictionary can be adjusted to select what VM should be restore.
-        '''
+        """
         # Format versions:
         #  1 - Qubes R1, Qubes R2 beta1, beta2
         #  2 - Qubes R2 beta3+
@@ -1689,7 +1844,7 @@ class BackupRestore(object):
         vms_to_restore = {}
 
         for vm in self.backup_app.domains.values():
-            if vm.klass == 'AdminVM':
+            if vm.klass == "AdminVM":
                 # Handle dom0 as special case later
                 continue
             if vm.included_in_backup:
@@ -1704,57 +1859,64 @@ class BackupRestore(object):
         vms_to_restore = self.restore_info_verify(vms_to_restore)
 
         # ...and dom0 home
-        if self.options.dom0_home and \
-                self.backup_app.domains['dom0'].included_in_backup:
-            vm = self.backup_app.domains['dom0']
-            vms_to_restore['dom0'] = self.Dom0ToRestore(vm,
-                self.backup_app.domains['dom0'].backup_path)
+        if (
+            self.options.dom0_home
+            and self.backup_app.domains["dom0"].included_in_backup
+        ):
+            vm = self.backup_app.domains["dom0"]
+            vms_to_restore["dom0"] = self.Dom0ToRestore(
+                vm, self.backup_app.domains["dom0"].backup_path
+            )
             try:
-                local_user = grp.getgrnam('qubes').gr_mem[0]
+                local_user = grp.getgrnam("qubes").gr_mem[0]
             except KeyError:
                 # if no qubes group is present, assume username matches
-                local_user = vms_to_restore['dom0'].username
+                local_user = vms_to_restore["dom0"].username
 
-            if vms_to_restore['dom0'].username != local_user:
+            if vms_to_restore["dom0"].username != local_user:
                 if not self.options.ignore_username_mismatch:
-                    vms_to_restore['dom0'].problems.add(
-                        self.Dom0ToRestore.USERNAME_MISMATCH)
+                    vms_to_restore["dom0"].problems.add(
+                        self.Dom0ToRestore.USERNAME_MISMATCH
+                    )
 
         return vms_to_restore
 
     @staticmethod
     def get_restore_summary(restore_info):
-        '''Return a ASCII formatted table with restore info summary'''
+        """Return a ASCII formatted table with restore info summary"""
         fields = {
-            "name": {'func': lambda vm: vm.name},
-
-            "type": {'func': lambda vm: vm.klass},
-
-            "template": {'func': lambda vm:
-                'n/a' if vm.template is None else vm.template},
-
-            "netvm": {'func': lambda vm:
-                '(default)' if 'netvm' not in vm.properties else
-                '-' if vm.properties['netvm'] is None else
-                vm.properties['netvm']},
-
-            "label": {'func': lambda vm: vm.label},
+            "name": {"func": lambda vm: vm.name},
+            "type": {"func": lambda vm: vm.klass},
+            "template": {
+                "func": lambda vm: "n/a" if vm.template is None else vm.template
+            },
+            "netvm": {
+                "func": lambda vm: (
+                    "(default)"
+                    if "netvm" not in vm.properties
+                    else (
+                        "-"
+                        if vm.properties["netvm"] is None
+                        else vm.properties["netvm"]
+                    )
+                )
+            },
+            "label": {"func": lambda vm: vm.label},
         }
 
-        fields_to_display = ['name', 'type', 'template',
-            'netvm', 'label']
+        fields_to_display = ["name", "type", "template", "netvm", "label"]
 
         # First calculate the maximum width of each field we want to display
         total_width = 0
         for field in fields_to_display:
-            fields[field]['max_width'] = len(field)
+            fields[field]["max_width"] = len(field)
             for vm_info in restore_info.values():
                 if vm_info.vm:
                     # noinspection PyUnusedLocal
                     field_len = len(str(fields[field]["func"](vm_info.vm)))
-                    if field_len > fields[field]['max_width']:
-                        fields[field]['max_width'] = field_len
-            total_width += fields[field]['max_width']
+                    if field_len > fields[field]["max_width"]:
+                        fields[field]["max_width"] = field_len
+            total_width += fields[field]["max_width"]
 
         summary = ""
         summary += "The following VMs are included in the backup:\n"
@@ -1764,7 +1926,7 @@ class BackupRestore(object):
         for field in fields_to_display:
             # noinspection PyTypeChecker
             fmt = "{{0:-^{0}}}-+".format(fields[field]["max_width"] + 1)
-            summary += fmt.format('-')
+            summary += fmt.format("-")
         summary += "\n"
         for field in fields_to_display:
             # noinspection PyTypeChecker
@@ -1774,7 +1936,7 @@ class BackupRestore(object):
         for field in fields_to_display:
             # noinspection PyTypeChecker
             fmt = "{{0:-^{0}}}-+".format(fields[field]["max_width"] + 1)
-            summary += fmt.format('-')
+            summary += fmt.format("-")
         summary += "\n"
 
         for vm_info in restore_info.values():
@@ -1792,27 +1954,34 @@ class BackupRestore(object):
             if BackupRestore.VMToRestore.EXCLUDED in vm_info.problems:
                 summary_line += " <-- Excluded from restore"
             elif BackupRestore.VMToRestore.ALREADY_EXISTS in vm_info.problems:
-                summary_line += \
+                summary_line += (
                     " <-- A VM with the same name already exists on the host!"
-            elif BackupRestore.VMToRestore.MISSING_TEMPLATE in \
-                    vm_info.problems:
-                summary_line += " <-- No matching template on the host " \
-                     "or in the backup found!"
-            elif BackupRestore.VMToRestore.MISSING_NETVM in \
-                    vm_info.problems:
-                summary_line += " <-- No matching netvm on the host " \
-                     "or in the backup found!"
-            elif vm_info.name == "dom0" and \
-                    BackupRestore.Dom0ToRestore.USERNAME_MISMATCH in \
-                    restore_info['dom0'].problems:
+                )
+            elif BackupRestore.VMToRestore.MISSING_TEMPLATE in vm_info.problems:
+                summary_line += (
+                    " <-- No matching template on the host "
+                    "or in the backup found!"
+                )
+            elif BackupRestore.VMToRestore.MISSING_NETVM in vm_info.problems:
+                summary_line += (
+                    " <-- No matching netvm on the host "
+                    "or in the backup found!"
+                )
+            elif (
+                vm_info.name == "dom0"
+                and BackupRestore.Dom0ToRestore.USERNAME_MISMATCH
+                in restore_info["dom0"].problems
+            ):
                 summary_line += " <-- username in backup and dom0 mismatch"
             else:
                 if vm_info.template != vm_info.vm.template:
                     summary_line += " <-- Template change to '{}'".format(
-                        vm_info.template)
+                        vm_info.template
+                    )
                 if vm_info.name != vm_info.vm.name:
                     summary_line += " <-- Will be renamed to '{}'".format(
-                        vm_info.name)
+                        vm_info.name
+                    )
 
             summary += summary_line + "\n"
 
@@ -1820,65 +1989,88 @@ class BackupRestore(object):
 
     @staticmethod
     def _templates_first(vms):
-        '''Sort templates before other VM types'''
+        """Sort templates before other VM types"""
+
         def key_function(instance):
-            '''Key function for :py:func:`sorted`'''
+            """Key function for :py:func:`sorted`"""
             if isinstance(instance, BackupVM):
-                if instance.klass == 'TemplateVM':
+                if instance.klass == "TemplateVM":
                     return 0
-                if instance.properties.get('template_for_dispvms', False):
+                if instance.properties.get("template_for_dispvms", False):
                     return 1
                 return 2
-            if hasattr(instance, 'vm'):
+            if hasattr(instance, "vm"):
                 return key_function(instance.vm)
             return 9
+
         return sorted(vms, key=key_function)
 
     def _handle_dom0(self, stream):
-        '''Extract dom0 home'''
+        """Extract dom0 home"""
         try:
-            local_user = grp.getgrnam('qubes').gr_mem[0]
+            local_user = grp.getgrnam("qubes").gr_mem[0]
             home_dir = pwd.getpwnam(local_user).pw_dir
         except KeyError:
-            home_dir = os.path.expanduser('~')
+            home_dir = os.path.expanduser("~")
             local_user = getpass.getuser()
         restore_home_backupdir = "home-restore-{0}".format(
-            time.strftime("%Y-%m-%d-%H%M%S"))
+            time.strftime("%Y-%m-%d-%H%M%S")
+        )
 
-        self.log.info("Restoring home of user '%s' to '%s' directory...",
-                     local_user, restore_home_backupdir)
+        self.log.info(
+            "Restoring home of user '%s' to '%s' directory...",
+            local_user,
+            restore_home_backupdir,
+        )
         os.mkdir(os.path.join(home_dir, restore_home_backupdir))
-        tar3_cmdline = ['tar', '-C',
-                        os.path.join(home_dir, restore_home_backupdir), '-x']
+        tar3_cmdline = [
+            "tar",
+            "-C",
+            os.path.join(home_dir, restore_home_backupdir),
+            "-x",
+        ]
         retcode = subprocess.call(tar3_cmdline, stdin=stream)
         if retcode != 0:
             raise QubesException("Inner tar error for dom0-home")
-        retcode = subprocess.call(['sudo', 'chown', '-R',
-            local_user, os.path.join(home_dir, restore_home_backupdir)])
+        retcode = subprocess.call(
+            [
+                "sudo",
+                "chown",
+                "-R",
+                local_user,
+                os.path.join(home_dir, restore_home_backupdir),
+            ]
+        )
         if retcode != 0:
             self.log.error("*** Error while setting restore directory owner")
 
     def _handle_appmenus_list(self, vm, stream):
-        '''Handle whitelisted-appmenus.list file'''
+        """Handle whitelisted-appmenus.list file"""
         try:
-            appmenus_list = stream.read().decode('ascii').splitlines()
+            appmenus_list = stream.read().decode("ascii").splitlines()
             # remove empty lines
             appmenus_list = [l for l in appmenus_list if l]
-            vm.features['menu-items'] = ' '.join(appmenus_list)
+            vm.features["menu-items"] = " ".join(appmenus_list)
         except QubesException as e:
             self.log.error(
-                'Failed to set application list for %s: %s', vm.name, e)
+                "Failed to set application list for %s: %s", vm.name, e
+            )
 
     def _handle_volume_data(self, vm, volume, stream, *, file_size=None):
-        '''Wrap volume data import with logging'''
+        """Wrap volume data import with logging"""
         try:
             if file_size is None:
                 volume.import_data(stream)
             else:
                 volume.import_data_with_size(stream, file_size)
         except Exception as err:  # pylint: disable=broad-except
-            self.log.error('Failed to restore volume %s (size %s) of VM %s: %s',
-                volume.name, file_size, vm.name, err)
+            self.log.error(
+                "Failed to restore volume %s (size %s) of VM %s: %s",
+                volume.name,
+                file_size,
+                vm.name,
+                err,
+            )
 
     def check_disk_space(self):
         """
@@ -1892,12 +2084,13 @@ class BackupRestore(object):
 
         statvfs = os.statvfs(self.tmpdir)
         # require 1GB in /var/tmp
-        if statvfs.f_frsize * statvfs.f_bavail < 1024 ** 3:
-            raise QubesException("Too little space in {}, needs at least 1GB".
-                format(self.tmpdir))
+        if statvfs.f_frsize * statvfs.f_bavail < 1024**3:
+            raise QubesException(
+                "Too little space in {}, needs at least 1GB".format(self.tmpdir)
+            )
 
     def restore_do(self, restore_info):
-        '''
+        """
 
         High level workflow:
         1. Create VMs object in host collection (qubes.xml)
@@ -1907,10 +2100,10 @@ class BackupRestore(object):
 
         :param restore_info:
         :return:
-        '''
+        """
 
         if self.header_data.version == 1:
-            raise NotImplementedError('Backup format version 1 not supported')
+            raise NotImplementedError("Backup format version 1 not supported")
 
         self.check_disk_space()
 
@@ -1925,8 +2118,10 @@ class BackupRestore(object):
         for vm_info in self._templates_first(restore_info.values()):
             vm = vm_info.restored_vm
             if vm and vm_info.subdir:
-                if isinstance(vm_info, self.Dom0ToRestore) and \
-                        vm_info.good_to_go:
+                if (
+                    isinstance(vm_info, self.Dom0ToRestore)
+                    and vm_info.good_to_go
+                ):
                     vms_dirs.append(os.path.dirname(vm_info.subdir))
                     vms_size += int(vm_info.size)
                     if self.options.verify_only:
@@ -1944,47 +2139,53 @@ class BackupRestore(object):
                         if not volume.save_on_stop:
                             continue
                         data_func = functools.partial(
-                            self._handle_volume_data, vm, volume)
-                        img_path = os.path.join(vm_info.subdir, name + '.img')
+                            self._handle_volume_data, vm, volume
+                        )
+                        img_path = os.path.join(vm_info.subdir, name + ".img")
                         handlers[img_path] = data_func
-                    handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = \
+                    handlers[os.path.join(vm_info.subdir, "firewall.xml")] = (
                         functools.partial(vm_info.vm.handle_firewall_xml, vm)
-                    handlers[os.path.join(vm_info.subdir,
-                        'whitelisted-appmenus.list')] = \
-                        functools.partial(self._handle_appmenus_list, vm)
+                    )
+                    handlers[
+                        os.path.join(
+                            vm_info.subdir, "whitelisted-appmenus.list"
+                        )
+                    ] = functools.partial(self._handle_appmenus_list, vm)
         try:
-            self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
-                handlers=handlers)
+            self._restore_vm_data(
+                vms_dirs=vms_dirs, vms_size=vms_size, handlers=handlers
+            )
         except QubesException as err:
             if self.options.verify_only:
                 raise
-            self.log.error('Error extracting data: %s', str(err))
+            self.log.error("Error extracting data: %s", str(err))
         finally:
             if self.log.getEffectiveLevel() > logging.DEBUG:
                 shutil.rmtree(self.tmpdir)
 
         if self.canceled:
-            raise BackupCanceledError("Restore canceled",
-                                      tmpdir=self.tmpdir)
+            raise BackupCanceledError("Restore canceled", tmpdir=self.tmpdir)
 
         self.log.info("-> Done.")
         if not self.options.verify_only:
-            self.log.info("-> Please install updates for all the restored "
-                          "templates.")
+            self.log.info(
+                "-> Please install updates for all the restored " "templates."
+            )
 
     def _restore_property(self, vm, prop, value):
-        '''Restore a single VM property, logging exceptions'''
+        """Restore a single VM property, logging exceptions"""
         try:
             setattr(vm, prop, value)
         except Exception as err:  # pylint: disable=broad-except
-            self.log.error('Error setting %s.%s to %s: %s',
-                vm.name, prop, value, err)
+            self.log.error(
+                "Error setting %s.%s to %s: %s", vm.name, prop, value, err
+            )
 
     def _restore_vms_metadata(self, restore_info):
-        '''Restore VM metadata
+        """Restore VM metadata
 
         Create VMs, set their properties etc.
-        '''
+        """
         vms = {}
         for vm_info in restore_info.values():
             assert isinstance(vm_info, self.VMToRestore)
@@ -2007,15 +2208,17 @@ class BackupRestore(object):
             if vm.template:
                 template = restore_info[vm.name].template
                 # handle potentially renamed template
-                if template in restore_info \
-                        and restore_info[template].good_to_go:
+                if (
+                    template in restore_info
+                    and restore_info[template].good_to_go
+                ):
                     template = restore_info[template].name
-                kwargs['template'] = template
+                kwargs["template"] = template
 
             new_vm = None
             vm_name = restore_info[vm.name].name
 
-            if self.options.verify_only or vm.name == 'dom0':
+            if self.options.verify_only or vm.name == "dom0":
                 # can't create vm, but need backup info
                 new_vm = self.backup_app.domains[vm_name]
             else:
@@ -2027,17 +2230,19 @@ class BackupRestore(object):
                         name=vm_name,
                         label=vm.label,
                         pool=self.options.override_pool,
-                        **kwargs)
+                        **kwargs
+                    )
                 except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error restoring VM %s, skipping: %s',
-                        vm.name, err)
+                    self.log.error(
+                        "Error restoring VM %s, skipping: %s", vm.name, err
+                    )
                     if new_vm:
                         del self.app.domains[new_vm.name]
                     continue
 
             # restore this property early to be ready for dependent DispVMs
             if not self.options.verify_only:
-                prop = 'template_for_dispvms'
+                prop = "template_for_dispvms"
                 value = vm.properties.get(prop, None)
                 if value is not None:
                     self._restore_property(new_vm, prop, value)
@@ -2058,14 +2263,14 @@ class BackupRestore(object):
 
             for prop, value in vm.properties.items():
                 # can't reset the first; already handled the second
-                if prop in ['dispid', 'template_for_dispvms']:
+                if prop in ["dispid", "template_for_dispvms"]:
                     continue
                 # exclude VM references - handled manually according to
                 # restore options
-                if prop in ['template', 'netvm', 'default_dispvm']:
+                if prop in ["template", "netvm", "default_dispvm"]:
                     continue
                 # exclude as this only applied before restoring
-                if prop in ['installed_by_rpm']:
+                if prop in ["installed_by_rpm"]:
                     continue
                 self._restore_property(new_vm, prop, value)
 
@@ -2073,16 +2278,22 @@ class BackupRestore(object):
                 try:
                     new_vm.features[feature] = value
                 except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error setting %s.features[%s] to %s: %s',
-                        vm.name, feature, value, err)
+                    self.log.error(
+                        "Error setting %s.features[%s] to %s: %s",
+                        vm.name,
+                        feature,
+                        value,
+                        err,
+                    )
 
             for tag in vm.tags:
                 try:
                     new_vm.tags.add(tag)
                 except Exception as err:  # pylint: disable=broad-except
                     if tag not in new_vm.tags:
-                        self.log.error('Error adding tag %s to %s: %s',
-                            tag, vm.name, err)
+                        self.log.error(
+                            "Error adding tag %s to %s: %s", tag, vm.name, err
+                        )
 
             for bus in vm.devices:
                 for backend_domain, ident in vm.devices[bus]:
@@ -2091,13 +2302,19 @@ class BackupRestore(object):
                         backend_domain=backend_domain,
                         ident=ident,
                         options=options,
-                        persistent=True)
+                        persistent=True,
+                    )
                     try:
                         if not self.options.verify_only:
                             new_vm.devices[bus].attach(assignment)
                     except Exception as err:  # pylint: disable=broad-except
-                        self.log.error('Error attaching device %s:%s to %s: %s',
-                            bus, ident, vm.name, err)
+                        self.log.error(
+                            "Error attaching device %s:%s to %s: %s",
+                            bus,
+                            ident,
+                            vm.name,
+                            err,
+                        )
 
         # Set VM dependencies - only non-default setting
         for vm in vms.values():
@@ -2109,7 +2326,7 @@ class BackupRestore(object):
                 # Failed/skipped VM
                 continue
 
-            if 'netvm' in vm.properties:
+            if "netvm" in vm.properties:
                 if vm_info.netvm in restore_info:
                     value = restore_info[vm_info.netvm].name
                 else:
@@ -2118,18 +2335,27 @@ class BackupRestore(object):
                 try:
                     host_vm.netvm = value
                 except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error setting %s.%s to %s: %s',
-                        vm.name, 'netvm', value, err)
+                    self.log.error(
+                        "Error setting %s.%s to %s: %s",
+                        vm.name,
+                        "netvm",
+                        value,
+                        err,
+                    )
 
-            if 'default_dispvm' in vm.properties:
-                if vm.properties['default_dispvm'] in restore_info:
-                    value = restore_info[vm.properties[
-                        'default_dispvm']].name
+            if "default_dispvm" in vm.properties:
+                if vm.properties["default_dispvm"] in restore_info:
+                    value = restore_info[vm.properties["default_dispvm"]].name
                 else:
-                    value = vm.properties['default_dispvm']
+                    value = vm.properties["default_dispvm"]
 
                 try:
                     host_vm.default_dispvm = value
                 except Exception as err:  # pylint: disable=broad-except
-                    self.log.error('Error setting %s.%s to %s: %s',
-                        vm.name, 'default_dispvm', value, err)
+                    self.log.error(
+                        "Error setting %s.%s to %s: %s",
+                        vm.name,
+                        "default_dispvm",
+                        value,
+                        err,
+                    )

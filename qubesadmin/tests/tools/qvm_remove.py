@@ -26,29 +26,32 @@ import unittest.mock
 
 class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):
     def test_000_single(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.Remove', None, None)] = \
-            b'0\x00\n'
-        qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00some-vm class=AppVM state=Running\n"
+        )
+        self.app.expected_calls[("some-vm", "admin.vm.Remove", None, None)] = (
+            b"0\x00\n"
+        )
+        qubesadmin.tools.qvm_remove.main(["-f", "some-vm"], app=self.app)
         self.assertAllCalled()
 
-    @unittest.mock.patch('qubesadmin.utils.vm_dependencies')
+    @unittest.mock.patch("qubesadmin.utils.vm_dependencies")
     def test_100_dependencies(self, mock_dependencies):
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00some-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.Remove', None, None)] = \
-            b'2\x00QubesVMInUseError\x00\x00An error occurred\x00'
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00some-vm class=AppVM state=Running\n"
+        )
+        self.app.expected_calls[("some-vm", "admin.vm.Remove", None, None)] = (
+            b"2\x00QubesVMInUseError\x00\x00An error occurred\x00"
+        )
 
-        mock_dependencies.return_value = \
-            [(None, 'default_template'), (self.app.domains['some-vm'], 'netvm')]
+        mock_dependencies.return_value = [
+            (None, "default_template"),
+            (self.app.domains["some-vm"], "netvm"),
+        ]
 
         with self.assertRaises(SystemExit):
-            qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
+            qubesadmin.tools.qvm_remove.main(["-f", "some-vm"], app=self.app)
 
-        self.assertTrue(mock_dependencies.called,
-                        "Dependencies check not called.")
+        self.assertTrue(
+            mock_dependencies.called, "Dependencies check not called."
+        )

@@ -30,15 +30,15 @@ import qubesadmin.app
 class TestVM(object):
     def __init__(self, name, **kwargs):
         self.name = name
-        self.klass = 'TestVM'
+        self.klass = "TestVM"
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def get_power_state(self):
-        return getattr(self, 'power_state', 'Running')
+        return getattr(self, "power_state", "Running")
 
     def is_networked(self):
-        return bool(getattr(self, 'netvm', False))
+        return bool(getattr(self, "netvm", False))
 
     def __str__(self):
         return self.name
@@ -57,7 +57,9 @@ class TestVMCollection(dict):
 
 
 class TestProcess(object):
-    def __init__(self, input_callback=None, stdout=None, stderr=None, stdout_data=None):
+    def __init__(
+        self, input_callback=None, stdout=None, stderr=None, stdout_data=None
+    ):
         self.input_callback = input_callback
         self.got_any_input = False
         self.stdin = io.BytesIO()
@@ -65,13 +67,19 @@ class TestProcess(object):
         self.stdin_close = self.stdin.close
         self.stdin.close = self.store_input
         self.stdin.flush = self.store_input
-        if stdout == subprocess.PIPE or stdout == subprocess.DEVNULL \
-                or stdout is None:
+        if (
+            stdout == subprocess.PIPE
+            or stdout == subprocess.DEVNULL
+            or stdout is None
+        ):
             self.stdout = io.BytesIO()
         else:
             self.stdout = stdout
-        if stderr == subprocess.PIPE or stderr == subprocess.DEVNULL \
-                or stderr is None:
+        if (
+            stderr == subprocess.PIPE
+            or stderr == subprocess.DEVNULL
+            or stderr is None
+        ):
             self.stderr = io.BytesIO()
         else:
             self.stderr = stderr
@@ -111,11 +119,11 @@ class _AssertNotRaisesContext(object):
     """A context manager used to implement TestCase.assertNotRaises methods.
 
     Stolen from unittest and hacked. Regexp support stripped.
-    """ # pylint: disable=too-few-public-methods
+    """  # pylint: disable=too-few-public-methods
 
     def __init__(self, expected, test_case, expected_regexp=None):
         if expected_regexp is not None:
-            raise NotImplementedError('expected_regexp is unsupported')
+            raise NotImplementedError("expected_regexp is unsupported")
 
         self.expected = expected
         self.exception = None
@@ -132,7 +140,9 @@ class _AssertNotRaisesContext(object):
         if issubclass(exc_type, self.expected):
             raise self.failureException(
                 "{!r} raised, traceback:\n{!s}".format(
-                    exc_value, ''.join(traceback.format_tb(tb))))
+                    exc_value, "".join(traceback.format_tb(tb))
+                )
+            )
         else:
             # pass through
             return False
@@ -155,20 +165,21 @@ class QubesTest(qubesadmin.app.QubesBase):
         #: rpc service calls
         self.service_calls = []
 
-    def qubesd_call(self, dest, method, arg=None, payload=None,
-            payload_stream=None):
+    def qubesd_call(
+        self, dest, method, arg=None, payload=None, payload_stream=None
+    ):
         if payload_stream:
-            payload = (payload or b'') + payload_stream.read()
+            payload = (payload or b"") + payload_stream.read()
         call_key = (dest, method, arg, payload)
         self.actual_calls.append(call_key)
         if call_key not in self.expected_calls:
-            raise AssertionError('Unexpected call {!r}'.format(call_key))
+            raise AssertionError("Unexpected call {!r}".format(call_key))
         return_data = self.expected_calls[call_key]
         if isinstance(return_data, list):
             try:
                 return_data = return_data.pop(0)
             except IndexError:
-                raise AssertionError('Extra call {!r}'.format(call_key))
+                raise AssertionError("Extra call {!r}".format(call_key))
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, **kwargs):
@@ -180,12 +191,12 @@ class QubesTest(qubesadmin.app.QubesBase):
         #     raise AssertionError('Unexpected service call {!r}'.format(call_key))
         if call_key in self.expected_service_calls:
             kwargs = kwargs.copy()
-            kwargs['stdout_data'] = self.expected_service_calls[call_key]
-        return TestProcess(lambda input: self.service_calls.append((dest,
-            service, input)),
-            stdout=kwargs.get('stdout', None),
-            stderr=kwargs.get('stderr', None),
-            stdout_data=kwargs.get('stdout_data', None),
+            kwargs["stdout_data"] = self.expected_service_calls[call_key]
+        return TestProcess(
+            lambda input: self.service_calls.append((dest, service, input)),
+            stdout=kwargs.get("stdout", None),
+            stderr=kwargs.get("stderr", None),
+            stdout_data=kwargs.get("stdout_data", None),
         )
 
 
@@ -196,36 +207,40 @@ class QubesTestCase(unittest.TestCase):
 
     def assertAllCalled(self):
         self.assertEqual(
-            set(self.app.expected_calls.keys()),
-            set(self.app.actual_calls))
+            set(self.app.expected_calls.keys()), set(self.app.actual_calls)
+        )
         # and also check if calls expected multiple times were called
-        self.assertFalse([(call, ret)
-            for call, ret in self.app.expected_calls.items() if
-            isinstance(ret, list) and ret],
-            'Some calls not called expected number of times')
+        self.assertFalse(
+            [
+                (call, ret)
+                for call, ret in self.app.expected_calls.items()
+                if isinstance(ret, list) and ret
+            ],
+            "Some calls not called expected number of times",
+        )
 
     def assertNotRaises(self, excClass, callableObj=None, *args, **kwargs):
         """Fail if an exception of class excClass is raised
-           by callableObj when invoked with arguments args and keyword
-           arguments kwargs. If a different type of exception is
-           raised, it will not be caught, and the test case will be
-           deemed to have suffered an error, exactly as for an
-           unexpected exception.
+        by callableObj when invoked with arguments args and keyword
+        arguments kwargs. If a different type of exception is
+        raised, it will not be caught, and the test case will be
+        deemed to have suffered an error, exactly as for an
+        unexpected exception.
 
-           If called with callableObj omitted or None, will return a
-           context object used like this::
+        If called with callableObj omitted or None, will return a
+        context object used like this::
 
-                with self.assertRaises(SomeException):
-                    do_something()
+             with self.assertRaises(SomeException):
+                 do_something()
 
-           The context manager keeps a reference to the exception as
-           the 'exception' attribute. This allows you to inspect the
-           exception after the assertion::
+        The context manager keeps a reference to the exception as
+        the 'exception' attribute. This allows you to inspect the
+        exception after the assertion::
 
-               with self.assertRaises(SomeException) as cm:
-                   do_something()
-               the_exception = cm.exception
-               self.assertEqual(the_exception.error_code, 3)
+            with self.assertRaises(SomeException) as cm:
+                do_something()
+            the_exception = cm.exception
+            self.assertEqual(the_exception.error_code, 3)
         """
         context = _AssertNotRaisesContext(excClass, self)
         if callableObj is None:

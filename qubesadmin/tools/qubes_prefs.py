@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-''' Manipulate global properties.'''
+""" Manipulate global properties."""
 
 from __future__ import print_function
 
@@ -29,7 +29,7 @@ import qubesadmin.tools.qvm_prefs
 
 
 def get_parser():
-    '''Prepare argument parser'''
+    """Prepare argument parser"""
     return qubesadmin.tools.qvm_prefs.get_parser(None)
 
 
@@ -39,5 +39,6 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     target = args.app
     return qubesadmin.tools.qvm_prefs.process_actions(parser, args, target)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

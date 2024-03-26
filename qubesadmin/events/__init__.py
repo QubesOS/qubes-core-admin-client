@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Event handling implementation, require Python >=3.5.2 for asyncio.'''
+"""Event handling implementation, require Python >=3.5.2 for asyncio."""
 
 import asyncio
 import fnmatch
@@ -29,9 +29,10 @@ import qubesadmin.exc
 
 
 class EventsDispatcher(object):
-    ''' Events dispatcher, responsible for receiving events and calling
-    appropriate handlers'''
-    def __init__(self, app, api_method='admin.Events', enable_cache=True):
+    """Events dispatcher, responsible for receiving events and calling
+    appropriate handlers"""
+
+    def __init__(self, app, api_method="admin.Events", enable_cache=True):
         """Initialize EventsDispatcher
 
         :param app :py:class:`qubesadmin.Qubes` object
@@ -59,7 +60,7 @@ class EventsDispatcher(object):
             self.app.cache_enabled = True
 
     def add_handler(self, event, handler):
-        '''Register handler for event
+        """Register handler for event
 
         Use '*' as event to register a handler for all events.
 
@@ -69,62 +70,72 @@ class EventsDispatcher(object):
           * keyword arguments related to the event, if any - all values as str
 
         :param event Event name, or '*' for all events
-        :param handler Handler function'''
+        :param handler Handler function"""
         self.handlers.setdefault(event, set()).add(handler)
 
     def remove_handler(self, event, handler):
-        '''Remove previously registered event handler
+        """Remove previously registered event handler
 
         :param event Event name
         :param handler Handler function
-        '''
+        """
         self.handlers[event].remove(handler)
 
-    async def _get_events_reader(self, vm=None) -> (
-        asyncio.StreamReader, callable):
-        '''Make connection to qubesd and return stream to read events from
+    async def _get_events_reader(
+        self, vm=None
+    ) -> (asyncio.StreamReader, callable):
+        """Make connection to qubesd and return stream to read events from
 
         :param vm: Specific VM for which events should be handled, use None
         to handle events from all VMs (and non-VM objects)
         :return stream to read events from and a cleanup function
-        (call it to terminate qubesd connection)'''
+        (call it to terminate qubesd connection)"""
         if vm is not None:
             dest = vm.name
         else:
-            dest = 'dom0'
+            dest = "dom0"
 
-        if self.app.qubesd_connection_type == 'socket':
+        if self.app.qubesd_connection_type == "socket":
             reader, writer = await asyncio.open_unix_connection(
-                qubesadmin.config.QUBESD_SOCKET)
-            writer.write(self._api_method.encode() + b'+ ')  # method+arg
-            writer.write(b'dom0 ')  # source
-            writer.write(b'name ' + dest.encode('ascii') + b'\0')  # dest
+                qubesadmin.config.QUBESD_SOCKET
+            )
+            writer.write(self._api_method.encode() + b"+ ")  # method+arg
+            writer.write(b"dom0 ")  # source
+            writer.write(b"name " + dest.encode("ascii") + b"\0")  # dest
             writer.write_eof()
 
             def cleanup_func():
-                '''Close connection to qubesd'''
+                """Close connection to qubesd"""
                 writer.close()
-        elif self.app.qubesd_connection_type == 'qrexec':
+
+        elif self.app.qubesd_connection_type == "qrexec":
             proc = await asyncio.create_subprocess_exec(
-                'qrexec-client-vm', dest, self._api_method,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                "qrexec-client-vm",
+                dest,
+                self._api_method,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
 
             proc.stdin.write_eof()
             reader = proc.stdout
 
             def cleanup_func():
-                '''Close connection to qubesd'''
+                """Close connection to qubesd"""
                 try:
                     proc.kill()
                 except ProcessLookupError:
                     pass
+
         else:
-            raise NotImplementedError('Unsupported qubesd connection type: '
-                                      + self.app.qubesd_connection_type)
+            raise NotImplementedError(
+                "Unsupported qubesd connection type: "
+                + self.app.qubesd_connection_type
+            )
         return reader, cleanup_func
 
     async def listen_for_events(self, vm=None, reconnect=True):
-        '''
+        """
         Listen for events and call appropriate handlers.
         This function do not exit until manually terminated.
 
@@ -135,11 +146,12 @@ class EventsDispatcher(object):
         :param reconnect: should reconnect to qubesd if connection is
             interrupted?
         :rtype: None
-        '''
+        """
         while True:
             try:
                 self._reader_task = asyncio.create_task(
-                    self._listen_for_events(vm))
+                    self._listen_for_events(vm)
+                )
                 await self._reader_task
             except (OSError, qubesadmin.exc.QubesDaemonCommunicationError):
                 pass
@@ -150,13 +162,14 @@ class EventsDispatcher(object):
             if not reconnect:
                 break
             self.app.log.warning(
-                'Connection to qubesd terminated, reconnecting in {} '
-                'seconds'.format(qubesadmin.config.QUBESD_RECONNECT_DELAY))
+                "Connection to qubesd terminated, reconnecting in {} "
+                "seconds".format(qubesadmin.config.QUBESD_RECONNECT_DELAY)
+            )
             # avoid busy-loop if qubesd is dead
             await asyncio.sleep(qubesadmin.config.QUBESD_RECONNECT_DELAY)
 
     async def _listen_for_events(self, vm=None):
-        '''
+        """
         Listen for events and call appropriate handlers.
         This function do not exit until manually terminated.
 
@@ -166,35 +179,38 @@ class EventsDispatcher(object):
         events about all VMs and not related to any particular VM.
         :return: True if any event was received, otherwise False
         :rtype: bool
-        '''
+        """
 
         reader, cleanup_func = await self._get_events_reader(vm)
         try:
             some_event_received = False
             while not reader.at_eof():
                 try:
-                    event_header = await reader.readuntil(b'\0')
-                    if event_header != b'1\0':
+                    event_header = await reader.readuntil(b"\0")
+                    if event_header != b"1\0":
                         raise qubesadmin.exc.QubesDaemonCommunicationError(
-                            'Non-event received on events connection: '
-                            + repr(event_header))
-                    subject = (await reader.readuntil(b'\0'))[:-1].decode(
-                        'utf-8')
-                    event = (await reader.readuntil(b'\0'))[:-1].decode(
-                        'utf-8')
+                            "Non-event received on events connection: "
+                            + repr(event_header)
+                        )
+                    subject = (await reader.readuntil(b"\0"))[:-1].decode(
+                        "utf-8"
+                    )
+                    event = (await reader.readuntil(b"\0"))[:-1].decode("utf-8")
                     kwargs = {}
                     while True:
-                        key = (await reader.readuntil(b'\0'))[:-1].decode(
-                            'utf-8')
+                        key = (await reader.readuntil(b"\0"))[:-1].decode(
+                            "utf-8"
+                        )
                         if not key:
                             break
-                        value = (await reader.readuntil(b'\0'))[:-1].\
-                            decode('utf-8')
+                        value = (await reader.readuntil(b"\0"))[:-1].decode(
+                            "utf-8"
+                        )
                         kwargs[key] = value
                 except BrokenPipeError:
                     break
                 except asyncio.IncompleteReadError as err:
-                    if err.partial == b'':
+                    if err.partial == b"":
                         break
                     raise
 
@@ -216,7 +232,7 @@ class EventsDispatcher(object):
         """Call handlers for given event"""
         # pylint: disable=protected-access
         if subject:
-            if event in ['property-set:name']:
+            if event in ["property-set:name"]:
                 self.app.domains.clear_cache()
             try:
                 subject = self.app.domains.get_blind(subject)
@@ -224,40 +240,50 @@ class EventsDispatcher(object):
                 return
         else:
             # handle cache refreshing on best-effort basis
-            if event in ['domain-add', 'domain-delete']:
-                vm = kwargs['vm']
+            if event in ["domain-add", "domain-delete"]:
+                vm = kwargs["vm"]
                 self.app.domains.clear_cache(invalidate_name=str(vm))
             subject = None
         # deserialize known attributes
-        if event.startswith('device-') and 'device' in kwargs:
+        if event.startswith("device-") and "device" in kwargs:
             try:
-                devclass = event.split(':', 1)[1]
-                backend_domain, ident = kwargs['device'].split(':', 1)
-                kwargs['device'] = self.app.domains.get_blind(backend_domain)\
-                    .devices[devclass][ident]
+                devclass = event.split(":", 1)[1]
+                backend_domain, ident = kwargs["device"].split(":", 1)
+                kwargs["device"] = self.app.domains.get_blind(
+                    backend_domain
+                ).devices[devclass][ident]
             except (KeyError, ValueError):
                 pass
         # invalidate cache if needed; call it before other handlers
         # as those may want to use cached value
-        if event.startswith('property-set:') or \
-                event.startswith('property-reset:'):
+        if event.startswith("property-set:") or event.startswith(
+            "property-reset:"
+        ):
             self.app._invalidate_cache(subject, event, **kwargs)
-        elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
-                       'domain-paused', 'domain-unpaused',
-                       'domain-start-failed'):
+        elif event in (
+            "domain-pre-start",
+            "domain-start",
+            "domain-shutdown",
+            "domain-paused",
+            "domain-unpaused",
+            "domain-start-failed",
+        ):
             self.app._update_power_state_cache(subject, event, **kwargs)
-        elif event == 'connection-established':
+        elif event == "connection-established":
             # on (re)connection, clear cache completely - we don't have
             # guarantee about not missing any events before this point
             self.app._invalidate_cache_all()
 
-        handlers = [h_func for h_name, h_func_set in self.handlers.items()
+        handlers = [
+            h_func
+            for h_name, h_func_set in self.handlers.items()
             for h_func in h_func_set
-            if fnmatch.fnmatch(event, h_name)]
+            if fnmatch.fnmatch(event, h_name)
+        ]
         for handler in handlers:
             try:
                 handler(subject, event, **kwargs)
             except:  # pylint: disable=bare-except
                 self.app.log.exception(
-                    'Failed to handle event: %s, %s, %s',
-                    subject, event, kwargs)
+                    "Failed to handle event: %s, %s, %s", subject, event, kwargs
+                )
