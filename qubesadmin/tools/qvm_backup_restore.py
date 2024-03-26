@@ -41,7 +41,7 @@ parser.add_argument(
     action="store_true",
     dest="verify_only",
     default=False,
-    help="Verify backup integrity without restoring any " "data",
+    help="Verify backup integrity without restoring any data",
 )
 
 parser.add_argument(
@@ -49,7 +49,7 @@ parser.add_argument(
     action="store_true",
     dest="skip_broken",
     default=False,
-    help="Do not restore VMs that have missing TemplateVMs " "or NetVMs",
+    help="Do not restore VMs that have missing TemplateVMs or NetVMs",
 )
 
 parser.add_argument(
@@ -66,7 +66,7 @@ parser.add_argument(
     action="store_true",
     dest="skip_conflicting",
     default=False,
-    help="Do not restore VMs that are already present on " "the host",
+    help="Do not restore VMs that are already present on the host",
 )
 
 parser.add_argument(
@@ -100,7 +100,7 @@ parser.add_argument(
     action="store_true",
     dest="ignore_username_mismatch",
     default=False,
-    help="Ignore dom0 username mismatch when restoring home " "directory",
+    help="Ignore dom0 username mismatch when restoring home directory",
 )
 
 parser.add_argument(
@@ -218,7 +218,7 @@ def handle_broken(app, args, restore_info):
 
     if there_are_missing_templates:
         app.log.warning(
-            "*** One or more TemplateVMs are missing on the " "host! ***"
+            "*** One or more TemplateVMs are missing on the host! ***"
         )
         if not (args.skip_broken or args.ignore_missing):
             raise qubesadmin.exc.QubesException(
@@ -320,7 +320,7 @@ def main(args=None, app=None):
         args.dom0_home = False
         args.app.log.info("Starting restore process in a DisposableVM...")
         args.app.log.info(
-            "When operation completes, close its window " "manually."
+            "When operation completes, close its window manually."
         )
         restore_in_dispvm = RestoreInDisposableVM(args.app, args)
         try:

@@ -100,7 +100,9 @@ class QubesValueError(QubesException, ValueError):
 
 
 class QubesPropertyValueError(QubesValueError):
-    """Cannot set value of qubes.property, because user-supplied value is wrong."""
+    """
+    Cannot set value of qubes.property, because user-supplied value is wrong.
+    """
 
 
 class QubesNoSuchPropertyError(QubesException, AttributeError):

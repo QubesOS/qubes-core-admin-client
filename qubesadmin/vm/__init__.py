@@ -306,7 +306,10 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return stdouterr
 
     def prepare_input_for_vmshell(self, command, input=None):
-        """Prepare shell input for the given command and optional (real) input"""  # pylint: disable=redefined-builtin
+        """
+        Prepare shell input for the given command and optional (real) input
+        """
+        # pylint: disable=redefined-builtin
         if input is None:
             input = b""
         close_shell_suffix = b"; exit\n"
@@ -317,7 +320,10 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         )
 
     def run(self, command, input=None, **kwargs):
-        """Run a shell command inside the domain using qubes.VMShell qrexec."""  # pylint: disable=redefined-builtin
+        """
+        Run a shell command inside the domain using qubes.VMShell qrexec.
+        """
+        # pylint: disable=redefined-builtin
         try:
             return self.run_service_for_stdio(
                 "qubes.VMShell",

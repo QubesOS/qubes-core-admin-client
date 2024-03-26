@@ -152,26 +152,26 @@ def escape_config_string(value):
 
 # "LVDS connected 1024x768+0+0 (normal left inverted right) 304mm x 228mm"
 REGEX_OUTPUT = re.compile(
-    r"""(?x)                           # ignore whitespace
-        ^                              # start of string
-        (?P<output>[A-Za-z0-9\-]*)[ ]  # LVDS VGA etc
-        (?P<connect>(dis)?connected)   # dis/connected
-        ([ ]
-        (?P<primary>(primary)?)[ ]?
-        ((                             # a group
-           (?P<width>\d+)x             # either 1024x768+0+0
-           (?P<height>\d+)[+]
-           (?P<x>\d+)[+]
-           (?P<y>\d+)
-         )|[\D])                       # or not a digit
-        ([ ]\(.*\))?[ ]?               # ignore options
-        (                              #  304mm x 228mm
-           (?P<width_mm>\d+)mm[ ]x[ ]
-           (?P<height_mm>\d+)mm
-        )?
-        .*                             # ignore rest of line
-        )?                             # everything after (dis)connect is optional
-        """
+    r"""(?x)                       # ignore whitespace
+    ^                              # start of string
+    (?P<output>[A-Za-z0-9\-]*)[ ]  # LVDS VGA etc
+    (?P<connect>(dis)?connected)   # dis/connected
+    ([ ]
+    (?P<primary>(primary)?)[ ]?
+    ((                             # a group
+       (?P<width>\d+)x             # either 1024x768+0+0
+       (?P<height>\d+)[+]
+       (?P<x>\d+)[+]
+       (?P<y>\d+)
+     )|[\D])                       # or not a digit
+    ([ ]\(.*\))?[ ]?               # ignore options
+    (                              #  304mm x 228mm
+       (?P<width_mm>\d+)mm[ ]x[ ]
+       (?P<height_mm>\d+)mm
+    )?
+    .*                             # ignore rest of line
+    )?                             # everything after (dis)connect is optional
+    """
 )
 
 

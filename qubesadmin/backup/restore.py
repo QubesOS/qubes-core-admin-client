@@ -541,7 +541,7 @@ class ExtractWorker3(Process):
             self.tar2_process.stderr.close()
         if self.tar2_process.returncode != 0:
             self.log.error(
-                "ERROR: unable to extract files for %s, tar " "output:\n  %s",
+                "ERROR: unable to extract files for %s, tar output:\n  %s",
                 self.tar2_current_file,
                 "\n  ".join(self.tar2_stderr),
             )
@@ -878,7 +878,7 @@ def get_supported_crypto_algo(crypto_algorithm=None):
     if crypto_algorithm != "scrypt":
         yield "scrypt"
     with subprocess.Popen(
-        "openssl list-cipher-algorithms || " "openssl list -cipher-algorithms",
+        "openssl list-cipher-algorithms || openssl list -cipher-algorithms",
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
@@ -1325,7 +1325,8 @@ class BackupRestore(object):
                 if allow_none:
                     return None
                 raise QubesException(
-                    "unable to read the qubes backup file {0} ({1}): {2}".format(
+                    "unable to read the qubes backup file {0} ({1}):"
+                    " {2}".format(
                         self.backup_location,
                         retrieve_proc.wait(),
                         extract_stderr,
@@ -1602,9 +1603,8 @@ class BackupRestore(object):
                 else:  # self.header_data.version == 4
                     if not filename.endswith(".enc"):
                         raise qubesadmin.exc.QubesException(
-                            "Invalid file extension found in archive: {}".format(
-                                filename
-                            )
+                            "Invalid file extension found in archive:"
+                            " {}".format(filename)
                         )
 
                 if not any(filename.startswith(x) for x in vms_dirs):
@@ -1660,10 +1660,8 @@ class BackupRestore(object):
                 proc.wait()
                 if proc.returncode != 0:
                     raise QubesException(
-                        "Backup completed, "
-                        "but VM sending it reported an error (exit code {})".format(
-                            proc.returncode
-                        )
+                        "Backup completed, but VM sending it reported an error"
+                        " (exit code {})".format(proc.returncode)
                     )
 
             if filename and filename != "EOF":
@@ -1833,7 +1831,7 @@ class BackupRestore(object):
         """Get restore info
 
         Return information about what is included in the backup.
-        That dictionary can be adjusted to select what VM should be restore.
+        That dictionary can be adjusted to select what VM should be restored.
         """
         # Format versions:
         #  1 - Qubes R1, Qubes R2 beta1, beta2
@@ -2169,7 +2167,7 @@ class BackupRestore(object):
         self.log.info("-> Done.")
         if not self.options.verify_only:
             self.log.info(
-                "-> Please install updates for all the restored " "templates."
+                "-> Please install updates for all the restored templates."
             )
 
     def _restore_property(self, vm, prop, value):

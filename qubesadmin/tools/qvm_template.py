@@ -1894,7 +1894,9 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
 
 
 def migrate_from_rpmdb(app):
-    """Migrate templates stored in rpmdb, into 'features' set on the VM itself."""
+    """
+    Migrate templates stored in rpmdb, into 'features' set on the VM itself.
+    """
 
     if os.getuid() != 0:
         parser.error("This command needs to be run as root")
