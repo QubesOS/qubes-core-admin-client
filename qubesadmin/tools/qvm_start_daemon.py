@@ -678,18 +678,39 @@ class DAEMONLauncher:
             return
         if xid != -1:
             self.cleanup_guid(xid)
+            self.cleanup_pacat_process(xid)
         if stubdom_xid != -1:
             self.cleanup_guid(stubdom_xid)
+            self.cleanup_pacat_process(stubdom_xid)
 
     def cleanup_guid(self, xid):
         """
-        Clean up after qubes-guid. Removes the auto-generated configuration
-        file, if any.
+        Clean up after qubes-guid.
+
+        Removes the auto-generated configuration file, if any.
         """
 
         config_path = self.guid_config_file(xid)
         if os.path.exists(config_path):
             os.unlink(config_path)
+
+    def cleanup_pacat_process(self, xid):
+        """
+        Clean up after pacat-simple-vchan.
+
+        Removes the auto-generated configuration file, if any.
+        """
+        config_file = self.pacat_pidfile(xid)
+        if not os.path.exists(config_file):
+            return
+        try:
+            with open(config_file) as f:
+                pid = int(f.readline())
+                os.kill(pid, signal.SIGTERM)
+                print(f"Sent SIGTERM signal to pacat-simple-vchan process {pid}")
+        except OSError:
+            print(f"Failed to send SIGTERM signal for the pacat-simple-vchan with xid of {xid}")
+        os.unlink(config_file)
 
     def register_events(self, events):
         """Register domain startup events in app.events dispatcher"""
