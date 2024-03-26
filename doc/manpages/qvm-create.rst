@@ -108,8 +108,8 @@ DispVM
 ^^^^^^
 
 A disposable qube - no data persists across qube restarts. It must have template
-set to an `AppVM` instance that have `dispvm_allowed` property set to true (see
-:manpage:`qvm-prefs(1)`).
+set to an `AppVM` instance that have `template_for_dispvms` property set to true
+(see :manpage:`qvm-prefs(1)`).
 
 Authors
 -------
