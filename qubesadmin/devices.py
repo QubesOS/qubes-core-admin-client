@@ -140,10 +140,9 @@ class DeviceCollection:
         """
         List devices which are attached or assigned to this vm.
         """
-        dedicated = {dev for dev in itertools.chain(
-            self.get_attached_devices(), self.get_assigned_devices())}
-        for dev in dedicated:
-            yield dev
+        dedicated = set(itertools.chain(
+            self.get_attached_devices(), self.get_assigned_devices()))
+        yield from dedicated
 
     def get_attached_devices(self) -> Iterable[DeviceAssignment]:
         """
