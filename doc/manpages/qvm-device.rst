@@ -9,7 +9,10 @@ Synopsis
 | :command:`qvm-device` *DEVICE_CLASS* {list,ls,l} [*options*] <*vm-name*>
 | :command:`qvm-device` *DEVICE_CLASS* {attach,at,a} [*options*] <*vm-name*> <*device*>
 | :command:`qvm-device` *DEVICE_CLASS* {detach,dt,d} [*options*] <*vm-name*> [<*device*>]
-| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d} [*options*] <*vmname*> ...
+| :command:`qvm-device` *DEVICE_CLASS* {assign,s} [*options*] <*vm-name*> <*device*>
+| :command:`qvm-device` *DEVICE_CLASS* {unassign,u} [*options*] <*vm-name*> [<*device*>]
+| :command:`qvm-device` *DEVICE_CLASS* {info,i} [*options*] <*vm-name*> [<*device*>]
+| :command:`qvm-*DEVICE_CLASS*` {list,ls,l,attach,at,a,detach,dt,d,assign,s,unassign,u,info,i} [*options*] <*vmname*> ...
 
 .. note:: :command:`qvm-block`, :command:`qvm-usb` and :command:`qvm-pci` are just aliases for :command:`qvm-device block`, :command:`qvm-device usb` and :command:`qvm-device pci` respectively.
 
@@ -73,7 +76,7 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
 .. option:: --persistent, -p
 
-   Attach device persistently, which means have it attached also after qube restart.
+   Alias for `assign --required` for backward compatibility.
 
 aliases: a, at
 
@@ -87,6 +90,52 @@ If no device is given, detach all *DEVICE_CLASS* devices.
 
 aliases: d, dt
 
+assign
+^^^^^^
+
+| :command:`qvm-device` *DEVICE_CLASS* assign [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+
+Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
+
+.. option:: --option, -o
+
+   Specify device-class specific option, use `name=value` format. You can
+   specify this option multiple times. See below for options specific to
+   different device classes.
+
+.. option:: --ro
+
+   Alias for the `read-only=yes` option. If you specify both `--ro` and
+   `--option read-only=no`, `--ro` takes precedence.
+
+.. option:: --required, -r
+
+   Assign device persistently which means it will be required to the qube's startup and then automatically attached.
+
+.. option:: --port
+
+   Ignore device presented identity and attach any device connected to the given port number.
+
+aliases: s
+
+unassign
+^^^^^^^^
+
+| :command:`qvm-device` *DEVICE_CLASS* unassign [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+
+Remove assignment of device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
+If no device is given, remove assignments of all *DEVICE_CLASS* devices.
+
+aliases: u
+
+info
+^^^^
+
+| :command:`qvm-device` *DEVICE_CLASS* info [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+
+Show info about the device with *DEVICE_ID* from *BACKEND_DOMAIN* attached to the domain *VMNAME*
+
+aliases: i
 
 Device classes
 ==============
@@ -127,5 +176,6 @@ Authors
 | Rafal Wojtczuk <rafal at invisiblethingslab dot com>
 | Marek Marczykowski <marmarek at invisiblethingslab dot com>
 | Frédéric Pierret <frederic.pierret at qubes dash os dot org>
+| Piotr Bartman-Szwarc <prbartman at invisiblethingslab dot com>
 
 | For complete author list see: https://github.com/QubesOS/qubes-core-admin-client.git

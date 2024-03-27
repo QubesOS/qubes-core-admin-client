@@ -85,9 +85,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'dom0+sr0',
-                b'devtype=cdrom persistent=True read-only=True')] = b'0\x00'
+                b'devtype=cdrom required=True read-only=True')] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Set.persistent', 'dom0+sr0',
+            ('some-vm', 'admin.vm.device.block.Set.assignment', 'dom0+sr0',
             b'False')] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--cdrom=dom0:sr0', 'some-vm'],
             app=self.app)
@@ -108,9 +108,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'dom0+sdb1',
-                b'devtype=disk persistent=True read-only=False')] = b'0\x00'
+                b'devtype=disk required=True read-only=False')] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Set.persistent', 'dom0+sdb1',
+            ('some-vm', 'admin.vm.device.block.Set.assignment', 'dom0+sdb1',
             b'False')] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--hd=dom0:sdb1', 'some-vm'],
             app=self.app)
@@ -131,9 +131,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'dom0+sdb1',
-                b'devtype=disk persistent=True read-only=False')] = b'0\x00'
+                b'devtype=disk required=True read-only=False')] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Set.persistent', 'dom0+sdb1',
+            ('some-vm', 'admin.vm.device.block.Set.assignment', 'dom0+sdb1',
             b'False')] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--drive=hd:dom0:sdb1', 'some-vm'],
             app=self.app)
@@ -155,9 +155,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'dom0+loop12',
-                b'devtype=cdrom persistent=True read-only=True')] = b'0\x00'
+                b'devtype=cdrom required=True read-only=True')] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Set.persistent', 'dom0+loop12',
+            ('some-vm', 'admin.vm.device.block.Set.assignment', 'dom0+loop12',
             b'False')] = b'0\x00'
         mock_subprocess.return_value = b'/dev/loop12'
         qubesadmin.tools.qvm_start.main([
@@ -184,9 +184,9 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'other-vm+loop7',
-                b'devtype=cdrom persistent=True read-only=True')] = b'0\x00'
+                b'devtype=cdrom required=True read-only=True')] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Set.persistent',
+            ('some-vm', 'admin.vm.device.block.Set.assignment',
             'other-vm+loop7',
             b'False')] = b'0\x00'
         self.app.expected_calls[
@@ -216,7 +216,7 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'0\x00power_state=Halted'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'other-vm+loop7',
-                b'devtype=cdrom persistent=True read-only=True')] = b'0\x00'
+                b'devtype=cdrom required=True read-only=True')] = b'0\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = \
             b'2\x00QubesException\x00\x00An error occurred\x00'
@@ -240,7 +240,7 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'0\x00power_state=Halted'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Attach', 'other-vm+loop7',
-                b'devtype=cdrom persistent=True read-only=True')] = \
+                b'devtype=cdrom required=True read-only=True')] = \
             b'2\x00QubesException\x00\x00An error occurred\x00'
         retcode = qubesadmin.tools.qvm_start.main([
             '--cdrom=other-vm:loop7',

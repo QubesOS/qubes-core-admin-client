@@ -159,7 +159,8 @@ def get_drive_assignment(app, drive_str):
         backend_domain,
         ident,
         options=options,
-        persistent=True)
+        attach_automatically=True,
+        required=True)
 
     return assignment
 
@@ -196,8 +197,8 @@ def main(args=None, app=None):
 
             if drive_assignment:
                 # don't reconnect this device after VM reboot
-                domain.devices['block'].update_persistent(
-                    drive_assignment.device, False)
+                domain.devices['block'].update_assignment(
+                    drive_assignment, None)
         except (IOError, OSError, qubesadmin.exc.QubesException,
                 ValueError) as e:
             if drive_assignment:
