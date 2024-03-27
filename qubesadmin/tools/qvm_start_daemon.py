@@ -594,6 +594,8 @@ class DAEMONLauncher:
         xid = self.pacat_domid(vm)
         if not os.path.exists(self.pacat_pidfile(xid)):
             await self.start_audio_for_vm(vm)
+        else:
+            vm.log.info('AUDIO process exists. Skipping.'.format(audiovm))
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
@@ -683,6 +685,26 @@ class DAEMONLauncher:
             self.cleanup_guid(stubdom_xid)
             self.cleanup_pacat_process(stubdom_xid)
 
+    def on_property_audiovm_set(self, vm, _event, **_kwargs):
+        xid, stubdom_xid = vm.xid, vm.stubdom_xid
+        oldvalue = _kwargs.get("oldvalue", None)
+        newvalue = _kwargs.get("newvalue", None)
+        if oldvalue == self.app.local_name and newvalue == "None":
+            if xid != -1:
+                self.cleanup_pacat_process(xid)
+            if stubdom_xid != -1:
+                self.cleanup_pacat_process(stubdom_xid)
+            try:
+                # FIXME: ensure GUI is not started
+                del self.xid_cache[vm.name]
+            except KeyError:
+                return
+        elif newvalue == self.app.local_name:
+            power_state = vm.get_power_state()
+            if power_state == 'Running':
+                asyncio.ensure_future(self.start_audio(vm))
+                self.xid_cache[vm.name] = xid, stubdom_xid
+
     def cleanup_guid(self, xid):
         """
         Clean up after qubes-guid.
@@ -719,6 +741,10 @@ class DAEMONLauncher:
         events.add_handler('connection-established',
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
+
+        events.add_handler("property-set:audiovm", self.on_property_audiovm_set)
+        events.add_handler("property-pre-set:audiovm", self.on_property_audiovm_set)
+        events.add_handler("property-pre-del:audiovm", self.on_property_audiovm_set)
 
     def is_watched(self, vm):
         """
