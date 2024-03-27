@@ -24,76 +24,77 @@ from qubesadmin.label import Label
 
 class TC_00_Label(qubesadmin.tests.QubesTestCase):
     def test_000_list(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
         seen = set()
         for label in self.app.labels.values():
             self.assertNotIn(label.name, seen)
             seen.add(label.name)
-        self.assertEqual(seen, set(['green', 'red', 'black']))
+        self.assertEqual(seen, set(["green", "red", "black"]))
 
     def test_001_list_names(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
         seen = set()
         for label in self.app.labels:
             self.assertNotIn(label, seen)
             seen.add(label)
-        self.assertEqual(seen, set(['green', 'red', 'black']))
+        self.assertEqual(seen, set(["green", "red", "black"]))
 
     def test_002_list_keys(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
         seen = set()
         for label in self.app.labels.keys():
             self.assertNotIn(label, seen)
             seen.add(label)
-        self.assertEqual(seen, set(['green', 'red', 'black']))
+        self.assertEqual(seen, set(["green", "red", "black"]))
 
     def test_003_list_items(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
         seen = set()
         for name, label in self.app.labels.items():
             self.assertEqual(name, label.name)
             self.assertNotIn(name, seen)
             seen.add(name)
-        self.assertEqual(seen, set(['green', 'red', 'black']))
+        self.assertEqual(seen, set(["green", "red", "black"]))
 
     def test_010_get(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
-        label = self.app.labels['green']
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
+        label = self.app.labels["green"]
         self.assertIsInstance(label, Label)
-        self.assertEqual(label.name, 'green')
+        self.assertEqual(label.name, "green")
 
     def test_011_get_color(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.Get', 'green', None)] = \
-            b'0\x000x00FF00'
-        label = self.app.labels['green']
-        self.assertEqual(label.color, '0x00FF00')
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
+        self.app.expected_calls[("dom0", "admin.label.Get", "green", None)] = (
+            b"0\x000x00FF00"
+        )
+        label = self.app.labels["green"]
+        self.assertEqual(label.color, "0x00FF00")
 
     def test_012_get_index(self):
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
         self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
-        self.app.expected_calls[
-            ('dom0', 'admin.label.Index', 'green', None)] = b'0\x003'
-        label = self.app.labels['green']
+            ("dom0", "admin.label.Index", "green", None)
+        ] = b"0\x003"
+        label = self.app.labels["green"]
         self.assertEqual(label.index, 3)
 
     def test_024_get_icon(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00green\nred\nblack\n'
-        label = self.app.labels['green']
-        self.assertEqual(label.icon, 'appvm-green')
+        self.app.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00green\nred\nblack\n"
+        )
+        label = self.app.labels["green"]
+        self.assertEqual(label.icon, "appvm-green")

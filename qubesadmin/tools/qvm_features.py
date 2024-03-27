@@ -22,7 +22,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-features - Manage domain's features'''
+"""qvm-features - Manage domain's features"""
 
 from __future__ import print_function
 
@@ -32,36 +32,49 @@ import qubesadmin
 import qubesadmin.tools
 
 parser = qubesadmin.tools.QubesArgumentParser(
-    vmname_nargs=1,
-    description='manage domain\'s features')
+    vmname_nargs=1, description="manage domain's features"
+)
 
-parser.add_argument('feature', metavar='FEATURE',
-    action='store', nargs='?',
-    help='name of the feature')
+parser.add_argument(
+    "feature",
+    metavar="FEATURE",
+    action="store",
+    nargs="?",
+    help="name of the feature",
+)
 
-parser.add_argument('value', metavar='VALUE',
-    action='store', nargs='?',
-    help='new value of the feature')
+parser.add_argument(
+    "value",
+    metavar="VALUE",
+    action="store",
+    nargs="?",
+    help="new value of the feature",
+)
 
-parser.add_argument('--unset', '--default', '--delete', '-D',
-    dest='delete',
-    action='store_true',
-    help='unset the feature')
+parser.add_argument(
+    "--unset",
+    "--default",
+    "--delete",
+    "-D",
+    dest="delete",
+    action="store_true",
+    help="unset the feature",
+)
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-features`.
+    """Main routine of :program:`qvm-features`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
-    '''
+    """
 
     args = parser.parse_args(args, app=app)
     vm = args.domains[0]
 
     if args.feature is None:
         if args.delete:
-            parser.error('--unset requires a feature')
+            parser.error("--unset requires a feature")
 
         try:
             features = [(feat, vm.features[feat]) for feat in vm.features]
@@ -71,7 +84,7 @@ def main(args=None, app=None):
 
     elif args.delete:
         if args.value is not None:
-            parser.error('cannot both set and unset a value')
+            parser.error("cannot both set and unset a value")
         try:
             del vm.features[args.feature]
         except KeyError:
@@ -96,5 +109,5 @@ def main(args=None, app=None):
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

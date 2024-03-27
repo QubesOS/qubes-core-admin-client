@@ -67,9 +67,11 @@ from qubesadmin.tests import QubesTest
 
 # Helper methods
 
+
 def wrapper(method):
     """Very simple wrapper that prints arguments with which the wrapped method
     was called. Used to wrap qubesd calls to extend this library."""
+
     def _wrapped_method(*args, **kwargs):
         if kwargs:
             print(args, kwargs)
@@ -77,6 +79,7 @@ def wrapper(method):
             print(args)
         return_val = method(*args, **kwargs)
         return return_val
+
     return _wrapped_method
 
 
@@ -84,6 +87,7 @@ class Property:
     """
     Qubes property; holds information on property type and if it's the default.
     """
+
     def __init__(self, value: str, prop_type: str = str, default: bool = False):
         """
         :param value: property value as string
@@ -99,6 +103,7 @@ class Property:
 
     def default_string(self):
         return f"type={self.type} {self.value}"
+
 
 DEFAULT_VM_PROPERTIES = {
     "audiovm": Property("dom0", "vm", True),
@@ -169,29 +174,34 @@ DEFAULT_DOM0_PROPERTIES = {
 }
 
 DEFAULT_DOM0_FEATURES = {
-    'config-usbvm-name': None,
-    'config.default.qubes-update-check': None,
-    'gui-default-allow-fullscreen': '',
-    'gui-default-allow-utf8-titles': '',
-    'gui-default-secure-copy-sequence': 'Ctrl-c',
-    'gui-default-secure-paste-sequence': 'Ctrl-v',
-    'gui-default-trayicon-mode': '',
-    'service.qubes-update-check': 1,
+    "config-usbvm-name": None,
+    "config.default.qubes-update-check": None,
+    "gui-default-allow-fullscreen": "",
+    "gui-default-allow-utf8-titles": "",
+    "gui-default-secure-copy-sequence": "Ctrl-c",
+    "gui-default-secure-paste-sequence": "Ctrl-v",
+    "gui-default-trayicon-mode": "",
+    "service.qubes-update-check": 1,
 }
 
 ALL_KNOWN_FEATURES = [
-    'updates-available', 'internal', "servicevm", 'appmenus-dispvm'
+    "updates-available",
+    "internal",
+    "servicevm",
+    "appmenus-dispvm",
 ]
 
-POSSIBLE_TAGS = ['whonix-updatevm', 'anon-gateway']
+POSSIBLE_TAGS = ["whonix-updatevm", "anon-gateway"]
 
 
 class VolumeInfo:
     """Class that handles the qubesdb VolumeInfo string."""
+
     # TODO: enhancements: different volume usages?
     # TODO: enhancements: obsolete volumes
-    def __init__(self, qube_name: str, volume_type: str,
-                 outdated: bool = False):
+    def __init__(
+        self, qube_name: str, volume_type: str, outdated: bool = False
+    ):
         """
         :param qube_name: name of the associated qube
         :param volume_type: one of the following:
@@ -206,37 +216,39 @@ class VolumeInfo:
         return b"0\x00" + str(self).encode()
 
     def __str__(self):
-        if self.volume_type == 'kernel':
+        if self.volume_type == "kernel":
             result = "pool=linux-kernel\n"
-            result += 'vid=1.1\n'
-            result += 'size=0\n'
-            result += 'usage=0\n'
+            result += "vid=1.1\n"
+            result += "size=0\n"
+            result += "usage=0\n"
             result += "rw=False\n"
         else:
             result = "pool=vm-pool\n"
-            result += f'vid=qubes_dom0/vm-{self.qube_name}-{self.volume_type}\n'
-            result += 'size=123456\n'
-            result += 'usage=0\n'
+            result += f"vid=qubes_dom0/vm-{self.qube_name}-{self.volume_type}\n"
+            result += "size=123456\n"
+            result += "usage=0\n"
             result += "rw=True\n"
 
-        if self.volume_type == 'root':
+        if self.volume_type == "root":
             result += "source=qubes_dom0/vm-template-root\n"
         else:
             result += "source=\n"
 
-        if self.volume_type == 'kernel':
-            result += 'path=/var/lib/qubes/vm-kernels/1.1/modules.img\n'
+        if self.volume_type == "kernel":
+            result += "path=/var/lib/qubes/vm-kernels/1.1/modules.img\n"
         else:
-            name = self.qube_name.replace('-', '--')
-            result += f'path=/dev/mapper/' \
-                      f'qubes_dom0-vm--{name}--{self.volume_type}\n'
+            name = self.qube_name.replace("-", "--")
+            result += (
+                f"path=/dev/mapper/"
+                f"qubes_dom0-vm--{name}--{self.volume_type}\n"
+            )
 
-        if self.volume_type == 'private':
+        if self.volume_type == "private":
             result += "save_on_stop=True\n"
         else:
             result += "save_on_stop=False\n"
 
-        if self.volume_type == 'root':
+        if self.volume_type == "root":
             result += "snap_on_start=True\n"
         else:
             result += "snap_on_start=False\n"
@@ -252,12 +264,18 @@ class MockQube:
     """Object that helps generate qube-related calls. Initializing the object
     already adds all relevant calls to the qapp object. If changes were made,
     run update_calls to notify the qapp object of them."""
-    def __init__(self, name: str, qapp: QubesTest,
-                 klass: str = 'AppVM', running: bool = False,
-                 features: Optional[Dict] = None,
-                 tags: Optional[List] = None,
-                 override_default_props: Optional[Dict] = None,
-                 **kwargs):
+
+    def __init__(
+        self,
+        name: str,
+        qapp: QubesTest,
+        klass: str = "AppVM",
+        running: bool = False,
+        features: Optional[Dict] = None,
+        tags: Optional[List] = None,
+        override_default_props: Optional[Dict] = None,
+        **kwargs,
+    ):
         """
         Creates a mock qube object and updates all relevant calls.
         :param name: qube name
@@ -294,16 +312,17 @@ class MockQube:
                 else:
                     self.properties[prop].value = str(value)
 
-        if self.klass == 'AdminVM':
-            self.properties["icon"].value = 'adminvm-black'
+        if self.klass == "AdminVM":
+            self.properties["icon"].value = "adminvm-black"
         else:
-            self.properties["icon"].value = self.klass.lower() + "-" + \
-                                            self.properties["label"].value
+            self.properties["icon"].value = (
+                self.klass.lower() + "-" + self.properties["label"].value
+            )
 
         self.update_calls()
 
     def __setattr__(self, key, value):
-        if key != 'properties' and key in self.properties:
+        if key != "properties" and key in self.properties:
             self.properties[key].value = str(value)
             self.properties[key].default = False
         else:
@@ -325,13 +344,13 @@ class MockQube:
     def _add_to_vm_list(self, name: str, klass: str):
         """Modify existing VM list call to add this qube.
         Should not be called twice."""
-        state = 'Running' if self.running else 'Halted'
+        state = "Running" if self.running else "Halted"
 
-        vm_list_call = ('dom0', 'admin.vm.List', None, None)
-        vm_list = b'0\x00'
+        vm_list_call = ("dom0", "admin.vm.List", None, None)
+        vm_list = b"0\x00"
         if vm_list_call in self.qapp.expected_calls:
             vm_list = self.qapp.expected_calls[vm_list_call]
-        list_call = f'{name} class={klass} state={state}\n'.encode()
+        list_call = f"{name} class={klass} state={state}\n".encode()
         vm_list += list_call
         self.qapp.expected_calls[vm_list_call] = vm_list
 
@@ -343,30 +362,31 @@ class MockQube:
 
         # create all propertyget calls
         for prop, value in self.properties.items():
-            if prop == 'template' and \
-                    self.klass in ("TemplateVM", "StandaloneVM"):
+            if prop == "template" and self.klass in (
+                "TemplateVM",
+                "StandaloneVM",
+            ):
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.property.Get", prop, None)] = \
-                    b'2\x00QubesNoSuchPropertyError\x00\x00No such property\x00'
+                    (self.name, "admin.vm.property.Get", prop, None)
+                ] = b"2\x00QubesNoSuchPropertyError\x00\x00No such property\x00"
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.property.GetDefault", prop, None)] = \
-                    b'2\x00QubesNoSuchPropertyError\x00\x00No such property\x00'
+                    (self.name, "admin.vm.property.GetDefault", prop, None)
+                ] = b"2\x00QubesNoSuchPropertyError\x00\x00No such property\x00"
                 continue
-            properties_getall += \
-                f"{prop} {value}\n".encode()
+            properties_getall += f"{prop} {value}\n".encode()
             self.qapp.expected_calls[
-                (self.name, "admin.vm.property.Get", prop, None)] = \
-                b"0\x00" + str(value).encode()
+                (self.name, "admin.vm.property.Get", prop, None)
+            ] = (b"0\x00" + str(value).encode())
             if prop in DEFAULT_VM_PROPERTIES:
                 default_value = DEFAULT_VM_PROPERTIES[prop]
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.property.GetDefault", prop, None)] = \
-                    b"0\x00" + default_value.default_string().encode()
+                    (self.name, "admin.vm.property.GetDefault", prop, None)
+                ] = (b"0\x00" + default_value.default_string().encode())
 
         # the property.GetAll call is optional, but let's have it, why not
         self.qapp.expected_calls[
-            (self.name, "admin.vm.property.GetAll", None, None)] = \
-            properties_getall
+            (self.name, "admin.vm.property.GetAll", None, None)
+        ] = properties_getall
 
         # features: we add both feature.Get and feature.CheckWithTemplate, with
         # the same resulting value
@@ -375,27 +395,46 @@ class MockQube:
         for feature_name, value in self.features.items():
             if value is not None:
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.feature.Get", feature_name, None)] = \
-                    b"0\x00" + str(value).encode()
+                    (self.name, "admin.vm.feature.Get", feature_name, None)
+                ] = (b"0\x00" + str(value).encode())
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.feature.CheckWithTemplate",
-                     feature_name, None)] = b"0\x00" + str(value).encode()
+                    (
+                        self.name,
+                        "admin.vm.feature.CheckWithTemplate",
+                        feature_name,
+                        None,
+                    )
+                ] = (
+                    b"0\x00" + str(value).encode()
+                )
             else:
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.feature.Get", feature_name, None)] = \
-                    b'2\x00QubesFeatureNotFoundError\x00\x00' + \
-                    str(feature_name).encode() + b'\x00'
+                    (self.name, "admin.vm.feature.Get", feature_name, None)
+                ] = (
+                    b"2\x00QubesFeatureNotFoundError\x00\x00"
+                    + str(feature_name).encode()
+                    + b"\x00"
+                )
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.feature.CheckWithTemplate",
-                     feature_name, None)] = \
-                    b'2\x00QubesFeatureNotFoundError\x00\x00' + \
-                    str(feature_name).encode() + b'\x00'
+                    (
+                        self.name,
+                        "admin.vm.feature.CheckWithTemplate",
+                        feature_name,
+                        None,
+                    )
+                ] = (
+                    b"2\x00QubesFeatureNotFoundError\x00\x00"
+                    + str(feature_name).encode()
+                    + b"\x00"
+                )
 
         # list all features correctly
         self.qapp.expected_calls[
-            (self.name, "admin.vm.feature.List", None, None)] = \
-            ("0\x00" + "".join(f"{feature}\n" for feature
-                               in self.features.values())).encode()
+            (self.name, "admin.vm.feature.List", None, None)
+        ] = (
+            "0\x00"
+            + "".join(f"{feature}\n" for feature in self.features.values())
+        ).encode()
 
         # setup all volumeInfo related calls
         self.setup_volume_calls()
@@ -403,15 +442,17 @@ class MockQube:
         # tags
         if self.tags:
             self.qapp.expected_calls[
-                (self.name, "admin.vm.tag.List", None, None)] = \
-                ("0\x00" + "".join(f"{tag}\n" for tag in self.tags)).encode()
+                (self.name, "admin.vm.tag.List", None, None)
+            ] = ("0\x00" + "".join(f"{tag}\n" for tag in self.tags)).encode()
             for tag in self.tags:
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.tag.Get", tag, None)] = b"0\x001"
+                    (self.name, "admin.vm.tag.Get", tag, None)
+                ] = b"0\x001"
 
         for tag in POSSIBLE_TAGS:
             self.qapp.expected_calls[
-                (self.name, "admin.vm.tag.Get", tag, None)] = b"0\x000"
+                (self.name, "admin.vm.tag.Get", tag, None)
+            ] = b"0\x000"
 
         self.setup_device_calls()
 
@@ -419,67 +460,79 @@ class MockQube:
 
     def setup_volume_calls(self):
         self.qapp.expected_calls[
-            (self.name, 'admin.vm.volume.List', None, None)] = \
-            b'0\x00root\nprivate\nvolatile\nkernel\n'
+            (self.name, "admin.vm.volume.List", None, None)
+        ] = b"0\x00root\nprivate\nvolatile\nkernel\n"
         self.qapp.expected_calls[
-            (self.name, 'admin.vm.volume.Info', 'root', None)] = \
-            VolumeInfo(self.name, "root").response_string()
+            (self.name, "admin.vm.volume.Info", "root", None)
+        ] = VolumeInfo(self.name, "root").response_string()
         self.qapp.expected_calls[
-            (self.name, 'admin.vm.volume.Info', 'private', None)] = \
-            VolumeInfo(self.name, "root").response_string()
+            (self.name, "admin.vm.volume.Info", "private", None)
+        ] = VolumeInfo(self.name, "root").response_string()
         self.qapp.expected_calls[
-            (self.name, 'admin.vm.volume.Info', 'volatile', None)] = \
-            VolumeInfo(self.name, "root").response_string()
+            (self.name, "admin.vm.volume.Info", "volatile", None)
+        ] = VolumeInfo(self.name, "root").response_string()
         self.qapp.expected_calls[
-            (self.name, 'admin.vm.volume.Info', 'kernel', None)] = \
-            VolumeInfo(self.name, "root").response_string()
+            (self.name, "admin.vm.volume.Info", "kernel", None)
+        ] = VolumeInfo(self.name, "root").response_string()
 
     def setup_device_calls(self):
         # pci devices
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.pci.List", None, None)] = b"0\x00"
+            (self.name, "admin.vm.device.pci.List", None, None)
+        ] = b"0\x00"
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.block.List", None, None)] = \
-            b"0\x00"
+            (self.name, "admin.vm.device.block.List", None, None)
+        ] = b"0\x00"
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.usb.List", None, None)] = \
-            b"0\x00"
+            (self.name, "admin.vm.device.usb.List", None, None)
+        ] = b"0\x00"
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.mic.List", None, None)] = \
-            b"0\x00"
+            (self.name, "admin.vm.device.mic.List", None, None)
+        ] = b"0\x00"
 
         # available devices
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.block.Available", None, None)] = \
-            b"0\x00"
+            (self.name, "admin.vm.device.block.Available", None, None)
+        ] = b"0\x00"
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.usb.Available", None, None)] = \
-            b"0\x00"
+            (self.name, "admin.vm.device.usb.Available", None, None)
+        ] = b"0\x00"
         self.qapp.expected_calls[
-            (self.name, "admin.vm.device.mic.Available", None, None)] = \
-            b"0\x00"
+            (self.name, "admin.vm.device.mic.Available", None, None)
+        ] = b"0\x00"
 
 
 class MockAdminVM(MockQube):
     def __init__(self, qapp):
-        super().__init__('dom0', qapp, klass='AdminVM', running=True,
-                         features=DEFAULT_DOM0_FEATURES,
-                         override_default_props=DEFAULT_DOM0_PROPERTIES)
+        super().__init__(
+            "dom0",
+            qapp,
+            klass="AdminVM",
+            running=True,
+            features=DEFAULT_DOM0_FEATURES,
+            override_default_props=DEFAULT_DOM0_PROPERTIES,
+        )
         # make all properties that are unknown give an 'unknown property' error
         for property_name in DEFAULT_VM_PROPERTIES.keys():
             if property_name not in self.properties:
                 self.qapp.expected_calls[
-                    (self.name, "admin.vm.property.Get",
-                        property_name, None)] = \
-                    b'2\x00QubesNoSuchPropertyError\x00\x00No such property\x00'
+                    (self.name, "admin.vm.property.Get", property_name, None)
+                ] = b"2\x00QubesNoSuchPropertyError\x00\x00No such property\x00"
                 continue
 
 
 class MockDevice:
     """helper for adding a device to a qubes test instance"""
-    def __init__(self, qapp: QubesTest, dev_class: str,
-                 description: str, dev_id: str, backend_vm: str,
-                 attached: Optional[str] = None):
+
+    def __init__(
+        self,
+        qapp: QubesTest,
+        dev_class: str,
+        description: str,
+        dev_id: str,
+        backend_vm: str,
+        attached: Optional[str] = None,
+    ):
         """
         :param qapp: QubesTest object
         :param dev_class: block / mic / usb
@@ -498,50 +551,78 @@ class MockDevice:
 
         # modify call
         current_response = self.qapp.expected_calls[
-            (self.backend_vm, f"admin.vm.device.{self.dev_class}.Available",
-             None, None)]
+            (
+                self.backend_vm,
+                f"admin.vm.device.{self.dev_class}.Available",
+                None,
+                None,
+            )
+        ]
 
         self.qapp.expected_calls[
-            (self.backend_vm, f"admin.vm.device.{self.dev_class}.Available",
-             None, None)] = current_response + self.device_string().encode()
+            (
+                self.backend_vm,
+                f"admin.vm.device.{self.dev_class}.Available",
+                None,
+                None,
+            )
+        ] = (
+            current_response + self.device_string().encode()
+        )
 
         if self.attached:
             current_response = self.qapp.expected_calls[
-                (self.attached, f"admin.vm.device.{self.dev_class}.List",
-                 None, None)]
+                (
+                    self.attached,
+                    f"admin.vm.device.{self.dev_class}.List",
+                    None,
+                    None,
+                )
+            ]
             self.qapp.expected_calls[
-                (self.attached, f"admin.vm.device.{self.dev_class}.List",
-                 None, None)] = current_response + \
-                                self.attachment_string().encode()
+                (
+                    self.attached,
+                    f"admin.vm.device.{self.dev_class}.List",
+                    None,
+                    None,
+                )
+            ] = (
+                current_response + self.attachment_string().encode()
+            )
 
     def device_string(self):
-        if self.dev_class == 'block':
-            return f'{self.dev_id} mode=w device_node=/dev/{self.dev_id} ' \
-                   f'size=123456 description={self.description}\n'
+        if self.dev_class == "block":
+            return (
+                f"{self.dev_id} mode=w device_node=/dev/{self.dev_id} "
+                f"size=123456 description={self.description}\n"
+            )
         else:
-            return f'{self.dev_id} description={self.description}\n'
+            return f"{self.dev_id} description={self.description}\n"
 
     def attachment_string(self):
-        return f'{self.backend_vm}+{self.dev_id} persistent=no\n'
+        return f"{self.backend_vm}+{self.dev_id} persistent=no\n"
+
 
 class QubesTestWrapper(QubesTest):
     def __init__(self):
         super().__init__()
-        self._local_name = 'dom0'  # pylint: disable=protected-access
-        self.app.qubesd_connection_type = 'qrexec'
+        self._local_name = "dom0"  # pylint: disable=protected-access
+        self.app.qubesd_connection_type = "qrexec"
 
-        self._qubes: Dict[str, MockQube] = {'dom0': MockAdminVM(self)}
+        self._qubes: Dict[str, MockQube] = {"dom0": MockAdminVM(self)}
 
         # setup labels
-        self.expected_calls[('dom0', 'admin.label.List', None, None)] = \
-            b'0\x00red\norange\nyellow\ngreen\ngray\nblue\npurple\nblack\n'
+        self.expected_calls[("dom0", "admin.label.List", None, None)] = (
+            b"0\x00red\norange\nyellow\ngreen\ngray\nblue\npurple\nblack\n"
+        )
 
         # setup pools:
-        self.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
-            b'0\x00linux-kernel\nlvm\nfile\n'
-        self.expected_calls[('dom0', 'admin.pool.volume.List',
-                             'linux-kernel', None)] = \
-            b'0\x001.1\nmisc\n4.2\n'
+        self.expected_calls[("dom0", "admin.pool.List", None, None)] = (
+            b"0\x00linux-kernel\nlvm\nfile\n"
+        )
+        self.expected_calls[
+            ("dom0", "admin.pool.volume.List", "linux-kernel", None)
+        ] = b"0\x001.1\nmisc\n4.2\n"
 
         self.populate_feature_calls()
 
@@ -563,14 +644,21 @@ class QubesTestWrapper(QubesTest):
             for feature in known_features:
                 calls = [
                     (qube.name, "admin.vm.feature.Get", feature, None),
-                    (qube.name, 'admin.vm.feature.CheckWithTemplate',
-                     feature, None)]
+                    (
+                        qube.name,
+                        "admin.vm.feature.CheckWithTemplate",
+                        feature,
+                        None,
+                    ),
+                ]
                 for call in calls:
                     if call in self.expected_calls:
                         continue
-                    self.expected_calls[call] = \
-                        b'2\x00QubesFeatureNotFoundError\x00\x00' + \
-                        str(feature).encode() + b'\x00'
+                    self.expected_calls[call] = (
+                        b"2\x00QubesFeatureNotFoundError\x00\x00"
+                        + str(feature).encode()
+                        + b"\x00"
+                    )
 
 
 class MockQubes(QubesTestWrapper):
@@ -580,23 +668,26 @@ class MockQubes(QubesTestWrapper):
     Available pools: linux-kernel, lvm and file.
     Available linux kernels: 1.1, misc and 4.2
     """
+
     def __init__(self):
         super().__init__()
-        self._qubes['sys-net'] = MockQube(
-                name="sys-net", qapp=self,
-                running=True, template='fedora-36',
-                provides_network=True,
-                features={
-                    'service.qubes-updates-proxy': 1, 'servicevm': '1'})
-        self._qubes['fedora-36'] = MockQube(
-                name="fedora-36", qapp=self,
-                klass='TemplateVM', netvm='')
+        self._qubes["sys-net"] = MockQube(
+            name="sys-net",
+            qapp=self,
+            running=True,
+            template="fedora-36",
+            provides_network=True,
+            features={"service.qubes-updates-proxy": 1, "servicevm": "1"},
+        )
+        self._qubes["fedora-36"] = MockQube(
+            name="fedora-36", qapp=self, klass="TemplateVM", netvm=""
+        )
 
-        self._qubes['dom0'].clockvm = "sys-net"
-        self._qubes['dom0'].default_dispvm = "fedora-36"
-        self._qubes['dom0'].default_netvm = "sys-net"
-        self._qubes['dom0'].default_template = "fedora-36"
-        self._qubes['dom0'].updatevm = "sys-net"
+        self._qubes["dom0"].clockvm = "sys-net"
+        self._qubes["dom0"].default_dispvm = "fedora-36"
+        self._qubes["dom0"].default_netvm = "sys-net"
+        self._qubes["dom0"].default_template = "fedora-36"
+        self._qubes["dom0"].updatevm = "sys-net"
 
         self.update_vm_calls()
 
@@ -605,89 +696,139 @@ class MockQubesComplete(MockQubes):
     """
     A complex Qubes setup, with multiple qubes.
     """
+
     def __init__(self):
         super().__init__()
-        self._qubes['sys-firewall'] = MockQube(
-            name="sys-firewall", qapp=self, netvm="sys-net",
-            provides_network=True, features={'servicevm': '1'})
+        self._qubes["sys-firewall"] = MockQube(
+            name="sys-firewall",
+            qapp=self,
+            netvm="sys-net",
+            provides_network=True,
+            features={"servicevm": "1"},
+        )
 
-        self._qubes['sys-usb'] = MockQube(
-            name="sys-usb", qapp=self, running=True,
-            features={'supported-service.qubes-u2f-proxy': '1',
-                      'servicevm': '1'})
+        self._qubes["sys-usb"] = MockQube(
+            name="sys-usb",
+            qapp=self,
+            running=True,
+            features={
+                "supported-service.qubes-u2f-proxy": "1",
+                "servicevm": "1",
+            },
+        )
 
-        self._qubes['fedora-35'] = MockQube(
-            name="fedora-35", qapp=self, klass='TemplateVM', netvm='',
-            features={'supported-service.qubes-u2f-proxy': '1',
-                      'service.qubes-update-check': '1',
-                      'updates-available': 1})
+        self._qubes["fedora-35"] = MockQube(
+            name="fedora-35",
+            qapp=self,
+            klass="TemplateVM",
+            netvm="",
+            features={
+                "supported-service.qubes-u2f-proxy": "1",
+                "service.qubes-update-check": "1",
+                "updates-available": 1,
+            },
+        )
 
-        self._qubes['default-dvm'] = MockQube(
-            name="default-dvm", qapp=self, klass='DispVM',
-            template_for_dispvms='True', template='fedora-36',
-            features={'appmenus-dispvm': '1'})
+        self._qubes["default-dvm"] = MockQube(
+            name="default-dvm",
+            qapp=self,
+            klass="DispVM",
+            template_for_dispvms="True",
+            template="fedora-36",
+            features={"appmenus-dispvm": "1"},
+        )
 
-        self._qubes['test-vm'] = MockQube(
-            name="test-vm", qapp=self,
-            features={'service.qubes-u2f-proxy': '1',
-                      'supported-service.qubes-u2f-proxy': '1'})
+        self._qubes["test-vm"] = MockQube(
+            name="test-vm",
+            qapp=self,
+            features={
+                "service.qubes-u2f-proxy": "1",
+                "supported-service.qubes-u2f-proxy": "1",
+            },
+        )
 
-        self._qubes['test-blue'] = MockQube(
-            name="test-blue", running=True, qapp=self, label="blue")
+        self._qubes["test-blue"] = MockQube(
+            name="test-blue", running=True, qapp=self, label="blue"
+        )
 
-        self._qubes['test-red'] = MockQube(
-            name="test-red", qapp=self, label="red")
+        self._qubes["test-red"] = MockQube(
+            name="test-red", qapp=self, label="red"
+        )
 
-        self._qubes['test-standalone'] = MockQube(
-            name="test-standalone", qapp=self, klass="StandaloneVM",
-            label="green")
+        self._qubes["test-standalone"] = MockQube(
+            name="test-standalone",
+            qapp=self,
+            klass="StandaloneVM",
+            label="green",
+        )
 
-        self._qubes['vault'] = MockQube(
-            name="vault", qapp=self, netvm="")
+        self._qubes["vault"] = MockQube(name="vault", qapp=self, netvm="")
 
         # # this system has some reasonable defaults
-        self._qubes['dom0'].default_dispvm = "default-dvm"
+        self._qubes["dom0"].default_dispvm = "default-dvm"
 
         self.update_vm_calls()
 
         # also add a bunch of devices
         self._devices = [
-            MockDevice(self, 'mic', 'Internal Microphone', 'mic', 'dom0',
-                       attached='test-blue'),
+            MockDevice(
+                self,
+                "mic",
+                "Internal Microphone",
+                "mic",
+                "dom0",
+                attached="test-blue",
+            ),
             # the usb stick appears as multiple devices, as they are wont to
-            MockDevice(self, 'usb', 'My USB Drive', '2-1', 'sys-usb'),
-            MockDevice(self, 'block', ' ()', 'sda', 'sys-usb'),
-            MockDevice(self, 'block', '(USB DISK)', 'sda1', 'sys-usb'),
-            MockDevice(self, 'usb', 'Internal Camera', '2-10', 'sys-usb'),
+            MockDevice(self, "usb", "My USB Drive", "2-1", "sys-usb"),
+            MockDevice(self, "block", " ()", "sda", "sys-usb"),
+            MockDevice(self, "block", "(USB DISK)", "sda1", "sys-usb"),
+            MockDevice(self, "usb", "Internal Camera", "2-10", "sys-usb"),
         ]
 
 
 class MockQubesWhonix(MockQubesComplete):
     """Complete Qubes system, with additional whonix qubes."""
+
     def __init__(self):
         super().__init__()
 
-        self._qubes['sys-whonix'] = MockQube(
-            name="sys-whonix", qapp=self, template="whonix-gw-15",
-            features={'service.qubes-updates-proxy': '1'},
-            tags=['anon-gateway'])
+        self._qubes["sys-whonix"] = MockQube(
+            name="sys-whonix",
+            qapp=self,
+            template="whonix-gw-15",
+            features={"service.qubes-updates-proxy": "1"},
+            tags=["anon-gateway"],
+        )
 
-        self._qubes['anon-whonix'] = MockQube(
-            name="anon-whonix", qapp=self, template="whonix-gw-15",
-            tags=['anon-gateway'])
+        self._qubes["anon-whonix"] = MockQube(
+            name="anon-whonix",
+            qapp=self,
+            template="whonix-gw-15",
+            tags=["anon-gateway"],
+        )
 
-        self._qubes['whonix-gw-15'] = MockQube(
-            name="whonix-gw-15", qapp=self, klass='TemplateVM', netvm='',
-            tags=['whonix-updatevm'])
+        self._qubes["whonix-gw-15"] = MockQube(
+            name="whonix-gw-15",
+            qapp=self,
+            klass="TemplateVM",
+            netvm="",
+            tags=["whonix-updatevm"],
+        )
 
-        self._qubes['whonix-gw-14'] = MockQube(
-            name="whonix-gw-14", qapp=self, klass='TemplateVM', netvm='',
-            tags=['whonix-updatevm'])
+        self._qubes["whonix-gw-14"] = MockQube(
+            name="whonix-gw-14",
+            qapp=self,
+            klass="TemplateVM",
+            netvm="",
+            tags=["whonix-updatevm"],
+        )
 
         self.update_vm_calls()
 
 
 # Mock Stats Dispatcher object
+
 
 async def noop_coro(*_args):
     """A very simple do-nothing coroutine, used to mock qubes events."""
@@ -697,7 +838,8 @@ async def noop_coro(*_args):
 
 class MockDispatcher(qubesadmin.events.EventsDispatcher):
     """Create a mock EventsDispatcher object that does not actually dispatch
-     events"""
+    events"""
+
     def __init__(self, qapp, **kwargs):
         super().__init__(qapp, **kwargs)
         self._listen_for_events = noop_coro

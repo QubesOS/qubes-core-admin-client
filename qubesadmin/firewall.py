@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Firewall configuration interface'''
+"""Firewall configuration interface"""
 
 import datetime
 import socket
@@ -27,18 +27,19 @@ import string
 
 
 class RuleOption(object):
-    '''Base class for a single rule element'''
+    """Base class for a single rule element"""
+
     def __init__(self, value):
         self._value = str(value)
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
+        """API representation of this rule element"""
         raise NotImplementedError
 
     @property
     def pretty_value(self):
-        '''Human readable representation'''
+        """Human readable representation"""
         return str(self)
 
     def __str__(self):
@@ -50,48 +51,55 @@ class RuleOption(object):
 
 # noinspection PyAbstractClass
 class RuleChoice(RuleOption):
-    '''Base class for multiple-choices rule elements'''
+    """Base class for multiple-choices rule elements"""
+
     # pylint: disable=abstract-method
     def __init__(self, value):
         super().__init__(value)
-        self.allowed_values = \
-            [v for k, v in self.__class__.__dict__.items()
-                if not k.startswith('__') and isinstance(v, str) and
-                   not v.startswith('__')]
+        self.allowed_values = [
+            v
+            for k, v in self.__class__.__dict__.items()
+            if not k.startswith("__")
+            and isinstance(v, str)
+            and not v.startswith("__")
+        ]
         if value not in self.allowed_values:
             raise ValueError(value)
 
 
 class Action(RuleChoice):
-    '''Rule action'''
-    accept = 'accept'
-    drop = 'drop'
+    """Rule action"""
+
+    accept = "accept"
+    drop = "drop"
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'action=' + str(self)
+        """API representation of this rule element"""
+        return "action=" + str(self)
 
 
 class Proto(RuleChoice):
-    '''Protocol name'''
-    tcp = 'tcp'
-    udp = 'udp'
-    icmp = 'icmp'
+    """Protocol name"""
+
+    tcp = "tcp"
+    udp = "udp"
+    icmp = "icmp"
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'proto=' + str(self)
+        """API representation of this rule element"""
+        return "proto=" + str(self)
 
 
 class DstHost(RuleOption):
-    '''Represent host/network address: either IPv4, IPv6, or DNS name'''
+    """Represent host/network address: either IPv4, IPv6, or DNS name"""
+
     def __init__(self, value, prefixlen=None):
         # TODO: in python >= 3.3 ipaddress module could be used
-        if value.count('/') > 1:
-            raise ValueError('Too many /: ' + value)
-        if not value.count('/'):
+        if value.count("/") > 1:
+            raise ValueError("Too many /: " + value)
+        if not value.count("/"):
             # add prefix length to bare IP addresses
             try:
                 socket.inet_pton(socket.AF_INET6, value)
@@ -101,155 +109,166 @@ class DstHost(RuleOption):
                     self.prefixlen = 128
                 if self.prefixlen < 0 or self.prefixlen > 128:
                     raise ValueError(
-                        'netmask for IPv6 must be between 0 and 128')
-                value += '/' + str(self.prefixlen)
-                self.type = 'dst6'
+                        "netmask for IPv6 must be between 0 and 128"
+                    )
+                value += "/" + str(self.prefixlen)
+                self.type = "dst6"
             except socket.error:
                 try:
                     socket.inet_pton(socket.AF_INET, value)
-                    if value.count('.') != 3:
+                    if value.count(".") != 3:
                         raise ValueError(
-                            'Invalid number of dots in IPv4 address')
+                            "Invalid number of dots in IPv4 address"
+                        )
                     if prefixlen is not None:
                         self.prefixlen = prefixlen
                     else:
                         self.prefixlen = 32
                     if self.prefixlen < 0 or self.prefixlen > 32:
                         raise ValueError(
-                            'netmask for IPv4 must be between 0 and 32')
-                    value += '/' + str(self.prefixlen)
-                    self.type = 'dst4'
+                            "netmask for IPv4 must be between 0 and 32"
+                        )
+                    value += "/" + str(self.prefixlen)
+                    self.type = "dst4"
                 except socket.error:
-                    self.type = 'dsthost'
+                    self.type = "dsthost"
                     self.prefixlen = 0
-                    safe_set = string.ascii_lowercase + string.digits + '-._'
+                    safe_set = string.ascii_lowercase + string.digits + "-._"
                     if not all(c in safe_set for c in value):
-                        raise ValueError('Invalid hostname')
+                        raise ValueError("Invalid hostname")
         else:
-            host, prefixlen = value.split('/', 1)
+            host, prefixlen = value.split("/", 1)
             prefixlen = int(prefixlen)
             if prefixlen < 0:
-                raise ValueError('netmask must be non-negative')
+                raise ValueError("netmask must be non-negative")
             self.prefixlen = prefixlen
             try:
                 socket.inet_pton(socket.AF_INET6, host)
                 if prefixlen > 128:
-                    raise ValueError('netmask for IPv6 must be <= 128')
-                self.type = 'dst6'
+                    raise ValueError("netmask for IPv6 must be <= 128")
+                self.type = "dst6"
             except socket.error:
                 try:
                     socket.inet_pton(socket.AF_INET, host)
                     if prefixlen > 32:
-                        raise ValueError('netmask for IPv4 must be <= 32')
-                    self.type = 'dst4'
-                    if host.count('.') != 3:
+                        raise ValueError("netmask for IPv4 must be <= 32")
+                    self.type = "dst4"
+                    if host.count(".") != 3:
                         raise ValueError(
-                            'Invalid number of dots in IPv4 address')
+                            "Invalid number of dots in IPv4 address"
+                        )
                 except socket.error:
-                    raise ValueError('Invalid IP address: ' + host)
+                    raise ValueError("Invalid IP address: " + host)
 
         super().__init__(value)
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        if self.prefixlen == 0 and self.type != 'dsthost':
+        """API representation of this rule element"""
+        if self.prefixlen == 0 and self.type != "dsthost":
             # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
             # so skip it
             return None
-        return self.type + '=' + str(self)
+        return self.type + "=" + str(self)
 
 
 class DstPorts(RuleOption):
-    '''Destination port(s), for TCP/UDP only'''
+    """Destination port(s), for TCP/UDP only"""
+
     def __init__(self, value):
         if isinstance(value, int):
             value = str(value)
-        if value.count('-') == 1:
-            self.range = [int(x) for x in value.split('-', 1)]
-        elif not value.count('-'):
+        if value.count("-") == 1:
+            self.range = [int(x) for x in value.split("-", 1)]
+        elif not value.count("-"):
             self.range = [int(value), int(value)]
         else:
             raise ValueError(value)
         if any(port < 0 or port > 65536 for port in self.range):
-            raise ValueError('Ports out of range')
+            raise ValueError("Ports out of range")
         if self.range[0] > self.range[1]:
-            raise ValueError('Invalid port range')
+            raise ValueError("Invalid port range")
         super().__init__(
-            str(self.range[0]) if self.range[0] == self.range[1]
-            else '{!s}-{!s}'.format(*self.range))
+            str(self.range[0])
+            if self.range[0] == self.range[1]
+            else "{!s}-{!s}".format(*self.range)
+        )
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'dstports=' + '{!s}-{!s}'.format(*self.range)
+        """API representation of this rule element"""
+        return "dstports=" + "{!s}-{!s}".format(*self.range)
 
 
 class IcmpType(RuleOption):
-    '''ICMP packet type'''
+    """ICMP packet type"""
+
     def __init__(self, value):
         super().__init__(value)
         value = int(value)
         if value < 0 or value > 255:
-            raise ValueError('ICMP type out of range')
+            raise ValueError("ICMP type out of range")
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'icmptype=' + str(self)
+        """API representation of this rule element"""
+        return "icmptype=" + str(self)
 
 
 class SpecialTarget(RuleChoice):
-    '''Special destination'''
-    dns = 'dns'
+    """Special destination"""
+
+    dns = "dns"
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'specialtarget=' + str(self)
+        """API representation of this rule element"""
+        return "specialtarget=" + str(self)
 
 
 class Expire(RuleOption):
-    '''Rule expire time'''
+    """Rule expire time"""
+
     def __init__(self, value):
         super().__init__(value)
         self.datetime = datetime.datetime.utcfromtimestamp(int(value))
 
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'expire=' + str(self)
+        """API representation of this rule element"""
+        return "expire=" + str(self)
 
     @property
     def expired(self):
-        '''Has this rule expired already?'''
+        """Has this rule expired already?"""
         return self.datetime < datetime.datetime.utcnow()
 
     @property
     def pretty_value(self):
-        '''Human readable representation'''
+        """Human readable representation"""
         now = datetime.datetime.utcnow()
         duration = (self.datetime - now).total_seconds()
         return "{:+.0f}s".format(duration)
 
 
 class Comment(RuleOption):
-    '''User comment'''
+    """User comment"""
+
     @property
     def rule(self):
-        '''API representation of this rule element'''
-        return 'comment=' + str(self)
+        """API representation of this rule element"""
+        return "comment=" + str(self)
 
 
 class Rule(object):
-    '''A single firewall rule'''
+    """A single firewall rule"""
 
     def __init__(self, rule, **kwargs):
-        '''Single firewall rule
+        """Single firewall rule
 
         :param xml: XML element describing rule, or None
         :param kwargs: rule elements
-        '''
+        """
         self._action = None
         self._proto = None
         self._dsthost = None
@@ -261,34 +280,46 @@ class Rule(object):
 
         rule_dict = {}
         if rule is not None:
-            rule_opts, _, comment = rule.partition('comment=')
+            rule_opts, _, comment = rule.partition("comment=")
 
-            rule_dict = dict(rule_opt.split('=', 1) for rule_opt in
-                rule_opts.split(' ') if rule_opt)
+            rule_dict = dict(
+                rule_opt.split("=", 1)
+                for rule_opt in rule_opts.split(" ")
+                if rule_opt
+            )
             if comment:
-                rule_dict['comment'] = comment
+                rule_dict["comment"] = comment
         rule_dict.update(kwargs)
 
-        rule_elements = ('action', 'proto', 'dsthost', 'dst4', 'dst6',
-            'specialtarget', 'dstports', 'icmptype', 'expire', 'comment')
+        rule_elements = (
+            "action",
+            "proto",
+            "dsthost",
+            "dst4",
+            "dst6",
+            "specialtarget",
+            "dstports",
+            "icmptype",
+            "expire",
+            "comment",
+        )
         for rule_opt in rule_elements:
             value = rule_dict.pop(rule_opt, None)
             if value is None:
                 continue
-            if rule_opt in ('dst4', 'dst6'):
-                rule_opt = 'dsthost'
+            if rule_opt in ("dst4", "dst6"):
+                rule_opt = "dsthost"
             setattr(self, rule_opt, value)
 
         if rule_dict:
-            raise ValueError('Unknown rule elements: {!r}'.format(
-                rule_dict))
+            raise ValueError("Unknown rule elements: {!r}".format(rule_dict))
 
         if self.action is None:
-            raise ValueError('missing action=')
+            raise ValueError("missing action=")
 
     @property
     def action(self):
-        '''rule action'''
+        """rule action"""
         return self._action
 
     @action.setter
@@ -299,22 +330,22 @@ class Rule(object):
 
     @property
     def proto(self):
-        '''protocol to match'''
+        """protocol to match"""
         return self._proto
 
     @proto.setter
     def proto(self, value):
         if value is not None and not isinstance(value, Proto):
             value = Proto(value)
-        if value not in ('tcp', 'udp'):
+        if value not in ("tcp", "udp"):
             self.dstports = None
-        if value not in ('icmp',):
+        if value not in ("icmp",):
             self.icmptype = None
         self._proto = value
 
     @property
     def dsthost(self):
-        '''destination host/network'''
+        """destination host/network"""
         return self._dsthost
 
     @dsthost.setter
@@ -325,36 +356,37 @@ class Rule(object):
 
     @property
     def dstports(self):
-        ''''Destination port(s) (for \'tcp\' and \'udp\' protocol only)'''
+        """'Destination port(s) (for \'tcp\' and \'udp\' protocol only)"""
         return self._dstports
 
     @dstports.setter
     def dstports(self, value):
         if value is not None:
-            if self.proto not in ('tcp', 'udp'):
+            if self.proto not in ("tcp", "udp"):
                 raise ValueError(
-                    'dstports valid only for \'tcp\' and \'udp\' protocols')
+                    "dstports valid only for 'tcp' and 'udp' protocols"
+                )
             if not isinstance(value, DstPorts):
                 value = DstPorts(value)
         self._dstports = value
 
     @property
     def icmptype(self):
-        '''ICMP packet type (for \'icmp\' protocol only)'''
+        """ICMP packet type (for \'icmp\' protocol only)"""
         return self._icmptype
 
     @icmptype.setter
     def icmptype(self, value):
         if value is not None:
-            if self.proto not in ('icmp',):
-                raise ValueError('icmptype valid only for \'icmp\' protocol')
+            if self.proto not in ("icmp",):
+                raise ValueError("icmptype valid only for 'icmp' protocol")
             if not isinstance(value, IcmpType):
                 value = IcmpType(value)
         self._icmptype = value
 
     @property
     def specialtarget(self):
-        '''Special target, for now only \'dns\' supported'''
+        """Special target, for now only \'dns\' supported"""
         return self._specialtarget
 
     @specialtarget.setter
@@ -365,7 +397,7 @@ class Rule(object):
 
     @property
     def expire(self):
-        '''Timestamp (UNIX epoch) on which this rule expire'''
+        """Timestamp (UNIX epoch) on which this rule expire"""
         return self._expire
 
     @expire.setter
@@ -376,7 +408,7 @@ class Rule(object):
 
     @property
     def comment(self):
-        '''User comment'''
+        """User comment"""
         return self._comment
 
     @comment.setter
@@ -387,18 +419,26 @@ class Rule(object):
 
     @property
     def rule(self):
-        '''API representation of this rule'''
+        """API representation of this rule"""
         values = []
         # comment must be the last one
-        for prop in ('action', 'proto', 'dsthost', 'dstports', 'icmptype',
-                'specialtarget', 'expire', 'comment'):
+        for prop in (
+            "action",
+            "proto",
+            "dsthost",
+            "dstports",
+            "icmptype",
+            "specialtarget",
+            "expire",
+            "comment",
+        ):
             value = getattr(self, prop)
             if value is None:
                 continue
             if value.rule is None:
                 continue
             values.append(value.rule)
-        return ' '.join(values)
+        return " ".join(values)
 
     def __eq__(self, other):
         if isinstance(other, Rule):
@@ -408,11 +448,12 @@ class Rule(object):
         return NotImplemented
 
     def __repr__(self):
-        return 'Rule(\'{}\')'.format(self.rule)
+        return "Rule('{}')".format(self.rule)
 
 
 class Firewall(object):
-    '''Firewal manager for a VM'''
+    """Firewal manager for a VM"""
+
     def __init__(self, vm):
         self.vm = vm
         self._rules = []
@@ -420,8 +461,8 @@ class Firewall(object):
         self._loaded = False
 
     def load_rules(self):
-        '''Force (re-)loading firewall rules'''
-        rules_str = self.vm.qubesd_call(None, 'admin.vm.firewall.Get')
+        """Force (re-)loading firewall rules"""
+        rules_str = self.vm.qubesd_call(None, "admin.vm.firewall.Get")
         rules = []
         for rule_str in rules_str.decode().splitlines():
             rules.append(Rule(rule_str))
@@ -430,13 +471,13 @@ class Firewall(object):
 
     @property
     def rules(self):
-        '''Firewall rules
+        """Firewall rules
 
         You can either copy them, edit and then assign new rules list to this
         property, or edit in-place and call :py:meth:`save_rules`.
         Once rules are loaded, they are cached. To reload rules,
         call :py:meth:`load_rules`.
-        '''
+        """
         if not self._loaded:
             self.load_rules()
         return self._rules
@@ -447,23 +488,27 @@ class Firewall(object):
         self._rules = value
 
     def save_rules(self, rules=None):
-        '''Save firewall rules. Needs to be called after in-place editing
+        """Save firewall rules. Needs to be called after in-place editing
         :py:attr:`rules`.
-        '''
+        """
         if rules is None:
             rules = self._rules
-        self.vm.qubesd_call(None, 'admin.vm.firewall.Set',
-            payload=(''.join('{}\n'.format(rule.rule)
-                for rule in rules)).encode('ascii'))
+        self.vm.qubesd_call(
+            None,
+            "admin.vm.firewall.Set",
+            payload=(
+                "".join("{}\n".format(rule.rule) for rule in rules)
+            ).encode("ascii"),
+        )
 
     @property
     def policy(self):
-        '''Default action to take if no rule matches'''
-        return Action('drop')
+        """Default action to take if no rule matches"""
+        return Action("drop")
 
     def reload(self):
-        '''Force reload the same firewall rules.
+        """Force reload the same firewall rules.
 
         Can be used for example to force again names resolution.
-        '''
-        self.vm.qubesd_call(None, 'admin.vm.firewall.Reload')
+        """
+        self.vm.qubesd_call(None, "admin.vm.firewall.Reload")

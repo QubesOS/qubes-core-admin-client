@@ -60,6 +60,7 @@ class StderrBuffer(object):
         sys.stderr = self.orig_stderr
         return False
 
+
 class MockEventsReader(object):
     def __init__(self, events, delay=0.05):
         self.events = events
@@ -72,7 +73,7 @@ class MockEventsReader(object):
     async def readuntil(self, delim):
         if not self.current_event:
             if not self.events:
-                raise asyncio.IncompleteReadError(b'', delim)
+                raise asyncio.IncompleteReadError(b"", delim)
             await asyncio.sleep(self.delay)
             self.current_event = self.events.pop(0)
         data, rest = self.current_event.split(delim, 1)

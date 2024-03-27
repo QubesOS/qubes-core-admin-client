@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Manages Qubes pools and their options'''
+"""Manages Qubes pools and their options"""
 
 from __future__ import print_function
 
@@ -31,133 +31,152 @@ import qubesadmin.tools
 
 
 class _Info(qubesadmin.tools.PoolsAction):
-    ''' Action for argument parser that displays pool info and exits. '''
+    """Action for argument parser that displays pool info and exits."""
 
-    def __init__(self, option_strings, help='print pool info and exit',
-                 **kwargs):
+    def __init__(
+        self, option_strings, help="print pool info and exit", **kwargs
+    ):
         # pylint: disable=redefined-builtin
         super().__init__(option_strings, help=help, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, 'command', 'info')
+        setattr(namespace, "command", "info")
         super().__call__(parser, namespace, values, option_string)
 
 
 def pool_info(pool):
-    ''' Prints out pool name and config '''
+    """Prints out pool name and config"""
     data = [("name", pool.name)]
-    data += [i for i in sorted(pool.config.items()) if i[0] != 'name']
+    data += [i for i in sorted(pool.config.items()) if i[0] != "name"]
     qubesadmin.tools.print_table(data)
 
 
 def list_pools(app):
-    ''' Prints out all known pools and their drivers '''
-    result = [('NAME', 'DRIVER')]
+    """Prints out all known pools and their drivers"""
+    result = [("NAME", "DRIVER")]
     for pool in app.pools.values():
         result += [(pool.name, pool.driver)]
     qubesadmin.tools.print_table(result)
 
 
 class _Remove(argparse.Action):
-    ''' Action for argument parser that removes a pool '''
+    """Action for argument parser that removes a pool"""
 
     def __init__(self, option_strings, dest=None, default=None, metavar=None):
-        super().__init__(option_strings=option_strings,
-                         dest=dest,
-                         metavar=metavar,
-                         default=default,
-                         help='remove pool')
-
-    def __call__(self, parser, namespace, name, option_string=None):
-        setattr(namespace, 'command', 'remove')
-        setattr(namespace, 'name', name)
-
-
-class _Add(argparse.Action):
-    ''' Action for argument parser that adds a pool. '''
-
-    def __init__(self, option_strings, dest=None, default=None, metavar=None):
-        super().__init__(option_strings=option_strings,
-                         dest=dest,
-                         metavar=metavar,
-                         default=default,
-                         nargs=2,
-                         help='add pool')
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        name, driver = values
-        setattr(namespace, 'command', 'add')
-        setattr(namespace, 'name', name)
-        setattr(namespace, 'driver', driver)
-
-
-class _Set(qubesadmin.tools.PoolsAction):
-    ''' Action for argument parser that sets pool options. '''
-
-    def __init__(self, option_strings, dest=None, default=None, metavar=None):
-        super().__init__(option_strings=option_strings,
-                         dest=dest,
-                         metavar=metavar,
-                         default=default,
-                         help='modify pool (use -o to specify '
-                              'modifications)')
-
-    def __call__(self, parser, namespace, name, option_string=None):
-        setattr(namespace, 'command', 'set')
-        super().__call__(parser, namespace, name, option_string)
-
-
-class _Options(argparse.Action):
-    ''' Action for argument parser that parsers options. '''
-
-    def __init__(self, option_strings, dest, default, metavar='options'):
         super().__init__(
             option_strings=option_strings,
             dest=dest,
             metavar=metavar,
             default=default,
-            help='comma-separated list of driver options')
+            help="remove pool",
+        )
+
+    def __call__(self, parser, namespace, name, option_string=None):
+        setattr(namespace, "command", "remove")
+        setattr(namespace, "name", name)
+
+
+class _Add(argparse.Action):
+    """Action for argument parser that adds a pool."""
+
+    def __init__(self, option_strings, dest=None, default=None, metavar=None):
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            metavar=metavar,
+            default=default,
+            nargs=2,
+            help="add pool",
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        name, driver = values
+        setattr(namespace, "command", "add")
+        setattr(namespace, "name", name)
+        setattr(namespace, "driver", driver)
+
+
+class _Set(qubesadmin.tools.PoolsAction):
+    """Action for argument parser that sets pool options."""
+
+    def __init__(self, option_strings, dest=None, default=None, metavar=None):
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            metavar=metavar,
+            default=default,
+            help="modify pool (use -o to specify " "modifications)",
+        )
+
+    def __call__(self, parser, namespace, name, option_string=None):
+        setattr(namespace, "command", "set")
+        super().__call__(parser, namespace, name, option_string)
+
+
+class _Options(argparse.Action):
+    """Action for argument parser that parsers options."""
+
+    def __init__(self, option_strings, dest, default, metavar="options"):
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            metavar=metavar,
+            default=default,
+            help="comma-separated list of driver options",
+        )
 
     def __call__(self, parser, namespace, options, option_string=None):
-        setattr(namespace, 'options',
-                dict([option.split('=', 1) for option in options.split(',')]))
+        setattr(
+            namespace,
+            "options",
+            dict([option.split("=", 1) for option in options.split(",")]),
+        )
 
 
 def get_parser():
-    ''' Parses the provided args '''
+    """Parses the provided args"""
     parser = qubesadmin.tools.QubesArgumentParser(description=__doc__)
-    parser.add_argument('-o', action=_Options, dest='options', default={})
+    parser.add_argument("-o", action=_Options, dest="options", default={})
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-l',
-                       '--list',
-                       dest='command',
-                       const='list',
-                       action='store_const',
-                       help='list all pools and exit (default action)')
-    group.add_argument('-i', '--info', metavar='POOLNAME', dest='pools',
-                       action=_Info, default=[])
-    group.add_argument('-a',
-                       '--add',
-                       action=_Add,
-                       dest='command',
-                       metavar=('NAME', 'DRIVER'))
-    group.add_argument('-r', '--remove', metavar='NAME', action=_Remove)
-    group.add_argument('-s', '--set', metavar='POOLNAME', dest='pool',
-                       action=_Set, default=[])
-    group.add_argument('--help-drivers',
-                       dest='command',
-                       const='list-drivers',
-                       action='store_const',
-                       help='list all drivers with their options and exit')
+    group.add_argument(
+        "-l",
+        "--list",
+        dest="command",
+        const="list",
+        action="store_const",
+        help="list all pools and exit (default action)",
+    )
+    group.add_argument(
+        "-i",
+        "--info",
+        metavar="POOLNAME",
+        dest="pools",
+        action=_Info,
+        default=[],
+    )
+    group.add_argument(
+        "-a", "--add", action=_Add, dest="command", metavar=("NAME", "DRIVER")
+    )
+    group.add_argument("-r", "--remove", metavar="NAME", action=_Remove)
+    group.add_argument(
+        "-s", "--set", metavar="POOLNAME", dest="pool", action=_Set, default=[]
+    )
+    group.add_argument(
+        "--help-drivers",
+        dest="command",
+        const="list-drivers",
+        action="store_const",
+        help="list all drivers with their options and exit",
+    )
     return parser
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-pools`.
+    """Main routine of :program:`qvm-pools`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
-    '''
+    """
     parser = get_parser()
     try:
         args = parser.parse_args(args, app=app)
@@ -165,44 +184,48 @@ def main(args=None, app=None):
         parser.print_error(str(e))
         return 1
 
-    if args.command is None or args.command == 'list':
+    if args.command is None or args.command == "list":
         list_pools(args.app)
-    elif args.command == 'list-drivers':
-        result = [('DRIVER', 'OPTIONS')]
+    elif args.command == "list-drivers":
+        result = [("DRIVER", "OPTIONS")]
         for driver in sorted(args.app.pool_drivers):
             params = args.app.pool_driver_parameters(driver)
-            driver_options = ', '.join(params)
+            driver_options = ", ".join(params)
             result += [(driver, driver_options)]
         qubesadmin.tools.print_table(result)
-    elif args.command == 'add':
+    elif args.command == "add":
         try:
-            args.app.add_pool(name=args.name, driver=args.driver,
-                **args.options)
+            args.app.add_pool(
+                name=args.name, driver=args.driver, **args.options
+            )
         except qubesadmin.exc.QubesException as e:
-            parser.error('failed to add pool %s: %s\n' % (args.name, str(e)))
-    elif args.command == 'remove':
+            parser.error("failed to add pool %s: %s\n" % (args.name, str(e)))
+    elif args.command == "remove":
         try:
             args.app.remove_pool(args.name)
         except KeyError:
-            parser.print_error('no such pool %s\n' % args.name)
+            parser.print_error("no such pool %s\n" % args.name)
         except qubesadmin.exc.QubesException as e:
-            parser.error('failed to remove pool %s: %s\n' % (args.name, str(e)))
-    elif args.command == 'info':
+            parser.error("failed to remove pool %s: %s\n" % (args.name, str(e)))
+    elif args.command == "info":
         for pool in args.pools:
             pool_info(pool)
-    elif args.command == 'set':
+    elif args.command == "set":
         pool = args.pool[0]
         for opt, value in args.options.items():
             if not hasattr(type(pool), opt):
-                parser.error('setting pool option %s is not supported' % (
-                    pool.name))
+                parser.error(
+                    "setting pool option %s is not supported" % (pool.name)
+                )
             try:
                 setattr(pool, opt, value)
             except qubesadmin.exc.QubesException as e:
-                parser.error('failed to set pool %s option %s: %s\n' % (
-                    pool.name, opt, str(e)))
+                parser.error(
+                    "failed to set pool %s option %s: %s\n"
+                    % (pool.name, opt, str(e))
+                )
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

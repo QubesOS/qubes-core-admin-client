@@ -19,7 +19,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-tags - Manage domain's tags'''
+"""qvm-tags - Manage domain's tags"""
 
 from __future__ import print_function
 
@@ -29,13 +29,14 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
 
+
 def mode_query(args):
-    '''Query/list tags'''
-    if not hasattr(args, 'tag') or args.tag is None:
+    """Query/list tags"""
+    if not hasattr(args, "tag") or args.tag is None:
         # list
         tags = list(sorted(args.domains[0].tags))
         if tags:
-            print('\n'.join(tags))
+            print("\n".join(tags))
     else:
         # real query
         if args.tag not in args.domains[0].tags:
@@ -45,48 +46,50 @@ def mode_query(args):
 
 
 def mode_add(args):
-    '''Add tag'''
+    """Add tag"""
     for tag in args.tag:
         args.domains[0].tags.add(tag)
     return 0
 
 
 def mode_del(args):
-    '''Delete tag'''
+    """Delete tag"""
     for tag in args.tag:
         args.domains[0].tags.discard(tag)
     return 0
 
 
 def get_parser():
-    ''' Return qvm-tags tool command line parser '''
+    """Return qvm-tags tool command line parser"""
     parser = qubesadmin.tools.QubesArgumentParser(
-        vmname_nargs=1,
-        description='manage domain\'s tags')
-    parser.register('action', 'parsers',
-        qubesadmin.tools.AliasedSubParsersAction)
+        vmname_nargs=1, description="manage domain's tags"
+    )
+    parser.register(
+        "action", "parsers", qubesadmin.tools.AliasedSubParsersAction
+    )
 
     sub_parsers = parser.add_subparsers(
-        title='commands',
+        title="commands",
         description="For more information see qvm-tags command -h",
-        dest='command')
+        dest="command",
+    )
 
-    list_parser = sub_parsers.add_parser('list', aliases=('ls', 'l'),
-        help='list tags')
-    list_parser.add_argument('tag', nargs='?',
-        action='store', default=None)
+    list_parser = sub_parsers.add_parser(
+        "list", aliases=("ls", "l"), help="list tags"
+    )
+    list_parser.add_argument("tag", nargs="?", action="store", default=None)
     list_parser.set_defaults(func=mode_query)
 
-    add_parser = sub_parsers.add_parser('add', aliases=('a', 'set'),
-        help='add tag')
-    add_parser.add_argument('tag', nargs='+',
-        action='store')
+    add_parser = sub_parsers.add_parser(
+        "add", aliases=("a", "set"), help="add tag"
+    )
+    add_parser.add_argument("tag", nargs="+", action="store")
     add_parser.set_defaults(func=mode_add)
 
-    del_parser = sub_parsers.add_parser('del', aliases=('d', 'unset', 'u'),
-        help='add tag')
-    del_parser.add_argument('tag', nargs=1,
-        action='store')
+    del_parser = sub_parsers.add_parser(
+        "del", aliases=("d", "unset", "u"), help="add tag"
+    )
+    del_parser.add_argument("tag", nargs=1, action="store")
     del_parser.set_defaults(func=mode_del)
 
     parser.set_defaults(func=mode_query)
@@ -94,11 +97,11 @@ def get_parser():
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-tags`.
+    """Main routine of :program:`qvm-tags`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
-    '''
+    """
 
     parser = get_parser()
     args = parser.parse_args(args, app=app)
@@ -108,5 +111,5 @@ def main(args=None, app=None):
         parser.error_runtime(e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

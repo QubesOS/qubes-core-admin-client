@@ -18,23 +18,23 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''qvm-unpause - Unpause a domain'''
+"""qvm-unpause - Unpause a domain"""
 
 import sys
 import qubesadmin
 
 
 parser = qubesadmin.tools.QubesArgumentParser(
-    vmname_nargs='+',
-    description='unpause a domain')
+    vmname_nargs="+", description="unpause a domain"
+)
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-unpause`.
+    """Main routine of :program:`qvm-unpause`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
-    '''
+    """
 
     args = parser.parse_args(args, app=app)
     exit_code = 0
@@ -48,5 +48,5 @@ def main(args=None, app=None):
     return exit_code
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

@@ -18,16 +18,16 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''Configuration variables/constants'''
+"""Configuration variables/constants"""
 
 #: path to qubesd socket
-QUBESD_SOCKET = '/var/run/qubesd.sock'
-QREXEC_CLIENT = '/usr/lib/qubes/qrexec-client'
-QREXEC_CLIENT_VM = '/usr/bin/qrexec-client-vm'
+QUBESD_SOCKET = "/var/run/qubesd.sock"
+QREXEC_CLIENT = "/usr/lib/qubes/qrexec-client"
+QREXEC_CLIENT_VM = "/usr/bin/qrexec-client-vm"
 QUBESD_RECONNECT_DELAY = 1.0
-QREXEC_SERVICES_DIR = '/etc/qubes-rpc'
+QREXEC_SERVICES_DIR = "/etc/qubes-rpc"
 
 defaults = {
-    'template_label': 'black',
-    'shutdown_timeout': 60,
+    "template_label": "black",
+    "shutdown_timeout": 60,
 }

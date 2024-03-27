@@ -29,18 +29,18 @@ import qubesadmin.exc
 def interrupt_on_vm_shutdown(vms, dispatcher, subject, event):
     """Interrupt events processing when given VM was shutdown"""
     # pylint: disable=unused-argument
-    if event == 'connection-established':
+    if event == "connection-established":
         for vm in sorted(vms):
             if vm.is_halted():
                 vms.remove(vm)
-    elif event == 'domain-shutdown' and subject in vms:
+    elif event == "domain-shutdown" and subject in vms:
         vms.remove(subject)
     if not vms:
         dispatcher.stop()
 
 
 async def wait_for_domain_shutdown(vms):
-    """ Helper function to wait for domain shutdown.
+    """Helper function to wait for domain shutdown.
 
     This function wait for domain shutdown, but do not initiate the shutdown
     itself.
@@ -52,8 +52,12 @@ async def wait_for_domain_shutdown(vms):
     app = list(vms)[0].app
     vms = set(vms)
     events = qubesadmin.events.EventsDispatcher(app, enable_cache=False)
-    events.add_handler('domain-shutdown',
-        functools.partial(interrupt_on_vm_shutdown, vms, events))
-    events.add_handler('connection-established',
-        functools.partial(interrupt_on_vm_shutdown, vms, events))
+    events.add_handler(
+        "domain-shutdown",
+        functools.partial(interrupt_on_vm_shutdown, vms, events),
+    )
+    events.add_handler(
+        "connection-established",
+        functools.partial(interrupt_on_vm_shutdown, vms, events),
+    )
     await events.listen_for_events()

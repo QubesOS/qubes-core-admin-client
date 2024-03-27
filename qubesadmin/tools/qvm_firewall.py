@@ -19,7 +19,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-'''qvm-firewall tool'''
+"""qvm-firewall tool"""
 
 import argparse
 import datetime
@@ -33,50 +33,56 @@ import qubesadmin.tools
 
 class RuleAction(argparse.Action):
     # pylint: disable=too-few-public-methods
-    '''Parser action for a single firewall rule. It accept syntax:
+    """Parser action for a single firewall rule. It accept syntax:
         - <action> [<dsthost> [<proto> [<dstports>|<icmptype>]]]
         - action=<action> [specialtarget=dns] [dsthost=<dsthost>]
           [proto=<proto>] [dstports=<dstports>] [icmptype=<icmptype>]
 
     Or a mix of them.
-    '''
+    """
+
     def __call__(self, _parser, namespace, values, option_string=None):
         if not values:
             setattr(namespace, self.dest, None)
             return
-        assumed_order = ['action', 'dsthost', 'proto', 'dstports', 'icmptype']
-        allowed_opts = assumed_order + ['specialtarget', 'comment', 'expire']
+        assumed_order = ["action", "dsthost", "proto", "dstports", "icmptype"]
+        allowed_opts = assumed_order + ["specialtarget", "comment", "expire"]
         kwargs = {}
         for opt in values:
-            if opt[-1] == '=':
+            if opt[-1] == "=":
                 raise argparse.ArgumentError(
-                    None, 'invalid rule description: {}'.format(opt))
-            opt_elements = opt.split('=')
+                    None, "invalid rule description: {}".format(opt)
+                )
+            opt_elements = opt.split("=")
             if len(opt_elements) == 2:
                 key, value = opt_elements
             elif len(opt_elements) == 1:
                 key, value = assumed_order[0], opt
             else:
-                raise argparse.ArgumentError(None,
-                    'invalid rule description: {}'.format(opt))
-            if key in ['dst4', 'dst6']:
-                key = 'dsthost'
+                raise argparse.ArgumentError(
+                    None, "invalid rule description: {}".format(opt)
+                )
+            if key in ["dst4", "dst6"]:
+                key = "dsthost"
             if key not in allowed_opts:
-                raise argparse.ArgumentError(None,
-                    'Invalid rule element: {}'.format(opt))
-            if key == 'expire' and value.startswith('+'):
-                value = (datetime.datetime.now() +
-                         datetime.timedelta(seconds=int(value[1:]))).\
-                    strftime('%s')
+                raise argparse.ArgumentError(
+                    None, "Invalid rule element: {}".format(opt)
+                )
+            if key == "expire" and value.startswith("+"):
+                value = (
+                    datetime.datetime.now()
+                    + datetime.timedelta(seconds=int(value[1:]))
+                ).strftime("%s")
             kwargs[key] = value
             if key in assumed_order:
                 assumed_order.remove(key)
-            if key == 'proto' and value in ['tcp', 'udp']:
-                assumed_order.remove('icmptype')
-            elif key == 'proto' and value in ['icmp']:
-                assumed_order.remove('dstports')
+            if key == "proto" and value in ["tcp", "udp"]:
+                assumed_order.remove("icmptype")
+            elif key == "proto" and value in ["icmp"]:
+                assumed_order.remove("dstports")
         rule = qubesadmin.firewall.Rule(None, **kwargs)
         setattr(namespace, self.dest, rule)
+
 
 epilog = """
 Rules can be given as positional arguments:
@@ -109,73 +115,109 @@ Available matches:
                      to expire in 5 minutes)
 """
 
-parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1, epilog=epilog,
-    formatter_class=argparse.RawTextHelpFormatter)
+parser = qubesadmin.tools.QubesArgumentParser(
+    vmname_nargs=1, epilog=epilog, formatter_class=argparse.RawTextHelpFormatter
+)
 
-action = parser.add_subparsers(dest='command', help='action to perform')
+action = parser.add_subparsers(dest="command", help="action to perform")
 
-action_add = action.add_parser('add', help='add rule')
-action_add.add_argument('--before', type=int, default=None,
-    help='Add rule before rule with given number instead at the end')
-action_add.add_argument('rule', metavar='match', nargs='+', action=RuleAction,
-    help='rule description')
+action_add = action.add_parser("add", help="add rule")
+action_add.add_argument(
+    "--before",
+    type=int,
+    default=None,
+    help="Add rule before rule with given number instead at the end",
+)
+action_add.add_argument(
+    "rule",
+    metavar="match",
+    nargs="+",
+    action=RuleAction,
+    help="rule description",
+)
 
-action_del = action.add_parser('del', help='remove rule')
-action_del.add_argument('--rule-no', dest='rule_no', type=int,
-    action='store', help='rule number')
-action_del.add_argument('rule', metavar='match', nargs='*', action=RuleAction,
-    help='rule to be removed')
+action_del = action.add_parser("del", help="remove rule")
+action_del.add_argument(
+    "--rule-no", dest="rule_no", type=int, action="store", help="rule number"
+)
+action_del.add_argument(
+    "rule",
+    metavar="match",
+    nargs="*",
+    action=RuleAction,
+    help="rule to be removed",
+)
 
-action_list = action.add_parser('list', help='list rules')
+action_list = action.add_parser("list", help="list rules")
 
 action_reset = action.add_parser(
-    'reset',
-    help='remove all firewall rules and reset to default '
-         '(accept all connections)')
+    "reset",
+    help="remove all firewall rules and reset to default "
+    "(accept all connections)",
+)
 
-parser.add_argument('--reload', '-r', action='store_true',
-    help='force reload of rules even when unchanged')
+parser.add_argument(
+    "--reload",
+    "-r",
+    action="store_true",
+    help="force reload of rules even when unchanged",
+)
 
-parser.add_argument('--raw', action='store_true',
-    help='output rules as raw strings, instead of nice table')
+parser.add_argument(
+    "--raw",
+    action="store_true",
+    help="output rules as raw strings, instead of nice table",
+)
 
 
 def rules_list_table(vm):
-    '''Print rules to stdout in human-readable form (table)
+    """Print rules to stdout in human-readable form (table)
 
     :param vm: VM object
     :return: None
-    '''
-    header = ['NO', 'ACTION', 'HOST', 'PROTOCOL', 'PORT(S)',
-        'SPECIAL TARGET', 'ICMP TYPE', 'EXPIRE', 'COMMENT']
+    """
+    header = [
+        "NO",
+        "ACTION",
+        "HOST",
+        "PROTOCOL",
+        "PORT(S)",
+        "SPECIAL TARGET",
+        "ICMP TYPE",
+        "EXPIRE",
+        "COMMENT",
+    ]
     rows = []
-    for (rule, rule_no) in zip(vm.firewall.rules, itertools.count()):
-        row = [x.pretty_value if x is not None else '-' for x in [
-            rule.action,
-            rule.dsthost,
-            rule.proto,
-            rule.dstports,
-            rule.specialtarget,
-            rule.icmptype,
-            rule.expire,
-            rule.comment,
-        ]]
+    for rule, rule_no in zip(vm.firewall.rules, itertools.count()):
+        row = [
+            x.pretty_value if x is not None else "-"
+            for x in [
+                rule.action,
+                rule.dsthost,
+                rule.proto,
+                rule.dstports,
+                rule.specialtarget,
+                rule.icmptype,
+                rule.expire,
+                rule.comment,
+            ]
+        ]
         rows.append([str(rule_no)] + row)
     qubesadmin.tools.print_table([header] + rows)
 
 
 def rules_list_raw(vm):
-    '''Print rules in machine-readable form (as specified in Admin API)
+    """Print rules in machine-readable form (as specified in Admin API)
 
     :param vm: VM object
     :return: None
-    '''
+    """
     for rule in vm.firewall.rules:
-        sys.stdout.write(rule.rule + '\n')
+        sys.stdout.write(rule.rule + "\n")
 
 
 def rules_add(vm, args):
-    '''Add a rule defined by args.rule'''
+    """Add a rule defined by args.rule"""
     if args.before is not None:
         vm.firewall.rules.insert(args.before, args.rule)
     else:
@@ -184,7 +226,7 @@ def rules_add(vm, args):
 
 
 def rules_del(vm, args):
-    '''Delete a rule according to args.rule/args.rule_no'''
+    """Delete a rule according to args.rule/args.rule_no"""
     if args.rule_no is not None:
         vm.firewall.rules.pop(args.rule_no)
     else:
@@ -193,17 +235,17 @@ def rules_del(vm, args):
 
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-firewall`.'''
+    """Main routine of :program:`qvm-firewall`."""
     try:
         args = parser.parse_args(args, app=app)
         vm = args.domains[0]
-        if args.command == 'add':
+        if args.command == "add":
             rules_add(vm, args)
-        elif args.command == 'del':
+        elif args.command == "del":
             rules_del(vm, args)
-        elif args.command == 'reset':
+        elif args.command == "reset":
             vm.firewall.rules.clear()
-            vm.firewall.rules.append(qubesadmin.firewall.Rule('action=accept'))
+            vm.firewall.rules.append(qubesadmin.firewall.Rule("action=accept"))
             vm.firewall.save_rules()
         else:
             if args.raw:
@@ -218,5 +260,5 @@ def main(args=None, app=None):
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
