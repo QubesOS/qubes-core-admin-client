@@ -806,8 +806,10 @@ def main():
         if os.path.exists(f'/var/run/qubes-service/{service}')
     ]
 
-    if not enabled_services and '--force' not in sys.argv and \
-            not os.path.exists('/etc/qubes-release'):
+    if "--force" in sys.argv:
+        enabled_services = only_if_service_enabled
+
+    if not enabled_services:
         log.info(parser.format_help())
         return
 
@@ -823,10 +825,12 @@ def main():
         vm_names = None
     else:
         vm_names = [vm.name for vm in args.domains]
+
     launcher = DAEMONLauncher(
-        args.app,
+        app=args.app,
         vm_names=vm_names,
-        kde=args.kde)
+        kde=args.kde
+    )
 
     if args.watch:
         fd = os.open(args.pidfile,
@@ -860,18 +864,25 @@ def main():
             loop.add_signal_handler(signal.SIGHUP,
                                     launcher.send_monitor_layout_all)
 
-            conn = xcffib.connect()
-            x_watcher = XWatcher(conn, args.app)
-            x_fd = conn.get_file_descriptor()
-            loop.add_reader(x_fd, x_watcher.event_reader,
-                            events_listener.cancel)
-            x_watcher.update_keyboard_layout()
+            if "guivm" in enabled_services:
+                conn = xcffib.connect()
+                x_watcher = XWatcher(conn, args.app)
+                x_fd = conn.get_file_descriptor()
+                loop.add_reader(
+                    x_fd,
+                    x_watcher.event_reader,
+                    events_listener.cancel
+                )
+                x_watcher.update_keyboard_layout()
 
             try:
                 loop.run_until_complete(events_listener)
             except asyncio.CancelledError:
                 pass
-            loop.remove_reader(x_fd)
+
+            if "guivm" in enabled_services:
+                loop.remove_reader(x_fd)
+
             loop.stop()
             loop.run_forever()
             loop.close()
@@ -881,17 +892,27 @@ def main():
                 pid = int(pidfile.read().strip())
             os.kill(pid, signal.SIGHUP)
         except (FileNotFoundError, ValueError) as e:
-            parser.error('Cannot open pidfile {}: {}'.format(pidfile_path,
-                                                             str(e)))
+            parser.error(f'Cannot open pidfile {pidfile_path}: {str(e)}')
     else:
         loop = asyncio.get_event_loop()
         tasks = []
         for vm in args.domains:
             if vm.is_running():
-                tasks.append(asyncio.ensure_future(launcher.start_gui(
-                    vm, force_stubdom=args.force_stubdomain)))
-                tasks.append(asyncio.ensure_future(launcher.start_audio(
-                    vm)))
+                if "guivm" in enabled_services:
+                    tasks.append(
+                        asyncio.ensure_future(
+                            launcher.start_gui(
+                                vm,
+                                force_stubdom=args.force_stubdomain
+                            )
+                        )
+                    )
+                if "audiovm" in enabled_services:
+                    tasks.append(
+                        asyncio.ensure_future(
+                            launcher.start_audio(vm)
+                        )
+                    )
         if tasks:
             loop.run_until_complete(asyncio.wait(tasks))
         loop.stop()
