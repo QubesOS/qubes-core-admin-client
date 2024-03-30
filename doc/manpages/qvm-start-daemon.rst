@@ -29,6 +29,10 @@ Options
 
    show this help message and exit
 
+.. option:: --debug, -d
+
+   Show debug messages
+
 .. option:: --verbose, -v
 
    increase verbosity

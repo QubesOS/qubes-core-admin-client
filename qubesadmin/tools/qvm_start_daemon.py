@@ -37,7 +37,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
-from . import xcffibhelpers
+import qubesadmin.tools.xcffibhelpers as xcffibhelpers
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
@@ -54,6 +54,45 @@ GUI_DAEMON_OPTIONS = [
     ('trayicon_mode', 'str'),
     ('startup_timeout', 'int'),
 ]
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+handler.setFormatter(formatter)
+
+log = logging.getLogger("qvm-start-daemon")
+log.addHandler(handler)
+
+if 'XDG_RUNTIME_DIR' in os.environ:
+    pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
+                                'qvm-start-daemon.pid')
+else:
+    pidfile_path = os.path.join(os.environ.get('HOME', '/'),
+                                '.qvm-start-daemon.pid')
+
+parser = qubesadmin.tools.QubesArgumentParser(
+        description='start GUI or AUDIO for qube(s)',
+        vmname_nargs='*'
+    )
+parser.add_argument('--debug', action='store_true',
+                    help='Show debug messages')
+parser.add_argument('--watch', action='store_true',
+                    help='Keep watching for further domain startups')
+parser.add_argument('--force-stubdomain', action='store_true',
+                    help='Start GUI to stubdomain-emulated VGA,'
+                         ' even if gui-agent is running in the VM')
+parser.add_argument('--pidfile', action='store', default=pidfile_path,
+                    help='Pidfile path to create in --watch mode')
+parser.add_argument('--notify-monitor-layout', action='store_true',
+                    help='Notify running instance in --watch mode'
+                         ' about changed monitor layout')
+parser.add_argument('--kde', action='store_true',
+                    help='Set KDE specific arguments to gui-daemon.')
+# Add it for the help only
+parser.add_argument('--force', action='store_true', default=False,
+                    help='Force running daemon without enabled services'
+                         ' \'guivm\' or \'audiovm\'')
 
 
 def retrieve_gui_daemon_options(vm, guivm):
@@ -119,6 +158,7 @@ def serialize_gui_daemon_options(options):
 
 NON_ASCII_RE = re.compile(r'[^\x00-\x7F]')
 UNPRINTABLE_CHARACTER_RE = re.compile(r'[\x00-\x1F\x7F]')
+
 
 def escape_config_string(value):
     '''
@@ -686,6 +726,7 @@ class DAEMONLauncher:
             self.cleanup_pacat_process(stubdom_xid)
 
     def on_property_audiovm_set(self, vm, _event, **_kwargs):
+        log.debug(f"{vm} - {_event} - {_kwargs}")
         xid, stubdom_xid = vm.xid, vm.stubdom_xid
         oldvalue = _kwargs.get("oldvalue", None)
         newvalue = _kwargs.get("newvalue", None)
@@ -729,9 +770,9 @@ class DAEMONLauncher:
             with open(config_file) as f:
                 pid = int(f.readline())
                 os.kill(pid, signal.SIGTERM)
-                print(f"Sent SIGTERM signal to pacat-simple-vchan process {pid}")
+                log.info(f"Sent SIGTERM signal to pacat-simple-vchan process {pid}")
         except OSError:
-            print(f"Failed to send SIGTERM signal for the pacat-simple-vchan with xid of {xid}")
+            log.error(f"Failed to send SIGTERM signal for the pacat-simple-vchan with xid of {xid}")
         os.unlink(config_file)
 
     def register_events(self, events):
@@ -756,43 +797,25 @@ class DAEMONLauncher:
         return vm.name in self.vm_names
 
 
-if 'XDG_RUNTIME_DIR' in os.environ:
-    pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
-                                'qvm-start-daemon.pid')
-else:
-    pidfile_path = os.path.join(os.environ.get('HOME', '/'),
-                                '.qvm-start-daemon.pid')
-
-parser = qubesadmin.tools.QubesArgumentParser(
-    description='start GUI for qube(s)', vmname_nargs='*')
-parser.add_argument('--watch', action='store_true',
-                    help='Keep watching for further domain startups')
-parser.add_argument('--force-stubdomain', action='store_true',
-                    help='Start GUI to stubdomain-emulated VGA,'
-                         ' even if gui-agent is running in the VM')
-parser.add_argument('--pidfile', action='store', default=pidfile_path,
-                    help='Pidfile path to create in --watch mode')
-parser.add_argument('--notify-monitor-layout', action='store_true',
-                    help='Notify running instance in --watch mode'
-                         ' about changed monitor layout')
-parser.add_argument('--kde', action='store_true',
-                    help='Set KDE specific arguments to gui-daemon.')
-# Add it for the help only
-parser.add_argument('--force', action='store_true', default=False,
-                    help='Force running daemon without enabled services'
-                         ' \'guivm\' or \'audiovm\'')
-
-
-def main(args=None):
+def main():
     """ Main function of qvm-start-daemon tool"""
+
     only_if_service_enabled = ['guivm', 'audiovm']
-    enabled_services = [service for service in only_if_service_enabled if
-                        os.path.exists('/var/run/qubes-service/%s' % service)]
+    enabled_services = [
+        service for service in only_if_service_enabled
+        if os.path.exists(f'/var/run/qubes-service/{service}')
+    ]
+
     if not enabled_services and '--force' not in sys.argv and \
             not os.path.exists('/etc/qubes-release'):
-        print(parser.format_help())
+        log.info(parser.format_help())
         return
-    args = parser.parse_args(args)
+
+    args = parser.parse_args()
+
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
 
@@ -817,9 +840,7 @@ def main(args=None):
                     pid = int(lock_f.read().strip())
                 except ValueError:
                     pid = 'unknown'
-                print('Another GUI daemon process (with PID {}) is already '
-                      'running'.format(pid),
-                      file=sys.stderr)
+                log.error(f'Another GUI daemon process (with PID {pid}) is already running')
                 sys.exit(1)
             print(os.getpid(), file=lock_f)
             lock_f.flush()

@@ -17,6 +17,7 @@ BuildRequires:	python%{python3_pkgversion}-xcffib
 BuildRequires:	python%{python3_pkgversion}-tqdm
 BuildRequires:	python%{python3_pkgversion}-yaml
 BuildRequires:	python%{python3_pkgversion}-pyxdg
+BuildRequires:  python%{python3_pkgversion}-rpm
 Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
 Requires:   qubes-repo-templates
