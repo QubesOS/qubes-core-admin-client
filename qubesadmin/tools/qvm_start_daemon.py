@@ -377,6 +377,10 @@ class DAEMONLauncher:
         # cache XID values when the VM was still running -
         # for cleanup purpose
         self.xid_cache = {}
+        for qube in self.app.domains:
+            if qube.name == "dom0":
+                continue
+            self.xid_cache[qube] = qube.xid, qube.stubdom_xid
 
     async def send_monitor_layout(self, vm, layout=None, startup=False):
         """Send monitor layout to a given VM
@@ -727,7 +731,13 @@ class DAEMONLauncher:
 
     def on_property_audiovm_set(self, vm, _event, **_kwargs):
         log.debug(f"{vm} - {_event} - {_kwargs}")
-        xid, stubdom_xid = vm.xid, vm.stubdom_xid
+        if vm.name not in self.xid_cache:
+            try:
+                self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+            except qubesadmin.exc.QubesDaemonAccessError as e:
+                log.error(f"vm.name: failed to determine XID: {str(e)}")
+                return
+        xid, stubdom_xid = self.xid_cache[vm.name]
         oldvalue = _kwargs.get("oldvalue", None)
         newvalue = _kwargs.get("newvalue", None)
         if oldvalue == self.app.local_name and newvalue == "None":
@@ -736,15 +746,14 @@ class DAEMONLauncher:
             if stubdom_xid != -1:
                 self.cleanup_pacat_process(stubdom_xid)
             try:
-                # FIXME: ensure GUI is not started
-                del self.xid_cache[vm.name]
+                if not os.path.exists(self.guid_pidfile(xid)):
+                    del self.xid_cache[vm.name]
             except KeyError:
                 return
         elif newvalue == self.app.local_name:
             power_state = vm.get_power_state()
             if power_state == 'Running':
                 asyncio.ensure_future(self.start_audio(vm))
-                self.xid_cache[vm.name] = xid, stubdom_xid
 
     def cleanup_guid(self, xid):
         """
