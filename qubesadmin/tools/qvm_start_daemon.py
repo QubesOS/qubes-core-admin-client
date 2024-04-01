@@ -362,7 +362,8 @@ def get_monitor_layout():
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
-    def __init__(self, app: qubesadmin.app.QubesBase, vm_names=None, kde=False):
+    def __init__(self, app: qubesadmin.app.QubesBase, enabled_services,
+                 vm_names=None, kde=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
@@ -370,6 +371,7 @@ class DAEMONLauncher:
         :param kde: add KDE-specific arguments for guid
         """
         self.app = app
+        self.enabled_services = enabled_services
         self.started_processes = {}
         self.vm_names = vm_names
         self.kde = kde
@@ -377,10 +379,6 @@ class DAEMONLauncher:
         # cache XID values when the VM was still running -
         # for cleanup purpose
         self.xid_cache = {}
-        for qube in self.app.domains:
-            if qube.name == "dom0":
-                continue
-            self.xid_cache[qube] = qube.xid, qube.stubdom_xid
 
     async def send_monitor_layout(self, vm, layout=None, startup=False):
         """Send monitor layout to a given VM
@@ -699,16 +697,20 @@ class DAEMONLauncher:
 
             power_state = vm.get_power_state()
             if power_state == 'Running':
-                asyncio.ensure_future(
-                    self.start_gui(vm, monitor_layout=monitor_layout))
-                asyncio.ensure_future(self.start_audio(vm))
+                if "guivm" in self.enabled_services:
+                    asyncio.ensure_future(
+                        self.start_gui(vm, monitor_layout=monitor_layout)
+                    )
+                if "audiovm" in self.enabled_services:
+                    asyncio.ensure_future(self.start_audio(vm))
                 self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start'
                 # event when fully started
-                if vm.virt_mode == 'hvm':
+                if vm.virt_mode == 'hvm' and "guivm" in self.enabled_services:
                     asyncio.ensure_future(
-                        self.start_gui_for_stubdomain(vm))
+                        self.start_gui_for_stubdomain(vm)
+                    )
 
     def on_domain_stopped(self, vm, _event, **_kwargs):
         """Handler of 'domain-stopped' event, cleans up"""
@@ -837,14 +839,23 @@ def main():
 
     launcher = DAEMONLauncher(
         app=args.app,
+        enabled_services=enabled_services,
         vm_names=vm_names,
         kde=args.kde
     )
 
     if args.watch:
-        fd = os.open(args.pidfile,
-                     os.O_RDWR | os.O_CREAT | os.O_CLOEXEC,
-                     0o600)
+        # Start qubes running before we started qvm-start-daemon
+        for qube in launcher.app.domains:
+            if qube.name == "dom0":
+                continue
+            launcher.on_connection_established(qube, _event="connection-established")
+
+        fd = os.open(
+            args.pidfile,
+            os.O_RDWR | os.O_CREAT | os.O_CLOEXEC,
+            0o600
+        )
         with os.fdopen(fd, 'r+') as lock_f:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -853,7 +864,7 @@ def main():
                     pid = int(lock_f.read().strip())
                 except ValueError:
                     pid = 'unknown'
-                log.error(f'Another GUI daemon process (with PID {pid}) is already running')
+                log.error(f'Another daemon launcher process (with PID {pid}) is already running')
                 sys.exit(1)
             print(os.getpid(), file=lock_f)
             lock_f.flush()
@@ -867,8 +878,10 @@ def main():
             events_listener = asyncio.ensure_future(events.listen_for_events())
 
             for signame in ('SIGINT', 'SIGTERM'):
-                loop.add_signal_handler(getattr(signal, signame),
-                                        events_listener.cancel)  # pylint: disable=no-member
+                loop.add_signal_handler(
+                    getattr(signal, signame),
+                    events_listener.cancel
+                )  # pylint: disable=no-member
 
             loop.add_signal_handler(signal.SIGHUP,
                                     launcher.send_monitor_layout_all)
