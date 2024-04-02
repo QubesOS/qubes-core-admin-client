@@ -76,7 +76,7 @@ parser = qubesadmin.tools.QubesArgumentParser(
         description='start GUI or AUDIO for qube(s)',
         vmname_nargs='*'
     )
-parser.add_argument('--debug', action='store_true',
+parser.add_argument('--debug', '-d', action='store_true',
                     help='Show debug messages')
 parser.add_argument('--watch', action='store_true',
                     help='Keep watching for further domain startups')
