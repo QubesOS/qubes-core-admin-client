@@ -37,7 +37,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
-import qubesadmin.tools.xcffibhelpers as xcffibhelpers
+from qubesadmin.tools import xcffibhelpers
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
@@ -55,7 +55,8 @@ GUI_DAEMON_OPTIONS = [
     ('startup_timeout', 'int'),
 ]
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
@@ -129,7 +130,7 @@ def retrieve_gui_daemon_options(vm, guivm):
 
 def serialize_gui_daemon_options(options):
     '''
-    Prepare configuration file content for GUI daemon. Currently uses libconfig
+    Prepare configuration file content for GUI daemon. Currently, uses libconfig
     format.
     '''
 
@@ -637,7 +638,7 @@ class DAEMONLauncher:
         if not os.path.exists(self.pacat_pidfile(xid)):
             await self.start_audio_for_vm(vm)
         else:
-            vm.log.info('AUDIO process exists. Skipping.'.format(audiovm))
+            vm.log.info('AUDIO process exists. Skipping.')
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
@@ -732,12 +733,12 @@ class DAEMONLauncher:
             self.cleanup_pacat_process(stubdom_xid)
 
     def on_property_audiovm_set(self, vm, _event, **_kwargs):
-        log.debug(f"{vm} - {_event} - {_kwargs}")
+        """Handler for catching event related to dynamic AudioVM set/unset"""
         if vm.name not in self.xid_cache:
             try:
                 self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
             except qubesadmin.exc.QubesDaemonAccessError as e:
-                log.error(f"vm.name: failed to determine XID: {str(e)}")
+                log.error("vm.name: failed to determine XID: %s", str(e))
                 return
         xid, stubdom_xid = self.xid_cache[vm.name]
         oldvalue = _kwargs.get("oldvalue", None)
@@ -778,12 +779,14 @@ class DAEMONLauncher:
         if not os.path.exists(config_file):
             return
         try:
-            with open(config_file) as f:
-                pid = int(f.readline())
+            with open(config_file, encoding="ascii") as fd:
+                pid = int(fd.readline())
                 os.kill(pid, signal.SIGTERM)
-                log.info(f"Sent SIGTERM signal to pacat-simple-vchan process {pid}")
+                log.info(
+                    "Sent SIGTERM signal to pacat-simple-vchan process %d", pid)
         except OSError:
-            log.error(f"Failed to send SIGTERM signal for the pacat-simple-vchan with xid of {xid}")
+            log.error("Failed to send SIGTERM signal for the"
+                      " pacat-simple-vchan with xid of %d", xid)
         os.unlink(config_file)
 
     def register_events(self, events):
@@ -794,9 +797,9 @@ class DAEMONLauncher:
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
 
-        events.add_handler("property-set:audiovm", self.on_property_audiovm_set)
-        events.add_handler("property-pre-set:audiovm", self.on_property_audiovm_set)
-        events.add_handler("property-pre-del:audiovm", self.on_property_audiovm_set)
+        for event in ["property-set:audiovm", "property-pre-set:audiovm",
+                      "property-pre-del:audiovm"]:
+            events.add_handler(event, self.on_property_audiovm_set)
 
     def is_watched(self, vm):
         """
@@ -849,7 +852,8 @@ def main():
         for qube in launcher.app.domains:
             if qube.name == "dom0":
                 continue
-            launcher.on_connection_established(qube, _event="connection-established")
+            launcher.on_connection_established(
+                qube, _event="connection-established")
 
         fd = os.open(
             args.pidfile,
@@ -864,7 +868,8 @@ def main():
                     pid = int(lock_f.read().strip())
                 except ValueError:
                     pid = 'unknown'
-                log.error(f'Another daemon launcher process (with PID {pid}) is already running')
+                log.error('Another daemon launcher process (with PID %d)'
+                          ' is already running', pid)
                 sys.exit(1)
             print(os.getpid(), file=lock_f)
             lock_f.flush()
