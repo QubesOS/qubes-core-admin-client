@@ -999,7 +999,7 @@ class TC_20_QubesLocal(unittest.TestCase):
             self.app.run_service('some-vm', 'service.name')
             mock_proc.assert_called_once_with([
                 qubesadmin.config.QREXEC_CLIENT,
-                '-d', 'some-vm', '-T', 'DEFAULT:QUBESRPC service.name dom0'],
+                '-d', 'some-vm', '-T', 'DEFAULT:QUBESRPC service.name+ dom0'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
 
@@ -1013,7 +1013,7 @@ class TC_20_QubesLocal(unittest.TestCase):
             mock_proc.assert_called_once_with([
                 qubesadmin.config.QREXEC_CLIENT,
                 '-d', 'some-vm', '-t', '-T',
-                'DEFAULT:QUBESRPC service.name dom0'],
+                'DEFAULT:QUBESRPC service.name+ dom0'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
 
@@ -1028,7 +1028,7 @@ class TC_20_QubesLocal(unittest.TestCase):
             mock_proc.assert_called_once_with([
                 qubesadmin.config.QREXEC_CLIENT,
                 '-d', 'some-vm', '-T',
-                'user:QUBESRPC service.name dom0'],
+                'user:QUBESRPC service.name+ dom0'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
 
