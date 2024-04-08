@@ -820,10 +820,11 @@ def main():
         if os.path.exists(f'/var/run/qubes-service/{service}')
     ]
 
-    if "--force" in sys.argv:
+    if "--force" in sys.argv or os.path.exists("/etc/qubes-release"):
         enabled_services = only_if_service_enabled
 
     if not enabled_services:
+        log.info("None of 'audiovm' nor 'guivm' service is enabled")
         log.info(parser.format_help())
         return
 
