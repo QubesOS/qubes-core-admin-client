@@ -704,6 +704,8 @@ class DAEMONLauncher:
         Should we watch this VM for changes
         """
 
+        if self.app.local_name == vm.name:
+            return False
         if self.vm_names is None:
             return True
         return vm.name in self.vm_names
