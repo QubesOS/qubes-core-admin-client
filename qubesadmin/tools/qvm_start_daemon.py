@@ -437,8 +437,9 @@ class DAEMONLauncher:
             if vm.is_running():
                 if not vm.features.check_with_template('gui', True):
                     continue
-                asyncio.ensure_future(self.send_monitor_layout(vm,
-                                                               monitor_layout))
+                asyncio.ensure_future(
+                    self.send_monitor_layout(vm, monitor_layout)
+                )
 
     @staticmethod
     def kde_guid_args(vm):
@@ -647,7 +648,8 @@ class DAEMONLauncher:
             return
 
         try:
-            if getattr(vm, 'guivm', None) != vm.app.local_name:
+            if ('guivm' in self.enabled_services and
+                    getattr(vm, 'guivm', None) != vm.app.local_name):
                 return
             if not vm.features.check_with_template('gui', True) and \
                     not vm.features.check_with_template('gui-emulated', True):
@@ -668,17 +670,19 @@ class DAEMONLauncher:
         self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
 
         try:
-            if getattr(vm, 'guivm', None) == vm.app.local_name and \
-                    vm.features.check_with_template('gui', True) and \
-                    kwargs.get('start_guid', 'True') == 'True':
+            if ('guivm' in self.enabled_services and
+                    getattr(vm, 'guivm', None) == vm.app.local_name and
+                    vm.features.check_with_template('gui', True) and
+                    kwargs.get('start_guid', 'True') == 'True'):
                 asyncio.ensure_future(self.start_gui_for_vm(vm))
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
         try:
-            if getattr(vm, 'audiovm', None) == vm.app.local_name and \
-                    vm.features.check_with_template('audio', True) and \
-                    kwargs.get('start_audio', 'True') == 'True':
+            if ('audiovm' in self.enabled_services
+                    and getattr(vm, 'audiovm', None) == vm.app.local_name and
+                    vm.features.check_with_template('audio', True) and
+                    kwargs.get('start_audio', 'True') == 'True'):
                 asyncio.ensure_future(self.start_audio_for_vm(vm))
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start AUDIO for %s: %s', vm.name, str(e))
@@ -708,7 +712,7 @@ class DAEMONLauncher:
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start'
                 # event when fully started
-                if vm.virt_mode == 'hvm' and "guivm" in self.enabled_services:
+                if "guivm" in self.enabled_services and vm.virt_mode == 'hvm':
                     asyncio.ensure_future(
                         self.start_gui_for_stubdomain(vm)
                     )
