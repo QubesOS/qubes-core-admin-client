@@ -1,3 +1,39 @@
+qubes-core-admin-client (4.2.11-1) unstable; urgency=medium
+
+  [ Sylwester Arabas ]
+  * minor cleanup of rpm2cpio usage leftover in var name
+  * shorten line (addressing pylint hint)
+  * issue #8876: first seemingly working draft, tests not
+    updated/extended yet, unclear if part order can be assumed [skip ci]
+  * raise exception if symlink not found + add a note about file order
+    in tar
+  * unrelated comment fix
+  * add tests for the new rpm extraction logic
+  * whitespace refactor for pylint
+  * make pylint happier
+  * redirect rpmbuild output to dev-null making the test lest verbose in
+    the logs
+  * line lengths
+  * improving test coverage, removing unused imports
+
+  [ Marta Marczykowska-Górecka ]
+  * Minor improvements to Mock App
+
+  [ Yousef Alzahrani ]
+  * printing list object as one string for list-like properties
+  * seperate with comma to avoid column ambiguity
+
+  [ Marta Marczykowska-Górecka ]
+  * Enable starting DispVMs from admin API
+
+  [ Kamil Aronowski ]
+  * qvm-create.rst: update from dispvm_allowed to template_for_dispvms
+
+  [ Marek Marczykowski-Górecki ]
+  * qvm-start-daemon: ignore self qube for starting audio/gui daemons
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 14 Apr 2024 02:10:33 +0200
+
 qubes-core-admin-client (4.2.10-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
