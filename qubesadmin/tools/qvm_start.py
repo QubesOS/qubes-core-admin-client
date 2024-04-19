@@ -79,17 +79,18 @@ parser_drive.add_argument('--install-windows-tools',
 
 
 def get_drive_assignment(app, drive_str):
-    ''' Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for a
+    """
+    Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for a
     given drive.
 
-    If running in dom0, it will also take care about creating appropriate
+    If running in dom0, it will also take care about creating the appropriate
     loop device (if necessary). Otherwise, only existing block devices are
     supported.
 
     :param app: Qubes() instance
     :param drive_str: drive argument
     :return: DeviceAssignment matching *drive_str*
-    '''
+    """
     devtype = 'cdrom'
     if drive_str.startswith('cdrom:'):
         devtype = 'cdrom'
@@ -188,8 +189,8 @@ def main(args=None, app=None):
             if args.drive:
                 drive_assignment = get_drive_assignment(args.app, args.drive)
                 try:
-                    domain.devices['block'].attach(drive_assignment)
-                except:
+                    domain.devices['block'].assign(drive_assignment)
+                except Exception:
                     drive_assignment = None
                     raise
 
@@ -197,8 +198,7 @@ def main(args=None, app=None):
 
             if drive_assignment:
                 # don't reconnect this device after VM reboot
-                domain.devices['block'].update_assignment(
-                    drive_assignment, None)
+                domain.devices['block'].unassign(drive_assignment)
         except (IOError, OSError, qubesadmin.exc.QubesException,
                 ValueError) as e:
             if drive_assignment:

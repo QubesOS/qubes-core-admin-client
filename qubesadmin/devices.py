@@ -99,7 +99,6 @@ class DeviceCollection:
         """
         self._remove(assignment, 'unassign')
 
-
     def _add(self, assignment: DeviceAssignment, action: str) -> None:
         if not assignment.frontend_domain:
             assignment.frontend_domain = self._vm
