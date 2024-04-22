@@ -79,56 +79,73 @@ class Line(object):
 
 
 def list_devices(args):
-    """ Called by the parser to execute the qubes-devices list
-    subcommand. """
+    """
+    Called by the parser to execute the qubes-devices list subcommand. """
     app = args.app
 
-    devices = set()
-    try:
-        if hasattr(args, 'domains') and args.domains:
-            for vm in args.domains:
-                for dev in vm.devices[args.devclass].get_assigned_devices():
-                    devices.add(dev)
-                for dev in vm.devices[args.devclass].get_attached_devices():
-                    devices.add(dev)
-                for dev in vm.devices[args.devclass].get_exposed_devices():
-                    devices.add(dev)
-
-        else:
-            for vm in app.domains:
-                try:
-                    for dev in vm.devices[args.devclass].get_exposed_devices():
-                        devices.add(dev)
-                except qubesadmin.exc.QubesVMNotFoundError:
-                    continue
-    except qubesadmin.exc.QubesDaemonAccessError:
-        raise qubesadmin.exc.QubesException(
-            "Failed to list '%s' devices, this device type either "
-            "does not exist or you do not have access to it.", args.devclass)
+    domains = args.domains if hasattr(args, 'domains') else None
+    devices = _load_devices(app, domains, args.devclass)
 
     result = {dev: Line(dev) for dev in devices}
 
     for dev in result:
         for vm in app.domains:
-            if vm == dev.backend_domain:
-                continue
-
-            try:
-                for assignment in (
-                        vm.devices[args.devclass].get_dedicated_devices()):
-                    if dev != assignment:
-                        continue
-                    if assignment.options:
-                        result[dev].frontends.append('{!s} ({})'.format(
-                            vm, ', '.join('{}={}'.format(key, value)
-                                              for key, value in
-                                              assignment.options.items())))
-                    else:
-                        result[dev].frontends.append(str(vm))
-            except qubesadmin.exc.QubesVMNotFoundError:
-                continue
+            frontends = _load_frontends_info(vm, dev, args.devclass)
+            if frontends is not None:
+                result[dev].frontends.append(frontends)
 
     qubesadmin.tools.print_table(prepare_table(result.values()))
+
+
+def _load_devices(app, domains, devclass):
+    """
+    Loads device exposed or connected to given domains.
+
+    If `domains` is empty/`None` load all devices.
+    """
+    devices = set()
+    if domains:
+        ignore_errors = False
+    else:
+        ignore_errors = True
+        domains = app.domains
+    try:
+        for vm in domains:
+            try:
+                for ass in vm.devices[devclass].get_dedicated_devices():
+                    devices.add(ass.device)
+                for dev in vm.devices[devclass].get_exposed_devices():
+                    devices.add(dev)
+            except qubesadmin.exc.QubesVMNotFoundError:
+                if ignore_errors:
+                    continue
+                raise
+    except qubesadmin.exc.QubesDaemonAccessError:
+        raise qubesadmin.exc.QubesException(
+            "Failed to list '%s' devices, this device type either "
+            "does not exist or you do not have access to it.", devclass)
+    return devices
+
+
+def _load_frontends_info(vm, dev, devclass):
+    """
+    Returns string of vms to which a device is connected or `None`.
+    """
+    if vm == dev.backend_domain:
+        return None
+
+    try:
+        for assignment in vm.devices[devclass].get_dedicated_devices():
+            if dev != assignment:
+                return None
+            if assignment.options:
+                return '{!s} ({})'.format(
+                    vm, ', '.join('{}={}'.format(key, value)
+                    for key, value in assignment.options.items()))
+            else:
+                return str(vm)
+    except qubesadmin.exc.QubesVMNotFoundError:
+        return None
 
 
 def attach_device(args):
@@ -144,11 +161,31 @@ def attach_device(args):
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
+    parse_ro_option_as_read_only(options)
     assignment.options = options
     vm.devices[args.devclass].attach(assignment)
     # backward compatibility
     if args.required:
         vm.devices[args.devclass].assign(assignment)
+
+
+def parse_ro_option_as_read_only(options):
+    """
+    For backward compatibility.
+
+    Read-only option could be represented as `--ro`, `-o read-only=yes`
+    or `-o ro=True` etc.
+    """
+    if 'ro' in options.keys():
+        if options['ro'].lower() in ('1', 'true', 'yes'):
+            options['read-only'] = 'yes'
+            del options['ro']
+        elif options['ro'].lower() in ('0', 'false', 'no'):
+            options['read-only'] = 'no'
+            del options['ro']
+        else:
+            raise ValueError(
+                f"Unknown `read-only` option value: {options['ro']}")
 
 
 def detach_device(args):
@@ -161,9 +198,8 @@ def detach_device(args):
         assignment = DeviceAssignment.from_device(device)
         vm.devices[args.devclass].detach(assignment)
     else:
-        for device_assignment in (
-                vm.devices[args.devclass].get_attached_devices()):
-            vm.devices[args.devclass].detach(device_assignment)
+        for ass in (vm.devices[args.devclass].get_attached_devices()):
+            vm.devices[args.devclass].detach(ass)
 
 
 def assign_device(args):
@@ -177,6 +213,7 @@ def assign_device(args):
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
+    parse_ro_option_as_read_only(options)
     options['identity'] = device.self_identity
     if args.port:
         options['identity'] = 'any'
@@ -204,6 +241,9 @@ def unassign_device(args):
 
 
 def _unassign_and_show_message(assignment, vm, args):
+    """
+    Helper for informing a user.
+    """
     vm.devices[args.devclass].unassign(assignment)
     if assignment.attached and not args.quiet:
         print("Unassigned. To detach you can now restart domain or run: \n"
@@ -352,6 +392,7 @@ def get_parser(device_class=None):
                                action=DeviceAction)
     unassign_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                                  dest='device',
+                                 nargs=argparse.OPTIONAL,
                                  action=DeviceAction, allow_unknown=True)
     info_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                              dest='device',
@@ -410,10 +451,11 @@ def main(args=None, app=None):
         devclass = basename[4:]
 
     # Special treatment for '--list-device-classes' (alias --list-classes)
-    curr_action = sys.argv[1:]
+    sys_args = ['--' + arg for arg in args] if args else []
+    curr_action = sys.argv[1:] + sys_args
     if set(curr_action).intersection(
             {'--list-device-classes', '--list-classes'}):
-        print('\n'.join(qubesadmin.Qubes().list_deviceclass()))
+        print('\n'.join(app.list_deviceclass()))
         return 0
 
     parser = get_parser(devclass)

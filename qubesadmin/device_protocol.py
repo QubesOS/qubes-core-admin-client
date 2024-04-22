@@ -32,9 +32,9 @@ should be moved to one place.
 import string
 import sys
 from enum import Enum
-from typing import Optional, Dict, Any, List, Type, Union
+from typing import Optional, Dict, Any, List, Union
 
-import qubesadmin
+import qubesadmin.exc
 
 
 class ProtocolError(AssertionError):
@@ -74,7 +74,8 @@ def qbool(value):
 
 
 class Device:
-    ALLOWED_CHARS_KEY = string.digits + string.ascii_letters + string.punctuation + ' '
+    ALLOWED_CHARS_KEY = (
+            string.digits + string.ascii_letters + string.punctuation + ' ')
     ALLOWED_CHARS_PARAM = ALLOWED_CHARS_KEY + string.punctuation + ' '
 
     def __init__(self, backend_domain, ident, devclass=None):
@@ -609,6 +610,7 @@ class DeviceInfo(Device):
 
         try:
             device = cls._deserialize(rest, device)
+            # pylint: disable=broad-exception-caught
         except Exception as exc:
             print(exc, file=sys.stderr)
 

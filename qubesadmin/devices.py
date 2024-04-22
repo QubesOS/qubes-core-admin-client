@@ -34,7 +34,6 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 import itertools
 from typing import Optional, Iterable
 
-import qubesadmin
 import qubesadmin.exc
 from qubesadmin.device_protocol import (Device, DeviceInfo, UnknownDevice,
                                         DeviceAssignment)
@@ -100,6 +99,9 @@ class DeviceCollection:
         self._remove(assignment, 'unassign')
 
     def _add(self, assignment: DeviceAssignment, action: str) -> None:
+        """
+        Helper for attaching/assigning device.
+        """
         if not assignment.frontend_domain:
             assignment.frontend_domain = self._vm
         elif assignment.frontend_domain != self._vm:
@@ -120,6 +122,9 @@ class DeviceCollection:
         )
 
     def _remove(self, assignment: DeviceAssignment, action: str) -> None:
+        """
+        Helper for detaching/unassigning device.
+        """
         if (assignment.frontend_domain
                 and assignment.frontend_domain != self._vm):
             raise qubesadmin.exc.QubesValueError(
