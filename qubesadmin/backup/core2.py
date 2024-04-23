@@ -336,11 +336,10 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
         if pcidevs:
             pcidevs = ast.literal_eval(pcidevs)
         for pcidev in pcidevs:
-            if not pci_strictreset:
-                vm.devices['pci'][('dom0', pcidev.replace(':', '_'))] = {
-                    'no-strict-reset': True}
-            else:
-                vm.devices['pci'][('dom0', pcidev.replace(':', '_'))] = {}
+            ident = pcidev.replace(':', '_')
+            options = {'no-strict-reset': True} if not pci_strictreset else {}
+            options['required'] = True
+            vm.devices['pci'][('dom0', ident)] = options
 
     def load(self):
         with open(self.store, encoding='utf-8') as fh:

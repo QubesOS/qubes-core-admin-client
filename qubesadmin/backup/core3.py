@@ -26,6 +26,8 @@ import lxml.etree
 
 import qubesadmin.backup
 import qubesadmin.firewall
+from qubesadmin import device_protocol
+
 
 class Core3VM(qubesadmin.backup.BackupVM):
     '''VM object'''
@@ -125,6 +127,8 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
                 for opt_node in node.findall('./option'):
                     opt_name = opt_node.get('name')
                     options[opt_name] = opt_node.text
+                options['required'] = device_protocol.qbool(
+                    node.get('required', 'yes'))
                 vm.devices[bus_name][(backend_domain, ident)] = options
 
         # extract base properties

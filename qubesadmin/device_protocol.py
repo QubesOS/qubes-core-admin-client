@@ -87,16 +87,20 @@ class Device:
         return hash((str(self.backend_domain), self.ident))
 
     def __eq__(self, other):
-        return (
-            self.backend_domain == other.backend_domain and
-            self.ident == other.ident
-        )
+        if isinstance(other, Device):
+            return (
+                self.backend_domain == other.backend_domain and
+                self.ident == other.ident
+            )
+        raise TypeError(f"Comparing instances of 'Device' and '{type(other)}' "
+                        "is not supported")
 
     def __lt__(self, other):
         if isinstance(other, Device):
             return (self.backend_domain.name, self.ident) < \
                    (other.backend_domain.name, other.ident)
-        raise NotImplementedError()
+        raise TypeError(f"Comparing instances of 'Device' and '{type(other)}' "
+                        "is not supported")
 
     def __repr__(self):
         return "[%s]:%s" % (self.backend_domain, self.ident)
