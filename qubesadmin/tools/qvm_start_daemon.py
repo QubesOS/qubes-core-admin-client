@@ -857,8 +857,6 @@ def main():
         for qube in launcher.app.domains:
             if qube.name == "dom0":
                 continue
-            launcher.on_connection_established(
-                qube, _event="connection-established")
 
         fd = os.open(
             args.pidfile,
