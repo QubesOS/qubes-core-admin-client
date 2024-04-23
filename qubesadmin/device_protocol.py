@@ -32,7 +32,7 @@ should be moved to one place.
 import string
 import sys
 from enum import Enum
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List, Union, Tuple
 
 import qubesadmin.exc
 
@@ -74,6 +74,16 @@ def qbool(value):
 
 
 class Device:
+    """
+    Basic class of a *bus* device with *ident* exposed by a *backend domain*.
+
+    Attributes:
+        backend_domain (QubesVM): The domain which exposes devices,
+            e.g.`sys-usb`.
+        ident (str): A unique identifier for the device within
+            the backend domain.
+        devclass (str, optional): The class of the device (e.g., 'usb', 'pci').
+    """
     ALLOWED_CHARS_KEY = (
             string.digits + string.ascii_letters + string.punctuation + ' ')
     ALLOWED_CHARS_PARAM = ALLOWED_CHARS_KEY + string.punctuation + ' '
@@ -152,7 +162,20 @@ class Device:
         self.__bus = devclass
 
     @classmethod
-    def unpack_properties(cls, untrusted_serialization: bytes):
+    def unpack_properties(
+            cls, untrusted_serialization: bytes
+    ) -> Tuple[Dict, Dict]:
+        """
+        Unpacks basic device properties from a serialized encoded string.
+
+        Returns:
+            tuple: A tuple containing two dictionaries, properties and options,
+                extracted from the serialization.
+
+        Raises:
+            ValueError: If unexpected characters are found in property
+                names or values.
+        """
         ut_decoded = untrusted_serialization.decode(
             'ascii', errors='strict').strip()
 
@@ -197,7 +220,17 @@ class Device:
         return properties, options
 
     @staticmethod
-    def check_device_properties(expected_device, properties):
+    def check_device_properties(
+            expected_device: 'Device', properties: Dict[str, Any]):
+        """
+        Validates properties against an expected device configuration.
+
+        Modifies `properties`.
+
+        Raises:
+            UnexpectedDeviceProperty: If any property does not match
+            the expected values.
+        """
         expected = expected_device
         exp_vm_name = expected.backend_domain.name
         if properties.get('backend_domain', exp_vm_name) != exp_vm_name:
@@ -221,10 +254,9 @@ class Device:
             properties['devclass'] = expected.devclass
 
 
-
 class DeviceCategory(Enum):
     """
-    Category of peripheral device.
+    Category of a peripheral device.
 
     Arbitrarily selected interfaces that are important to users,
     thus deserving special recognition such as a custom icon, etc.
@@ -255,6 +287,9 @@ class DeviceCategory(Enum):
 
     @staticmethod
     def from_str(interface_encoding: str) -> 'DeviceCategory':
+        """
+        Returns `DeviceCategory` from data encoded in string.
+        """
         result = DeviceCategory.Other
         if len(interface_encoding) != len(DeviceCategory.Other.value):
             return result
@@ -554,7 +589,7 @@ class DeviceInfo(Device):
 
     def serialize(self) -> bytes:
         """
-        Serialize object to be transmitted via Qubes API.
+        Serialize an object to be transmitted via Qubes API.
         """
         # 'backend_domain', 'attachment', 'interfaces', 'data', 'parent_device'
         # are not string, so they need special treatment
@@ -604,6 +639,9 @@ class DeviceInfo(Device):
             expected_backend_domain: QubesVM,
             expected_devclass: Optional[str] = None,
     ) -> 'DeviceInfo':
+        """
+        Recovers a serialized object, see: :py:meth:`serialize`.
+        """
         ident, _, rest = serialization.partition(b' ')
         ident = ident.decode('ascii', errors='ignore')
         device = UnknownDevice(
@@ -626,6 +664,9 @@ class DeviceInfo(Device):
             untrusted_serialization: bytes,
             expected_device: Device
     ) -> 'DeviceInfo':
+        """
+        Actually deserializes the object.
+        """
         properties, options = cls.unpack_properties(untrusted_serialization)
         properties.update(options)
 
@@ -684,6 +725,9 @@ class DeviceInfo(Device):
 
 
 def serialize_str(value: str):
+    """
+    Serialize python string to ensure consistency.
+    """
     result = repr(str(value))
     if result.startswith('"'):
         result = "'" + result[1:-1] + "'"
@@ -691,6 +735,9 @@ def serialize_str(value: str):
 
 
 def deserialize_str(value: str):
+    """
+    Deserialize python string to ensure consistency.
+    """
     return value.replace("\\\'", "'")
 
 
@@ -722,7 +769,7 @@ def sanitize_str(
 
 class UnknownDevice(DeviceInfo):
     # pylint: disable=too-few-public-methods
-    """Unknown device - for example exposed by domain not running currently"""
+    """Unknown device - for example, exposed by domain not running currently"""
 
     def __init__(self, backend_domain, ident, *, devclass, **kwargs):
         super().__init__(backend_domain, ident, devclass=devclass, **kwargs)
@@ -850,6 +897,9 @@ class DeviceAssignment(Device):
         self.__options = options or {}
 
     def serialize(self) -> bytes:
+        """
+        Serialize an object to be transmitted via Qubes API.
+        """
         properties = b' '.join(
             f'{prop}={serialize_str(value)}'.encode('ascii')
             for prop, value in (
@@ -885,6 +935,9 @@ class DeviceAssignment(Device):
             serialization: bytes,
             expected_device: Device,
     ) -> 'DeviceAssignment':
+        """
+        Recovers a serialized object, see: :py:meth:`serialize`.
+        """
         try:
             result = cls._deserialize(serialization, expected_device)
         except Exception as exc:
@@ -897,6 +950,9 @@ class DeviceAssignment(Device):
             untrusted_serialization: bytes,
             expected_device: Device,
     ) -> 'DeviceAssignment':
+        """
+        Actually deserializes the object.
+        """
         properties, options = cls.unpack_properties(untrusted_serialization)
         properties['options'] = options
 

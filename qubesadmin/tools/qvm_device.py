@@ -142,8 +142,7 @@ def _load_frontends_info(vm, dev, devclass):
                 return '{!s} ({})'.format(
                     vm, ', '.join('{}={}'.format(key, value)
                     for key, value in assignment.options.items()))
-            else:
-                return str(vm)
+            return str(vm)
     except qubesadmin.exc.QubesVMNotFoundError:
         return None
 
