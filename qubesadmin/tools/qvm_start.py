@@ -157,8 +157,9 @@ def get_drive_assignment(app, drive_str):
         'read-only': devtype == 'cdrom'
     }
     assignment = qubesadmin.device_protocol.DeviceAssignment(
-        backend_domain,
-        ident,
+        backend_domain=backend_domain,
+        ident=ident,
+        devclass='block',
         options=options,
         attach_automatically=True,
         required=True)
