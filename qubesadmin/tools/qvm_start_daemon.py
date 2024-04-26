@@ -745,9 +745,8 @@ class DAEMONLauncher:
                 log.error("vm.name: failed to determine XID: %s", str(e))
                 return
         xid, stubdom_xid = self.xid_cache[vm.name]
-        oldvalue = _kwargs.get("oldvalue", None)
         newvalue = _kwargs.get("newvalue", None)
-        if oldvalue == self.app.local_name and newvalue == "None":
+        if newvalue != self.app.local_name:
             if xid != -1:
                 self.cleanup_pacat_process(xid)
             if stubdom_xid != -1:
@@ -757,10 +756,9 @@ class DAEMONLauncher:
                     del self.xid_cache[vm.name]
             except KeyError:
                 return
-        elif newvalue == self.app.local_name:
-            power_state = vm.get_power_state()
-            if power_state == 'Running':
-                asyncio.ensure_future(self.start_audio(vm))
+        elif (newvalue == self.app.local_name and
+              vm.get_power_state() == "Running"):
+            asyncio.ensure_future(self.start_audio(vm))
 
     def cleanup_guid(self, xid):
         """
