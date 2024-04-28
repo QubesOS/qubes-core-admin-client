@@ -26,7 +26,6 @@ import struct
 import xcffib
 
 
-
 class XkbUseExtensionReply(xcffib.Reply):
     """Helper class to parse XkbUseExtensionReply
     Contains hardcoded values based on X11/XKBproto.h"""

@@ -37,7 +37,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.vm
-from . import xcffibhelpers
+from qubesadmin.tools import xcffibhelpers
 
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
@@ -54,6 +54,46 @@ GUI_DAEMON_OPTIONS = [
     ('trayicon_mode', 'str'),
     ('startup_timeout', 'int'),
 ]
+
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+handler.setFormatter(formatter)
+
+log = logging.getLogger("qvm-start-daemon")
+log.addHandler(handler)
+
+if 'XDG_RUNTIME_DIR' in os.environ:
+    pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
+                                'qvm-start-daemon.pid')
+else:
+    pidfile_path = os.path.join(os.environ.get('HOME', '/'),
+                                '.qvm-start-daemon.pid')
+
+parser = qubesadmin.tools.QubesArgumentParser(
+        description='start GUI or AUDIO for qube(s)',
+        vmname_nargs='*'
+    )
+parser.add_argument('--debug', '-d', action='store_true',
+                    help='Show debug messages')
+parser.add_argument('--watch', action='store_true',
+                    help='Keep watching for further domain startups')
+parser.add_argument('--force-stubdomain', action='store_true',
+                    help='Start GUI to stubdomain-emulated VGA,'
+                         ' even if gui-agent is running in the VM')
+parser.add_argument('--pidfile', action='store', default=pidfile_path,
+                    help='Pidfile path to create in --watch mode')
+parser.add_argument('--notify-monitor-layout', action='store_true',
+                    help='Notify running instance in --watch mode'
+                         ' about changed monitor layout')
+parser.add_argument('--kde', action='store_true',
+                    help='Set KDE specific arguments to gui-daemon.')
+# Add it for the help only
+parser.add_argument('--force', action='store_true', default=False,
+                    help='Force running daemon without enabled services'
+                         ' \'guivm\' or \'audiovm\'')
 
 
 def retrieve_gui_daemon_options(vm, guivm):
@@ -90,7 +130,7 @@ def retrieve_gui_daemon_options(vm, guivm):
 
 def serialize_gui_daemon_options(options):
     '''
-    Prepare configuration file content for GUI daemon. Currently uses libconfig
+    Prepare configuration file content for GUI daemon. Currently, uses libconfig
     format.
     '''
 
@@ -119,6 +159,7 @@ def serialize_gui_daemon_options(options):
 
 NON_ASCII_RE = re.compile(r'[^\x00-\x7F]')
 UNPRINTABLE_CHARACTER_RE = re.compile(r'[\x00-\x1F\x7F]')
+
 
 def escape_config_string(value):
     '''
@@ -322,7 +363,8 @@ def get_monitor_layout():
 class DAEMONLauncher:
     """Launch GUI/AUDIO daemon for VMs"""
 
-    def __init__(self, app: qubesadmin.app.QubesBase, vm_names=None, kde=False):
+    def __init__(self, app: qubesadmin.app.QubesBase, enabled_services,
+                 vm_names=None, kde=False):
         """ Initialize DAEMONLauncher.
 
         :param app: :py:class:`qubesadmin.Qubes` instance
@@ -330,6 +372,7 @@ class DAEMONLauncher:
         :param kde: add KDE-specific arguments for guid
         """
         self.app = app
+        self.enabled_services = enabled_services
         self.started_processes = {}
         self.vm_names = vm_names
         self.kde = kde
@@ -394,8 +437,9 @@ class DAEMONLauncher:
             if vm.is_running():
                 if not vm.features.check_with_template('gui', True):
                     continue
-                asyncio.ensure_future(self.send_monitor_layout(vm,
-                                                               monitor_layout))
+                asyncio.ensure_future(
+                    self.send_monitor_layout(vm, monitor_layout)
+                )
 
     @staticmethod
     def kde_guid_args(vm):
@@ -594,6 +638,8 @@ class DAEMONLauncher:
         xid = self.pacat_domid(vm)
         if not os.path.exists(self.pacat_pidfile(xid)):
             await self.start_audio_for_vm(vm)
+        else:
+            vm.log.info('AUDIO process exists. Skipping.')
 
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
@@ -602,7 +648,8 @@ class DAEMONLauncher:
             return
 
         try:
-            if getattr(vm, 'guivm', None) != vm.app.local_name:
+            if ('guivm' in self.enabled_services and
+                    getattr(vm, 'guivm', None) != vm.app.local_name):
                 return
             if not vm.features.check_with_template('gui', True) and \
                     not vm.features.check_with_template('gui-emulated', True):
@@ -623,17 +670,19 @@ class DAEMONLauncher:
         self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
 
         try:
-            if getattr(vm, 'guivm', None) == vm.app.local_name and \
-                    vm.features.check_with_template('gui', True) and \
-                    kwargs.get('start_guid', 'True') == 'True':
+            if ('guivm' in self.enabled_services and
+                    getattr(vm, 'guivm', None) == vm.app.local_name and
+                    vm.features.check_with_template('gui', True) and
+                    kwargs.get('start_guid', 'True') == 'True'):
                 asyncio.ensure_future(self.start_gui_for_vm(vm))
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start GUI for %s: %s', vm.name, str(e))
 
         try:
-            if getattr(vm, 'audiovm', None) == vm.app.local_name and \
-                    vm.features.check_with_template('audio', True) and \
-                    kwargs.get('start_audio', 'True') == 'True':
+            if ('audiovm' in self.enabled_services
+                    and getattr(vm, 'audiovm', None) == vm.app.local_name and
+                    vm.features.check_with_template('audio', True) and
+                    kwargs.get('start_audio', 'True') == 'True'):
                 asyncio.ensure_future(self.start_audio_for_vm(vm))
         except qubesadmin.exc.QubesException as e:
             vm.log.warning('Failed to start AUDIO for %s: %s', vm.name, str(e))
@@ -653,16 +702,20 @@ class DAEMONLauncher:
 
             power_state = vm.get_power_state()
             if power_state == 'Running':
-                asyncio.ensure_future(
-                    self.start_gui(vm, monitor_layout=monitor_layout))
-                asyncio.ensure_future(self.start_audio(vm))
+                if "guivm" in self.enabled_services:
+                    asyncio.ensure_future(
+                        self.start_gui(vm, monitor_layout=monitor_layout)
+                    )
+                if "audiovm" in self.enabled_services:
+                    asyncio.ensure_future(self.start_audio(vm))
                 self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
             elif power_state == 'Transient':
                 # it is still starting, we'll get 'domain-start'
                 # event when fully started
-                if vm.virt_mode == 'hvm':
+                if "guivm" in self.enabled_services and vm.virt_mode == 'hvm':
                     asyncio.ensure_future(
-                        self.start_gui_for_stubdomain(vm))
+                        self.start_gui_for_stubdomain(vm)
+                    )
 
     def on_domain_stopped(self, vm, _event, **_kwargs):
         """Handler of 'domain-stopped' event, cleans up"""
@@ -678,18 +731,65 @@ class DAEMONLauncher:
             return
         if xid != -1:
             self.cleanup_guid(xid)
+            self.cleanup_pacat_process(xid)
         if stubdom_xid != -1:
             self.cleanup_guid(stubdom_xid)
+            self.cleanup_pacat_process(stubdom_xid)
+
+    def on_property_audiovm_set(self, vm, _event, **_kwargs):
+        """Handler for catching event related to dynamic AudioVM set/unset"""
+        if vm.name not in self.xid_cache:
+            try:
+                self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+            except qubesadmin.exc.QubesDaemonAccessError as e:
+                log.error("vm.name: failed to determine XID: %s", str(e))
+                return
+        xid, stubdom_xid = self.xid_cache[vm.name]
+        newvalue = _kwargs.get("newvalue", None)
+        if newvalue != self.app.local_name:
+            if xid != -1:
+                self.cleanup_pacat_process(xid)
+            if stubdom_xid != -1:
+                self.cleanup_pacat_process(stubdom_xid)
+            try:
+                if not os.path.exists(self.guid_pidfile(xid)):
+                    del self.xid_cache[vm.name]
+            except KeyError:
+                return
+        elif (newvalue == self.app.local_name and
+              vm.get_power_state() == "Running"):
+            asyncio.ensure_future(self.start_audio(vm))
 
     def cleanup_guid(self, xid):
         """
-        Clean up after qubes-guid. Removes the auto-generated configuration
-        file, if any.
+        Clean up after qubes-guid.
+
+        Removes the auto-generated configuration file, if any.
         """
 
         config_path = self.guid_config_file(xid)
         if os.path.exists(config_path):
             os.unlink(config_path)
+
+    def cleanup_pacat_process(self, xid):
+        """
+        Clean up after pacat-simple-vchan.
+
+        Removes the auto-generated configuration file, if any.
+        """
+        config_file = self.pacat_pidfile(xid)
+        if not os.path.exists(config_file):
+            return
+        try:
+            with open(config_file, encoding="ascii") as fd:
+                pid = int(fd.readline())
+                os.kill(pid, signal.SIGTERM)
+                log.info(
+                    "Sent SIGTERM signal to pacat-simple-vchan process %d", pid)
+        except OSError:
+            log.error("Failed to send SIGTERM signal for the"
+                      " pacat-simple-vchan with xid of %d", xid)
+        os.unlink(config_file)
 
     def register_events(self, events):
         """Register domain startup events in app.events dispatcher"""
@@ -698,6 +798,10 @@ class DAEMONLauncher:
         events.add_handler('connection-established',
                            self.on_connection_established)
         events.add_handler('domain-stopped', self.on_domain_stopped)
+
+        for event in ["property-set:audiovm", "property-pre-set:audiovm",
+                      "property-pre-del:audiovm"]:
+            events.add_handler(event, self.on_property_audiovm_set)
 
     def is_watched(self, vm):
         """
@@ -711,43 +815,28 @@ class DAEMONLauncher:
         return vm.name in self.vm_names
 
 
-if 'XDG_RUNTIME_DIR' in os.environ:
-    pidfile_path = os.path.join(os.environ['XDG_RUNTIME_DIR'],
-                                'qvm-start-daemon.pid')
-else:
-    pidfile_path = os.path.join(os.environ.get('HOME', '/'),
-                                '.qvm-start-daemon.pid')
-
-parser = qubesadmin.tools.QubesArgumentParser(
-    description='start GUI for qube(s)', vmname_nargs='*')
-parser.add_argument('--watch', action='store_true',
-                    help='Keep watching for further domain startups')
-parser.add_argument('--force-stubdomain', action='store_true',
-                    help='Start GUI to stubdomain-emulated VGA,'
-                         ' even if gui-agent is running in the VM')
-parser.add_argument('--pidfile', action='store', default=pidfile_path,
-                    help='Pidfile path to create in --watch mode')
-parser.add_argument('--notify-monitor-layout', action='store_true',
-                    help='Notify running instance in --watch mode'
-                         ' about changed monitor layout')
-parser.add_argument('--kde', action='store_true',
-                    help='Set KDE specific arguments to gui-daemon.')
-# Add it for the help only
-parser.add_argument('--force', action='store_true', default=False,
-                    help='Force running daemon without enabled services'
-                         ' \'guivm\' or \'audiovm\'')
-
-
-def main(args=None):
+def main():
     """ Main function of qvm-start-daemon tool"""
+
     only_if_service_enabled = ['guivm', 'audiovm']
-    enabled_services = [service for service in only_if_service_enabled if
-                        os.path.exists('/var/run/qubes-service/%s' % service)]
-    if not enabled_services and '--force' not in sys.argv and \
-            not os.path.exists('/etc/qubes-release'):
-        print(parser.format_help())
+    enabled_services = [
+        service for service in only_if_service_enabled
+        if os.path.exists(f'/var/run/qubes-service/{service}')
+    ]
+
+    if "--force" in sys.argv or os.path.exists("/etc/qubes-release"):
+        enabled_services = only_if_service_enabled
+
+    if not enabled_services:
+        log.info("None of 'audiovm' nor 'guivm' service is enabled")
+        log.info(parser.format_help())
         return
-    args = parser.parse_args(args)
+
+    args = parser.parse_args()
+
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+
     if args.watch and args.notify_monitor_layout:
         parser.error('--watch cannot be used with --notify-monitor-layout')
 
@@ -755,15 +844,25 @@ def main(args=None):
         vm_names = None
     else:
         vm_names = [vm.name for vm in args.domains]
+
     launcher = DAEMONLauncher(
-        args.app,
+        app=args.app,
+        enabled_services=enabled_services,
         vm_names=vm_names,
-        kde=args.kde)
+        kde=args.kde
+    )
 
     if args.watch:
-        fd = os.open(args.pidfile,
-                     os.O_RDWR | os.O_CREAT | os.O_CLOEXEC,
-                     0o600)
+        # Start qubes running before we started qvm-start-daemon
+        for qube in launcher.app.domains:
+            if qube.name == "dom0":
+                continue
+
+        fd = os.open(
+            args.pidfile,
+            os.O_RDWR | os.O_CREAT | os.O_CLOEXEC,
+            0o600
+        )
         with os.fdopen(fd, 'r+') as lock_f:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -772,9 +871,8 @@ def main(args=None):
                     pid = int(lock_f.read().strip())
                 except ValueError:
                     pid = 'unknown'
-                print('Another GUI daemon process (with PID {}) is already '
-                      'running'.format(pid),
-                      file=sys.stderr)
+                log.error('Another daemon launcher process (with PID %d)'
+                          ' is already running', pid)
                 sys.exit(1)
             print(os.getpid(), file=lock_f)
             lock_f.flush()
@@ -788,24 +886,33 @@ def main(args=None):
             events_listener = asyncio.ensure_future(events.listen_for_events())
 
             for signame in ('SIGINT', 'SIGTERM'):
-                loop.add_signal_handler(getattr(signal, signame),
-                                        events_listener.cancel)  # pylint: disable=no-member
+                loop.add_signal_handler(
+                    getattr(signal, signame),
+                    events_listener.cancel
+                )  # pylint: disable=no-member
 
             loop.add_signal_handler(signal.SIGHUP,
                                     launcher.send_monitor_layout_all)
 
-            conn = xcffib.connect()
-            x_watcher = XWatcher(conn, args.app)
-            x_fd = conn.get_file_descriptor()
-            loop.add_reader(x_fd, x_watcher.event_reader,
-                            events_listener.cancel)
-            x_watcher.update_keyboard_layout()
+            if "guivm" in enabled_services:
+                conn = xcffib.connect()
+                x_watcher = XWatcher(conn, args.app)
+                x_fd = conn.get_file_descriptor()
+                loop.add_reader(
+                    x_fd,
+                    x_watcher.event_reader,
+                    events_listener.cancel
+                )
+                x_watcher.update_keyboard_layout()
 
             try:
                 loop.run_until_complete(events_listener)
             except asyncio.CancelledError:
                 pass
-            loop.remove_reader(x_fd)
+
+            if "guivm" in enabled_services:
+                loop.remove_reader(x_fd)
+
             loop.stop()
             loop.run_forever()
             loop.close()
@@ -815,17 +922,27 @@ def main(args=None):
                 pid = int(pidfile.read().strip())
             os.kill(pid, signal.SIGHUP)
         except (FileNotFoundError, ValueError) as e:
-            parser.error('Cannot open pidfile {}: {}'.format(pidfile_path,
-                                                             str(e)))
+            parser.error(f'Cannot open pidfile {pidfile_path}: {str(e)}')
     else:
         loop = asyncio.get_event_loop()
         tasks = []
         for vm in args.domains:
             if vm.is_running():
-                tasks.append(asyncio.ensure_future(launcher.start_gui(
-                    vm, force_stubdom=args.force_stubdomain)))
-                tasks.append(asyncio.ensure_future(launcher.start_audio(
-                    vm)))
+                if "guivm" in enabled_services:
+                    tasks.append(
+                        asyncio.ensure_future(
+                            launcher.start_gui(
+                                vm,
+                                force_stubdom=args.force_stubdomain
+                            )
+                        )
+                    )
+                if "audiovm" in enabled_services:
+                    tasks.append(
+                        asyncio.ensure_future(
+                            launcher.start_audio(vm)
+                        )
+                    )
         if tasks:
             loop.run_until_complete(asyncio.wait(tasks))
         loop.stop()
