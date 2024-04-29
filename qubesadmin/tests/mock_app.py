@@ -463,8 +463,8 @@ class MockQube:
 class MockAdminVM(MockQube):
     def __init__(self, qapp):
         super().__init__('dom0', qapp, klass='AdminVM', running=True,
-                         features=DEFAULT_DOM0_FEATURES,
-                         override_default_props=DEFAULT_DOM0_PROPERTIES)
+                         features=DEFAULT_DOM0_FEATURES.copy(),
+                         override_default_props=DEFAULT_DOM0_PROPERTIES.copy())
         # make all properties that are unknown give an 'unknown property' error
         for property_name in DEFAULT_VM_PROPERTIES.keys():
             if property_name not in self.properties:
