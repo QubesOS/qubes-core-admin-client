@@ -1,3 +1,21 @@
+qubes-core-admin-client (4.2.12-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * qvm_start_daemon: cleanup pacat process
+  * qvm_start_daemon: handle setting/changing audiovm
+  * qvm-start-daemon: improve logging and update sphinx
+  * qvm-start-daemon: refactor start of services
+  * qvm-start-daemon: improve dynamic switch for audiovm
+  * qvm-start-daemon: set enabled services for launcher
+  * qvm-start-daemon: make pylint happy
+  * qvm-start-daemon: fix missing short alias for debug
+  * qvm-start-daemon: check for dom0
+  * qvm-start-daemon: one more pass on isolating services
+  * qvm-start-daemon: remove manual call on_connection_established
+  * qvm-start-daemon: fix remaining process on new audiovm
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 29 Apr 2024 16:42:14 +0200
+
 qubes-core-admin-client (4.2.11-1) unstable; urgency=medium
 
   [ Sylwester Arabas ]
