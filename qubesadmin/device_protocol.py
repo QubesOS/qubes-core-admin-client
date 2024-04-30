@@ -86,7 +86,7 @@ class Device:
     """
     ALLOWED_CHARS_KEY = set(
             string.digits + string.ascii_letters
-            + r"!#$%&()*+,-./:;<>?@[\]^_{|}~" + ' ')
+            + r"!#$%&()*+,-./:;<>?@[\]^_{|}~")
     ALLOWED_CHARS_PARAM = ALLOWED_CHARS_KEY.union(set(string.punctuation + ' '))
 
     def __init__(self, backend_domain, ident, devclass=None):
@@ -221,7 +221,7 @@ class Device:
         return properties, options
 
     @classmethod
-    def pack_property(cls, serialization: bytes, key: str, value: str):
+    def pack_property(cls, key: str, value: str):
         """
         Add property `key=value` to serialization.
         """
@@ -231,8 +231,7 @@ class Device:
         value = sanitize_str(
             serialize_str(value), cls.ALLOWED_CHARS_PARAM,
             error_message='Invalid chars in property value: ')
-        return (serialization + b' '
-                + key.encode('ascii') + b'=' + value.encode('ascii'))
+        return key.encode('ascii') + b'=' + value.encode('ascii')
 
     @staticmethod
     def check_device_properties(
@@ -617,31 +616,30 @@ class DeviceInfo(Device):
         default_attrs = {
             'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
             'serial', 'self_identity'}
-        properties = b''
-        for key, value in ((key, getattr(self, key)) for key in default_attrs):
-            properties = self.pack_property(properties, key, value)
-        # remove unnecessary space in the beginning
-        properties = properties[1:]
+        properties = b' '.join(
+            self.pack_property(key, value)
+            for key, value in ((key, getattr(self, key))
+                               for key in default_attrs))
 
-        properties = self.pack_property(
-            properties, 'backend_domain', self.backend_domain.name)
+        properties += b' ' + self.pack_property(
+            'backend_domain', self.backend_domain.name)
 
         if self.attachment:
             properties = self.pack_property(
                 properties, 'attachment', self.attachment.name)
 
-        properties = self.pack_property(
-            properties, 'interfaces',
+        properties += b' ' + self.pack_property(
+            'interfaces',
             ''.join(repr(ifc) for ifc in self.interfaces))
 
         if self.parent_device is not None:
-            properties = self.pack_property(
-                properties, 'parent_ident', self.parent_device.ident)
-            properties = self.pack_property(
-                properties, 'parent_devclass', self.parent_device.devclass)
+            properties += b' ' + self.pack_property(
+                'parent_ident', self.parent_device.ident)
+            properties += b' ' + self.pack_property(
+                'parent_devclass', self.parent_device.devclass)
 
         for key, value in self.data.items():
-            properties = self.pack_property(properties, "_" + key, value)
+            properties += b' ' + self.pack_property("_" + key, value)
 
         return properties
 
@@ -910,27 +908,24 @@ class DeviceAssignment(Device):
         """
         Serialize an object to be transmitted via Qubes API.
         """
-        properties = b''
-        for key, value in (
+        properties = b' '.join(
+            self.pack_property(key, value)
+            for key, value in (
                 ('required', 'yes' if self.required else 'no'),
                 ('attach_automatically',
                  'yes' if self.attach_automatically else 'no'),
                 ('ident', self.ident),
-                ('devclass', self.devclass)
-        ):
-            properties = self.pack_property(properties, key, value)
-        # remove unnecessary space in the beginning
-        properties = properties[1:]
+                ('devclass', self.devclass)))
 
-        properties = self.pack_property(
-            properties, 'backend_domain', self.backend_domain.name)
+        properties += b' ' + self.pack_property(
+            'backend_domain', self.backend_domain.name)
 
         if self.frontend_domain is not None:
-            properties = self.pack_property(
-                properties, 'frontend_domain', self.frontend_domain.name)
+            properties += b' ' + self.pack_property(
+                'frontend_domain', self.frontend_domain.name)
 
         for key, value in self.options.items():
-            properties = self.pack_property(properties, "_" + key, value)
+            properties += b' ' + self.pack_property("_" + key, value)
 
         return properties
 
