@@ -41,7 +41,7 @@ except ImportError:
 import re
 
 import multiprocessing
-import pkg_resources
+import importlib.resources
 import sys
 
 import qubesadmin.backup.core2
@@ -759,17 +759,17 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
         self.assertEqual(backup_app.globals, expected_data['globals'])
 
     def test_000_qubes_xml_r2(self):
-        xml_data = pkg_resources.resource_string(__name__, 'v3-qubes.xml')
+        xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-qubes.xml"
         with tempfile.NamedTemporaryFile() as qubes_xml:
-            qubes_xml.file.write(xml_data)
+            qubes_xml.file.write(xml_path.read_bytes())
             backup_app = qubesadmin.backup.core2.Core2Qubes(qubes_xml.name)
         self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_r2)
 
     def test_010_qubes_xml_r4(self):
         self.maxDiff = None
-        xml_data = pkg_resources.resource_string(__name__, 'v4-qubes.xml')
+        xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-qubes.xml"
         with tempfile.NamedTemporaryFile() as qubes_xml:
-            qubes_xml.file.write(xml_data)
+            qubes_xml.file.write(xml_path.read_bytes())
             backup_app = qubesadmin.backup.core3.Core3Qubes(qubes_xml.name)
         self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_v4)
 
@@ -878,8 +878,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.create_private_img(self.fullpath("appvms/test-work/private.img"))
         with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
                 f_firewall:
-            f_firewall.write(
-                pkg_resources.resource_string(__name__, 'v3-firewall.xml'))
+            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-firewall.xml"
+            f_firewall.write(xml_path.read_bytes())
 
         # StandaloneVM
         os.mkdir(self.fullpath("appvms/test-standalonevm"))
@@ -1042,8 +1042,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # setup firewall only on one VM
         with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
                 f_firewall:
-            f_firewall.write(
-                pkg_resources.resource_string(__name__, 'v4-firewall.xml'))
+            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-firewall.xml"
+            f_firewall.write(xml_path.read_bytes())
 
         # StandaloneVMs
         for vm in ('test-standalonevm', 'test-hvm'):
@@ -1235,7 +1235,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.append_backup_stream("backup-header", output)
         self.append_backup_stream("backup-header.hmac", output)
         with open(self.fullpath("qubes.xml"), "wb") as f:
-            qubesxml = pkg_resources.resource_string(__name__, 'v3-qubes.xml')
+            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-qubes.xml"
+
+            qubesxml = xml_path.read_bytes()
             if encrypted:
                 for vmname, subdir in MANGLED_SUBDIRS_R2.items():
                     qubesxml = re.sub(r"[a-z-]*/{}".format(vmname).encode(),
@@ -1300,7 +1302,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.append_backup_stream("backup-header", output)
         self.append_backup_stream("backup-header.hmac", output)
         with open(self.fullpath("qubes.xml"), "wb") as f:
-            qubesxml = pkg_resources.resource_string(__name__, 'v4-qubes.xml')
+            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-qubes.xml"
+
+            qubesxml = xml_path.read_bytes()
             for vmname, subdir in MANGLED_SUBDIRS_R4.items():
                 qubesxml = re.sub(
                     r'backup-path">[a-z-]*/{}'.format(vmname).encode(),
