@@ -788,7 +788,7 @@ class DAEMONLauncher:
                     "Sent SIGTERM signal to pacat-simple-vchan process %d", pid)
         except OSError:
             log.error("Failed to send SIGTERM signal for the"
-                      " pacat-simple-vchan with xid of %d", xid)
+                      " pacat-simple-vchan with xid of %s", xid)
         os.unlink(config_file)
 
     def register_events(self, events):
