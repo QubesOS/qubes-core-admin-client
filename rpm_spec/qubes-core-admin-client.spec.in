@@ -39,6 +39,7 @@ Requires:   python%{python3_pkgversion}-daemon
 Requires:   python%{python3_pkgversion}-docutils
 Requires:   python%{python3_pkgversion}-lxml
 Requires:   python%{python3_pkgversion}-xcffib
+Requires:   python%{python3_pkgversion}-qubesdb
 Requires:   python%{python3_pkgversion}-rpm
 Requires:   python%{python3_pkgversion}-tqdm
 Requires:   python%{python3_pkgversion}-pyxdg
