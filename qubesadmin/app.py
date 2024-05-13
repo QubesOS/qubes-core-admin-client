@@ -41,6 +41,12 @@ import qubesadmin.vm
 import qubesadmin.config
 import qubesadmin.devices
 
+try:
+    import qubesdb
+    has_qubesdb = True
+except ImportError:
+    has_qubesdb = False
+
 
 class VMCollection(object):
     """Collection of VMs objects"""
@@ -257,7 +263,18 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     def local_name(self):
         """ Get localhost name """
         if not self._local_name:
-            self._local_name = os.uname()[1]
+            local_name = None
+            if has_qubesdb:
+                try:
+                    local_qdb = qubesdb.QubesDB()
+                    local_name_b = local_qdb.read('/name')
+                    if local_name_b:
+                        local_name = local_name_b.decode()
+                except qubesdb.Error:
+                    pass
+            if local_name is None:
+                local_name = os.uname()[1]
+            self._local_name = local_name
 
         return self._local_name
 

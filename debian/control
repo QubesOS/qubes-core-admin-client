@@ -42,6 +42,7 @@ Architecture: any
 Depends:
  python3-docutils,
  python3-lxml,
+ python3-qubesdb,
  python3-rpm,
  python3-tqdm,
  ${python3:Depends},
