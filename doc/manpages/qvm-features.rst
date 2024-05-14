@@ -273,6 +273,13 @@ supported by a template-based qube, look at `supported-service.*` on its
 template). Supported qvm-service `x` is noted as `supported-service.x` with value of
 `1`. Not supported service is not listed at all. Other values are not supported.
 
+service.*
+^^^^^^^^^
+
+Enabled/disabled "qvm-services". Values can be either `1` for enabled service,
+or empty string for disabled service.
+See :manpage:`qvm-service(1)` for details.
+
 supported-rpc.*
 ^^^^^^^^^^^^^^^
 
