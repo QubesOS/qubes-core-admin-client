@@ -19,7 +19,7 @@ Homepage: https://www.qubes-os.org/
 #Vcs-Git: git://github.com/QubesOS/qubes-core-admin-client.git
 #Vcs-Browser: https://github.com/QubesOS/qubes-core-admin-client
 X-Python-Version: >= 2.7
-X-Python3-Version: >= 3.4
+X-Python3-Version: >= 3.8
 
 Package: qubes-core-admin-client
 Architecture: any
