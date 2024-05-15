@@ -1324,6 +1324,8 @@ def list_templates(args: argparse.Namespace,
             tpl_list_dict = info_to_machine_output(tpl_list)
         elif command == 'list':
             tpl_list_dict = list_to_machine_output(tpl_list)
+        else:
+            assert False, f"Invalid command {command}"
         for status, grp in tpl_list_dict.items():
             for line in grp:
                 print('|'.join([status] + list(line.values())))
