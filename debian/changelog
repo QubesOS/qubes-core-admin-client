@@ -1,3 +1,23 @@
+qubes-core-admin-client (4.2.13-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Copy a dictionary on use in mock API
+
+  [ Frédéric Pierret (fepitre) ]
+  * qvm-start-daemon: fix TypeError in message
+  * qvm_start_daemon: improve reset property handling
+
+  [ Marek Marczykowski-Górecki ]
+  * Get local name from qubesdb
+  * Document that qvm-service are stored as qvm-features
+  * Make pylint happy
+  * qvm-start-daemon: handle policy denials
+
+  [ Marta Marczykowska-Górecka ]
+  * Remove deprecated pkg_resources library
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 15 May 2024 13:50:23 +0200
+
 qubes-core-admin-client (4.2.12-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
