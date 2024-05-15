@@ -694,28 +694,32 @@ class DAEMONLauncher:
         monitor_layout = get_monitor_layout()
         self.app.domains.clear_cache()
         for vm in self.app.domains:
-            if vm.klass == 'AdminVM':
-                continue
+            try:
+                if vm.klass == 'AdminVM':
+                    continue
 
-            if not self.is_watched(vm):
-                continue
+                if not self.is_watched(vm):
+                    continue
 
-            power_state = vm.get_power_state()
-            if power_state == 'Running':
-                if "guivm" in self.enabled_services:
-                    asyncio.ensure_future(
-                        self.start_gui(vm, monitor_layout=monitor_layout)
-                    )
-                if "audiovm" in self.enabled_services:
-                    asyncio.ensure_future(self.start_audio(vm))
-                self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
-            elif power_state == 'Transient':
-                # it is still starting, we'll get 'domain-start'
-                # event when fully started
-                if "guivm" in self.enabled_services and vm.virt_mode == 'hvm':
-                    asyncio.ensure_future(
-                        self.start_gui_for_stubdomain(vm)
-                    )
+                power_state = vm.get_power_state()
+                if power_state == 'Running':
+                    if "guivm" in self.enabled_services:
+                        asyncio.ensure_future(
+                            self.start_gui(vm, monitor_layout=monitor_layout)
+                        )
+                    if "audiovm" in self.enabled_services:
+                        asyncio.ensure_future(self.start_audio(vm))
+                    self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+                elif power_state == 'Transient':
+                    # it is still starting, we'll get 'domain-start'
+                    # event when fully started
+                    if "guivm" in self.enabled_services \
+                            and vm.virt_mode == 'hvm':
+                        asyncio.ensure_future(
+                            self.start_gui_for_stubdomain(vm)
+                        )
+            except qubesadmin.exc.QubesDaemonCommunicationError as e:
+                vm.log.warning("Failed to handle %s: %s", vm.name, str(e))
 
     def on_domain_stopped(self, vm, _event, **_kwargs):
         """Handler of 'domain-stopped' event, cleans up"""
