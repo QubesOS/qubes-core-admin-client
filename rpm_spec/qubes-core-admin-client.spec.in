@@ -35,7 +35,6 @@ This package include managemt tools, like qvm-*.
 
 %package -n python%{python3_pkgversion}-qubesadmin
 Summary:    Python%{python3_pkgversion} module qubesadmin
-Requires:   python%{python3_pkgversion}-daemon
 Requires:   python%{python3_pkgversion}-docutils
 Requires:   python%{python3_pkgversion}-lxml
 Requires:   python%{python3_pkgversion}-xcffib
