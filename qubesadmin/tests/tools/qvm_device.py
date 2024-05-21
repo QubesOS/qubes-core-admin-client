@@ -75,8 +75,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list'], app=self.app)
             self.assertEqual(
                 [x.rstrip() for x in buf.getvalue().splitlines()],
-                ['test-vm1:dev1  test-device (itl)',
-                 'test-vm2:dev2  test-device (? `)']
+                ['test-vm1:dev1  ?******: itl test-device',
+                 'test-vm2:dev2  ?******: ? ` test-device']
             )
 
     def test_001_list_assigned_required(self):
@@ -105,7 +105,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  test-device (itl)  test-vm3\n'
+                'test-vm1:dev1  ?******: itl test-device  test-vm3\n'
             )
 
     def test_002_list_attach(self):
@@ -134,7 +134,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  test-device (itl)  test-vm3\n'
+                'test-vm1:dev1  ?******: itl test-device  test-vm3\n'
             )
 
     def test_003_list_device_classes(self):
