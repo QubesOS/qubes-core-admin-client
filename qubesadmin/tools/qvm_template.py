@@ -768,11 +768,13 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
         if truncate.returncode != 0:
             return False
         # and create rpm file symlink
-        with subprocess.Popen([
-            'ln', '-s', path, f'{target}/{PATH_PREFIX}/{name}/template.rpm'
-        ]) as symlink:
-            pass
-        if symlink.returncode != 0:
+        link_path = f'{target}/{PATH_PREFIX}/{name}/template.rpm'
+        try:
+            os.symlink(os.path.abspath(path),
+                       f'{target}/{PATH_PREFIX}/{name}/template.rpm')
+        except OSError as e:
+            print(f"Failed to create {link_path} symlink: {e!s}",
+                  file=sys.stderr)
             return False
     return True
 

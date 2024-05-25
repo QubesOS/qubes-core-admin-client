@@ -196,7 +196,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
 
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.Popen')
-    def test_010_extract_rpm_success(self, mock_popen, mock_path_exists):
+    @mock.patch('os.symlink')
+    def test_010_extract_rpm_success(self, mock_symlink, mock_popen, mock_path_exists):
         mock_popen.return_value.__enter__.return_value = mock_popen.return_value
         pipe = mock.Mock()
         mock_popen.return_value.stdout = pipe
@@ -234,20 +235,17 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             ]),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
-            mock.call([
-                'ln',
-                '-s',
-                path,
-                dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm'
-            ]),
-            mock.call().__enter__(),
-            mock.call().__exit__(None, None, None),
+        ])
+        self.assertEqual(mock_symlink.mock_calls, [
+            mock.call(path,
+             dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm')
         ])
         self.assertAllCalled()
 
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.Popen')
-    def test_011_extract_rpm_fail(self, mock_popen, mock_path_exists):
+    @mock.patch('os.symlink')
+    def test_011_extract_rpm_fail(self, mock_symlink, mock_popen, mock_path_exists):
         for failing_call in range(1, 5):
             mock_popen.reset_mock()
             with self.subTest(failing_call=failing_call):
@@ -268,6 +266,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
 
                 mock_popen.side_effect = side_effect
                 mock_path_exists.return_value = True
+
+                def symlink_side_effect(_s, _d):
+                    if failing_call >= 4:
+                        raise OSError("Error")
+                    return None
+                mock_symlink.side_effect = symlink_side_effect
 
                 with tempfile.NamedTemporaryFile() as fd, \
                         tempfile.TemporaryDirectory() as tmpdir:
@@ -299,16 +303,6 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                         '--size=512',
                         dirpath
                         + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00'
-                    ]),
-                    mock.call().__enter__(),
-                    mock.call().__exit__(None, None, None),
-                ]) + ([] if failing_call < 4 else [
-                    mock.call([
-                        'ln',
-                        '-s',
-                        path,
-                        dirpath
-                        + '//var/lib/qubes/vm-templates/test-vm/template.rpm'
                     ]),
                     mock.call().__enter__(),
                     mock.call().__exit__(None, None, None),
