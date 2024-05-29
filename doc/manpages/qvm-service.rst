@@ -181,6 +181,13 @@ evolution-data-server:
     client, and is mostly used by GNOME applications.  If Evolution Data
     Server is not installed in the qube, this has no effect.
 
+usb-reset-on-attach:
+    Default: disabled
+
+    Reset devices when attaching them using qvm-usb (or its GUI equivalent).
+    This is known to help with some devices, that cannot deal with re-attaching
+    to another driver.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
