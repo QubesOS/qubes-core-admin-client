@@ -895,8 +895,15 @@ def main():
             lock_f.flush()
             lock_f.truncate()
             loop = asyncio.get_event_loop()
-            # pylint: disable=no-member
-            events = qubesadmin.events.EventsDispatcher(args.app)
+
+            if "guivm" in enabled_services:
+                # pylint: disable=no-member
+                events = qubesadmin.events.EventsDispatcher(args.app)
+            else:
+                # pylint: disable=no-member
+                events = qubesadmin.events.EventsDispatcher(args.app, enable_cache=False)
+
+            
             # pylint: enable=no-member
             launcher.register_events(events)
 
