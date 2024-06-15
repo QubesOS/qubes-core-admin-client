@@ -31,6 +31,7 @@ import qubesadmin.exc
 import qubesadmin.storage
 import qubesadmin.features
 import qubesadmin.devices
+import qubesadmin.device_protocol
 import qubesadmin.firewall
 import qubesadmin.tags
 

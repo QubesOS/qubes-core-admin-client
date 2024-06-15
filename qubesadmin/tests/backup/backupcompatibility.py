@@ -184,8 +184,8 @@ parsed_qubes_xml_r2 = {
                 'provides_network': True},
             'devices': {
                 'pci': {
-                    ('dom0', '02_00.0'): {},
-                    ('dom0', '03_00.0'): {},
+                    ('dom0', '02_00.0'): {'required': True},
+                    ('dom0', '03_00.0'): {'required': True},
                 }
             },
             'tags': set(),
@@ -371,8 +371,8 @@ parsed_qubes_xml_r2 = {
                 'provides_network': True},
             'devices': {
                 'pci': {
-                    ('dom0', '02_00.0'): {},
-                    ('dom0', '03_00.0'): {},
+                    ('dom0', '02_00.0'): {'required': True},
+                    ('dom0', '03_00.0'): {'required': True},
                 }
             },
             'tags': set(),
@@ -490,7 +490,7 @@ parsed_qubes_xml_v4 = {
                 'provides_network': 'True'},
             'devices': {
                 'pci': {
-                    ('dom0', '02_00.0'): {},
+                    ('dom0', '02_00.0'): {'required': True},
                 }
             },
             'tags': set(),
@@ -704,7 +704,7 @@ parsed_qubes_xml_v4 = {
             },
             'devices': {
                 'pci': {
-                    ('dom0', '03_00.0'): {},
+                    ('dom0', '03_00.0'): {'required': True},
                 }
             },
             'tags': set(),
@@ -1434,12 +1434,12 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
             for bus, devices in vm['devices'].items():
                 for (backend_domain, ident), options in devices.items():
-                    all_options = options.copy()
-                    all_options['persistent'] = True
-                    encoded_options = ' '.join('{}={}'.format(key, value) for
-                        key, value in all_options.items()).encode()
+                    encoded_options = \
+                        (f"required='yes' attach_automatically='yes' "
+                         f"ident='{ident}' devclass='{bus}' backend_domain='{backend_domain}'"
+                         f" frontend_domain='{name}'".encode())
                     self.app.expected_calls[
-                        (name, 'admin.vm.device.{}.Attach'.format(bus),
+                        (name, 'admin.vm.device.{}.Assign'.format(bus),
                         '{}+{}'.format(backend_domain, ident),
                         encoded_options)] = b'0\0'
 
