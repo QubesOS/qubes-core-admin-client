@@ -1,3 +1,63 @@
+qubes-core-admin-client (4.3.0-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Document usb-reset-on-attach qvm-service
+
+  [ Marta Marczykowska-Górecka ]
+  * A proposal for new devices API
+
+  [ Piotr Bartman ]
+  * q-dev: init
+  * q-dev: (optional feature) qvm-device info
+  * q-dev: partially implemented DeviceInfo API + Device Interfaces
+  * q-dev: add fronted_domain to keep one version of DeviceInfo API
+  * q-dev: catch errors in deserialize
+  * q-dev: update DeviceInfo API
+  * q-dev: simplify parent_device
+  * q-dev: DeviceInterface
+  * q-dev: persistent -> required
+  * q-dev: DeviceAssignment
+  * q-dev: Microphone Interface
+  * q-dev: --list-device-classes do not require positional unused
+    argument
+  * q-dev: allow unassign unknown device
+  * q-dev: readable serialization
+  * q-dev: DeviceAssignment serialization
+  * q-dev: full identity
+  * q-dev: auto-attach and required as immutable properties
+  * q-dev: handle DeviceInfo.attachment
+  * q-dev: warn user that (un)assign is not (de/at)tach
+  * q-dev: prevent non-pci device as required
+  * q-dev: full_identity -> self_identity
+  * q-dev: block auto-attach
+  * q-dev: allow block devices to be required
+  * q-dev: port assignment
+  * q-dev: @marmarek comments
+  * q-dev: device protocol
+  * q-dev: refactor device protocol
+  * q-dev: device protocol minor fixes
+  * q-dev: broder allowance of names
+  * q-dev: pylint
+  * q-dev: fix `qvm-start VM --drive cdrom`
+  * q-dev: update tests for qvm-device and app
+  * q-dev: update and fix tests for backup
+  * q-dev: update and fix tests for qvm-start
+  * q-dev: make pylint happy
+  * q-dev: fix serialization
+  * q-dev: update device protocol
+  * q-dev: update device protocol v2
+
+  [ Piotr Bartman-Szwarc ]
+  * q-dev: update device protocol v3
+  * q-dev: make pylint happy
+  * q-dev: update device protocol v4
+  * q-dev: update tests
+
+  [ Marek Marczykowski-Górecki ]
+  * rpm: bump dependency for core-admin
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 15 Jun 2024 21:27:29 +0200
+
 qubes-core-admin-client (4.2.14-1) unstable; urgency=medium
 
   * rpm: drop unused python3-daemon dependency
