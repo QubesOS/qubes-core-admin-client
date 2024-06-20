@@ -143,6 +143,12 @@ lightdm:
     Start `lightdm` and avoid starting `qubes-gui-agent`.
     In this case, `lightdm` is responsible to start the `X.org` server.
 
+software-rendering:
+    Default: enabled
+
+    Sets variables that enforces the use of software rendering. Disable this
+    service in case your qube has access to a graphics card.
+
 guivm:
     Default: disabled
 
