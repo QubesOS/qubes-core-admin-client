@@ -52,6 +52,7 @@ GUI_DAEMON_OPTIONS = [
     ('secure_paste_sequence', 'str'),
     ('windows_count_limit', 'int'),
     ('trayicon_mode', 'str'),
+    ('window_background_color', 'str'),
     ('startup_timeout', 'int'),
 ]
 
