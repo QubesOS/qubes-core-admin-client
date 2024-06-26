@@ -37,6 +37,15 @@ parser.add_argument("--force", "-f", action="store_true", dest="no_confirm",
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
     go_ahead = ""
+
+    if args.all_domains and not (args.no_confirm or args.exclude):
+        print("WARNING!!! Removing all domains may leave your system in an "
+              "unrecoverable state!")
+        go_ahead_remove_all = input("Are you certain? [N/IKNOWWHATIAMDOING]")
+        if not go_ahead_remove_all == "IKNOWWHATIAMDOING":
+            print("Remove cancelled.")
+            return 1
+
     if not args.no_confirm:
         print("This will completely remove the selected VM(s)...")
         for vm in args.domains:
