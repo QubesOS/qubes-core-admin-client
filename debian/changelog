@@ -1,3 +1,16 @@
+qubes-core-admin-client (4.3.1-1) unstable; urgency=medium
+
+  [ Ben Grande ]
+  * Document service software-rendering
+
+  [ Euwiiwueir ]
+  * qvm-start-daemon: expect gui-window-background-color
+
+  [ Ali Mirjamali ]
+  * Ask for additonal confirmation for qvm-remove --all
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 05 Jul 2024 17:28:51 +0200
+
 qubes-core-admin-client (4.3.0-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
