@@ -20,15 +20,33 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-""" Exits sucessfull if the provided domains exists, else returns failure """
+""" Exits sucessfull if the provided domain(s) exist, else returns failure """
 
 import sys
 
 import qubesadmin.tools
 import qubesadmin.vm
 
-parser = qubesadmin.tools.QubesArgumentParser(description=__doc__,
-                                              vmname_nargs='+')
+class QvmCheckArgumentParser(qubesadmin.tools.QubesArgumentParser):
+    """Collecting error message(s) on invalid domain(s) instead of aborting"""
+    def __init__(self, description, vmname_nargs):
+        super().__init__(description=description, vmname_nargs=vmname_nargs)
+        self._invalid_domains = []
+
+    def error(self, message):
+        if message.startswith('no such domain: '):
+            self._invalid_domains.append(message[17:])
+        else:
+            super().error(message)
+
+    def parse_args(self, *args, **kwargs):
+        parse_args = super().parse_args(*args, **kwargs)
+        self._invalid_domains.sort()
+        parse_args.invalid_domains = self._invalid_domains
+        return parse_args
+
+
+parser = QvmCheckArgumentParser(description=__doc__, vmname_nargs='+')
 parser.add_argument("--running", action="store_true", dest="running",
                     default=False,
                     help="Determine if (any of given) VM is running")
@@ -44,7 +62,7 @@ parser.add_argument("--networked", action="store_true", dest="networked",
 
 
 def print_msg(log, domains, status):
-    """Print message in appropriate form about given domain(s)"""
+    """Print message in appropriate form about given valid domain(s)"""
     if not domains:
         log.info("None of qubes: {!s}".format(', '.join(status)))
     else:
@@ -102,6 +120,12 @@ def main(args=None, app=None):
             return_code = 1
         elif args.verbose:
             print_msg(log, domains, ["exists"])
+
+    if args.invalid_domains:
+        if args.verbose:
+            for vm in args.invalid_domains:
+                log.warning("{!s}: {!s}".format(vm, 'non-existent!'))
+        return_code = 1
 
     return return_code
 
