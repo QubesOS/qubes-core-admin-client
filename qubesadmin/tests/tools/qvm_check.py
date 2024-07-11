@@ -245,3 +245,20 @@ class TC_00_qvm_check(qubesadmin.tests.QubesTestCase):
             self.assertEqual(logger.output,
                              ['INFO:qvm-check:some-vm2: networked'])
         self.assertAllCalled()
+
+    def test_014_does_not_exist(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        with self.assertLogs() as logger:
+            self.assertEqual(
+                qubesadmin.tools.qvm_check.main(['invalid-vm'], app=self.app), 1)
+            self.assertEqual(logger.output,
+                            ['WARNING:qvm-check:invalid-vm: non-existent!'])
+
+    def test_15_custom_argparse_error_handling(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_check.main(['--invalid-option'], app=self.app)
