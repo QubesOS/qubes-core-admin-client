@@ -35,7 +35,7 @@ class QvmCheckArgumentParser(qubesadmin.tools.QubesArgumentParser):
 
     def error(self, message):
         if message.startswith('no such domain: '):
-            self._invalid_domains.append(message[17:])
+            self._invalid_domains.append(message[17:-1])
         else:
             super().error(message)
 
