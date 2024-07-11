@@ -407,12 +407,22 @@ def import_template_config(args, conf_path, vm):
 def pre_remove(args):
     '''Handle pre-removal tasks'''
     app = args.app
+    app.log.name = "qvm-template-postprocess"
     try:
         tpl = app.domains[args.name]
     except KeyError:
         parser.error('No Qube with this name exists')
+    dependant_vms = False
     for appvm in tpl.appvms:
-        parser.error('Qube {} uses this template'.format(appvm.name))
+        dependant_vms = True
+        app.log.error(
+            'ERROR! Qube "{}" uses this template'.format(appvm.name))
+    if dependant_vms:
+        app.log.warning(
+                'WARNING! Do not use dnf to uninstall templates!')
+        app.log.info('Info: Use qvm-template(1) or ' \
+                     'Qubes Template Manager GUI to uninstall templates\n')
+        sys.exit(1)
 
     tpl.installed_by_rpm = False
     del app.domains[args.name]
