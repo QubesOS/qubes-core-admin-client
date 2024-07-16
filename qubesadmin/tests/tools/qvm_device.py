@@ -86,18 +86,29 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         # This shouldn't be listed
         self.expected_device_call(
             'test-vm2', 'Available',
-            b"0\0dev2 ident='dev1' devclass='testclass' backend_domain='test-vm2'\n")
-        self.expected_device_call('test-vm3', 'Available')
+            b"0\0dev2 ident='dev2' devclass='testclass' backend_domain='test-vm2'\n")
+        self.expected_device_call(
+            'test-vm3', 'Available',
+            b"0\0dev3 ident='dev3' devclass='testclass' backend_domain='test-vm3' vendor='evil inc.' product='test-device-3'\n"
+        )
         self.expected_device_call('test-vm1', 'Attached')
         self.expected_device_call('test-vm2', 'Attached')
         self.expected_device_call('test-vm3', 'Attached')
         self.expected_device_call('test-vm1', 'Assigned')
-        self.expected_device_call('test-vm2', 'Assigned')
+        self.expected_device_call(
+            'test-vm2', 'Assigned',
+            b"0\0test-vm1+dev1 ident='dev1' devclass='testclass' "
+            b"backend_domain='test-vm1' attach_automatically='yes' "
+            b"required='yes' _option='other option' _extra_opt='yes'\n"
+            b"test-vm3+dev3 ident='dev3' devclass='testclass' "
+            b"backend_domain='test-vm3' attach_automatically='yes' "
+            b"required='yes'\n"
+        )
         self.expected_device_call(
             'test-vm3', 'Assigned',
             b"0\0test-vm1+dev1 ident='dev1' devclass='testclass' "
             b"backend_domain='test-vm1' attach_automatically='yes' "
-            b"required='yes'\n"
+            b"required='yes' _option='test option'\n"
         )
 
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
@@ -105,7 +116,10 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  ?******: itl test-device  test-vm3\n'
+                'test-vm1:dev1  ?******: itl test-device          '
+                'test-vm2 (option=other option, extra_opt=yes), '
+                'test-vm3 (option=test option)\n'
+                'test-vm3:dev3  ?******: evil inc. test-device-3  test-vm2\n'
             )
 
     def test_002_list_attach(self):
