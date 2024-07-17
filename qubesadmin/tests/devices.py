@@ -116,7 +116,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"frontend_domain='test-vm'")] = \
             b'0\0'
         assign = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1')
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], 'dev1', devclass='test',))
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
@@ -128,7 +129,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"frontend_domain='test-vm' _ro='True' "
              b"_something='value'")] = b'0\0'
         assign = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1')
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], 'dev1', devclass='test'))
         assign.options['ro'] = True
         assign.options['something'] = 'value'
         self.vm.devices['test'].attach(assign)
@@ -141,7 +143,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm'")] = b'0\0'
         assign = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1',
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], 'dev1', devclass='test'),
             attach_automatically=True, required=True)
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
@@ -153,7 +156,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"devclass='test' backend_domain='test-vm2' "
              b"frontend_domain='test-vm' _ro='True'")] = b'0\0'
         assign = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1',
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], 'dev1', devclass='test'),
             attach_automatically=True, required=True)
         assign.options['ro'] = True
         self.vm.devices['test'].attach(assign)
@@ -164,7 +168,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Detach', 'test-vm2+dev1',
              None)] = b'0\0'
         assign = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], 'dev1')
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], 'dev1', devclass='test'))
         self.vm.devices['test'].detach(assign)
         self.assertAllCalled()
 
@@ -285,7 +290,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'True')] = b'0\0'
         dev = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], devclass='test', ident='dev1')
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], devclass='test', ident='dev1'))
         self.vm.devices['test'].update_assignment(dev, True)
         self.assertAllCalled()
 
@@ -294,7 +300,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'False')] = b'0\0'
         dev = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], devclass='test', ident='dev1')
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], devclass='test', ident='dev1'))
         self.vm.devices['test'].update_assignment(dev, False)
         self.assertAllCalled()
 
@@ -303,7 +310,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.device.test.Set.assignment', 'test-vm2+dev1',
              b'None')] = b'0\0'
         dev = qubesadmin.device_protocol.DeviceAssignment(
-            self.app.domains['test-vm2'], devclass='test', ident='dev1')
+            qubesadmin.device_protocol.Port(
+                self.app.domains['test-vm2'], devclass='test', ident='dev1'))
         self.vm.devices['test'].update_assignment(dev, None)
         self.assertAllCalled()
 

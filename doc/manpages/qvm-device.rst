@@ -137,8 +137,8 @@ Show info about the device with *DEVICE_ID* from *BACKEND_DOMAIN* attached to th
 
 aliases: i
 
-Device classes
-==============
+Port classes
+============
 
 block
 ^^^^^

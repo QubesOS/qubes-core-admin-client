@@ -35,7 +35,7 @@ import itertools
 from typing import Optional, Iterable
 
 import qubesadmin.exc
-from qubesadmin.device_protocol import (Device, DeviceInfo, UnknownDevice,
+from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
                                         DeviceAssignment)
 
 
@@ -104,13 +104,11 @@ class DeviceCollection:
         """
         if not assignment.frontend_domain:
             assignment.frontend_domain = self._vm
-        elif assignment.frontend_domain != self._vm:
+        if assignment.frontend_domain != self._vm:
             raise qubesadmin.exc.QubesValueError(
                 f"Trying to {action} device belonging to other domain:"
                 f" {assignment.frontend_domain}")
-        if not assignment.devclass_is_set:
-            assignment.devclass = self._class
-        elif assignment.devclass != self._class:
+        if assignment.devclass != self._class:
             raise qubesadmin.exc.QubesValueError(
                 f"Device class does not match to expected: "
                 f"{assignment.devclass=}!={self._class=}")
@@ -130,7 +128,7 @@ class DeviceCollection:
             raise qubesadmin.exc.QubesValueError(
                 f"Trying to {action} device belonging to other domain:"
                 f" {assignment.frontend_domain}")
-        if assignment.devclass_is_set and assignment.devclass != self._class:
+        if assignment.devclass != self._class:
             raise qubesadmin.exc.QubesValueError(
                 f"Device class does not match to expected: "
                 f"{assignment.devclass=}!={self._class=}")
@@ -161,7 +159,7 @@ class DeviceCollection:
 
             yield DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
-                expected_device=Device(backend_domain, ident)
+                expected_port=Port(backend_domain, ident, self._class)
             )
 
     def get_assigned_devices(
@@ -181,7 +179,7 @@ class DeviceCollection:
 
             assignment = DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
-                expected_device=Device(backend_domain, ident)
+                expected_port=Port(backend_domain, ident, self._class)
             )
             if not required_only or assignment.required:
                 yield assignment
@@ -199,7 +197,7 @@ class DeviceCollection:
                 expected_devclass=self._class,
             )
 
-    def update_assignment(self, device: Device, required: Optional[bool]):
+    def update_assignment(self, device: Port, required: Optional[bool]):
         """
         Update assignment of already attached device.
 

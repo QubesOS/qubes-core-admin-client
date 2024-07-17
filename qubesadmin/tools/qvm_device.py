@@ -32,7 +32,7 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.device_protocol
-from qubesadmin.device_protocol import (Device, DeviceInfo, UnknownDevice,
+from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
                                         DeviceAssignment)
 
 
@@ -153,7 +153,7 @@ def attach_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    assignment = DeviceAssignment.from_device(
+    assignment = DeviceAssignment(
         device,
         # backward compatibility
         attach_automatically=args.required, required=args.required)
@@ -194,7 +194,7 @@ def detach_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = DeviceAssignment.from_device(device)
+        assignment = DeviceAssignment(device)
         vm.devices[args.devclass].detach(assignment)
     else:
         for ass in (vm.devices[args.devclass].get_attached_devices()):
@@ -207,7 +207,7 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    assignment = DeviceAssignment.from_device(
+    assignment = DeviceAssignment(
         device, required=args.required, attach_automatically=True)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
@@ -231,7 +231,7 @@ def unassign_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = DeviceAssignment.from_device(
+        assignment = DeviceAssignment(
             device, frontend_domain=vm)
         _unassign_and_show_message(assignment, vm, args)
     else:
@@ -257,7 +257,7 @@ def info_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = DeviceAssignment.from_device(device)
+        assignment = DeviceAssignment(device)
         print("description:", assignment.device.description)
         print("data:", assignment.device.data)
     else:
@@ -321,7 +321,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                 parser.error_runtime(
                     f"backend vm {vmname!r} doesn't expose "
                     f"{devclass} device {device_id!r}")
-                dev = Device(vm, device_id, devclass)
+                dev = Port(vm, device_id, devclass)
             setattr(namespace, self.dest, dev)
         except ValueError:
             parser.error(
