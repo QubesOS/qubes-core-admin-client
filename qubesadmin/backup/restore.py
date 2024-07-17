@@ -50,7 +50,7 @@ import qubesadmin.vm
 from qubesadmin.backup import BackupVM
 from qubesadmin.backup.core2 import Core2Qubes
 from qubesadmin.backup.core3 import Core3Qubes
-from qubesadmin.device_protocol import DeviceAssignment
+from qubesadmin.device_protocol import DeviceAssignment, Port
 from qubesadmin.exc import QubesException
 from qubesadmin.utils import size_to_human
 
@@ -2094,9 +2094,11 @@ class BackupRestore(object):
                     else:
                         required = False
                     assignment = DeviceAssignment(
-                        backend_domain=self.app.domains[backend_domain],
-                        ident=ident,
-                        devclass=bus,
+                        Port(
+                            backend_domain=self.app.domains[backend_domain],
+                            ident=ident,
+                            devclass=bus,
+                        ),
                         options=options,
                         attach_automatically=True,
                         required=required,
