@@ -91,8 +91,7 @@ def list_devices(args):
     for dev in result:
         for vm in app.domains:
             frontends = _load_frontends_info(vm, dev, args.devclass)
-            if frontends is not None:
-                result[dev].frontends.append(frontends)
+            result[dev].frontends.extend(frontends)
 
     qubesadmin.tools.print_table(prepare_table(result.values()))
 
@@ -132,19 +131,20 @@ def _load_frontends_info(vm, dev, devclass):
     Returns string of vms to which a device is connected or `None`.
     """
     if vm == dev.backend_domain:
-        return None
+        return
 
     try:
         for assignment in vm.devices[devclass].get_dedicated_devices():
             if dev != assignment:
-                return None
+                continue
             if assignment.options:
-                return '{!s} ({})'.format(
+                yield '{!s} ({})'.format(
                     vm, ', '.join('{}={}'.format(key, value)
                     for key, value in assignment.options.items()))
-            return str(vm)
+            else:
+                yield str(vm)
     except qubesadmin.exc.QubesVMNotFoundError:
-        return None
+        pass
 
 
 def attach_device(args):
