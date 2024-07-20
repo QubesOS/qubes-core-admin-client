@@ -1,3 +1,17 @@
+qubes-core-admin-client (4.3.2-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Improve qvm-check mechanism on invalid domains
+  * Improving unit tests for qvm-check
+  * Extended QubesArgumentParser & VmNameAction for qvm-check
+  * Cleaner messages on attempting to remove a Template currently in use
+
+  [ Piotr Bartman-Szwarc ]
+  * fix QubesOS/qubes-issues/issues/9354
+  * add tests
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 20 Jul 2024 05:27:44 +0200
+
 qubes-core-admin-client (4.3.1-1) unstable; urgency=medium
 
   [ Ben Grande ]
