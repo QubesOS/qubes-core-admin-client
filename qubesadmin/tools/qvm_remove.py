@@ -38,6 +38,10 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
     go_ahead = ""
 
+    if "dom0" in args.domains:
+        print("Domain 'dom0' cannot be removed.")
+        return 1
+
     if args.all_domains and not (args.no_confirm or args.exclude):
         print("WARNING!!! Removing all domains may leave your system in an "
               "unrecoverable state!")
