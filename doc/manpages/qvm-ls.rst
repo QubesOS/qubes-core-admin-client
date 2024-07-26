@@ -6,12 +6,26 @@
 Synopsis
 --------
 
-:command:`qvm-ls` [-h] [--verbose] [--quiet] [--help-columns] [--help-formats] [--format *FORMAT* | --fields *FIELD*,...] [--tags *TAG* [*TAG* ...]] [--running] [--paused] [--halted]
+:command:`qvm-ls` [--verbose] [--quiet] [--help] [--all]
+                  [--exclude *EXCLUDE*] [--spinner] [--no-spinner]
+                  [--format *FORMAT* | --fields *FIELD* [*FIELD* ...] | --disk | --network | --kernel]
+                  [--tree] [--raw-data] [--raw-list] [--help-formats]
+                  [--help-columns] [--class *CLASS* [*CLASS* ...]]
+                  [--label *LABEL* [*LABEL* ...]] [--tags *TAG* [*TAG* ...]]
+                  [--exclude-tags *TAG* [*TAG* ...]] [--running] [--paused]
+                  [--halted] [--template-source *TEMPLATE* [*TEMPLATE* ...]]
+                  [--netvm-is *NETVM* [*NETVM* ...]] [--internal <y|n>]
+                  [--servicevm <y|n>] [--pending-update]
+                  [--features *FEATURE=VALUE* [*FEATURE=VALUE* ...]]
+                  [--prefs *PREFERENCE=VALUE* [*PREFERENCE=VALUE* ...]]
+                  [--sort *COLUMN*] [--reverse] [--ignore-case]
+                  [VMNAME ...]
+
 
 Positional arguments
 --------------------
 
-.. option:: VMNAME
+.. option:: VMNAME ...
 
    Zero or more domain names
 
