@@ -330,10 +330,7 @@ def calc_used(vm, volume_name):
     return '{}%'.format(usage * 100 // size)
 
 
-# Show hyphen if maxmmem is zero (for HVMs)
-Column('MAXMEM',
-    attr=(lambda vm: vm.maxmem if vm.virt_mode != "hvm" else '-'),
-    doc='Maximum memory allocatable to VM')
+# todo maxmem
 
 Column('STATE',
     attr=(lambda vm: vm.get_power_state()),
@@ -385,6 +382,10 @@ Column('ROOT-USED',
 
 FlagsColumn()
 
+# Sorting columns based on numeric or string (default) values
+SORT_NUMERIC = ['MEMORY', 'DISK', 'PRIV-CURR', 'PRIV-MAX', 'ROOT-CURR', 'XID', \
+                'ROOT-MAX', 'MAXMEM', 'QREXEC-TIMEOUT', 'SHUTDOWN-TIMEOUT', \
+                'VCPUS', 'PRIV-USED', 'ROOT-USED']
 
 class Table(object):
     '''Table that is displayed to the user.
@@ -464,10 +465,19 @@ class Table(object):
         return tree
 
     def write_table(self, stream=sys.stdout):
-        '''Write whole table to file-like object.
+        '''Sort & write whole table to file-like object.
 
         :param file stream: Stream to write the table to.
         '''
+
+        def sort_string(field: str) -> str:
+            return field.upper() if self.ignore_case else field
+
+        def sort_numeric(field: str) -> int:
+            try:
+                return int(field[:-1] if field.endswith('%') else field)
+            except ValueError:
+                return 0
 
         table_data = []
         if not self.raw_data:
@@ -486,18 +496,19 @@ class Table(object):
                         table_data.append(self.get_row(vm))
                     except qubesadmin.exc.QubesVMNotFoundError:
                         continue
-                if self.sort_order in self.get_head():
-                    sort_index = self.get_head().index(self.sort_order)
-                    if self.ignore_case:
-                        table_data[1:] = \
-                            sorted(table_data[1:],
-                                   key=(lambda row: row[sort_index].upper()),
-                                   reverse=self.reverse_sort)
-                    else:
-                        table_data[1:] = \
-                            sorted(table_data[1:],
-                                   key=(lambda row: row[sort_index]),
-                                   reverse=self.reverse_sort)
+
+                if self.sort_order in SORT_NUMERIC:
+                    sort_key = sort_numeric
+                else:
+                    sort_key = sort_string
+
+                titles = self.get_head()
+                if self.sort_order in titles:
+                    # Sorting is currently possible if key is in actual output
+                    col_index = titles.index(self.sort_order)
+                    table_data[1:] = sorted(table_data[1:], key=lambda \
+                            row: sort_key(row[col_index]),
+                            reverse=self.reverse_sort)
             self.spinner.hide()
             qubesadmin.tools.print_table(table_data, stream=stream)
         else:
@@ -515,7 +526,7 @@ formats = {
     'kernel': ('name', 'state', 'class', 'template', 'kernel', 'kernelopts'),
     'full': ('name', 'state', 'class', 'label', 'qid', 'xid', 'uuid'),
 #   'perf': ('name', 'state', 'cpu', 'memory'),
-    'pref': ('name', 'label', 'template', 'netvm',
+    'prefs': ('name', 'label', 'template', 'netvm',
         'vcpus', 'initialmem', 'maxmem', 'virt_mode'),
     'disk': ('name', 'state', 'disk',
         'priv-curr', 'priv-max', 'priv-used',
@@ -616,13 +627,13 @@ def get_parser():
                 wrapper.fill(', '.join(sorted(sorted(Column.columns.keys()))))))
 
     parser_format = parser.add_argument_group(title='formatting options')
-    parser_format_group = parser_format.add_mutually_exclusive_group()
+    parser_format_exclusive = parser_format.add_mutually_exclusive_group()
 
-    parser_format_group.add_argument('--format', '-o', metavar='FORMAT',
+    parser_format_exclusive.add_argument('--format', '-o', metavar='FORMAT',
         action='store', choices=formats.keys(), default='simple',
         help='preset format')
 
-    parser_format_group.add_argument('--fields', '-O', metavar='FIELD,...',
+    parser_format_exclusive.add_argument('--fields', '-O', metavar='FIELD,...',
         action='store',
         help='user specified format (see available columns below)')
 
@@ -638,15 +649,15 @@ def get_parser():
     parser_format.add_argument('--raw-list', action='store_true',
         help='Same as --raw-data --fields=name')
 
-    parser_format_group.add_argument('--disk', '-d',
+    parser_format_exclusive.add_argument('--disk', '-d',
         action='store_const', dest='format', const='disk',
         help='Same as --format=disk')
 
-    parser_format_group.add_argument('--network', '-n',
+    parser_format_exclusive.add_argument('--network', '-n',
         action='store_const', dest='format', const='network',
         help='Same as --format=network')
 
-    parser_format_group.add_argument('--kernel', '-k',
+    parser_format_exclusive.add_argument('--kernel', '-k',
         action='store_const', dest='format', const='kernel',
         help='Same as --format=kernel')
 
@@ -657,58 +668,56 @@ def get_parser():
 
     parser_filter.add_argument('--class', nargs='+', metavar='CLASS',
         dest='klass', action='store',
-        help='show only VMs of specific class(es)')
+        help='show only qubes of specific class(es)')
 
     parser_filter.add_argument('--label', nargs='+', metavar='LABEL',
         action='store',
-        help='show only VMs with specific label(s)')
+        help='show only qubes with specific label(s)')
 
     parser_filter.add_argument('--tags', nargs='+', metavar='TAG',
-        help='show only VMs having specific tag(s)')
+        help='show only qubes having specific tag(s)')
 
-    parser_filter.add_argument('--no-tags', nargs='+', metavar='TAG',
-        help='exclude VMs having specific tag(s)')
+    parser_filter.add_argument('--exclude-tags', nargs='+', metavar='TAG',
+        help='exclude qubes having specific tag(s)')
 
     for pwstate in DOMAIN_POWER_STATES:
         parser_filter.add_argument('--{}'.format(pwstate), action='store_true',
         help='show {} VMs'.format(pwstate))
 
-    parser_filter.add_argument('--based-on', nargs='+',
+    parser_filter.add_argument('--template-source', nargs='+',
         metavar='TEMPLATE', action='store',
-        help='filter results to the AppVMs based on the TEMPLATE. '
+        help='filter results to the qubes based on the TEMPLATE. '
              '"" means None')
 
-    parser_filter.add_argument('--conn-netvm', nargs='+',
+    parser_filter.add_argument('--netvm-is', nargs='+',
         metavar='NETVM', action='store',
-        help='filter results to the VMs connecting via NETVM')
+        help='filter results to the qubes connecting via NETVM')
 
-    parser_filter.add_argument('--internal', metavar='<y|n|both>',
-        default='both', action='store', choices=['y', 'yes', 'n', 'no', 'both'],
-        help='show only internal VMs or option to hide them. '
-             'default is showing both regular & internal VMs')
+    parser_filter.add_argument('--internal', metavar='<y|n>',
+        default='both', action='store', choices=['y', 'yes', 'n', 'no'],
+        help='show only internal qubes or option to hide them')
 
-    parser_filter.add_argument('--servicevm', metavar='<y|n|both>',
-        default='both', action='store', choices=['y', 'yes', 'n', 'no', 'both'],
-        help='show only Service VMs or option to hide them. '
-             'default is showing both regular & Service VMs')
+    parser_filter.add_argument('--servicevm', metavar='<y|n>',
+        default='both', action='store', choices=['y', 'yes', 'n', 'no'],
+        help='show only Service VMs or option to hide them')
 
     parser_filter.add_argument('--pending-update', action='store_true',
-        help='filter results to VMs pending for update')
+        help='filter results to qubes pending for update')
 
     parser_filter.add_argument('--features', nargs='+', metavar='FEATURE=VALUE',
         action='store',
-        help='filter results to VMs with all of specified features. '
+        help='filter results to qubes that matches all specified features. '
             'omitted VALUE means None. "" means blank')
 
     parser_filter.add_argument('--prefs', nargs='+', metavar='PREFERENCE=VALUE',
         action='store',
-        help='filter results to VMs with all of specified preferences. '
+        help='filter results to qubes that matches all specified preferences. '
             'omitted VALUE means None. "" means blank')
 
     parser_sort = parser.add_argument_group(title='sorting options')
 
     parser_sort.add_argument('--sort', metavar='COLUMN', action='store',
-        default='NAME', help='Sort based on provided column rather than NAME')
+        default='NAME', help='sort based on provided column rather than NAME')
 
     parser_sort.add_argument('--reverse', action='store_true', default=False,
         help='Reverse sort')
@@ -806,31 +815,31 @@ def main(args=None, app=None):
         domains = [dom for dom in domains
                    if set(dom.tags).intersection(set(args.tags))]
 
-    if args.no_tags:
+    if args.exclude_tags:
         # exclude VMs having at least one of the specified tags
         domains = [dom for dom in domains
-                   if not set(dom.tags).intersection(set(args.no_tags))]
+                   if not set(dom.tags).intersection(set(args.exclude_tags))]
 
-    if args.based_on:
+    if args.template_source:
         # Filter only VMs based on specific TemplateVM
-        child_domains = []
-        spinner.show('Filtering results to VMs based on their template...')
+        domains_template = []
+        spinner.show('Filtering results to qubes based on their templates...')
         for dom in domains:
-            if getattr(dom, 'template', '') in args.based_on:
-                child_domains.append(dom)
+            if getattr(dom, 'template', '') in args.template_source:
+                domains_template.append(dom)
             spinner.update()
-        domains = child_domains
+        domains = domains_template
         spinner.hide()
 
-    if args.conn_netvm:
+    if args.netvm_is:
         # Filter only VMs connecting with specific netvm
-        domains_connecting = []
-        spinner.show('Filtering results to VMs based on their netvm...')
+        domains_netvm = []
+        spinner.show('Filtering results to qubes based on their netvm...')
         for dom in domains:
-            if getattr(dom, 'netvm', '') in args.conn_netvm:
-                domains_connecting.append(dom)
+            if getattr(dom, 'netvm', '') in args.netvm_is:
+                domains_netvm.append(dom)
             spinner.update()
-        domains = domains_connecting
+        domains = domains_netvm
         spinner.hide()
 
     if args.internal in ['y', 'yes']:
@@ -857,9 +866,9 @@ def main(args=None, app=None):
             try:
                 key, value = feature.split('=', 1)
             except ValueError:
-                parser.error("Invalid argument --features {}".format(feature))
+                parser.error("Invalid argument: --features {}".format(feature))
             if not key:
-                parser.error("Invalid argument --features {}".format(feature))
+                parser.error("Invalid argument: --features {}".format(feature))
             if value == '':
                 value = None
             elif value in ['\'\'', '""']:
@@ -872,14 +881,15 @@ def main(args=None, app=None):
             try:
                 key, value = pref.split('=', 1)
             except ValueError:
-                parser.error("Invalid argument --prefs {}".format(pref))
+                parser.error("Invalid argument: --prefs {}".format(pref))
             if not key:
-                parser.error("Invalid argument --prefs {}".format(pref))
+                parser.error("Invalid argument: --prefs {}".format(pref))
             if value == '':
                 value = None
             elif value in ['\'\'', '""']:
                 value = ''
-            domains = [d for d in domains if str(getattr(d, key, None))==value]
+            domains = [d for d in domains
+                       if str(getattr(d, key, None)) == value]
 
     pwrstates = {state: getattr(args, state) for state in DOMAIN_POWER_STATES}
     domains = [d for d in domains
