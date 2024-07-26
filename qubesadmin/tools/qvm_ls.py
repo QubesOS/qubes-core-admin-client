@@ -720,10 +720,10 @@ def get_parser():
         default='NAME', help='sort based on provided column rather than NAME')
 
     parser_sort.add_argument('--reverse', action='store_true', default=False,
-        help='Reverse sort')
+        help='reverse sort')
 
     parser_sort.add_argument('--ignore-case', action='store_true',
-        default=False, help='Ignore case distinctions for sorting')
+        default=False, help='ignore case distinctions for sorting')
 
     parser.add_argument('--spinner',
         action='store_true', dest='spinner',

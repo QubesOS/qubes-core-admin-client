@@ -8,20 +8,27 @@ Synopsis
 
 :command:`qvm-ls` [-h] [--verbose] [--quiet] [--help-columns] [--help-formats] [--format *FORMAT* | --fields *FIELD*,...] [--tags *TAG* [*TAG* ...]] [--running] [--paused] [--halted]
 
-Options
--------
+Positional arguments
+--------------------
+
+.. option:: VMNAME
+
+   Zero or more domain names
+
+General options
+---------------
 
 .. option:: --help, -h
 
    Show help message and exit
 
-.. option:: --help-columns
+.. option:: --verbose, -v
 
-   List all available columns with short descriptions and exit.
+   Increase verbosity.
 
-.. option:: --help-formats
+.. option:: --quiet, -q
 
-   List all available formats with their definitions and exit.
+   Decrease verbosity.
 
 .. option:: --all
 
@@ -31,6 +38,17 @@ Options
 
    Exclude the qube from --all. You need to use --all option explicitly to use
    --exclude.
+
+.. option:: --spinner
+
+   Have a spinner spinning while the spinning mainloop spins new table cells.
+
+.. option:: --no-spinner
+
+   No spinner today.
+
+Formatting options
+------------------
 
 .. option:: --format=FORMAT, -o FORMAT
 
@@ -43,14 +61,10 @@ Options
    :option:`--format`. All columns along with short descriptions can be listed
    with :option:`--help-columns`.
 
-.. option:: --tags TAG ...
+.. option:: --tree, -t
 
-   Shows only VMs having specific tag(s).
-
-.. option:: --running, --paused, --halted
-
-   Shows only VMs matching the specified power state(s). When none of these
-   options is used (default), all VMs are shown.
+   List domains as a network tree. Domains are sorted as they are connected to
+   their netvms. Names are indented relative to the number of connected netvms.
 
 .. option:: --raw-data
 
@@ -61,11 +75,6 @@ Options
 
    Give plain list of VM names, without header or separator. Useful in scripts.
    Same as --raw-data --fields=name
-
-.. option:: --tree, -t
-
-   List domains as a network tree. Domains are sorted as they are connected to
-   their netvms. Names are indented relative to the number of connected netvms.
 
 .. option:: --disk, -d
 
@@ -79,21 +88,83 @@ Options
 
    Same as --format=kernel, for compatibility with Qubes 3.x
 
-.. option:: --verbose, -v
+.. option:: --help-columns
 
-   Increase verbosity.
+   List all available columns with short descriptions and exit.
 
-.. option:: --quiet, -q
+.. option:: --help-formats
 
-   Decrease verbosity.
+   List all available formats with their definitions and exit.
 
-.. option:: --spinner
+Filtering options
+-----------------
 
-   Have a spinner spinning while the spinning mainloop spins new table cells.
+.. option:: --class CLASS ...
 
-.. option:: --no-spinner
+   Show only qubes of specific class(es)
 
-   No spinner today.
+.. option:: --label LABEL ...
+
+   Show only qubes with specific label(s)
+
+.. option:: --tags TAG ...
+
+   Shows only VMs having specific tag(s).
+
+.. option:: --exclude-tags TAG ...
+
+   Exclude VMs having specific tag(s).
+
+.. option:: --running, --paused, --halted
+
+   Shows only VMs matching the specified power state(s). When none of these
+   options is used (default), all VMs are shown.
+
+.. option:: --template-source TEMPLATE ...
+
+   Filter results to the qubes based on the TEMPLATE(s)
+
+.. option:: --netvm-is NETVM ...
+
+   Filter results to the qubes connecting via NETVM(s)
+
+.. option:: --internal <y|n>
+
+   Show only internal qubes or exclude them from output
+
+.. option:: --servicevm <y|n>
+
+   Show only servicevms or exclude them from output
+
+.. option:: --pending-update
+
+   Filter results to qubes pending for update
+
+.. option:: --features FEATURE=VALUE ...
+
+   Filter results to qubes that match all specified features. Omitted VALUE
+   means None (not set). "" or '' means blank
+
+.. option:: --prefs PREFERENCE=VALUE ...
+
+   Filter results to qubes that match all specified preferences. Omitted VALUE
+   means None (not set). "" or '' means blank
+
+Sorting options
+---------------
+
+.. option:: --sort COLUMN
+
+   Sort based on provided column rather than NAME. Sort key should be in the
+   output columns
+
+.. option:: --reverse
+
+   Reverse sort
+
+.. option:: --ignore-case
+
+   Ignore case distinctions for sorting
 
 Authors
 -------
