@@ -164,3 +164,17 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
         self.assertEqual(0, qubesadmin.tools.qvm_prefs.main([
             'dom0', 'prop1', 'None'], app=self.app))
         self.assertAllCalled()
+
+    def test_009_hide_default(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00dom0 class=AdminVM state=Running\n' \
+            b'vm1 class=AppVM state=Stopped\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.Get', 'prop1', None)] = \
+            b'0\x00default=True type=vm vm1'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_prefs.main(['dom0', 'prop1', '--hide-default'],
+                                            app=self.app)
+        self.assertEqual('', stdout.getvalue())
+        self.assertAllCalled()
