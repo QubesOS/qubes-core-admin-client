@@ -263,8 +263,8 @@ class DeviceCategory(Enum):
     Mouse = ("u03**02", "p0902**")
     Printer = ("u07****",)
     Scanner = ("p0903**",)
-    # Multimedia = Audio, Video, Displays etc.
     Microphone = ("m******",)
+    # Multimedia = Audio, Video, Displays etc.
     Multimedia = ("u01****", "u0e****", "u06****", "u10****", "p03****",
                   "p04****")
     Wireless = ("ue0****", "p0d****")
@@ -369,7 +369,7 @@ class DeviceInterface:
 
     def __str__(self):
         if self.devclass == "block":
-            return "Block device"
+            return "Block Device"
         if self.devclass in ("usb", "pci"):
             # try subclass first as in `lspci`
             result = self._load_classes(self.devclass).get(
@@ -457,6 +457,32 @@ class DeviceInfo(Port):
         self._self_identity = self_identity
 
         self.data = kwargs
+
+    def __hash__(self):
+        return hash(self.port)# self.self_identity))
+
+    def __eq__(self, other):
+        if isinstance(other, DeviceInfo):
+            return (
+                self.port == other.port
+                # and self.self_identity == other.self_identity
+            )
+        else:
+            return super().__lt__(other)
+
+    def __lt__(self, other):
+        if isinstance(other, DeviceInfo):
+            # return (self.port, self.self_identity) < \
+            #        (other.port, other.self_identity)
+            return self.port < other.port
+        else:
+            return super().__lt__(other)
+
+    def __repr__(self):
+        return f"{self.port!r}"#:{self.self_identity}"
+
+    def __str__(self):
+        return f"{self.port}"#:{self.self_identity}"
 
     @property
     def port(self) -> Port:
@@ -558,8 +584,10 @@ class DeviceInfo(Port):
         else:
             vendor = "unknown vendor"
 
-        main_interface = str(self.interfaces[0])
-        return f"{main_interface}: {vendor} {prod}"
+        cat = self.interfaces[0].category.name
+        if cat == "Other":
+            cat = str(self.interfaces[0])
+        return f"{cat}: {vendor} {prod}"
 
     @property
     def interfaces(self) -> List[DeviceInterface]:

@@ -173,8 +173,8 @@ class DeviceCollection:
         assignments_str = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
-            device, _, untrusted_rest = assignment_str.partition(' ')
-            backend_domain_name, ident = device.split('+', 1)
+            port, _, untrusted_rest = assignment_str.partition(' ')
+            backend_domain_name, ident = port.split('+', 1)
             backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
 
             assignment = DeviceAssignment.deserialize(
