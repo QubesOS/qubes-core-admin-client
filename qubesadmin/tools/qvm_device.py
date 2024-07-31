@@ -135,7 +135,7 @@ def _load_frontends_info(vm, dev, devclass):
 
     try:
         for assignment in vm.devices[devclass].get_dedicated_devices():
-            if dev != assignment:
+            if dev != assignment.device:
                 continue
             if assignment.options:
                 yield '{!s} ({})'.format(

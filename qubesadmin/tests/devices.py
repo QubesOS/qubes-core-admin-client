@@ -49,7 +49,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(
             dev.description, '?******: unknown vendor unknown test device')
         self.assertEqual(dev.data, {})
-        self.assertEqual(str(dev), 'test-vm:dev1')
+        self.assertEqual(str(dev.port), 'test-vm:dev1')
         self.assertAllCalled()
 
     def test_001_available_desc(self):
@@ -64,7 +64,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(dev.description, '?******: itl test-device')
         self.assertEqual(dev.data, {})
-        self.assertEqual(str(dev), 'test-vm:dev1')
+        self.assertEqual(str(dev.port), 'test-vm:dev1')
 
     def test_002_available_options(self):
         self.app.expected_calls[
@@ -78,7 +78,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(dev.description, '?******: itl test-device')
         self.assertEqual(dev.data, {'ro': 'True', 'other': '123'})
-        self.assertEqual(str(dev), 'test-vm:dev1')
+        self.assertEqual(str(dev.port), 'test-vm:dev1')
         self.assertAllCalled()
 
     def test_010_getitem(self):
@@ -91,7 +91,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(dev.ident, 'dev1')
         self.assertEqual(dev.description, '?******: itl test-device')
         self.assertEqual(dev.data, {})
-        self.assertEqual(str(dev), 'test-vm:dev1')
+        self.assertEqual(str(dev.port), 'test-vm:dev1')
         self.assertAllCalled()
 
     def test_011_getitem_missing(self):
@@ -105,7 +105,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(dev.description,
                          '?******: unknown vendor unknown test device')
         self.assertEqual(dev.data, {})
-        self.assertEqual(str(dev), 'test-vm:dev2')
+        self.assertEqual(str(dev.port), 'test-vm:dev2')
         self.assertAllCalled()
 
     def test_020_attach(self):
