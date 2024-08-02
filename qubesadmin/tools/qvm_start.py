@@ -163,8 +163,7 @@ def get_drive_assignment(app, drive_str):
             devclass='block',
         ),
         options=options,
-        attach_automatically=True,
-        required=True)
+        mode="required")
 
     return assignment
 

@@ -145,7 +145,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         assign = qubesadmin.device_protocol.DeviceAssignment(
             qubesadmin.device_protocol.Port(
                 self.app.domains['test-vm2'], 'dev1', devclass='test'),
-            attach_automatically=True, required=True)
+            mode='required')
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
@@ -158,7 +158,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         assign = qubesadmin.device_protocol.DeviceAssignment(
             qubesadmin.device_protocol.Port(
                 self.app.domains['test-vm2'], 'dev1', devclass='test'),
-            attach_automatically=True, required=True)
+            mode='required')
         assign.options['ro'] = True
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
