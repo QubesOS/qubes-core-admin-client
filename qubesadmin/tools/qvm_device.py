@@ -156,7 +156,7 @@ def attach_device(args):
     assignment = DeviceAssignment(
         device,
         # backward compatibility
-        attach_automatically=args.required, required=args.required)
+        mode='required' if args.required else 'manual')
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
@@ -208,7 +208,7 @@ def assign_device(args):
     vm = args.domains[0]
     device = args.device
     assignment = DeviceAssignment(
-        device, required=args.required, attach_automatically=True)
+        device, mode='required' if args.required else 'auto-attach')
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'

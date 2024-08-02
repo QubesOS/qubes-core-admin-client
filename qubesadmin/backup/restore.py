@@ -2100,8 +2100,7 @@ class BackupRestore(object):
                             devclass=bus,
                         ),
                         options=options,
-                        attach_automatically=True,
-                        required=required,
+                        mode='required' if required else 'auto-attach',
                     )
                     try:
                         if not self.options.verify_only:
