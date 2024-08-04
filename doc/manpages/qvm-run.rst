@@ -5,10 +5,9 @@
 
 Synopsis
 --------
-
-:command:`qvm-run` [options] *VMNAME* *COMMAND* [*ARGS*]
-:command:`qvm-run` [options] --all [--exclude *EXCLUDE*]  *COMMAND* [*ARGS*]
-:command:`qvm-run` [options] --dispvm [*BASE_APPVM*] *COMMAND* [*ARGS*]
+| :command:`qvm-run` [options] *VMNAME* *COMMAND* [*ARGS*]
+| :command:`qvm-run` [options] --all [--exclude *EXCLUDE*]  *COMMAND* [*ARGS*]
+| :command:`qvm-run` [options] --dispvm [*BASE_APPVM*] *COMMAND* [*ARGS*]
 
 Execution mode
 --------------
