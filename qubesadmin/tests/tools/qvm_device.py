@@ -262,7 +262,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             'test-vm2', 'admin.vm.device.testclass.Assign', 'test-vm1+dev1',
             b"required='no' attach_automatically='yes' ident='dev1' "
             b"devclass='testclass' backend_domain='test-vm1' "
-            b"frontend_domain='test-vm2' _identity='0000:0000::?******'"
+            b"frontend_domain='test-vm2' device_identity='0000:0000::?******'"
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1'], app=self.app)
@@ -275,7 +275,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             'test-vm2', 'admin.vm.device.testclass.Assign', 'test-vm1+dev1',
             b"required='yes' attach_automatically='yes' ident='dev1' "
             b"devclass='testclass' backend_domain='test-vm1' "
-            b"frontend_domain='test-vm2' _identity='0000:0000::?******'"
+            b"frontend_domain='test-vm2' device_identity='0000:0000::?******'"
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', '--required', 'test-vm2', 'test-vm1:dev1'], app=self.app)
@@ -289,7 +289,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"required='no' attach_automatically='yes' ident='dev1' "
             b"devclass='testclass' backend_domain='test-vm1' "
             b"frontend_domain='test-vm2' _read-only='yes' "
-            b"_identity='0000:0000::?******'")] = b'0\0'
+            b"device_identity='0000:0000::?******'")] = b'0\0'
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
             qubesadmin.tools.qvm_device.main(
                 ['testclass', 'assign', '--ro', 'test-vm2', 'test-vm1:dev1'],

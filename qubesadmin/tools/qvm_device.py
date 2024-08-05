@@ -207,16 +207,17 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    assignment = DeviceAssignment(
-        device, mode='required' if args.required else 'auto-attach')
+    identity = device.self_identity if not args.port else None
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
     parse_ro_option_as_read_only(options)
-    options['identity'] = device.self_identity
-    if args.port:
-        options['identity'] = 'any'
-    assignment.options = options
+    assignment = DeviceAssignment(
+        device,
+        device_identity=identity,
+        mode='required' if args.required else 'auto-attach',
+        options=options
+    )
     vm.devices[args.devclass].assign(assignment)
     if vm.is_running() and not assignment.attached and not args.quiet:
         print("Assigned. To attach you can now restart domain or run: \n"

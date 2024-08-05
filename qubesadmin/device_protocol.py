@@ -842,7 +842,7 @@ class DeviceAssignment(Port):
     def __init__(
             self,
             port: Port,
-            device_id=None,
+            device_identity=None,
             frontend_domain=None,
             options=None,
             mode: Union[str, AssignmentMode] = "manual",
@@ -854,25 +854,33 @@ class DeviceAssignment(Port):
         else:
             self.mode = AssignmentMode(mode)
         self.frontend_domain = frontend_domain
+        self.device_identity = device_identity
 
     def clone(self, **kwargs):
         """
         Clone object and substitute attributes with explicitly given.
         """
+        port = kwargs.get(
+            "port", Port(self.backend_domain, self.ident, self.devclass))
         attr = {
             "options": self.options,
-            "required": self.required,
-            "attach_automatically": self.attach_automatically,
+            "mode": self.mode,
+            "device_identity": self.device_identity,
             "frontend_domain": self.frontend_domain,
         }
         attr.update(kwargs)
-        return self.__class__(
-            Port(self.backend_domain, self.ident, self.devclass), **attr)
+        return self.__class__(port, **attr)
 
     @property
     def device(self) -> DeviceInfo:
         """Get DeviceInfo object corresponding to this DeviceAssignment"""
-        return self.backend_domain.devices[self.devclass][self.ident]
+        dev = self.backend_domain.devices[self.devclass][self.ident]
+        if (self.device_identity is not None
+                and self.device_identity != dev.self_identity):
+            raise ProtocolError(
+                "Device identity does not match, expected "
+                f"'{self.device_identity}' got '{dev.self_identity}'")
+        return dev
 
     @property
     def frontend_domain(self) -> Optional[QubesVM]:
@@ -917,6 +925,7 @@ class DeviceAssignment(Port):
         """
         return self.mode in (
             AssignmentMode.AUTO,
+            AssignmentMode.ASK,
             AssignmentMode.REQUIRED
         )
 
@@ -942,6 +951,7 @@ class DeviceAssignment(Port):
             self.pack_property(key, value)
             for key, value in (
                 ('mode', self.mode.value),
+                ('device_identity', self.device_identity),
                 ('ident', self.ident),
                 ('devclass', self.devclass)))
 
