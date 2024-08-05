@@ -212,10 +212,15 @@ def assign_device(args):
     if args.ro:
         options['read-only'] = 'yes'
     parse_ro_option_as_read_only(options)
+    mode = 'auto-attach'
+    if args.required:
+        mode = 'required'
+    if args.ask:
+        mode = 'ask-to-attach'
     assignment = DeviceAssignment(
         device,
         device_identity=identity,
-        mode='required' if args.required else 'auto-attach',
+        mode=mode,
         options=options
     )
     vm.devices[args.devclass].assign(assignment)
@@ -412,12 +417,19 @@ def get_parser(device_class=None):
                           "option, takes precedence)"})
     attach_parser.add_argument(*read_only[0], **read_only[1])
     assign_parser.add_argument(*read_only[0], **read_only[1])
-    attach_parser.add_argument('--persistent', '-p',
+
+    mode_parser = assign_parser.add_mutually_exclusive_group()
+    mode_parser.add_argument('--persistent', '-p',
                                dest='required',
                                action='store_true',
                                default=False,
                                help="Alias to `assign --required` for backward "
                                     "compatibility")
+    mode_parser.add_argument('--ask', '--ask-to-attach',
+                             action='store_true',
+                             default=False,
+                             help="Always ask before auto-attachment")
+
     assign_parser.add_argument('--required', '-r',
                                dest='required',
                                action='store_true',
