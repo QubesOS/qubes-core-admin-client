@@ -432,7 +432,10 @@ class DeviceInfo(Port):
 
     def __init__(
             self,
-            port: Port,
+            port: Optional[Port] = None,
+            backend_domain: Optional = None,
+            ident: Optional = None,
+            devclass: Optional = None,
             vendor: Optional[str] = None,
             product: Optional[str] = None,
             manufacturer: Optional[str] = None,
@@ -444,6 +447,8 @@ class DeviceInfo(Port):
             self_identity: Optional[str] = None,
             **kwargs
     ):
+        if port is None:
+            port = Port(backend_domain, ident, devclass)
         super().__init__(port.backend_domain, port.ident, port.devclass)
 
         self._vendor = vendor
@@ -841,12 +846,17 @@ class DeviceAssignment(Port):
 
     def __init__(
             self,
-            port: Port,
+            port: Optional[Port] = None,
+            backend_domain: Optional = None,
+            ident: Optional = None,
+            devclass: Optional = None,
             device_identity=None,
             frontend_domain=None,
             options=None,
             mode: Union[str, AssignmentMode] = "manual",
     ):
+        if port is None:
+            port = Port(backend_domain, ident, devclass)
         super().__init__(port.backend_domain, port.ident, port.devclass)
         self.__options = options or {}
         if isinstance(mode, AssignmentMode):
