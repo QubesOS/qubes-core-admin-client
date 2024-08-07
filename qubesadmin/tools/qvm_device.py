@@ -418,25 +418,26 @@ def get_parser(device_class=None):
     attach_parser.add_argument(*read_only[0], **read_only[1])
     assign_parser.add_argument(*read_only[0], **read_only[1])
 
-    mode_parser = assign_parser.add_mutually_exclusive_group()
-    mode_parser.add_argument('--persistent', '-p',
+    attach_parser.add_argument('--persistent', '-p',
                                dest='required',
                                action='store_true',
                                default=False,
                                help="Alias to `assign --required` for backward "
                                     "compatibility")
+
+    mode_parser = assign_parser.add_mutually_exclusive_group()
     mode_parser.add_argument('--ask', '--ask-to-attach',
                              action='store_true',
                              default=False,
                              help="Always ask before auto-attachment")
+    mode_parser.add_argument('--required', '-r',
+                             dest='required',
+                             action='store_true',
+                             default=False,
+                             help="Mark device as required so it will "
+                                  "be required to the qube's startup and then"
+                                  " automatically attached)")
 
-    assign_parser.add_argument('--required', '-r',
-                               dest='required',
-                               action='store_true',
-                               default=False,
-                               help="Mark device as required so it will "
-                                    "be required to the qube's startup and then"
-                                    " automatically attached)")
     assign_parser.add_argument('--port',
                                action='store_true',
                                default=False,
