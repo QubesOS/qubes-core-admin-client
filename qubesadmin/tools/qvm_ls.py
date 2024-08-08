@@ -699,7 +699,7 @@ def get_parser():
 
     parser_filter.add_argument('--servicevm', metavar='<y|n>',
         default='both', action='store', choices=['y', 'yes', 'n', 'no'],
-        help='show only Service VMs or option to hide them')
+        help='show only ServiceVMs or option to hide them')
 
     parser_filter.add_argument('--pending-update', action='store_true',
         help='filter results to qubes pending for update')
@@ -707,12 +707,12 @@ def get_parser():
     parser_filter.add_argument('--features', nargs='+', metavar='FEATURE=VALUE',
         action='store',
         help='filter results to qubes that matches all specified features. '
-            'omitted VALUE means None. "" means blank')
+            'omitted VALUE means None (unset). Empty value means "" (blank)')
 
     parser_filter.add_argument('--prefs', nargs='+', metavar='PREFERENCE=VALUE',
         action='store',
         help='filter results to qubes that matches all specified preferences. '
-            'omitted VALUE means None. "" means blank')
+            'omitted VALUE means None (unset). Empty value means "" (blank)')
 
     parser_sort = parser.add_argument_group(title='sorting options')
 
@@ -723,7 +723,7 @@ def get_parser():
         help='reverse sort')
 
     parser_sort.add_argument('--ignore-case', action='store_true',
-        default=False, help='ignore case distinctions for sorting')
+        default=False, help='ignore case distinctions when sorting')
 
     parser.add_argument('--spinner',
         action='store_true', dest='spinner',
@@ -796,11 +796,11 @@ def main(args=None, app=None):
         ]
 
     if args.klass:
-        # filter only VMs to specific class(es)
+        # filter only qubes to specific class(es)
         domains = [d for d in domains if d.klass in args.klass]
 
     if args.label:
-        # filter only VMs with specific label(s)
+        # filter only qubes with specific label(s)
         domains_labeled = []
         spinner.show('Filtering based on labels...')
         for dom in domains:
@@ -811,17 +811,17 @@ def main(args=None, app=None):
         spinner.hide()
 
     if args.tags:
-        # filter only VMs having at least one of the specified tags
+        # filter only qubes having at least one of the specified tags
         domains = [dom for dom in domains
                    if set(dom.tags).intersection(set(args.tags))]
 
     if args.exclude_tags:
-        # exclude VMs having at least one of the specified tags
+        # exclude qubes having at least one of the specified tags
         domains = [dom for dom in domains
                    if not set(dom.tags).intersection(set(args.exclude_tags))]
 
     if args.template_source:
-        # Filter only VMs based on specific TemplateVM
+        # Filter only qubes based on specific TemplateVM
         domains_template = []
         spinner.show('Filtering results to qubes based on their templates...')
         for dom in domains:
@@ -832,7 +832,7 @@ def main(args=None, app=None):
         spinner.hide()
 
     if args.netvm_is:
-        # Filter only VMs connecting with specific netvm
+        # Filter only qubes connecting with specific netvm
         domains_netvm = []
         spinner.show('Filtering results to qubes based on their netvm...')
         for dom in domains:
@@ -861,7 +861,7 @@ def main(args=None, app=None):
                    d.features.get('updates-available', None)]
 
     if args.features:
-        # Filter only VMs with specified features
+        # Filter only qubes with specified features
         for feature in args.features:
             try:
                 key, value = feature.split('=', 1)
@@ -876,7 +876,7 @@ def main(args=None, app=None):
             domains = [d for d in domains if d.features.get(key, None) == value]
 
     if args.prefs:
-        # Filter only VMs with specified preferences
+        # Filter only qubes with specified preferences
         for pref in args.prefs:
             try:
                 key, value = pref.split('=', 1)

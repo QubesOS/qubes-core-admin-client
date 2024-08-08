@@ -1,6 +1,6 @@
 .. program:: qvm-ls
 
-:program:`qvm-ls` -- List VMs and various information about them
+:program:`qvm-ls` -- List qubes and various information about them
 ================================================================
 
 Synopsis
@@ -77,7 +77,7 @@ Formatting options
 
 .. option:: --tree, -t
 
-   List domains as a network tree. Domains are sorted as they are connected to
+   List qubes as a network tree. Qubes are sorted as they are connected to
    their netvms. Names are indented relative to the number of connected netvms.
 
 .. option:: --raw-data
@@ -123,16 +123,16 @@ Filtering options
 
 .. option:: --tags TAG ...
 
-   Shows only VMs having specific tag(s).
+   Shows only qubes having specific tag(s).
 
 .. option:: --exclude-tags TAG ...
 
-   Exclude VMs having specific tag(s).
+   Exclude qubes having specific tag(s).
 
 .. option:: --running, --paused, --halted
 
-   Shows only VMs matching the specified power state(s). When none of these
-   options is used (default), all VMs are shown.
+   Shows only qubes matching the specified power state(s). When none of these
+   options is used (default), all qubes are shown.
 
 .. option:: --template-source TEMPLATE ...
 
@@ -157,19 +157,19 @@ Filtering options
 .. option:: --features FEATURE=VALUE ...
 
    Filter results to qubes that match all specified features. Omitted VALUE
-   means None (not set). "" or '' means blank
+   means None (unset). Empty value means "" or '' (blank)
 
 .. option:: --prefs PREFERENCE=VALUE ...
 
    Filter results to qubes that match all specified preferences. Omitted VALUE
-   means None (not set). "" or '' means blank
+   means None (unset). Empty value means "" or '' (blank)
 
 Sorting options
 ---------------
 
 .. option:: --sort COLUMN
 
-   Sort based on provided column rather than NAME. Sort key should be in the
+   Sort based on provided column rather than NAME. Sort key must be in the
    output columns
 
 .. option:: --reverse
@@ -178,7 +178,7 @@ Sorting options
 
 .. option:: --ignore-case
 
-   Ignore case distinctions for sorting
+   Ignore case distinctions when sorting
 
 Authors
 -------
