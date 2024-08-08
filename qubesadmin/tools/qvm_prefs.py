@@ -141,9 +141,12 @@ def process_actions(parser, args, target):
         return 0
 
     try:
-        value = getattr(target, args.property)
-        if value is not None:
-            print(str(value))
+        if args.hide_default and target.property_is_default(args.property):
+            return 0
+        else:
+            value = getattr(target, args.property)
+            if value is not None:
+                print(str(value))
     except qubesadmin.exc.QubesNoSuchPropertyError:
         parser.error('no such property: {!r}'.format(args.property))
     except qubesadmin.exc.QubesException as e:
