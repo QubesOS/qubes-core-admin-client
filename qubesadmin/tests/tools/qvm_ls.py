@@ -234,6 +234,14 @@ class TC_70_Tags(qubesadmin.tests.QubesTestCase):
         self.assertEqual(stdout.getvalue(),
             'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
 
+    def test_100_exclude_tag(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--exclude-tags', 'not-my'], \
+                    app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'dom0  Running  TestVM  black  -         -\n')
+
 
 class TC_80_Power_state_filters(qubesadmin.tests.QubesTestCase):
     def setUp(self):
@@ -355,3 +363,347 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             'sys-net  Running  AppVM  red    template1  sys-net\n'
             'vm1      Running  AppVM  green  template1  sys-net\n')
         self.assertAllCalled()
+
+class TC_100_Sort(qubesadmin.tests.QubesTestCase):
+    def setUp(self):
+        self.app = TestApp()
+        self.app.domains = TestVMCollection(
+            [
+                ('a', TestVM('a', label='red', maxmem='100')),
+                ('B', TestVM('B', label='green', maxmem='1000')),
+                ('c', TestVM('c', label='blue',  maxmem='300')),
+                ('dom0', TestVM('dom0', label='black', maxmem='-'))
+            ]
+        )
+
+    def test_101_sort_string(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(
+                ['--sort', 'NAME', '--reverse', '--ignore-case'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'dom0  Running  TestVM  black  -         -\n'
+            'c     Running  TestVM  blue   -         -\n'
+            'B     Running  TestVM  green  -         -\n'
+            'a     Running  TestVM  red    -         -\n')
+
+    def test_102_sort_numeric(self):
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(
+                ['--field', 'NAME,MAXMEM', '--sort', 'MAXMEM'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  MAXMEM\n'
+            'dom0  -\n'
+            'a     100\n'
+            'c     300\n'
+            'B     1000\n')
+
+
+class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
+    def test_111_filter_class(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00vm1 class=AppVM state=Running\n' \
+            b'template1 class=TemplateVM state=Halted\n' \
+            b'sys-net class=AppVM state=Running\n'
+        props = {
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
+        }
+
+        # setup template1
+        props['label'] = 'type=label black'
+        del props['template']
+        self.app.expected_calls[
+            ('template1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--class', 'TemplateVM'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME       STATE   CLASS       LABEL  TEMPLATE  NETVM\n'
+            'template1  Halted  TemplateVM  black  -         sys-net\n')
+        self.assertAllCalled()
+
+    def test_112_filter_label(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00template1 class=TemplateVM state=Halted\n' \
+            b'sys-net class=AppVM state=Running\n'
+        props = {
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
+        }
+
+        # setup sys-net
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        # setup template1
+        props['label'] = 'type=label black'
+        del props['template']
+        self.app.expected_calls[
+            ('template1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--label', 'black'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME       STATE   CLASS       LABEL  TEMPLATE  NETVM\n'
+            'template1  Halted  TemplateVM  black  -         sys-net\n')
+        self.assertAllCalled()
+
+    def test_113_filter_template_source(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00template1 class=TemplateVM state=Halted\n' \
+            b'sys-net class=AppVM state=Running\n'
+        props = {
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
+        }
+
+        # setup sys-net
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        # setup template1
+        props['label'] = 'type=label black'
+        del props['template']
+        self.app.expected_calls[
+            ('template1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--template-source', 'template1'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME     STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'sys-net  Running  AppVM  red    template1  sys-net\n')
+        self.assertAllCalled()
+
+    def test_114_filter_netvm_is(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00template1 class=TemplateVM state=Halted\n' \
+            b'sys-net class=AppVM state=Running\n'
+        props = {
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
+        }
+
+        # setup sys-net
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        # setup template1
+        props['label'] = 'type=label black'
+        del props['template']
+        self.app.expected_calls[
+            ('template1', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--netvm-is', 'sys-net'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME       STATE    CLASS       LABEL  TEMPLATE   NETVM\n'
+            'sys-net    Running  AppVM       red    template1  sys-net\n'
+            'template1  Halted   TemplateVM  black  -          sys-net\n')
+        self.assertAllCalled()
+
+    def test_115_internal_servicevm_pending_updates(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00internalvm class=AppVM state=Running\n' \
+            b'service-vm class=AppVM state=Running\n'
+        props = {
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
+        }
+
+        # setup internalvm
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('internalvm', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        self.app.expected_calls[
+            ('internalvm', 'admin.vm.feature.Get', 'internal', None)] = \
+            b'0\x00true'
+
+        self.app.expected_calls[
+            ('internalvm', 'admin.vm.feature.Get', 'servicevm', None)] = \
+            b'0\x00'
+
+        self.app.expected_calls[
+            ('internalvm', 'admin.vm.feature.Get', 'updates-available', None)] = \
+            b'0\x00true'
+
+        # setup service-vm
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('service-vm', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        self.app.expected_calls[
+            ('service-vm', 'admin.vm.feature.Get', 'internal', None)] = \
+            b'0\x00'
+
+        self.app.expected_calls[
+            ('service-vm', 'admin.vm.feature.Get', 'servicevm', None)] = \
+            b'0\x00true'
+
+        self.app.expected_calls[
+            ('service-vm', 'admin.vm.feature.Get', 'updates-available', None)] = \
+            b'0\x00'
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--internal', 'y'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1  sys-net\n')
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--internal', 'n'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'service-vm  Running  AppVM  red    template1  sys-net\n')
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--servicevm', 'y'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'service-vm  Running  AppVM  red    template1  sys-net\n')
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--servicevm', 'n'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1  sys-net\n')
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--pending-update'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1  sys-net\n')
+        self.assertAllCalled()
+
+    def test_116_features(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00internalvm class=AppVM state=Running\n' \
+            b'service-vm class=AppVM state=Running\n'
+        props = {
+            'label': 'type=label green',
+            'template': 'type=vm template1',
+            'netvm': 'type=vm sys-net',
+        }
+
+        # setup internalvm
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('internalvm', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        self.app.expected_calls[
+            ('internalvm', 'admin.vm.feature.Get', 'cool-feature', None)] = \
+            b'0\x00yes'
+
+        # setup service-vm
+        props['label'] = 'type=label red'
+        self.app.expected_calls[
+            ('service-vm', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in props.items()).encode()
+
+        self.app.expected_calls[
+            ('service-vm', 'admin.vm.feature.Get', 'cool-feature', None)] = \
+            b'0\x00'
+
+        with qubesadmin.tests.tools.StderrBuffer():
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature:yes'], app=self.app)
+
+        with qubesadmin.tests.tools.StderrBuffer():
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_ls.main(['--features', '=yes'], app=self.app)
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature=yes'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1  sys-net\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature='], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature=""'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
+            'service-vm  Running  AppVM  red    template1  sys-net\n')
+
+        self.assertAllCalled()
+
+    def test_117_preferences(self):
+        self.app = TestApp()
+        self.app.domains = TestVMCollection(
+            [
+                ('a', TestVM('a', label='red', maxmem='100')),
+                ('b', TestVM('b', label='green', maxmem=''))
+            ]
+        )
+
+        with qubesadmin.tests.tools.StderrBuffer():
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_ls.main(['--prefs', 'maxmem:100'], app=self.app)
+
+        with qubesadmin.tests.tools.StderrBuffer():
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_ls.main(['--prefs', ':100'], app=self.app)
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--prefs', 'maxmem=100'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'a     Running  TestVM  red    -         -\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--prefs', 'maxmem=""'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
+            'b     Running  TestVM  green  -         -\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--prefs', 'non-existent='], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
