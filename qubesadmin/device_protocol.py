@@ -236,8 +236,8 @@ class Port:
 
         if properties.get('ident', expected.ident) != expected.ident:
             raise UnexpectedDeviceProperty(
-                f"Got device with id: {properties['ident']} "
-                f"when expected id: {expected.ident}.")
+                f"Got device from port: {properties['ident']} "
+                f"when expected port: {expected.ident}.")
         properties['ident'] = expected.ident
 
         if properties.get('devclass', expected.devclass) != expected.devclass:
@@ -679,12 +679,16 @@ class DeviceInfo(Port):
         """
         Recovers a serialized object, see: :py:meth:`serialize`.
         """
-        ident, _, rest = serialization.partition(b' ')
-        ident = ident.decode('ascii', errors='ignore')
+        identity, _, rest = serialization.partition(b' ')
+        identity = identity.decode('ascii', errors='ignore')
+        ident, devid = identity.split(':', 1)
+        if devid == 'None':  # TODO
+            devid = None
         device = UnknownDevice(
             backend_domain=expected_backend_domain,
             ident=ident,
             devclass=expected_devclass,
+            self_identity=devid
         )
 
         try:
@@ -699,7 +703,7 @@ class DeviceInfo(Port):
     def _deserialize(
             cls,
             untrusted_serialization: bytes,
-            expected_port: Port
+            expected_device: 'DeviceInfo'
     ) -> 'DeviceInfo':
         """
         Actually deserializes the object.
@@ -707,19 +711,26 @@ class DeviceInfo(Port):
         properties, options = cls.unpack_properties(untrusted_serialization)
         properties.update(options)
 
-        cls.check_device_properties(expected_port, properties)
+        cls.check_device_properties(expected_device, properties)
 
         if 'attachment' not in properties or not properties['attachment']:
             properties['attachment'] = None
         else:
-            app = expected_port.backend_domain.app
+            app = expected_device.backend_domain.app
             properties['attachment'] = app.domains.get_blind(
                 properties['attachment'])
 
-        if properties['devclass'] != expected_port.devclass:
+        if properties['devclass'] != expected_device.devclass:
             raise UnexpectedDeviceProperty(
                 f"Got {properties['devclass']} device "
-                f"when expected {expected_port.devclass}.")
+                f"when expected {expected_device.devclass}.")
+
+        if (expected_device.self_identity is not None and
+                properties['self_identity'] != expected_device.self_identity):
+            raise UnexpectedDeviceProperty(
+                f"Unrecognized device identity '{properties['self_identity']}' "
+                f"expected '{expected_device.self_identity}'"
+            )
 
         if 'interfaces' in properties:
             interfaces = properties['interfaces']
@@ -730,7 +741,7 @@ class DeviceInfo(Port):
 
         if 'parent_ident' in properties:
             properties['parent'] = Port(
-                backend_domain=expected_port.backend_domain,
+                backend_domain=expected_device.backend_domain,
                 ident=properties['parent_ident'],
                 devclass=properties['parent_devclass'],
             )
@@ -986,12 +997,14 @@ class DeviceAssignment(Port):
             cls,
             serialization: bytes,
             expected_port: Port,
+            expected_identity: Optional[str],
     ) -> 'DeviceAssignment':
         """
         Recovers a serialized object, see: :py:meth:`serialize`.
         """
         try:
-            result = cls._deserialize(serialization, expected_port)
+            result = cls._deserialize(
+                serialization, expected_port, expected_identity)
         except Exception as exc:
             raise ProtocolError() from exc
         return result
@@ -1001,16 +1014,24 @@ class DeviceAssignment(Port):
             cls,
             untrusted_serialization: bytes,
             expected_port: Port,
+            expected_identity: Optional[str],
     ) -> 'DeviceAssignment':
         """
         Actually deserializes the object.
         """
         properties, options = cls.unpack_properties(untrusted_serialization)
         properties['options'] = options
+        import sys; print(f'{expected_identity=}', f'{expected_port=}', file=sys.stderr)  # TODO debug
 
         cls.check_device_properties(expected_port, properties)
         del properties['backend_domain']
         del properties['ident']
         del properties['devclass']
 
-        return cls(expected_port, **properties)
+        assignment = cls(expected_port, **properties)
+        if (expected_identity
+                and assignment.device.self_identity != expected_identity):
+            raise UnexpectedDeviceProperty(
+                f"Got device with identity {assignment.device.self_identity}"
+                f"when expected devices with identity {expected_identity}.")
+        return assignment
