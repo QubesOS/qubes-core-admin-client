@@ -154,12 +154,17 @@ class DeviceCollection:
             None, 'admin.vm.device.{}.Attached'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
             device, _, untrusted_rest = assignment_str.partition(' ')
-            backend_domain_name, ident = device.split('+', 1)
+            backend_domain_name, identity = device.split('+', 1)
+            ident, devid = identity.split(':', 1)
+            if devid == 'None': # TODO
+                devid = None
             backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
+            import sys; print(f"{identity=}, {ident=}, {devid=}", file=sys.stderr)  # TODO debug
 
             yield DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
-                expected_port=Port(backend_domain, ident, self._class)
+                expected_port=Port(backend_domain, ident, self._class),
+                expected_identity=devid,
             )
 
     def get_assigned_devices(
@@ -173,13 +178,17 @@ class DeviceCollection:
         assignments_str = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
-            port, _, untrusted_rest = assignment_str.partition(' ')
-            backend_domain_name, ident = port.split('+', 1)
+            device, _, untrusted_rest = assignment_str.partition(' ')
+            backend_domain_name, identity = device.split('+', 1)
+            ident, devid = identity.split(':', 1)
+            if devid == 'None':  # TODO
+                devid = None
             backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
 
             assignment = DeviceAssignment.deserialize(
                 untrusted_rest.encode('ascii'),
-                expected_port=Port(backend_domain, ident, self._class)
+                expected_port=Port(backend_domain, ident, self._class),
+                expected_identity=devid,
             )
             if not required_only or assignment.required:
                 yield assignment
