@@ -50,7 +50,7 @@ import qubesadmin.vm
 from qubesadmin.backup import BackupVM
 from qubesadmin.backup.core2 import Core2Qubes
 from qubesadmin.backup.core3 import Core3Qubes
-from qubesadmin.device_protocol import DeviceAssignment, Port
+from qubesadmin.device_protocol import DeviceAssignment, Port, Device
 from qubesadmin.exc import QubesException
 from qubesadmin.utils import size_to_human
 
@@ -2086,19 +2086,19 @@ class BackupRestore(object):
                             tag, vm.name, err)
 
             for bus in vm.devices:
-                for backend_domain, ident in vm.devices[bus]:
-                    options = vm.devices[bus][(backend_domain, ident)]
+                for backend_domain, port_id in vm.devices[bus]:
+                    options = vm.devices[bus][(backend_domain, port_id)]
                     if 'required' in options:
                         required = options['required']
                         del options['required']
                     else:
                         required = False
                     assignment = DeviceAssignment(
-                        Port(
+                        Device(Port(
                             backend_domain=self.app.domains[backend_domain],
-                            ident=ident,
+                            port_id=port_id,
                             devclass=bus,
-                        ),
+                        )),
                         options=options,
                         mode='required' if required else 'auto-attach',
                     )
@@ -2107,7 +2107,7 @@ class BackupRestore(object):
                             new_vm.devices[bus].assign(assignment)
                     except Exception as err:  # pylint: disable=broad-except
                         self.log.error('Error assigning device %s:%s to %s: %s',
-                            bus, ident, vm.name, err)
+                            bus, port_id, vm.name, err)
 
         # Set VM dependencies - only non-default setting
         for vm in vms.values():

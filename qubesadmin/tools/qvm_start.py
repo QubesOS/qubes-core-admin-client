@@ -101,7 +101,7 @@ def get_drive_assignment(app, drive_str):
         drive_str = drive_str[len('hd:'):]
 
     try:
-        backend_domain_name, ident = drive_str.split(':', 1)
+        backend_domain_name, port_id = drive_str.split(':', 1)
     except ValueError:
         raise ValueError("Incorrect image name: image must be in the format "
                          "of VMNAME:full_path, for example "
@@ -111,7 +111,7 @@ def get_drive_assignment(app, drive_str):
     except KeyError:
         raise qubesadmin.exc.QubesVMNotFoundError(
             'No such VM: %s', backend_domain_name)
-    if ident.startswith('/'):
+    if port_id.startswith('/'):
         # it is a path - if we're running in dom0, try to call losetup to
         # export the device, otherwise reject
         if app.qubesd_connection_type == 'qrexec':
@@ -121,11 +121,11 @@ def get_drive_assignment(app, drive_str):
         try:
             if backend_domain.klass == 'AdminVM':
                 loop_name = subprocess.check_output(
-                    ['sudo', 'losetup', '-f', '--show', ident])
+                    ['sudo', 'losetup', '-f', '--show', port_id])
                 loop_name = loop_name.strip()
             else:
                 untrusted_loop_name, _ = backend_domain.run_with_args(
-                    'losetup', '-f', '--show', ident,
+                    'losetup', '-f', '--show', port_id,
                     user='root')
                 untrusted_loop_name = untrusted_loop_name.strip()
                 allowed_chars = string.ascii_lowercase + string.digits + '/'
@@ -138,18 +138,18 @@ def get_drive_assignment(app, drive_str):
                 del untrusted_loop_name
         except subprocess.CalledProcessError:
             raise qubesadmin.exc.QubesException(
-                'Failed to setup loop device for %s', ident)
+                'Failed to setup loop device for %s', port_id)
         assert loop_name.startswith(b'/dev/loop')
-        ident = loop_name.decode().split('/')[2]
+        port_id = loop_name.decode().split('/')[2]
         # wait for device to appear
         # FIXME: convert this to waiting for event
         timeout = 10
-        while isinstance(backend_domain.devices['block'][ident],
+        while isinstance(backend_domain.devices['block'][port_id],
                 qubesadmin.device_protocol.UnknownDevice):
             if timeout == 0:
                 raise qubesadmin.exc.QubesException(
                     'Timeout waiting for {}:{} device to appear'.format(
-                        backend_domain.name, ident))
+                        backend_domain.name, port_id))
             timeout -= 1
             time.sleep(1)
 
@@ -158,11 +158,11 @@ def get_drive_assignment(app, drive_str):
         'read-only': devtype == 'cdrom'
     }
     assignment = qubesadmin.device_protocol.DeviceAssignment(
-        qubesadmin.device_protocol.Port(
+        qubesadmin.device_protocol.Device(qubesadmin.device_protocol.Port(
             backend_domain=backend_domain,
-            ident=ident,
+            port_id=port_id,
             devclass='block',
-        ),
+        )),
         options=options,
         mode="required")
 

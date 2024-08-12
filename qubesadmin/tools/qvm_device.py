@@ -67,7 +67,7 @@ class Line(object):
 
     # pylint: disable=too-few-public-methods
     def __init__(self, device: DeviceInfo, attached_to=None):
-        self.ident = "{!s}:{!s}".format(device.backend_domain, device.ident)
+        self.ident = "{!s}:{!s}".format(device.backend_domain, device.port_id)  # TODO!
         self.description = device.description
         self.attached_to = attached_to if attached_to else ""
         self.frontends = []
@@ -207,7 +207,8 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    identity = device.self_identity if not args.port else None
+    if not args.port:
+        device.device_id = None
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
@@ -219,7 +220,6 @@ def assign_device(args):
         mode = 'ask-to-attach'
     assignment = DeviceAssignment(
         device,
-        device_identity=identity,
         mode=mode,
         options=options
     )
@@ -227,7 +227,7 @@ def assign_device(args):
     if vm.is_running() and not assignment.attached and not args.quiet:
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
-              f"{assignment.backend_domain}:{assignment.ident}")
+              f"{assignment.backend_domain}:{assignment.port_id}")
 
 
 def unassign_device(args):
@@ -253,7 +253,7 @@ def _unassign_and_show_message(assignment, vm, args):
     if assignment.attached and not args.quiet:
         print("Unassigned. To detach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} detach {vm} "
-              f"{assignment.backend_domain}:{assignment.ident}")
+              f"{assignment.backend_domain}:{assignment.port_id}")
 
 
 def info_device(args):
