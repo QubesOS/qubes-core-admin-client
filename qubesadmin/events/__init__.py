@@ -232,9 +232,9 @@ class EventsDispatcher(object):
         if event.startswith('device-') and 'device' in kwargs:
             try:
                 devclass = event.split(':', 1)[1]
-                backend_domain, ident = kwargs['device'].split(':', 1)
+                backend_domain, port_id = kwargs['device'].split(':', 1)
                 kwargs['device'] = self.app.domains.get_blind(backend_domain)\
-                    .devices[devclass][ident]
+                    .devices[devclass][port_id]
             except (KeyError, ValueError):
                 pass
         # invalidate cache if needed; call it before other handlers
