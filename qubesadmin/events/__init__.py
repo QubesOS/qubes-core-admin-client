@@ -26,6 +26,7 @@ import subprocess
 
 import qubesadmin.config
 import qubesadmin.exc
+from qubesadmin.device_protocol import Device, Port
 
 
 class EventsDispatcher(object):
@@ -229,12 +230,21 @@ class EventsDispatcher(object):
                 self.app.domains.clear_cache(invalidate_name=str(vm))
             subject = None
         # deserialize known attributes
-        if event.startswith('device-') and 'device' in kwargs:
+        if event.startswith('device-'):
             try:
-                devclass = event.split(':', 1)[1]
-                backend_domain, port_id = kwargs['device'].split(':', 1)
-                kwargs['device'] = self.app.domains.get_blind(backend_domain)\
-                    .devices[devclass][port_id]
+                if 'device' in kwargs:
+                    devclass = event.split(':', 1)[1]
+                    device = Device.from_str(
+                        kwargs['device'],
+                        devclass,
+                        self.app.domains,
+                        blind=True)
+                    kwargs['device'] = self.app.domains.get_blind(
+                        device.backend_domain).devices[devclass][device.port_id]
+                if 'port' in kwargs:
+                    devclass = event.split(':', 1)[1]
+                    kwargs['port'] = Port.from_str(
+                        kwargs['port'], devclass, self.app.domains, blind=True)
             except (KeyError, ValueError):
                 pass
         # invalidate cache if needed; call it before other handlers
