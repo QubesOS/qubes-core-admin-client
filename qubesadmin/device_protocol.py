@@ -154,7 +154,7 @@ class DeviceSerializer:
 
     @staticmethod
     def parse_basic_device_properties(
-            expected_device: 'Device', properties: Dict[str, Any]):
+            expected_device: 'VirtualDevice', properties: Dict[str, Any]):
         """
         Validates properties against an expected port configuration.
 
@@ -338,7 +338,7 @@ class Port:
         return "peripheral"
 
 
-class Device:
+class VirtualDevice:
     def __init__(
             self,
             port: Optional[Port] = None,
@@ -396,7 +396,7 @@ class Device:
         return hash((self.port, self.device_id))
 
     def __eq__(self, other):
-        if isinstance(other, (Device, DeviceAssignment)):
+        if isinstance(other, (VirtualDevice, DeviceAssignment)):
             result = (
                     self.port == other.port
                     and self.device_id == other.device_id
@@ -418,7 +418,7 @@ class Device:
         3. *:<devid>
         4. *:*
         """
-        if isinstance(other, (Device, DeviceAssignment)):
+        if isinstance(other, (VirtualDevice, DeviceAssignment)):
             if self.port == '*' and other.port != '*':
                 return True
             if self.port != '*' and other.port == '*':
@@ -429,7 +429,7 @@ class Device:
                     reprs[obj].append(obj.device_id)
             return reprs[self] < reprs[other]
         elif isinstance(other, Port):
-            _other = Device(other, '*')
+            _other = VirtualDevice(other, '*')
             return self < _other
         else:
             raise TypeError(
@@ -450,7 +450,7 @@ class Device:
             domains,
             blind=False,
             backend=None,
-    ) -> 'Device':
+    ) -> 'VirtualDevice':
         if backend is None:
             if blind:
                 get_domain = domains.get_blind
@@ -464,7 +464,7 @@ class Device:
     def from_str(
             cls, representation: str, devclass: Optional[str], domains,
             blind=False, backend=None
-    ) -> 'Device':
+    ) -> 'VirtualDevice':
         if backend is None:
             if blind:
                 get_domain = domains.get_blind
@@ -482,7 +482,7 @@ class Device:
             get_domain: Callable,
             backend,
             sep: str
-    ) -> 'Device':
+    ) -> 'VirtualDevice':
         if backend is None:
             backend_name, identity = representation.split(sep, 1)
             backend = get_domain(backend_name)
@@ -693,7 +693,7 @@ class DeviceInterface:
         return result
 
 
-class DeviceInfo(Device):
+class DeviceInfo(VirtualDevice):
     """ Holds all information about a device """
 
     def __init__(
@@ -833,7 +833,7 @@ class DeviceInfo(Device):
         return self._interfaces
 
     @property
-    def parent_device(self) -> Optional[Device]:
+    def parent_device(self) -> Optional[VirtualDevice]:
         """
         The parent device, if any.
 
@@ -843,7 +843,7 @@ class DeviceInfo(Device):
         return self._parent
 
     @property
-    def subdevices(self) -> List[Device]:
+    def subdevices(self) -> List[VirtualDevice]:
         """
         The list of children devices if any.
 
@@ -864,7 +864,7 @@ class DeviceInfo(Device):
         """
         Serialize an object to be transmitted via Qubes API.
         """
-        properties = Device.serialize(self)
+        properties = VirtualDevice.serialize(self)
         # 'attachment', 'interfaces', 'data', 'parent_device'
         # are not string, so they need special treatment
         default = DeviceInfo(self.port)
@@ -904,7 +904,7 @@ class DeviceInfo(Device):
         Recovers a serialized object, see: :py:meth:`serialize`.
         """
         head, _, rest = serialization.partition(b' ')
-        device = Device.from_str(
+        device = VirtualDevice.from_str(
             head.decode('ascii', errors='ignore'), expected_devclass,
             domains=None, backend=expected_backend_domain)
 
@@ -920,7 +920,7 @@ class DeviceInfo(Device):
     def _deserialize(
             cls,
             untrusted_serialization: bytes,
-            expected_device: Device
+            expected_device: VirtualDevice
     ) -> 'DeviceInfo':
         """
         Actually deserializes the object.
@@ -1020,13 +1020,13 @@ class DeviceAssignment:
 
     def __init__(
             self,
-            device: Device,
+            device: VirtualDevice,
             frontend_domain=None,
             options=None,
             mode: Union[str, AssignmentMode] = "manual",
     ):
         if isinstance(device, DeviceInfo):
-            device = Device(device.port, device.device_id)
+            device = VirtualDevice(device.port, device.device_id)
         self._device_ident = device
         self.__options = options or {}
         if isinstance(mode, AssignmentMode):
@@ -1040,7 +1040,7 @@ class DeviceAssignment:
         Clone object and substitute attributes with explicitly given.
         """
         kwargs["device"] = kwargs.get(
-            "device", Device(
+            "device", VirtualDevice(
                 Port(self.backend_domain, self.port_id, self.devclass),
                 self.device_id
             ))
@@ -1062,7 +1062,7 @@ class DeviceAssignment:
         return hash(self._device_ident)
 
     def __eq__(self, other):
-        if isinstance(other, (Device, DeviceAssignment)):
+        if isinstance(other, (VirtualDevice, DeviceAssignment)):
             result = (
                     self.port == other.port
                     and self.device_id == other.device_id
@@ -1073,7 +1073,7 @@ class DeviceAssignment:
     def __lt__(self, other):
         if isinstance(other, DeviceAssignment):
             return self._device_ident < other._device_ident
-        if isinstance(other, Device):
+        if isinstance(other, VirtualDevice):
             return self._device_ident < other
         raise TypeError(
             f"Comparing instances of {type(self)} and '{type(other)}' "
@@ -1182,7 +1182,7 @@ class DeviceAssignment:
     def deserialize(
             cls,
             serialization: bytes,
-            expected_device: Device,
+            expected_device: VirtualDevice,
     ) -> 'DeviceAssignment':
         """
         Recovers a serialized object, see: :py:meth:`serialize`.
@@ -1197,7 +1197,7 @@ class DeviceAssignment:
     def _deserialize(
             cls,
             untrusted_serialization: bytes,
-            expected_device: Device,
+            expected_device: VirtualDevice,
     ) -> 'DeviceAssignment':
         """
         Actually deserializes the object.

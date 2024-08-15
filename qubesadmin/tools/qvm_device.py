@@ -263,9 +263,8 @@ def info_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        assignment = DeviceAssignment(device)
-        print("description:", assignment.device.description)
-        print("data:", assignment.device.data)
+        print("description:", device.description)
+        print("data:", device.data)
     else:
         for device_assignment in (
                 vm.devices[args.devclass].get_dedicated_devices()):
