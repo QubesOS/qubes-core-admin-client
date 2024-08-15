@@ -36,7 +36,7 @@ from typing import Optional, Iterable
 
 import qubesadmin.exc
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
-                                        DeviceAssignment, Device)
+                                        DeviceAssignment, VirtualDevice)
 
 
 class DeviceCollection:
@@ -153,7 +153,7 @@ class DeviceCollection:
             None, 'admin.vm.device.{}.Attached'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
             head, _, untrusted_rest = assignment_str.partition(' ')
-            device = Device.from_qarg(
+            device = VirtualDevice.from_qarg(
                 head, self._class, self._vm.app.domains, blind=True)
 
             yield DeviceAssignment.deserialize(
@@ -171,7 +171,7 @@ class DeviceCollection:
             None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
             head, _, untrusted_rest = assignment_str.partition(' ')
-            device = Device.from_qarg(
+            device = VirtualDevice.from_qarg(
                 head, self._class, self._vm.app.domains, blind=True)
 
             assignment = DeviceAssignment.deserialize(
@@ -196,7 +196,7 @@ class DeviceCollection:
         """
         Update assignment of already attached device.
 
-        :param Device device: device for which change required flag
+        :param VirtualDevice device: device for which change required flag
         :param bool required: new assignment:
                               `None` -> unassign device from qube
                               `False` -> device will be auto-attached to qube

@@ -26,7 +26,7 @@ import subprocess
 
 import qubesadmin.config
 import qubesadmin.exc
-from qubesadmin.device_protocol import Device, Port
+from qubesadmin.device_protocol import VirtualDevice, Port
 
 
 class EventsDispatcher(object):
@@ -234,7 +234,7 @@ class EventsDispatcher(object):
             try:
                 if 'device' in kwargs:
                     devclass = event.split(':', 1)[1]
-                    device = Device.from_str(
+                    device = VirtualDevice.from_str(
                         kwargs['device'],
                         devclass,
                         self.app.domains,
