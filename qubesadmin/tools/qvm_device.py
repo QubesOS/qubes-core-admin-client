@@ -111,8 +111,13 @@ def _load_devices(app, domains, devclass):
     try:
         for vm in domains:
             try:
-                for ass in vm.devices[devclass].get_dedicated_devices():
-                    devices.add(ass.device)
+                for ass in vm.devices[devclass].get_attached_devices():
+                    if len(ass.devices) > 1:
+                        print("There is to many devices in assignment",
+                              file=sys.stderr)
+                    devices.add(ass.devices[0])
+                for ass in vm.devices[devclass].get_assigned_devices():
+                    devices.add(ass.virtual_device)
                 for dev in vm.devices[devclass].get_exposed_devices():
                     devices.add(dev)
             except qubesadmin.exc.QubesVMNotFoundError:
@@ -134,17 +139,23 @@ def _load_frontends_info(vm, dev, devclass):
         return
 
     try:
-        for assignment in vm.devices[devclass].get_dedicated_devices():
-            if dev != assignment.device:
-                continue
-            if assignment.options:
-                yield '{!s} ({})'.format(
-                    vm, ', '.join('{}={}'.format(key, value)
-                    for key, value in assignment.options.items()))
-            else:
-                yield str(vm)
+        for assignment in vm.devices[devclass].get_attached_devices():
+            if dev in assignment.devices:
+                yield _frontend_desc(vm, assignment)
+        for assignment in vm.devices[devclass].get_assigned_devices():
+            if dev == assignment.virtual_device:
+                yield _frontend_desc(vm, assignment)
     except qubesadmin.exc.QubesVMNotFoundError:
         pass
+
+
+def _frontend_desc(vm, assignment):
+    if assignment.options:
+        return '{!s} ({})'.format(
+            vm, ', '.join('{}={}'.format(key, value)
+                          for key, value in assignment.options.items()))
+    else:
+        return str(vm)
 
 
 def attach_device(args):
@@ -194,6 +205,8 @@ def detach_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
+        # ignore device id, detach any device
+        device.device_id = None
         assignment = DeviceAssignment(device)
         vm.devices[args.devclass].detach(assignment)
     else:
@@ -207,7 +220,7 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    if not args.port:
+    if args.port:
         device.device_id = None
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
@@ -237,6 +250,8 @@ def unassign_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
+        # ignore device id, detach any device
+        device.device_id = None
         assignment = DeviceAssignment(
             device, frontend_domain=vm)
         _unassign_and_show_message(assignment, vm, args)
@@ -266,11 +281,12 @@ def info_device(args):
         print("description:", device.description)
         print("data:", device.data)
     else:
-        for device_assignment in (
-                vm.devices[args.devclass].get_dedicated_devices()):
-            print("device_assignment:", device_assignment)
-            print("description:", device_assignment.device.description)
-            print("data:", device_assignment.device.data)
+        for assignment in (vm.devices[args.devclass].get_dedicated_devices()):
+            print("device_assignment:", assignment)
+            if len(assignment.devices) == 1:
+                device = assignment.devices[0]
+                print("description:", device.description)
+                print("data:", device.data)
 
 
 def init_list_parser(sub_parsers):
@@ -310,7 +326,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
             return
 
         try:
-            vmname, device_id = backend_device_id.split(':', 1)
+            vmname, port_id = backend_device_id.split(':', 1)
             vm = None
             try:
                 vm = app.domains[vmname]
@@ -318,15 +334,15 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                 parser.error_runtime("no backend vm {!r}".format(vmname))
 
             try:
-                dev = vm.devices[devclass][device_id]
+                dev = vm.devices[devclass][port_id]
                 if not self.allow_unknown and \
                         isinstance(dev, UnknownDevice):
-                    raise KeyError(device_id)
+                    raise KeyError(port_id)
             except KeyError:
                 parser.error_runtime(
                     f"backend vm {vmname!r} doesn't expose "
-                    f"{devclass} device {device_id!r}")
-                dev = Port(vm, device_id, devclass)
+                    f"{devclass} device {port_id!r}")
+                dev = UnknownDevice(Port(vm, port_id, devclass))
             setattr(namespace, self.dest, dev)
         except ValueError:
             parser.error(
