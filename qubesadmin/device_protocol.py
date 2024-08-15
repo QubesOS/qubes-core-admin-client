@@ -178,7 +178,7 @@ class DeviceSerializer:
                 f"when expected port: {expected.port_id}.")
         properties.pop('port_id', None)
 
-        if expected.devclass == '*':
+        if expected.devclass == 'peripheral':
             expected = Port(
                 expected.backend_domain,
                 expected.port_id,
