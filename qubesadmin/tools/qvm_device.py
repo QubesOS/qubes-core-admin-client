@@ -220,8 +220,10 @@ def assign_device(args):
     """
     vm = args.domains[0]
     device = args.device
-    if args.port:
+    if args.only_port:
         device.device_id = None
+    if args.only_device:
+        device.port = None
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
@@ -453,12 +455,20 @@ def get_parser(device_class=None):
                                   "be required to the qube's startup and then"
                                   " automatically attached)")
 
-    assign_parser.add_argument('--port',
-                               action='store_true',
-                               default=False,
-                               help="Ignore device presented identity and "
-                                    "attach any device connected to the given "
-                                    "port number")
+    id_parser = assign_parser.add_mutually_exclusive_group()
+    id_parser.add_argument('--port',
+                           dest='only_port',
+                           action='store_true',
+                           default=False,
+                           help="Ignore device presented identity and "
+                                "attach later any device connected "
+                                "to the given port")
+    id_parser.add_argument('--device',
+                           dest='only_device',
+                           action='store_true',
+                           default=False,
+                           help="Ignore current port identity and "
+                                "attach this device connected to any port")
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
     assign_parser.set_defaults(func=assign_device)
