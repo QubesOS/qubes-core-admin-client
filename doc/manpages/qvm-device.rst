@@ -120,6 +120,10 @@ Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
    Ignore device presented identity and attach any device connected to the given port number.
 
+.. option:: --device
+
+   Ignore current port identity and attach this device connected to any port.
+
 aliases: s
 
 unassign
