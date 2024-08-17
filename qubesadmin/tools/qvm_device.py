@@ -223,7 +223,7 @@ def assign_device(args):
     if args.only_port:
         device.device_id = None
     if args.only_device:
-        device.port = None
+        device.port = Port(None, None, device.devclass)
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
