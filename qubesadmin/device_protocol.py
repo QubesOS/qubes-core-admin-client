@@ -327,7 +327,9 @@ class Port:
 
         Unique for given domain and devclass.
         """
-        return self.__port_id
+        if self.__port_id is not None:
+            return self.__port_id
+        return '*'
 
     @property
     def backend_domain(self) -> Optional[QubesVM]:
@@ -398,7 +400,6 @@ class VirtualDevice:
         if self.port != '*':
             return self.port.backend_name
         return '*'
-
 
     @property
     def port_id(self):
@@ -511,7 +512,8 @@ class VirtualDevice:
     ) -> 'VirtualDevice':
         if backend is None:
             backend_name, identity = representation.split(sep, 1)
-            backend = get_domain(backend_name)
+            if backend_name != '*':
+                backend = get_domain(backend_name)
         else:
             identity = representation
         port_id, _, devid = identity.partition(':')
