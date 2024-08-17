@@ -534,7 +534,7 @@ class VirtualDevice:
                 ('devclass', self.devclass)))
 
         properties += b' ' + DeviceSerializer.pack_property(
-            'backend_domain', self.backend_domain.name)
+            'backend_domain', self.backend_name)
 
         return properties
 
@@ -1252,11 +1252,11 @@ class DeviceAssignment:
         return cls(**properties)
 
     def matches(self, device: VirtualDevice) -> bool:
+        if self.devclass != device.devclass:
+            return False
         if self.backend_domain != '*' and self.backend_domain != device.backend_domain:
             return False
         if self.port_id != '*' and self.port_id != device.port_id:
-            return False
-        if self.devclass != '*' and self.devclass != device.devclass:
             return False
         if self.device_id != '*' and self.device_id != device.device_id:
             return False
