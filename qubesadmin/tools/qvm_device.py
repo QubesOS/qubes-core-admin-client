@@ -33,7 +33,7 @@ import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.device_protocol
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
-                                        DeviceAssignment)
+                                        DeviceAssignment, VirtualDevice)
 
 
 def prepare_table(dev_list):
@@ -206,7 +206,7 @@ def detach_device(args):
     if args.device:
         device = args.device
         # ignore device id, detach any device
-        device.device_id = None
+        device.device_id = '*'
         assignment = DeviceAssignment(device)
         vm.devices[args.devclass].detach(assignment)
     else:
@@ -221,9 +221,10 @@ def assign_device(args):
     vm = args.domains[0]
     device = args.device
     if args.only_port:
-        device.device_id = None
+        device = device.clone(device_id="*")
     if args.only_device:
-        device.port = Port(None, None, device.devclass)
+        device = device.clone(
+            port=Port(device.backend_domain, "*", device.devclass))
     options = dict(opt.split('=', 1) for opt in args.option or [])
     if args.ro:
         options['read-only'] = 'yes'
@@ -233,12 +234,10 @@ def assign_device(args):
         mode = 'required'
     if args.ask:
         mode = 'ask-to-attach'
-    assignment = DeviceAssignment(
-        device,
-        mode=mode,
-        options=options
-    )
+    assignment = DeviceAssignment(device, mode=mode, options=options)
     vm.devices[args.devclass].assign(assignment)
+    # retrieve current port info
+    assignment = DeviceAssignment(args.device, mode=mode, options=options)
     if vm.is_running() and not assignment.attached and not args.quiet:
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
@@ -252,10 +251,12 @@ def unassign_device(args):
     vm = args.domains[0]
     if args.device:
         device = args.device
-        # ignore device id, detach any device
-        device.device_id = None
-        assignment = DeviceAssignment(
-            device, frontend_domain=vm)
+        if args.only_port:
+            device = device.clone(device_id="*")
+        if args.only_device:
+            device = device.clone(
+                port=Port(device.backend_domain, '*', device.devclass))
+        assignment = DeviceAssignment(device, frontend_domain=vm)
         _unassign_and_show_message(assignment, vm, args)
     else:
         for assignment in vm.devices[args.devclass].get_assigned_devices():
@@ -306,11 +307,11 @@ def init_list_parser(sub_parsers):
 
 class DeviceAction(qubesadmin.tools.QubesAction):
     """ Action for argument parser that gets the
-        :py:class:``qubesadmin.device.Device`` from a
-        BACKEND:DEVICE_ID string.
+        :py:class:``qubesadmin.device_protocol.VirtualDevice`` from a
+        BACKEND:PORT_ID:DEVICE_ID string.
     """  # pylint: disable=too-few-public-methods
 
-    def __init__(self, help='A backend & device id combination',
+    def __init__(self, help='A backend, port & device id combination',
                  required=True, allow_unknown=False, **kwargs):
         # pylint: disable=redefined-builtin
         self.allow_unknown = allow_unknown
@@ -322,34 +323,36 @@ class DeviceAction(qubesadmin.tools.QubesAction):
 
     def parse_qubes_app(self, parser, namespace):
         app = namespace.app
-        backend_device_id = getattr(namespace, self.dest)
+        representation = getattr(namespace, self.dest)
         devclass = namespace.devclass
-        if backend_device_id is None:
+        if representation is None:
             return
 
         try:
-            vmname, port_id = backend_device_id.split(':', 1)
-            vm = None
             try:
-                vm = app.domains[vmname]
+                dev = VirtualDevice.from_str(
+                    representation, devclass, app.domains)
             except KeyError:
-                parser.error_runtime("no backend vm {!r}".format(vmname))
+                parser.error_runtime("no such backend vm!")
+                return
 
             try:
-                dev = vm.devices[devclass][port_id]
-                if not self.allow_unknown and \
-                        isinstance(dev, UnknownDevice):
-                    raise KeyError(port_id)
+                # load device info
+                _dev = dev.backend_domain.devices[devclass][dev.port_id]
+                if dev._device_id is None or dev.device_id == _dev.device_id:
+                    dev = _dev
+                if not self.allow_unknown and isinstance(dev, UnknownDevice):
+                    raise KeyError(dev.port_id)
             except KeyError:
                 parser.error_runtime(
-                    f"backend vm {vmname!r} doesn't expose "
-                    f"{devclass} device {port_id!r}")
-                dev = UnknownDevice(Port(vm, port_id, devclass))
+                    f"backend vm {dev.backend_name} doesn't expose "
+                    f"{devclass} device {dev.port_id!r}")
+                dev = UnknownDevice.from_device(dev)
             setattr(namespace, self.dest, dev)
         except ValueError:
             parser.error(
-                'expected a backend vm & device id combination like foo:bar '
-                'got %s' % backend_device_id)
+                'expected a backend vm, port id and [optional] device id '
+                f'combination like foo:bar[:baz] got {representation}')
 
 
 def get_parser(device_class=None):
@@ -455,20 +458,18 @@ def get_parser(device_class=None):
                                   "be required to the qube's startup and then"
                                   " automatically attached)")
 
-    id_parser = assign_parser.add_mutually_exclusive_group()
-    id_parser.add_argument('--port',
-                           dest='only_port',
-                           action='store_true',
-                           default=False,
-                           help="Ignore device presented identity and "
-                                "attach later any device connected "
-                                "to the given port")
-    id_parser.add_argument('--device',
-                           dest='only_device',
-                           action='store_true',
-                           default=False,
-                           help="Ignore current port identity and "
-                                "attach this device connected to any port")
+    for pars in (assign_parser, unassign_parser):
+        id_parser = pars.add_mutually_exclusive_group()
+        id_parser.add_argument('--port', '--only-port',
+                               dest='only_port',
+                               action='store_true',
+                               default=False,
+                               help="Ignore device presented identity")
+        id_parser.add_argument('--device', '--only-device',
+                               dest='only_device',
+                               action='store_true',
+                               default=False,
+                               help="Ignore current port identity")
     attach_parser.set_defaults(func=attach_device)
     detach_parser.set_defaults(func=detach_device)
     assign_parser.set_defaults(func=assign_device)
