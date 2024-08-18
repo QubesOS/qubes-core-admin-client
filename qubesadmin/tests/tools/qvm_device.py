@@ -199,7 +199,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'attach', '-p', 'test-vm2', 'dev1'],
                     app=self.app)
-            self.assertIn('expected a backend vm & device id',
+            self.assertIn(
+                'expected a backend vm, port id and [optional] device id',
                 stderr.getvalue())
         self.assertAllCalled()
 
@@ -221,7 +222,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'attach', '-p', 'test-vm2', 'no-such-vm:dev3'],
                     app=self.app)
-            self.assertIn('no backend vm',
+            self.assertIn('no such backend vm!',
                 stderr.getvalue())
         self.assertAllCalled()
 
@@ -311,7 +312,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'assign', 'test-vm2', 'dev1'],
                     app=self.app)
-            self.assertIn('expected a backend vm & device id',
+            self.assertIn(
+                'expected a backend vm, port id and [optional] device id',
                 stderr.getvalue())
         self.assertAllCalled()
 
@@ -332,14 +334,14 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'assign', 'test-vm2', 'no-such-vm:dev3'],
                     app=self.app)
-            self.assertIn('no backend vm', stderr.getvalue())
+            self.assertIn('no such backend vm!', stderr.getvalue())
         self.assertAllCalled()
 
     def test_040_unassign(self):
         """ Test unassign action """
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
-             'test-vm1+dev1:*', None)] = b'0\0'
+             'test-vm1+dev1:dead:beef:babe:u0123456', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1'], app=self.app)
         self.assertAllCalled()
@@ -350,7 +352,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
              'test-vm1+dev7:*', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
-            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev7'], app=self.app)
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev7', '--port'], app=self.app)
         self.assertAllCalled()
 
     def test_042_unassign_all(self):

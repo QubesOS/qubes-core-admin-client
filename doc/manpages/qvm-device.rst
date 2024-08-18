@@ -116,11 +116,11 @@ Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
    Assign device but always ask before auto-attachment.
 
-.. option:: --port
+.. option:: --port, --only-port
 
    Ignore device presented identity and attach any device connected to the given port number.
 
-.. option:: --device
+.. option:: --device, --only-device
 
    Ignore current port identity and attach this device connected to any port.
 
@@ -133,6 +133,14 @@ unassign
 
 Remove assignment of device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
 If no device is given, remove assignments of all *DEVICE_CLASS* devices.
+
+.. option:: --port, --only-port
+
+   Remove port assignment.
+
+.. option:: --device, --only-device
+
+   Remove device identity based assignment.
 
 aliases: u
 
