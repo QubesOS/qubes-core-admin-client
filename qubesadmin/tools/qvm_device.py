@@ -238,7 +238,8 @@ def assign_device(args):
     assignment = DeviceAssignment(args.device, mode=mode, options=options)
     if is_on_deny_list(device, vm) and not args.quiet:
         print("Attention: The assigned device is on the denied list: "
-              f"{DEVICE_DENY_LIST}\n Ensure that this assignment is correct.")
+              f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
+              f"but make sure that the assignment is correct.")
     if vm.is_running() and not assignment.attached and not args.quiet:
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
