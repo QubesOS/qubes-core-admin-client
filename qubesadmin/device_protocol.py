@@ -1137,7 +1137,7 @@ class DeviceAssignment:
 
     @property
     def devices(self) -> List[DeviceInfo]:
-        """Get DeviceInfo object corresponding to this DeviceAssignment"""
+        """Get DeviceInfo objects corresponding to this DeviceAssignment"""
         if self.port_id != '*':
             # could return UnknownDevice
             return [self.backend_domain.devices[self.devclass][self.port_id]]
@@ -1146,6 +1146,23 @@ class DeviceAssignment:
             if dev.device_id == self.device_id:
                 result.append(dev)
         return result
+
+    @property
+    def device(self) -> DeviceInfo:
+        """
+        Get single DeviceInfo object or raise an error.
+
+        If port id is set we have exactly one device
+        since we can attach ony one device to one port.
+        If assignment is more general we can get 0 or many devices.
+        """
+        devices = self.devices
+        if len(devices) == 1:
+            return devices[0]
+        if len(devices) > 1:
+            raise ProtocolError("Too many devices matches to assignment")
+        if len(devices) == 0:
+            raise ProtocolError("Any devices matches to assignment")
 
     @property
     def port(self) -> Port:

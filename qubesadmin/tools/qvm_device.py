@@ -33,7 +33,8 @@ import qubesadmin.exc
 import qubesadmin.tools
 import qubesadmin.device_protocol
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
-                                        DeviceAssignment, VirtualDevice)
+                                        DeviceAssignment, VirtualDevice,
+                                        DeviceInterface)
 
 
 def prepare_table(dev_list):
@@ -112,10 +113,7 @@ def _load_devices(app, domains, devclass):
         for vm in domains:
             try:
                 for ass in vm.devices[devclass].get_attached_devices():
-                    if len(ass.devices) > 1:
-                        print("There is to many devices in assignment",
-                              file=sys.stderr)
-                    devices.add(ass.devices[0])
+                    devices.add(ass.device)
                 for ass in vm.devices[devclass].get_assigned_devices():
                     devices.add(ass.virtual_device)
                 for dev in vm.devices[devclass].get_exposed_devices():
@@ -238,10 +236,42 @@ def assign_device(args):
     vm.devices[args.devclass].assign(assignment)
     # retrieve current port info
     assignment = DeviceAssignment(args.device, mode=mode, options=options)
+    if is_on_deny_list(device, vm) and not args.quiet:
+        print("Attention: The assigned device is on the denied list: "
+              f"{DEVICE_DENY_LIST}\n Ensure that this assignment is correct.")
     if vm.is_running() and not assignment.attached and not args.quiet:
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
               f"{assignment.backend_domain}:{assignment.port_id}")
+
+
+DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"  # TODO
+
+
+def is_on_deny_list(device, dest):
+    deny = {}
+    try:
+        with open(DEVICE_DENY_LIST, 'r') as file:
+            for line in file:
+                line = line.strip()
+
+                if line:
+                    name, *values = line.split()
+
+                    values = ' '.join(values).replace(',', ' ').split()
+                    values = set([v for v in values if len(v) > 0])
+
+                    deny[name] = deny.get(name, set()).union(set(values))
+    except IOError:
+        pass
+
+    # check if any presented interface is on deny list
+    for interface in deny.get(dest.name, set()):
+        pattern = DeviceInterface(interface)
+        for devint in device.interfaces:
+            if pattern.matches(devint):
+                return True
+    return False
 
 
 def unassign_device(args):
