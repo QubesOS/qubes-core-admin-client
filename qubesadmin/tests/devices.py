@@ -204,7 +204,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
                          self.app.domains['test-vm'])
         self.assertEqual(dedicated[0].options, {})
         self.assertEqual(dedicated[0].devclass, 'test')
-        self.assertEqual(dedicated[0].devices[0],
+        self.assertEqual(dedicated[0].device,
                          self.app.domains['test-vm2'].devices['test']['dev1'])
 
         self.assertIsInstance(dedicated[1], DeviceAssignment)
@@ -215,7 +215,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
                          self.app.domains['test-vm'])
         self.assertEqual(dedicated[1].options, {})
         self.assertEqual(dedicated[1].devclass, 'test')
-        self.assertEqual(dedicated[1].devices[0],
+        self.assertEqual(dedicated[1].device,
                          self.app.domains['test-vm3'].devices['test']['dev2'])
 
         self.assertAllCalled()
