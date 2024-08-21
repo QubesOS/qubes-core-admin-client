@@ -64,10 +64,11 @@ no_profile.add_argument("--passphrase-file", "-p", action="store",
     dest="passphrase_file", default=None,
     help="Read passphrase from a file, or use '-' to read "
          "from stdin")
-no_profile.add_argument("--compress", "-z", action="store_true",
+compression = no_profile.add_mutually_exclusive_group()
+compression.add_argument("--compress", "-z", action="store_true",
     dest="compression", default=True,
     help="Compress the backup (default)")
-no_profile.add_argument("--no-compress", action="store_false",
+compression.add_argument("--no-compress", action="store_false",
     dest="compression",
     help="Do not compress the backup")
 no_profile.add_argument("--compress-filter", "-Z", action="store",
