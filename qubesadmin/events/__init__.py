@@ -240,7 +240,7 @@ class EventsDispatcher(object):
                         self.app.domains,
                         blind=True)
                     kwargs['device'] = self.app.domains.get_blind(
-                        device.backend_domain).devices[devclass][device.port_id]
+                        device.backend_name).devices[devclass][device.port_id]
                 if 'port' in kwargs:
                     devclass = event.split(':', 1)[1]
                     kwargs['port'] = Port.from_str(
