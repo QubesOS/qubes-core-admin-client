@@ -1,3 +1,14 @@
+qubes-core-admin-client (4.3.4-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Improve qvm-ls options to avoid parsing
+  * Add requested changes for qvm-ls, numeric sort
+  * Update documentation for new qvm-ls options
+  * Update unittests for new qvm-ls options
+  * Improve new qvm-ls documentation & comments
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 24 Aug 2024 02:37:01 +0200
+
 qubes-core-admin-client (4.3.3-1) unstable; urgency=medium
 
   [ Euwiiwueir ]
