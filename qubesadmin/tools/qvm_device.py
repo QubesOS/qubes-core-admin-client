@@ -148,12 +148,14 @@ def _load_frontends_info(vm, dev, devclass):
 
 
 def _frontend_desc(vm, assignment):
+    """
+    Generate description of frontend vm with optional device connection options.
+    """
     if assignment.options:
         return '{!s} ({})'.format(
             vm, ', '.join('{}={}'.format(key, value)
                           for key, value in assignment.options.items()))
-    else:
-        return str(vm)
+    return str(vm)
 
 
 def attach_device(args):
@@ -250,9 +252,27 @@ DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"  # TODO
 
 
 def is_on_deny_list(device, dest):
+    """
+    Checks if *any* interface of the device is on the deny list for `dest` vm.
+
+    Reads a deny list from a file (see `DEVICE_DENY_LIST`), which contains
+    vm names and their associated denied interfaces.
+
+    The deny list file should be formatted such that each line contains
+    a vm name followed by a comma-separated list of denied interfaces.
+    Interfaces can be separated by commas or spaces.
+
+    Example:
+    ```
+    vm1 u******, b012345
+    vm2 ******
+    ```
+    vm1 denies USB devices and block interface `012345`
+    vm2 denies *all* devices.
+    """
     deny = {}
     try:
-        with open(DEVICE_DENY_LIST, 'r') as file:
+        with open(DEVICE_DENY_LIST, 'r', encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
 
@@ -370,7 +390,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
             try:
                 # load device info
                 _dev = dev.backend_domain.devices[devclass][dev.port_id]
-                if dev._device_id is None or dev.device_id == _dev.device_id:
+                if not dev.is_device_id_set or dev.device_id == _dev.device_id:
                     dev = _dev
                 if not self.allow_unknown and isinstance(dev, UnknownDevice):
                     raise KeyError(dev.port_id)

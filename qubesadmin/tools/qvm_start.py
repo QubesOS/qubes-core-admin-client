@@ -27,7 +27,8 @@ import subprocess
 
 import time
 
-import qubesadmin.device_protocol
+from qubesadmin.device_protocol import (DeviceAssignment, VirtualDevice, Port,
+                                        UnknownDevice)
 import qubesadmin.exc
 import qubesadmin.tools
 
@@ -144,8 +145,9 @@ def get_drive_assignment(app, drive_str):
         # wait for device to appear
         # FIXME: convert this to waiting for event
         timeout = 10
-        while isinstance(backend_domain.devices['block'][port_id],
-                qubesadmin.device_protocol.UnknownDevice):
+        while isinstance(
+            backend_domain.devices['block'][port_id], UnknownDevice
+        ):
             if timeout == 0:
                 raise qubesadmin.exc.QubesException(
                     'Timeout waiting for {}:{} device to appear'.format(
@@ -157,8 +159,7 @@ def get_drive_assignment(app, drive_str):
         'devtype': devtype,
         'read-only': devtype == 'cdrom'
     }
-    assignment = qubesadmin.device_protocol.DeviceAssignment(
-        qubesadmin.device_protocol.VirtualDevice(qubesadmin.device_protocol.Port(
+    assignment = DeviceAssignment(VirtualDevice(Port(
             backend_domain=backend_domain,
             port_id=port_id,
             devclass='block',
