@@ -63,12 +63,13 @@ def prepare_table(dev_list):
     return header + sorted(output)
 
 
-class Line(object):
+class Line:
     """Helper class to hold single device info for listing"""
 
     # pylint: disable=too-few-public-methods
     def __init__(self, device: DeviceInfo, attached_to=None):
-        self.ident = "{!s}:{!s}".format(device.backend_domain, device.port_id)  # TODO!
+        self.ident = "{!s}:{!s}".format(
+            device.backend_domain, device.port_id)
         self.description = device.description
         self.attached_to = attached_to if attached_to else ""
         self.frontends = []
@@ -151,11 +152,14 @@ def _frontend_desc(vm, assignment):
     """
     Generate description of frontend vm with optional device connection options.
     """
+    mode = assignment.mode.value
+    if mode == 'manual':
+        mode = 'attached'
     if assignment.options:
-        return '{!s} ({})'.format(
-            vm, ', '.join('{}={}'.format(key, value)
+        return '{!s} ({}: {})'.format(
+            vm, mode, ', '.join('{}={}'.format(key, value)
                           for key, value in assignment.options.items()))
-    return str(vm)
+    return f'{vm} ({mode})'
 
 
 def attach_device(args):

@@ -119,9 +119,10 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             self.assertEqual(
                 buf.getvalue(),
                 'test-vm1:dev1  any device                        '
-                'test-vm2 (option=other option, extra_opt=yes), '
-                'test-vm3 (option=test option)\n'
-                'test-vm3:dev3  ?******: evil inc. test-device-3  test-vm2\n'
+                'test-vm2 (required: option=other option, extra_opt=yes), '
+                'test-vm3 (required: option=test option)\n'
+                'test-vm3:dev3  ?******: evil inc. test-device-3  '
+                'test-vm2 (required)\n'
             )
 
     def test_002_list_attach(self):
@@ -149,7 +150,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  ?******: itl test-device  test-vm3\n'
+                'test-vm1:dev1  ?******: itl test-device  '
+                'test-vm3 (required)\n'
             )
 
     def test_003_list_device_classes(self):
