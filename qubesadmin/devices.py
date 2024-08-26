@@ -28,8 +28,8 @@ expose (potentially multiple) devices, which can be attached to other domains.
 Devices can be of different classes (like 'pci', 'usb', etc.). Each device
 class is implemented by an extension.
 
-Devices are identified by pair of (backend domain, `port_id`), where `port_id` is
-:py:class:`str`.
+Devices are identified by pair of (backend domain, `port_id`), where `port_id`
+is :py:class:`str`.
 """
 import itertools
 from typing import Optional, Iterable
