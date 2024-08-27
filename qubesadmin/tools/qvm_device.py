@@ -35,6 +35,7 @@ import qubesadmin.device_protocol
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
                                         DeviceAssignment, VirtualDevice,
                                         DeviceInterface)
+from qubesadmin.devices import DEVICE_DENY_LIST
 
 
 def prepare_table(dev_list):
@@ -250,9 +251,6 @@ def assign_device(args):
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
               f"{assignment.backend_domain}:{assignment.port_id}")
-
-
-DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"  # TODO
 
 
 def is_on_deny_list(device, dest):

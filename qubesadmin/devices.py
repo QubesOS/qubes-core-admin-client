@@ -39,6 +39,9 @@ from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
                                         DeviceAssignment, VirtualDevice)
 
 
+DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"
+
+
 class DeviceCollection:
     """Bag for devices.
 
