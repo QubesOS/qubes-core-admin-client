@@ -386,7 +386,7 @@ class VirtualDevice:
             "device_id": self.device_id,
         }
         attr.update(kwargs)
-        return self.__class__(**attr)
+        return VirtualDevice(**attr)
 
     @property
     def port(self) -> Union[Port, str]:
@@ -1211,8 +1211,7 @@ class DeviceAssignment:
             return devices[0]
         if len(devices) > 1:
             raise ProtocolError("Too many devices matches to assignment")
-        if len(devices) == 0:
-            raise ProtocolError("Any devices matches to assignment")
+        raise ProtocolError("Any devices matches to assignment")
 
     @property
     def port(self) -> Port:
