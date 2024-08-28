@@ -28,15 +28,19 @@ expose (potentially multiple) devices, which can be attached to other domains.
 Devices can be of different classes (like 'pci', 'usb', etc.). Each device
 class is implemented by an extension.
 
-Devices are identified by pair of (backend domain, `ident`), where `ident` is
-:py:class:`str`.
+Devices are identified by pair of (backend domain, `port_id`), where `port_id`
+is :py:class:`str`.
 """
 import itertools
-from typing import Optional, Iterable
+from typing import Iterable
 
 import qubesadmin.exc
-from qubesadmin.device_protocol import (Device, DeviceInfo, UnknownDevice,
-                                        DeviceAssignment)
+from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
+                                        DeviceAssignment, VirtualDevice,
+                                        AssignmentMode)
+
+
+DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"
 
 
 class DeviceCollection:
@@ -104,21 +108,18 @@ class DeviceCollection:
         """
         if not assignment.frontend_domain:
             assignment.frontend_domain = self._vm
-        elif assignment.frontend_domain != self._vm:
+        if assignment.frontend_domain != self._vm:
             raise qubesadmin.exc.QubesValueError(
                 f"Trying to {action} device belonging to other domain:"
                 f" {assignment.frontend_domain}")
-        if not assignment.devclass_is_set:
-            assignment.devclass = self._class
-        elif assignment.devclass != self._class:
+        if assignment.devclass != self._class:
             raise qubesadmin.exc.QubesValueError(
                 f"Device class does not match to expected: "
                 f"{assignment.devclass=}!={self._class=}")
 
         self._vm.qubesd_call(
             None, f'admin.vm.device.{self._class}.{action.capitalize()}',
-            f'{assignment.backend_domain!s}+{assignment.ident!s}',
-            assignment.serialize()
+            repr(assignment), assignment.serialize()
         )
 
     def _remove(self, assignment: DeviceAssignment, action: str) -> None:
@@ -130,14 +131,14 @@ class DeviceCollection:
             raise qubesadmin.exc.QubesValueError(
                 f"Trying to {action} device belonging to other domain:"
                 f" {assignment.frontend_domain}")
-        if assignment.devclass_is_set and assignment.devclass != self._class:
+        if assignment.devclass != self._class:
             raise qubesadmin.exc.QubesValueError(
                 f"Device class does not match to expected: "
                 f"{assignment.devclass=}!={self._class=}")
 
         self._vm.qubesd_call(
             None, f'admin.vm.device.{self._class}.{action.capitalize()}',
-            f'{assignment.backend_domain!s}+{assignment.ident!s}'
+            repr(assignment)
         )
 
     def get_dedicated_devices(self) -> Iterable[DeviceAssignment]:
@@ -155,14 +156,12 @@ class DeviceCollection:
         assignments_str = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Attached'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
-            device, _, untrusted_rest = assignment_str.partition(' ')
-            backend_domain_name, ident = device.split('+', 1)
-            backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
+            head, _, untrusted_rest = assignment_str.partition(' ')
+            device = VirtualDevice.from_qarg(
+                head, self._class, self._vm.app.domains, blind=True)
 
             yield DeviceAssignment.deserialize(
-                untrusted_rest.encode('ascii'),
-                expected_device=Device(backend_domain, ident)
-            )
+                untrusted_rest.encode('ascii'), expected_device=device)
 
     def get_assigned_devices(
             self, required_only: bool = False
@@ -175,14 +174,12 @@ class DeviceCollection:
         assignments_str = self._vm.qubesd_call(
             None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
         for assignment_str in assignments_str.splitlines():
-            device, _, untrusted_rest = assignment_str.partition(' ')
-            backend_domain_name, ident = device.split('+', 1)
-            backend_domain = self._vm.app.domains.get_blind(backend_domain_name)
+            head, _, untrusted_rest = assignment_str.partition(' ')
+            device = VirtualDevice.from_qarg(
+                head, self._class, self._vm.app.domains, blind=True)
 
             assignment = DeviceAssignment.deserialize(
-                untrusted_rest.encode('ascii'),
-                expected_device=Device(backend_domain, ident)
-            )
+                untrusted_rest.encode('ascii'), expected_device=device)
             if not required_only or assignment.required:
                 yield assignment
 
@@ -199,11 +196,11 @@ class DeviceCollection:
                 expected_devclass=self._class,
             )
 
-    def update_assignment(self, device: Device, required: Optional[bool]):
+    def update_assignment(self, device: Port, required: AssignmentMode):
         """
         Update assignment of already attached device.
 
-        :param Device device: device for which change required flag
+        :param VirtualDevice device: device for which change required flag
         :param bool required: new assignment:
                               `None` -> unassign device from qube
                               `False` -> device will be auto-attached to qube
@@ -212,8 +209,7 @@ class DeviceCollection:
         self._vm.qubesd_call(
             None,
             'admin.vm.device.{}.Set.assignment'.format(self._class),
-            '{!s}+{!s}'.format(device.backend_domain, device.ident),
-            repr(required).encode('utf-8')
+            repr(device), required.value.encode('utf-8')
         )
 
     __iter__ = get_exposed_devices
@@ -225,7 +221,7 @@ class DeviceCollection:
         self._dev_cache.clear()
 
     def __getitem__(self, item):
-        """Get device object with given ident.
+        """Get device object with given port_id.
 
         :returns: py:class:`DeviceInfo`
 
@@ -239,12 +235,12 @@ class DeviceCollection:
             return self._dev_cache[item]
         # then look for available devices
         for dev in self.get_exposed_devices():
-            if dev.ident == item:
+            if dev.port_id == item:
                 self._dev_cache[item] = dev
                 return dev
         # if still nothing, return UnknownDevice instance for the reason
         # explained in docstring, but don't cache it
-        return UnknownDevice(self._vm, item, devclass=self._class)
+        return UnknownDevice(Port(self._vm, item, devclass=self._class))
 
 
 class DeviceManager(dict):
