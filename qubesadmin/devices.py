@@ -32,7 +32,7 @@ Devices are identified by pair of (backend domain, `port_id`), where `port_id`
 is :py:class:`str`.
 """
 import itertools
-from typing import Optional, Iterable
+from typing import Iterable
 
 import qubesadmin.exc
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
