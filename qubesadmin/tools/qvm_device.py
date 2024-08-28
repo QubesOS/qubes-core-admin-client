@@ -247,7 +247,8 @@ def assign_device(args):
         print("Attention: The assigned device is on the denied list: "
               f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
               f"but make sure that the assignment is correct.")
-    if vm.is_running() and not assignment.attached and not args.quiet:
+    if (vm.is_running() and not assignment.attached
+            and assignment.port_id != '*' and not args.quiet):
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
               f"{assignment.backend_domain}:{assignment.port_id}")
@@ -331,18 +332,11 @@ def info_device(args):
     """ Called by the parser to execute the :program:`qvm-devices info`
         subcommand.
     """
-    vm = args.domains[0]
     if args.device:
         device = args.device
-        print("description:", device.description)
-        print("data:", device.data)
-    else:
-        for assignment in (vm.devices[args.devclass].get_dedicated_devices()):
-            print("device_assignment:", assignment)
-            if len(assignment.devices) == 1:
-                device = assignment.devices[0]
-                print("description:", device.description)
-                print("data:", device.data)
+        print(f'{device.device_id}:', device.description)
+        if device.data:
+            print("additional data:", device.data)
 
 
 def init_list_parser(sub_parsers):
@@ -455,8 +449,6 @@ def get_parser(device_class=None):
                                action=qubesadmin.tools.VmNameAction)
     unassign_parser.add_argument('VMNAME', nargs=1,
                                  action=qubesadmin.tools.VmNameAction)
-    info_parser.add_argument('VMNAME', nargs=1,
-                             action=qubesadmin.tools.VmNameAction)
 
     attach_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                                dest='device',
