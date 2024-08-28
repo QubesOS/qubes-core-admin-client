@@ -21,8 +21,9 @@
 import qubesadmin.tests
 import qubesadmin.device_protocol
 
-from qubesadmin.device_protocol import (DeviceAssignment, Port, VirtualDevice,
-                                        DeviceInfo, UnknownDevice)
+from qubesadmin.device_protocol import (
+    DeviceAssignment, Port, VirtualDevice, DeviceInfo, UnknownDevice,
+    AssignmentMode)
 
 
 serialized_test_device = (
@@ -288,10 +289,10 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(devs[1].port_id, 'dev2')
         self.assertAllCalled()
 
-    def test_070_update_assignment(self):
+    def test_070_update_assignment_required(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
-             'test-vm2+dev1:*', b'True')] = b'0\0'
+             'test-vm2+dev1:*', b'required')] = b'0\0'
         dev = DeviceAssignment(
             VirtualDevice(
                 Port(
@@ -299,13 +300,13 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
                     devclass='test',
                     port_id='dev1'),
             ))
-        self.vm.devices['test'].update_assignment(dev, True)
+        self.vm.devices['test'].update_assignment(dev, AssignmentMode.REQUIRED)
         self.assertAllCalled()
 
-    def test_071_update_assignment_false(self):
+    def test_071_update_assignment_ask(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
-             'test-vm2+dev1:*', b'False')] = b'0\0'
+             'test-vm2+dev1:*', b'ask-to-attach')] = b'0\0'
         dev = DeviceAssignment(
             VirtualDevice(
                 Port(
@@ -313,13 +314,13 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
                     devclass='test',
                     port_id='dev1'),
             ))
-        self.vm.devices['test'].update_assignment(dev, False)
+        self.vm.devices['test'].update_assignment(dev, AssignmentMode.ASK)
         self.assertAllCalled()
 
-    def test_072_update_assignment_none(self):
+    def test_072_update_assignment_auto(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
-             'test-vm2+dev1:*', b'None')] = b'0\0'
+             'test-vm2+dev1:*', b'auto-attach')] = b'0\0'
         dev = DeviceAssignment(
             VirtualDevice(
                 Port(
@@ -328,7 +329,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
                     port_id='dev1',
                 )
             ))
-        self.vm.devices['test'].update_assignment(dev, None)
+        self.vm.devices['test'].update_assignment(dev, AssignmentMode.AUTO)
         self.assertAllCalled()
 
     def test_073_list(self):

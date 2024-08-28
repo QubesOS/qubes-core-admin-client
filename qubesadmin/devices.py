@@ -36,7 +36,8 @@ from typing import Optional, Iterable
 
 import qubesadmin.exc
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
-                                        DeviceAssignment, VirtualDevice)
+                                        DeviceAssignment, VirtualDevice,
+                                        AssignmentMode)
 
 
 DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"
@@ -195,7 +196,7 @@ class DeviceCollection:
                 expected_devclass=self._class,
             )
 
-    def update_assignment(self, device: Port, required: Optional[bool]):
+    def update_assignment(self, device: Port, required: AssignmentMode):
         """
         Update assignment of already attached device.
 
@@ -208,7 +209,7 @@ class DeviceCollection:
         self._vm.qubesd_call(
             None,
             'admin.vm.device.{}.Set.assignment'.format(self._class),
-            repr(device), repr(required).encode('utf-8')
+            repr(device), required.value.encode('utf-8')
         )
 
     __iter__ = get_exposed_devices
