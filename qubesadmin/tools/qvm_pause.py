@@ -25,7 +25,8 @@ import qubesadmin
 
 
 parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs='+',
-                                         description='pause a domain')
+    description='pause a qube',
+    epilog='Paused qubes will be killed on system shutdown.')
 
 
 def main(args=None, app=None):
