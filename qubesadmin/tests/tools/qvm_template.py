@@ -1426,6 +1426,43 @@ qubes-template-fedora-32|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020
         self.assertAllCalled()
 
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
+    def test_120_b_qrexec_repoquery_success_dnf5(self, mock_payload):
+        args = argparse.Namespace(updatevm='test-vm')
+        mock_payload.return_value = 'str1\nstr2'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=TemplateVM state=Halted\n'
+        self.app.expected_service_calls[
+                ('test-vm', 'qubes.TemplateSearch')] = \
+b'''qubes-template-debian-12-minimal|0|4.3.0|202405272135|qubes-templates-itl|228848654|1716847042|GPLv3+|http://www.qubes-os.org|Qubes OS template for debian-12-minimal|Qubes OS template for debian-12-minimal.|'''
+        # The above is actual data from Fedora 41 based UdpateVM (Sep-2024)
+        res = qubesadmin.tools.qvm_template.qrexec_repoquery(args, self.app,
+            'qubes-template-debian-12-minimal')
+        self.assertEqual(res, [
+            qubesadmin.tools.qvm_template.Template(
+                'debian-12-minimal',
+                '0',
+                '4.3.0',
+                '202405272135',
+                'qubes-templates-itl',
+                228848654,
+                datetime.datetime(2024, 5, 27, 21, 57, 22),
+                'GPLv3+',
+                'http://www.qubes-os.org',
+                'Qubes OS template for debian-12-minimal',
+                'Qubes OS template for debian-12-minimal.'
+            )
+        ])
+        self.assertEqual(self.app.service_calls, [
+            ('test-vm', 'qubes.TemplateSearch',
+                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+            ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
+        ])
+        self.assertEqual(mock_payload.mock_calls, [
+            mock.call(args, self.app, 'qubes-template-debian-12-minimal', False)
+        ])
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_payload')
     def test_121_qrexec_repoquery_refresh_success(self, mock_payload):
         args = argparse.Namespace(updatevm='test-vm')
         mock_payload.return_value = 'str1\nstr2'
