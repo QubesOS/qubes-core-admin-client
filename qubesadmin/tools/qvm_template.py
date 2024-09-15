@@ -550,6 +550,9 @@ def qrexec_repoquery(
         # This is because if .strip() is used, the .split() will not work.
         if line == '':
             continue
+        # This is specific to DNF5:
+        if line.endswith('|'):
+            line = line[:-1]
         entry = line.split('|')
         try:
             # If there is an incorrect number of entries, raise an error
@@ -573,9 +576,14 @@ def qrexec_repoquery(
                 raise ValueError
             dlsize = int(dlsize)
             # First verify that the date does not look weird, then parse it
-            if not re.fullmatch(date_re, buildtime):
+            if re.fullmatch(date_re, buildtime):
+                buildtime = datetime.datetime.strptime(buildtime, \
+                        '%Y-%m-%d %H:%M')
+            elif buildtime.isnumeric():
+                # DNF5 provides seconds since epoch
+                buildtime = datetime.datetime.fromtimestamp(int(buildtime))
+            else:
                 raise ValueError
-            buildtime = datetime.datetime.strptime(buildtime, '%Y-%m-%d %H:%M')
             # XXX: Perhaps whitelist licenses directly?
             if not re.fullmatch(licence_re, licence):
                 raise ValueError
