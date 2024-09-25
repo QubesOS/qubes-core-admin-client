@@ -64,6 +64,10 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
+        if assignment.devclass == 'pci':
+            raise qubesadmin.exc.QubesValueError(
+                f"PCI devices cannot be attached manually, "
+                f"did you mean `qvm-pci assign --required ...`")
         self._add(assignment, 'attach')
 
     def detach(self, assignment: DeviceAssignment) -> None:
@@ -85,7 +89,10 @@ class DeviceCollection:
                 and assignment.required):
             raise qubesadmin.exc.QubesValueError(
                 "Only pci and block devices can be assigned as required.")
-        if (assignment.devclass not in ('pci', 'testclass', 'usb', 'block')
+        if assignment.devclass == 'pci' and not assignment.required:
+            raise qubesadmin.exc.QubesValueError(
+                f"PCI devices cannot be assigned as not required.")
+        if (assignment.devclass not in ('testclass', 'usb', 'block')
                 and assignment.attach_automatically):
             raise qubesadmin.exc.QubesValueError(
                 f"{assignment.devclass} devices cannot be assigned "
