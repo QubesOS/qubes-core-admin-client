@@ -403,7 +403,7 @@ class Table(object):
     :param domains: Domains to include in the table.
     :param list colnames: Names of the columns (need not to be uppercase).
     '''
-    def __init__(self, domains, colnames, spinner, raw_data=False,
+    def __init__(self, domains, colnames, spinner, *, raw_data=False,
                 tree_sorted=False, sort_order='NAME', reverse_sort=False,
                 ignore_case=False):
         self.domains = domains

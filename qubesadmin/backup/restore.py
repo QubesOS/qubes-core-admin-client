@@ -135,6 +135,7 @@ class BackupHeader(object):
 
     def __init__(self,
             header_data=None,
+            *,
             version=None,
             encrypted=None,
             compressed=None,
@@ -328,7 +329,7 @@ def _fix_threading_after_fork():
 class ExtractWorker3(Process):
     '''Process for handling inner tar layer of backup archive'''
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, queue, base_dir, passphrase, encrypted,
+    def __init__(self, queue, base_dir, passphrase, encrypted, *,
                  progress_callback, vmproc=None,
                  compressed=False, crypto_algorithm=DEFAULT_CRYPTO_ALGORITHM,
                  compression_filter=None, verify_only=False, handlers=None):
@@ -903,7 +904,7 @@ class BackupRestore(object):
                 self.subdir = subdir
                 self.username = os.path.basename(subdir)
 
-    def __init__(self, app, backup_location, backup_vm, passphrase,
+    def __init__(self, app, backup_location, backup_vm, passphrase, *,
                  location_is_service=False, force_compression_filter=None,
                  tmpdir=None):
         super().__init__()

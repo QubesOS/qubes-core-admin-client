@@ -359,7 +359,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self.domains.clear_cache()
         return self.domains[name]
 
-    def clone_vm(self, src_vm, new_name, new_cls=None, pool=None, pools=None,
+    def clone_vm(self, src_vm, new_name, *, new_cls=None, pool=None, pools=None,
                  ignore_errors=False, ignore_volumes=None,
                  ignore_devices=False):
         # pylint: disable=too-many-statements
@@ -575,7 +575,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             'qubesd_call not implemented in QubesBase class; use specialized '
             'class: qubesadmin.Qubes()')
 
-    def run_service(self, dest, service, filter_esc=False, user=None,
+    def run_service(self, dest, service, user=None, *, filter_esc=False,
                     localcmd=None, wait=True, autostart=True, **kwargs):
         """Run qrexec service in a given destination
 
@@ -783,7 +783,7 @@ class QubesLocal(QubesBase):
         client_socket.close()
         return self._parse_qubesd_response(return_data)
 
-    def run_service(self, dest, service, filter_esc=False, user=None,
+    def run_service(self, dest, service, user=None, *, filter_esc=False,
                     localcmd=None, wait=True, autostart=True, **kwargs):
         """Run qrexec service in a given destination
 
@@ -909,7 +909,7 @@ class QubesRemote(QubesBase):
 
         return self._parse_qubesd_response(stdout)
 
-    def run_service(self, dest, service, filter_esc=False, user=None,
+    def run_service(self, dest, service, user=None, *, filter_esc=False,
                     localcmd=None, wait=True, autostart=True, **kwargs):
         """Run qrexec service in a given destination
 
