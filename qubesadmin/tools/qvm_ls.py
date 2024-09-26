@@ -362,6 +362,11 @@ Column('PRIV-MAX',
     attr=(lambda vm: calc_size(vm, 'private')),
     doc='Maximum available space for private image.')
 
+Column('PRIV-POOL',
+    attr=(lambda vm: vm.volumes['private'].pool
+          if 'private' in vm.volumes.keys() else '-'),
+    doc='Storage pool of private volume.')
+
 Column('PRIV-USED',
     attr=(lambda vm: calc_used(vm, 'private')),
     doc='Disk utilisation by private image as a percentage of available space.')
@@ -374,6 +379,11 @@ Column('ROOT-CURR',
 Column('ROOT-MAX',
     attr=(lambda vm: calc_size(vm, 'root')),
     doc='Maximum available space for root image.')
+
+Column('ROOT-POOL',
+    attr=(lambda vm: vm.volumes['root'].pool
+          if 'root' in vm.volumes.keys() else '-'),
+    doc='Storage pool of root volume.')
 
 Column('ROOT-USED',
     attr=(lambda vm: calc_used(vm, 'root')),
