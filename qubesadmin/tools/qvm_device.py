@@ -529,6 +529,8 @@ def get_parser(device_class=None):
 
 def main(args=None, app=None):
     """Main routine of :program:`qvm-block`."""
+    app = app or qubesadmin.Qubes()
+
     basename = os.path.basename(sys.argv[0])
     devclass = None
     if basename.startswith('qvm-') and basename != 'qvm-device':
