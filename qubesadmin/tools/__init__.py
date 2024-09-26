@@ -59,6 +59,7 @@ class PropertyAction(argparse.Action):
     def __init__(self,
             option_strings,
             dest,
+            *,
             metavar='NAME=VALUE',
             required=False,
             help='set property to a value'):
@@ -86,6 +87,7 @@ class SinglePropertyAction(argparse.Action):
     def __init__(self,
             option_strings,
             dest,
+            *,
             metavar='VALUE',
             const=None,
             nargs=None,

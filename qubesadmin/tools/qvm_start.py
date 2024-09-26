@@ -38,6 +38,7 @@ class DriveAction(argparse.Action):
     def __init__(self,
             option_strings,
             dest='drive',
+            *,
             prefix='cdrom:',
             metavar='IMAGE',
             required=False,
