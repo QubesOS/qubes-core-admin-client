@@ -249,7 +249,8 @@ def assign_device(args):
     assignment = DeviceAssignment(device, mode=mode, options=options)
     vm.devices[args.devclass].assign(assignment)
     # retrieve current port info
-    assignment = DeviceAssignment(args.device, mode=mode, options=options)
+    assignment = DeviceAssignment(args.device, mode=mode, options=options,
+                                  frontend_domain=vm)
     if is_on_deny_list(args.device, vm) and not args.quiet:
         print("Warning: The assigned device is on the denied list: "
               f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
