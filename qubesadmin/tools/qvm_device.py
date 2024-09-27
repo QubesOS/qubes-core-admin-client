@@ -178,7 +178,14 @@ def attach_device(args):
         options['read-only'] = 'yes'
     parse_ro_option_as_read_only(options)
     assignment.options = options
-    vm.devices[args.devclass].attach(assignment)
+    try:
+        vm.devices[args.devclass].attach(assignment)
+    except qubesadmin.exc.QubesException as exc:
+        # backward compatibility
+        # if `--persistent` we ignore if attachment fails,
+        # we want at least assign device
+        if not args.required:
+            raise exc
     # backward compatibility
     if args.required:
         vm.devices[args.devclass].assign(assignment)
