@@ -334,9 +334,10 @@ def info_device(args):
     """
     if args.device:
         device = args.device
-        print(f'{device.device_id}:', device.description)
-        if device.data:
-            print("additional data:", device.data)
+        print(device.description)
+        print(f'device ID: {device.device_id}')
+        for key, value in device.data.items():
+            print(key, ":", value)
 
 
 def init_list_parser(sub_parsers):
