@@ -244,7 +244,7 @@ def assign_device(args):
     # retrieve current port info
     assignment = DeviceAssignment(args.device, mode=mode, options=options)
     if is_on_deny_list(args.device, vm) and not args.quiet:
-        print("Attention: The assigned device is on the denied list: "
+        print("Warning: The assigned device is on the denied list: "
               f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
               f"but make sure that the assignment is correct.")
     if (vm.is_running() and not assignment.attached
