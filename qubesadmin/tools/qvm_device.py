@@ -27,6 +27,7 @@
 import argparse
 import os
 import sys
+from typing import Protocol
 
 import qubesadmin
 import qubesadmin.exc
@@ -34,7 +35,7 @@ import qubesadmin.tools
 import qubesadmin.device_protocol
 from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
                                         DeviceAssignment, VirtualDevice,
-                                        DeviceInterface)
+                                        DeviceInterface, ProtocolError)
 from qubesadmin.devices import DEVICE_DENY_LIST
 
 
@@ -178,7 +179,23 @@ def attach_device(args):
         options['read-only'] = 'yes'
     parse_ro_option_as_read_only(options)
     assignment.options = options
+
     try:
+        try:
+            dev = assignment.device
+        except ProtocolError as exc:
+            raise qubesadmin.exc.QubesException(str(exc))
+
+        if not assignment.matches(dev):
+            raise qubesadmin.exc.QubesException(
+                "Unrecognized identity, skipping attachment of device "
+                f"from the port {assignment}")
+
+        if isinstance(dev, UnknownDevice):
+            raise qubesadmin.exc.QubesException(
+                f"{device.devclass} device not recognized "
+                f"at {device.port_id} port.")
+
         vm.devices[args.devclass].attach(assignment)
     except qubesadmin.exc.QubesException as exc:
         # backward compatibility
