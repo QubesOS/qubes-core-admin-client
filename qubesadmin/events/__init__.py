@@ -26,7 +26,7 @@ import subprocess
 
 import qubesadmin.config
 import qubesadmin.exc
-from qubesadmin.device_protocol import VirtualDevice, Port
+from qubesadmin.device_protocol import VirtualDevice, Port, UnknownDevice
 
 
 class EventsDispatcher(object):
@@ -239,8 +239,17 @@ class EventsDispatcher(object):
                         devclass,
                         self.app.domains,
                         blind=True)
-                    kwargs['device'] = self.app.domains.get_blind(
-                        device.backend_name).devices[devclass][device.port_id]
+                    kwargs['device'] = device
+                    if device.port_id != '*':
+                        plugged = self.app.domains.get_blind(
+                            device.backend_name).devices[
+                            devclass][device.port_id]
+                        if (not isinstance(plugged, UnknownDevice)
+                            and plugged.device_id == device.device_id):
+                            kwargs['device'] = plugged
+            except (KeyError, ValueError):
+                pass
+            try:
                 if 'port' in kwargs:
                     devclass = event.split(':', 1)[1]
                     kwargs['port'] = Port.from_str(
