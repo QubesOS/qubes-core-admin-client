@@ -287,8 +287,25 @@ def assign_device(args):
         print("Warning: The assigned device is on the denied list: "
               f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
               f"but make sure that the assignment is correct.")
-    if (vm.is_running() and not assignment.attached
-            and assignment.port_id != '*' and not args.quiet):
+    if vm.is_running() and not args.quiet:
+        _print_attach_hint(assignment, vm)
+
+
+def _print_attach_hint(assignment, vm):
+    if assignment.port_id == '*':
+        return
+
+    try:
+        plugged = assignment.backend_domain.devices[
+            assignment.devclass][assignment.port_id]
+    except KeyError:
+        return
+
+    if isinstance(plugged, UnknownDevice):
+        return
+
+    attached = vm.devices[assignment.devclass].get_attached_devices()
+    if assignment.matches(plugged) and plugged not in attached:
         print("Assigned. To attach you can now restart domain or run: \n"
               f"\tqvm-{assignment.devclass} attach {vm} "
               f"{assignment.backend_domain}:{assignment.port_id}")

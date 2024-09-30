@@ -1187,8 +1187,9 @@ class DeviceAssignment:
     def devices(self) -> List[DeviceInfo]:
         """Get DeviceInfo objects corresponding to this DeviceAssignment"""
         if self.port_id != '*':
-            # could return UnknownDevice
-            return [self.backend_domain.devices[self.devclass][self.port_id]]
+            dv = self.backend_domain.devices[self.devclass][self.port_id]
+            if isinstance(dv, UnknownDevice) or dv.device_id == self.device_id:
+                return [dv]
         result = []
         if self.device_id == "0000:0000::?******":
             return result
