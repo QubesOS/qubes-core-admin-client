@@ -232,12 +232,27 @@ def detach_device(args):
         subcommand.
     """
     vm = args.domains[0]
-    if args.device:
-        device = args.device
-        # ignore device id, detach any device
-        device.device_id = '*'
+    device = args.device
+    if device and device.port_id != '*':
         assignment = DeviceAssignment(device)
+
+        try:
+            actual_dev = assignment.device
+        except ProtocolError as exc:
+            raise qubesadmin.exc.QubesException(str(exc))
+
+        if not assignment.matches(actual_dev):
+            raise qubesadmin.exc.QubesException(
+                f"{device} is not attached.")
+
         vm.devices[args.devclass].detach(assignment)
+    elif args.device:
+        assignment = DeviceAssignment(device)
+        for ass in (vm.devices[args.devclass].get_attached_devices()):
+            if assignment.matches(ass.device):
+                vm.devices[args.devclass].detach(ass)
+        else:
+            raise qubesadmin.exc.QubesException(f"{device} is not attached.")
     else:
         for ass in (vm.devices[args.devclass].get_attached_devices()):
             vm.devices[args.devclass].detach(ass)
