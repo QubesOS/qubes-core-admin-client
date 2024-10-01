@@ -416,9 +416,10 @@ class DeviceAction(qubesadmin.tools.QubesAction):
     """  # pylint: disable=too-few-public-methods
 
     def __init__(self, help='A backend, port & device id combination',
-                 required=True, allow_unknown=False, **kwargs):
+                 required=True, allow_unknown=False, only_port=False, **kwargs):
         # pylint: disable=redefined-builtin
         self.allow_unknown = allow_unknown
+        self.only_port = only_port
         super().__init__(help=help, required=required, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -445,6 +446,12 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                 _dev = dev.backend_domain.devices[devclass][dev.port_id]
                 if not dev.is_device_id_set or dev.device_id == _dev.device_id:
                     dev = _dev
+                elif self.only_port:
+                    parser.error_runtime(
+                        "this option works only for explicitly given port ID "
+                        "and does not support device ID")
+                else:
+                    dev = UnknownDevice.from_device(dev)
                 if not self.allow_unknown and isinstance(dev, UnknownDevice):
                     raise KeyError(dev.port_id)
             except KeyError:
@@ -524,7 +531,7 @@ def get_parser(device_class=None):
     info_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                              dest='device',
                              nargs=argparse.OPTIONAL,
-                             action=DeviceAction, allow_unknown=True)
+                             action=DeviceAction, only_port=True)
 
     option = (('--option', '-o',),
                {'action': 'append',
