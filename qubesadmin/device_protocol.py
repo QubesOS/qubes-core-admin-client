@@ -1194,7 +1194,7 @@ class DeviceAssignment:
         if self.device_id == "0000:0000::?******":
             return result
         for dev in self.backend_domain.devices[self.devclass]:
-            if dev.device_id == self.device_id:
+            if self.matches(dev):
                 result.append(dev)
         return result
 

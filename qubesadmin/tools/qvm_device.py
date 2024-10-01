@@ -248,10 +248,12 @@ def detach_device(args):
         vm.devices[args.devclass].detach(assignment)
     elif args.device:
         assignment = DeviceAssignment(device)
-        for ass in (vm.devices[args.devclass].get_attached_devices()):
+        no_device_detached = True
+        for ass in vm.devices[args.devclass].get_attached_devices():
             if assignment.matches(ass.device):
                 vm.devices[args.devclass].detach(ass)
-        else:
+                no_device_detached = False
+        if no_device_detached:
             raise qubesadmin.exc.QubesException(f"{device} is not attached.")
     else:
         for ass in (vm.devices[args.devclass].get_attached_devices()):
@@ -292,23 +294,15 @@ def assign_device(args):
 
 
 def _print_attach_hint(assignment, vm):
-    if assignment.port_id == '*':
-        return
-
-    try:
-        plugged = assignment.backend_domain.devices[
-            assignment.devclass][assignment.port_id]
-    except KeyError:
-        return
-
-    if isinstance(plugged, UnknownDevice):
-        return
-
     attached = vm.devices[assignment.devclass].get_attached_devices()
-    if assignment.matches(plugged) and plugged not in attached:
+    ports = [f"\tqvm-{assignment.devclass} attach {vm} "
+             f"{assignment.backend_domain}:{dev.port_id}"
+             for dev in assignment.devices
+             if dev not in attached and not isinstance(dev, UnknownDevice)]
+
+    if ports:
         print("Assigned. To attach you can now restart domain or run: \n"
-              f"\tqvm-{assignment.devclass} attach {vm} "
-              f"{assignment.backend_domain}:{assignment.port_id}")
+              "\n".join(ports))
 
 
 def is_on_deny_list(device, dest):
@@ -379,10 +373,15 @@ def _unassign_and_show_message(assignment, vm, args):
     Helper for informing a user.
     """
     vm.devices[args.devclass].unassign(assignment)
-    if assignment.attached and not args.quiet:
-        print("Unassigned. To detach you can now restart domain or run: \n"
-              f"\tqvm-{assignment.devclass} detach {vm} "
-              f"{assignment.backend_domain}:{assignment.port_id}")
+
+    attached = vm.devices[assignment.devclass].get_attached_devices()
+    ports = [f"\tqvm-{assignment.devclass} detach {vm} "
+             f"{assignment.backend_domain}:{dev.port_id}"
+             for dev in assignment.devices if dev in attached]
+
+    if ports and not args.quiet:
+        print("Unassigned. To detach you can now restart domain or run: \n",
+              "\n".join(ports))
 
 
 def info_device(args):
@@ -517,7 +516,7 @@ def get_parser(device_class=None):
                                action=DeviceAction, allow_unknown=True)
     assign_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                                dest='device',
-                               action=DeviceAction)
+                               action=DeviceAction, allow_unknown=True)
     unassign_parser.add_argument(metavar='BACKEND:DEVICE_ID',
                                  dest='device',
                                  nargs=argparse.OPTIONAL,
