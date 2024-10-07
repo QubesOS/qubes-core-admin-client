@@ -54,6 +54,7 @@ GUI_DAEMON_OPTIONS = [
     ('trayicon_mode', 'str'),
     ('window_background_color', 'str'),
     ('startup_timeout', 'int'),
+    ('max_clipboard_size', 'int'),
 ]
 
 formatter = logging.Formatter(
