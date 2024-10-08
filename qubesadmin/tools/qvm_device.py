@@ -69,42 +69,51 @@ class Line:
     """Helper class to hold single device info for listing"""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, device: DeviceInfo, attached_to=None):
+    def __init__(self, device: DeviceInfo, assignment=False):
         self.ident = "{!s}:{!s}".format(
             device.backend_domain, device.port_id)
         self.description = device.description
-        self.attached_to = attached_to if attached_to else ""
+        self.assignment = assignment
         self.frontends = []
 
     @property
     def assignments(self):
         """list of frontends the device is assigned to"""
-        return ', '.join(self.frontends)
+        fronts = (f'{"*" if self.assignment else ""}' + front
+                  for front in self.frontends)
+        return ', '.join(fronts)
 
 
 def list_devices(args):
     """
     Called by the parser to execute the qubes-devices list subcommand. """
-    app = args.app
-
     domains = args.domains if hasattr(args, 'domains') else None
-    devices = _load_devices(app, domains, args.devclass)
+    lines = _load_lines(args.app, domains, args.devclass, actual_devices=True)
+    lines = list(lines.values())
+    if args.assignments:
+        extra_lines = _load_lines(
+            args.app, domains, args.devclass, actual_devices=False)
+        lines += list(extra_lines.values())
+    qubesadmin.tools.print_table(prepare_table(lines))
 
-    result = {dev: Line(dev) for dev in devices}
 
+def _load_lines(app, domains, devclass, actual_devices: bool):
+    devices = _load_devices(app, domains, devclass, actual_devices)
+    result = {dev: Line(dev, not actual_devices) for dev in devices}
     for dev in result:
         for vm in app.domains:
-            frontends = _load_frontends_info(vm, dev, args.devclass)
+            frontends = _load_frontends_info(vm, dev, devclass, actual_devices)
             result[dev].frontends.extend(frontends)
+    return result
 
-    qubesadmin.tools.print_table(prepare_table(result.values()))
 
-
-def _load_devices(app, domains, devclass):
+def _load_devices(app, domains, devclass, actual_devices):
     """
     Loads device exposed or connected to given domains.
 
     If `domains` is empty/`None` load all devices.
+    If `actual_devices` is True only devices currently present will be included,
+     otherwise only device assignments
     """
     devices = set()
     if domains:
@@ -115,12 +124,14 @@ def _load_devices(app, domains, devclass):
     try:
         for vm in domains:
             try:
-                for ass in vm.devices[devclass].get_attached_devices():
-                    devices.add(ass.device)
-                for ass in vm.devices[devclass].get_assigned_devices():
-                    devices.add(ass.virtual_device)
-                for dev in vm.devices[devclass].get_exposed_devices():
-                    devices.add(dev)
+                if actual_devices:
+                    for ass in vm.devices[devclass].get_attached_devices():
+                        devices.add(ass.device)
+                    for dev in vm.devices[devclass].get_exposed_devices():
+                        devices.add(dev)
+                else:
+                    for ass in vm.devices[devclass].get_assigned_devices():
+                        devices.add(ass.virtual_device)
             except qubesadmin.exc.QubesVMNotFoundError:
                 if ignore_errors:
                     continue
@@ -132,7 +143,7 @@ def _load_devices(app, domains, devclass):
     return devices
 
 
-def _load_frontends_info(vm, dev, devclass):
+def _load_frontends_info(vm, dev, devclass, actual_devices):
     """
     Returns string of vms to which a device is connected or `None`.
     """
@@ -140,12 +151,14 @@ def _load_frontends_info(vm, dev, devclass):
         return
 
     try:
-        for assignment in vm.devices[devclass].get_attached_devices():
-            if dev in assignment.devices:
-                yield _frontend_desc(vm, assignment)
-        for assignment in vm.devices[devclass].get_assigned_devices():
-            if dev == assignment.virtual_device:
-                yield _frontend_desc(vm, assignment)
+        if actual_devices:
+            for assignment in vm.devices[devclass].get_attached_devices():
+                if dev in assignment.devices:
+                    yield _frontend_desc(vm, assignment)
+        else:
+            for assignment in vm.devices[devclass].get_assigned_devices():
+                if dev == assignment.virtual_device:
+                    yield _frontend_desc(vm, assignment)
     except qubesadmin.exc.QubesVMNotFoundError:
         pass
 
@@ -401,6 +414,12 @@ def init_list_parser(sub_parsers):
     # pylint: disable=protected-access
     list_parser = sub_parsers.add_parser('list', aliases=('ls', 'l'),
                                          help='list devices')
+
+    list_parser.add_argument('--assignments', '-s',
+                             action='store_true',
+                             default=False,
+                             help="Include info about device assignments, "
+                                  "indicated by '*' before qube name.")
 
     vm_name_group = qubesadmin.tools.VmNameGroup(
         list_parser, required=False, vm_action=qubesadmin.tools.VmNameAction,

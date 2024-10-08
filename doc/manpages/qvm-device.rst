@@ -41,9 +41,13 @@ Commands
 list
 ^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* list [-h] [--verbose] [--quiet] [*VMNAME* [*VMNAME* ...]]
+| :command:`qvm-device` *DEVICE_CLASS* list [-h] [--verbose] [--quiet] [-s] [*VMNAME* [*VMNAME* ...]]
 
 List devices.
+
+.. option:: --assignments, -s
+
+   Include info about device assignments, indicated by '*' before qube name.
 
 .. option:: --all
 
