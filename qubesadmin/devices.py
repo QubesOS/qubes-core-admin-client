@@ -92,7 +92,8 @@ class DeviceCollection:
         if assignment.devclass == 'pci' and not assignment.required:
             raise qubesadmin.exc.QubesValueError(
                 f"PCI devices cannot be assigned as not required.")
-        if (assignment.devclass not in ('testclass', 'usb', 'block', 'mic')
+        if (assignment.devclass not in
+                ('testclass', 'usb', 'block', 'mic', 'pci')
                 and assignment.attach_automatically):
             raise qubesadmin.exc.QubesValueError(
                 f"{assignment.devclass} devices cannot be assigned "
