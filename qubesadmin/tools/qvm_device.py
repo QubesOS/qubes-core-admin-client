@@ -158,17 +158,17 @@ def _load_frontends_info(vm, dev, devclass, actual_devices):
         else:
             for assignment in vm.devices[devclass].get_assigned_devices():
                 if dev == assignment.virtual_device:
-                    yield _frontend_desc(vm, assignment)
+                    yield _frontend_desc(vm, assignment, virtual=True)
     except qubesadmin.exc.QubesVMNotFoundError:
         pass
 
 
-def _frontend_desc(vm, assignment):
+def _frontend_desc(vm, assignment, virtual=False):
     """
     Generate description of frontend vm with optional device connection options.
     """
     mode = assignment.mode.value
-    if mode == 'manual':
+    if not virtual:
         mode = 'attached'
     if assignment.options:
         return '{!s} ({}: {})'.format(
