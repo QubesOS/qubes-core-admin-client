@@ -275,7 +275,7 @@ class Port:
     def __lt__(self, other):
         if isinstance(other, Port):
             return (self.backend_name, self.devclass, self.port_id) < \
-                   (self.backend_name, other.devclass, other.port_id)
+                   (other.backend_name, other.devclass, other.port_id)
         raise TypeError(f"Comparing instances of 'Port' and '{type(other)}' "
                         "is not supported")
 
