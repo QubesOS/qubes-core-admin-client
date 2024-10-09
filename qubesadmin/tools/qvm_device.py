@@ -91,8 +91,10 @@ def list_devices(args):
     lines = _load_lines(args.app, domains, args.devclass, actual_devices=True)
     lines = list(lines.values())
     if args.assignments:
+        # we need to check assignments for all domains since
+        # selected vm can be mentioned there as backend
         extra_lines = _load_lines(
-            args.app, domains, args.devclass, actual_devices=False)
+            args.app, [], args.devclass, actual_devices=False)
         lines += list(extra_lines.values())
     qubesadmin.tools.print_table(prepare_table(lines))
 
@@ -157,7 +159,7 @@ def _load_frontends_info(vm, dev, devclass, actual_devices):
                     yield _frontend_desc(vm, assignment)
         else:
             for assignment in vm.devices[devclass].get_assigned_devices():
-                if dev == assignment.virtual_device:
+                if assignment.matches(dev):
                     yield _frontend_desc(vm, assignment, virtual=True)
     except qubesadmin.exc.QubesVMNotFoundError:
         pass
@@ -281,6 +283,10 @@ def assign_device(args):
     device = args.device
     if args.only_port:
         device = device.clone(device_id="*")
+    elif device.device_id == UnknownDevice(device.port).device_id:
+        raise qubesadmin.exc.QubesException(
+            f"backend vm {device.backend_name} doesn't expose "
+            f"{device.devclass} device {device.port_id!r}")
     if args.only_device:
         device = device.clone(
             port=Port(device.backend_domain, "*", device.devclass))
@@ -314,7 +320,7 @@ def _print_attach_hint(assignment, vm):
              if dev not in attached and not isinstance(dev, UnknownDevice)]
 
     if ports:
-        print("Assigned. To attach you can now restart domain or run: \n"
+        print("Assigned. To attach you can now restart domain or run: \n" +
               "\n".join(ports))
 
 
