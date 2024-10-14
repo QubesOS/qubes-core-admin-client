@@ -181,7 +181,7 @@ class DeviceSerializer:
                 f"when expected port: {expected.port_id}.")
         properties.pop('port_id', None)
 
-        if expected.devclass == 'peripheral':
+        if not expected.has_devclass:
             expected = Port(
                 expected.backend_domain,
                 expected.port_id,
@@ -360,13 +360,18 @@ class Port:
         return "peripheral"
 
 
+    @property
+    def has_devclass(self):
+        return self.__devclass is not None
+
+
 class VirtualDevice:
     """
     Class of a device connected to *port*.
 
     Attributes:
-        port (Port): A unique identifier for the port within the backend domain.
-        device_id (str): A unique identifier for the device.
+        port (Port): Peripheral device port exposed by vm.
+        device_id (str): An identifier for the device.
     """
     def __init__(
             self,
@@ -573,10 +578,8 @@ class VirtualDevice:
             for key, value in (
                 ('device_id', self.device_id),
                 ('port_id', self.port_id),
-                ('devclass', self.devclass)))
-
-        properties += b' ' + DeviceSerializer.pack_property(
-            'backend_domain', self.backend_name)
+                ('devclass', self.devclass),
+                ('backend_domain', self.backend_name)))
 
         return properties
 
@@ -1212,7 +1215,7 @@ class DeviceAssignment:
             return devices[0]
         if len(devices) > 1:
             raise ProtocolError("Too many devices matches to assignment")
-        raise ProtocolError("Any devices matches to assignment")
+        raise ProtocolError("No devices matches to assignment")
 
     @property
     def port(self) -> Port:
@@ -1329,7 +1332,7 @@ class DeviceAssignment:
             device_id=properties['device_id'])
         # we do not need port, we need device
         del properties['port']
-        properties.pop('device_id', None)
+        del properties['device_id']
         properties['device'] = expected_device
 
         return cls(**properties)
