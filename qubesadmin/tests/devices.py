@@ -119,9 +119,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"backend_domain='test-vm2' mode='manual' "
              b"frontend_domain='test-vm'")] = \
             b'0\0'
-        assign = DeviceAssignment(
-            VirtualDevice(Port(
-                self.app.domains['test-vm2'], 'dev1', devclass='test',)))
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
@@ -132,9 +131,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"backend_domain='test-vm2' mode='manual' "
              b"frontend_domain='test-vm' _ro='True' "
              b"_something='value'")] = b'0\0'
-        assign = DeviceAssignment(
-            VirtualDevice(Port(
-                self.app.domains['test-vm2'], 'dev1', devclass='test')))
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
         assign.options['ro'] = True
         assign.options['something'] = 'value'
         self.vm.devices['test'].attach(assign)
@@ -146,9 +144,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"device_id='*' port_id='dev1' devclass='test' "
              b"backend_domain='test-vm2' mode='required' "
              b"frontend_domain='test-vm'")] = b'0\0'
-        assign = DeviceAssignment(
-            VirtualDevice(Port(
-                self.app.domains['test-vm2'], 'dev1', devclass='test')),
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
             mode='required')
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
@@ -159,9 +156,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
              b"device_id='*' port_id='dev1' devclass='test' "
              b"backend_domain='test-vm2' mode='required' "
              b"frontend_domain='test-vm' _ro='True'")] = b'0\0'
-        assign = DeviceAssignment(
-            VirtualDevice(Port(
-                self.app.domains['test-vm2'], 'dev1', devclass='test')),
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
             mode='required')
         assign.options['ro'] = True
         self.vm.devices['test'].attach(assign)
@@ -171,9 +167,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Detach', 'test-vm2+dev1:*',
              None)] = b'0\0'
-        assign = DeviceAssignment(
-            VirtualDevice(Port(
-                self.app.domains['test-vm2'], 'dev1', devclass='test')))
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
         self.vm.devices['test'].detach(assign)
         self.assertAllCalled()
 
@@ -293,13 +288,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1:*', b'required')] = b'0\0'
-        dev = DeviceAssignment(
-            VirtualDevice(
-                Port(
-                    self.app.domains['test-vm2'],
-                    devclass='test',
-                    port_id='dev1'),
-            ))
+        dev = DeviceAssignment.new(
+            self.app.domains['test-vm2'], devclass='test', port_id='dev1')
         self.vm.devices['test'].update_assignment(dev, AssignmentMode.REQUIRED)
         self.assertAllCalled()
 
@@ -307,13 +297,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1:*', b'ask-to-attach')] = b'0\0'
-        dev = DeviceAssignment(
-            VirtualDevice(
-                Port(
-                    self.app.domains['test-vm2'],
-                    devclass='test',
-                    port_id='dev1'),
-            ))
+        dev = DeviceAssignment.new(
+            self.app.domains['test-vm2'], devclass='test', port_id='dev1')
         self.vm.devices['test'].update_assignment(dev, AssignmentMode.ASK)
         self.assertAllCalled()
 
@@ -321,14 +306,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1:*', b'auto-attach')] = b'0\0'
-        dev = DeviceAssignment(
-            VirtualDevice(
-                Port(
-                    self.app.domains['test-vm2'],
-                    devclass='test',
-                    port_id='dev1',
-                )
-            ))
+        dev = DeviceAssignment.new(
+            self.app.domains['test-vm2'], devclass='test', port_id='dev1')
         self.vm.devices['test'].update_assignment(dev, AssignmentMode.AUTO)
         self.assertAllCalled()
 

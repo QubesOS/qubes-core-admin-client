@@ -2093,12 +2093,11 @@ class BackupRestore(object):
                         del options['required']
                     else:
                         required = False
-                    assignment = DeviceAssignment(
-                        VirtualDevice(Port(
-                            backend_domain=self.app.domains[backend_domain],
-                            port_id=port_id,
-                            devclass=bus,
-                        )),
+                    assignment = DeviceAssignment.new(
+                        backend_domain=self.app.domains[backend_domain],
+                        port_id=port_id,
+                        devclass=bus,
+                        device_id=None,
                         options=options,
                         mode='required' if required else 'auto-attach',
                     )

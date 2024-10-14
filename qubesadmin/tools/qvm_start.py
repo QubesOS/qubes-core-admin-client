@@ -159,13 +159,9 @@ def get_drive_assignment(app, drive_str):
         'devtype': devtype,
         'read-only': devtype == 'cdrom'
     }
-    assignment = DeviceAssignment(VirtualDevice(Port(
-            backend_domain=backend_domain,
-            port_id=port_id,
-            devclass='block',
-        )),
-        options=options,
-        mode="required")
+    assignment = DeviceAssignment.new(
+        backend_domain=backend_domain, port_id=port_id, devclass='block',
+        options=options, mode="required")
 
     return assignment
 
