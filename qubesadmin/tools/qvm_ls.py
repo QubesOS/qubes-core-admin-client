@@ -389,6 +389,10 @@ Column('ROOT-USED',
     attr=(lambda vm: calc_used(vm, 'root')),
     doc='Disk utilisation by root image as a percentage of available space.')
 
+Column('UUID',
+    attr=(lambda vm: vm.uuid),
+    doc='Universally Unique Identifier of qube.')
+
 
 FlagsColumn()
 
