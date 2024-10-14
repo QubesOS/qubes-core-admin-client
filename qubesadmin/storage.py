@@ -430,6 +430,8 @@ class Pool(object):
                 'dom0', 'admin.pool.volume.List', self.name, None)
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('volumes')
+        if volumes_data == b'':
+            return
         assert volumes_data.endswith(b'\n')
         volumes_data = volumes_data[:-1].decode('ascii')
         for vid in volumes_data.splitlines():
