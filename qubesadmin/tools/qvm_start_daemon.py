@@ -494,6 +494,8 @@ class DAEMONLauncher:
         config_path = self.guid_config_file(vm.xid)
         self.write_guid_config(config_path, config)
         guid_cmd.extend(['-C', config_path])
+        if self.kde:
+            guid_cmd.extend(self.kde_guid_args(vm))
         return guid_cmd
 
     @staticmethod
@@ -536,8 +538,6 @@ class DAEMONLauncher:
             local X server.
         """
         guid_cmd = self.common_guid_args(vm)
-        if self.kde:
-            guid_cmd.extend(self.kde_guid_args(vm))
         guid_cmd.extend(['-d', str(vm.xid)])
 
         if vm.virt_mode == 'hvm':
