@@ -1,3 +1,11 @@
+qubes-core-admin-client (4.2.15-1) unstable; urgency=medium
+
+  [ Simon Gaiser ]
+  * qvm-start-daemon: Pass KDE specific guid arguments for stubdomain
+    too
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 16 Oct 2024 14:07:34 +0200
+
 qubes-core-admin-client (4.2.14-1) unstable; urgency=medium
 
   * rpm: drop unused python3-daemon dependency
