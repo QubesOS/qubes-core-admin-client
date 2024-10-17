@@ -41,9 +41,13 @@ Commands
 list
 ^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* list [-h] [--verbose] [--quiet] [*VMNAME* [*VMNAME* ...]]
+| :command:`qvm-device` *DEVICE_CLASS* list [-h] [--verbose] [--quiet] [-s] [*VMNAME* [*VMNAME* ...]]
 
 List devices.
+
+.. option:: --assignments, -s
+
+   Include info about device assignments, indicated by '*' before qube name.
 
 .. option:: --all
 
@@ -112,9 +116,17 @@ Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
    Assign device persistently which means it will be required to the qube's startup and then automatically attached.
 
-.. option:: --port
+.. option:: --ask, --ask-to-attach
+
+   Assign device but always ask before auto-attachment.
+
+.. option:: --port, --only-port
 
    Ignore device presented identity and attach any device connected to the given port number.
+
+.. option:: --device, --only-device
+
+   Ignore current port identity and attach this device connected to any port.
 
 aliases: s
 
@@ -125,6 +137,14 @@ unassign
 
 Remove assignment of device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
 If no device is given, remove assignments of all *DEVICE_CLASS* devices.
+
+.. option:: --port, --only-port
+
+   Remove port assignment.
+
+.. option:: --device, --only-device
+
+   Remove device identity based assignment.
 
 aliases: u
 
@@ -137,8 +157,8 @@ Show info about the device with *DEVICE_ID* from *BACKEND_DOMAIN* attached to th
 
 aliases: i
 
-Device classes
-==============
+Port classes
+============
 
 block
 ^^^^^
