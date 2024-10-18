@@ -27,8 +27,7 @@ import subprocess
 
 import time
 
-from qubesadmin.device_protocol import (DeviceAssignment, VirtualDevice, Port,
-                                        UnknownDevice)
+from qubesadmin.device_protocol import DeviceAssignment, UnknownDevice
 import qubesadmin.exc
 import qubesadmin.tools
 

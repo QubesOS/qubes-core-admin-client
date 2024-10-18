@@ -35,9 +35,14 @@ import itertools
 from typing import Iterable
 
 import qubesadmin.exc
-from qubesadmin.device_protocol import (Port, DeviceInfo, UnknownDevice,
-                                        DeviceAssignment, VirtualDevice,
-                                        AssignmentMode)
+from qubesadmin.device_protocol import (
+    Port,
+    DeviceInfo,
+    UnknownDevice,
+    DeviceAssignment,
+    VirtualDevice,
+    AssignmentMode,
+)
 
 
 DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"
@@ -64,11 +69,12 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
-        if assignment.devclass == 'pci':
+        if assignment.devclass == "pci":
             raise qubesadmin.exc.QubesValueError(
-                f"PCI devices cannot be attached manually, "
-                f"did you mean `qvm-pci assign --required ...`")
-        self._add(assignment, 'attach')
+                "PCI devices cannot be attached manually, "
+                "did you mean `qvm-pci assign --required ...`"
+            )
+        self._add(assignment, "attach")
 
     def detach(self, assignment: DeviceAssignment) -> None:
         """
@@ -77,7 +83,7 @@ class DeviceCollection:
         :param DeviceAssignment assignment: device to detach
             (obtained from :py:meth:`assignments`)
         """
-        self._remove(assignment, 'detach')
+        self._remove(assignment, "detach")
 
     def assign(self, assignment: DeviceAssignment) -> None:
         """
@@ -85,21 +91,28 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
-        if (assignment.devclass not in ('pci', 'testclass', 'block')
-                and assignment.required):
+        if (
+            assignment.devclass not in ("pci", "testclass", "block")
+            and assignment.required
+        ):
             raise qubesadmin.exc.QubesValueError(
-                "Only pci and block devices can be assigned as required.")
-        if assignment.devclass == 'pci' and not assignment.required:
+                "Only pci and block devices can be assigned as required."
+            )
+        if assignment.devclass == "pci" and not assignment.required:
             raise qubesadmin.exc.QubesValueError(
-                f"PCI devices cannot be assigned as not required.")
-        if (assignment.devclass not in
-                ('testclass', 'usb', 'block', 'mic', 'pci')
-                and assignment.attach_automatically):
+                "PCI devices cannot be assigned as not required."
+            )
+        if (
+            assignment.devclass
+            not in ("testclass", "usb", "block", "mic", "pci")
+            and assignment.attach_automatically
+        ):
             raise qubesadmin.exc.QubesValueError(
                 f"{assignment.devclass} devices cannot be assigned "
-                "to be automatically attached.")
+                "to be automatically attached."
+            )
 
-        self._add(assignment, 'assign')
+        self._add(assignment, "assign")
 
     def unassign(self, assignment: DeviceAssignment) -> None:
         """
@@ -108,7 +121,7 @@ class DeviceCollection:
         :param DeviceAssignment assignment: device to unassign
             (obtained from :py:meth:`assignments`)
         """
-        self._remove(assignment, 'unassign')
+        self._remove(assignment, "unassign")
 
     def _add(self, assignment: DeviceAssignment, action: str) -> None:
         """
@@ -119,42 +132,54 @@ class DeviceCollection:
         if assignment.frontend_domain != self._vm:
             raise qubesadmin.exc.QubesValueError(
                 f"Trying to {action} device belonging to other domain:"
-                f" {assignment.frontend_domain}")
+                f" {assignment.frontend_domain}"
+            )
         if assignment.devclass != self._class:
             raise qubesadmin.exc.QubesValueError(
                 f"Device class does not match to expected: "
-                f"{assignment.devclass=}!={self._class=}")
+                f"{assignment.devclass=}!={self._class=}"
+            )
 
         self._vm.qubesd_call(
-            None, f'admin.vm.device.{self._class}.{action.capitalize()}',
-            repr(assignment), assignment.serialize()
+            None,
+            f"admin.vm.device.{self._class}.{action.capitalize()}",
+            repr(assignment),
+            assignment.serialize(),
         )
 
     def _remove(self, assignment: DeviceAssignment, action: str) -> None:
         """
         Helper for detaching/unassigning device.
         """
-        if (assignment.frontend_domain
-                and assignment.frontend_domain != self._vm):
+        if (
+            assignment.frontend_domain
+            and assignment.frontend_domain != self._vm
+        ):
             raise qubesadmin.exc.QubesValueError(
                 f"Trying to {action} device belonging to other domain:"
-                f" {assignment.frontend_domain}")
+                f" {assignment.frontend_domain}"
+            )
         if assignment.devclass != self._class:
             raise qubesadmin.exc.QubesValueError(
                 f"Device class does not match to expected: "
-                f"{assignment.devclass=}!={self._class=}")
+                f"{assignment.devclass=}!={self._class=}"
+            )
 
         self._vm.qubesd_call(
-            None, f'admin.vm.device.{self._class}.{action.capitalize()}',
-            repr(assignment)
+            None,
+            f"admin.vm.device.{self._class}.{action.capitalize()}",
+            repr(assignment),
         )
 
     def get_dedicated_devices(self) -> Iterable[DeviceAssignment]:
         """
         List devices which are attached or assigned to this vm.
         """
-        dedicated = set(itertools.chain(
-            self.get_attached_devices(), self.get_assigned_devices()))
+        dedicated = set(
+            itertools.chain(
+                self.get_attached_devices(), self.get_assigned_devices()
+            )
+        )
         yield from dedicated
 
     def get_attached_devices(self) -> Iterable[DeviceAssignment]:
@@ -162,17 +187,20 @@ class DeviceCollection:
         List devices which are attached to this vm.
         """
         assignments_str = self._vm.qubesd_call(
-            None, 'admin.vm.device.{}.Attached'.format(self._class)).decode()
+            None, "admin.vm.device.{}.Attached".format(self._class)
+        ).decode()
         for assignment_str in assignments_str.splitlines():
-            head, _, untrusted_rest = assignment_str.partition(' ')
+            head, _, untrusted_rest = assignment_str.partition(" ")
             device = VirtualDevice.from_qarg(
-                head, self._class, self._vm.app.domains, blind=True)
+                head, self._class, self._vm.app.domains, blind=True
+            )
 
             yield DeviceAssignment.deserialize(
-                untrusted_rest.encode('ascii'), expected_device=device)
+                untrusted_rest.encode("ascii"), expected_device=device
+            )
 
     def get_assigned_devices(
-            self, required_only: bool = False
+        self, required_only: bool = False
     ) -> Iterable[DeviceAssignment]:
         """
         Devices assigned to this vm (included in :file:`qubes.xml`).
@@ -180,14 +208,17 @@ class DeviceCollection:
         Safe to access before libvirt bootstrap.
         """
         assignments_str = self._vm.qubesd_call(
-            None, 'admin.vm.device.{}.Assigned'.format(self._class)).decode()
+            None, "admin.vm.device.{}.Assigned".format(self._class)
+        ).decode()
         for assignment_str in assignments_str.splitlines():
-            head, _, untrusted_rest = assignment_str.partition(' ')
+            head, _, untrusted_rest = assignment_str.partition(" ")
             device = VirtualDevice.from_qarg(
-                head, self._class, self._vm.app.domains, blind=True)
+                head, self._class, self._vm.app.domains, blind=True
+            )
 
             assignment = DeviceAssignment.deserialize(
-                untrusted_rest.encode('ascii'), expected_device=device)
+                untrusted_rest.encode("ascii"), expected_device=device
+            )
             if not required_only or assignment.required:
                 yield assignment
 
@@ -196,7 +227,8 @@ class DeviceCollection:
         List devices exposed by this vm.
         """
         devices: bytes = self._vm.qubesd_call(
-            None, 'admin.vm.device.{}.Available'.format(self._class))
+            None, "admin.vm.device.{}.Available".format(self._class)
+        )
         for dev_serialized in devices.splitlines():
             yield DeviceInfo.deserialize(
                 serialization=dev_serialized,
@@ -216,8 +248,9 @@ class DeviceCollection:
         """
         self._vm.qubesd_call(
             None,
-            'admin.vm.device.{}.Set.assignment'.format(self._class),
-            repr(device), required.value.encode('utf-8')
+            "admin.vm.device.{}.Set.assignment".format(self._class),
+            repr(device),
+            required.value.encode("utf-8"),
         )
 
     __iter__ = get_exposed_devices
