@@ -448,7 +448,7 @@ def info_device(args):
         print(device.description)
         print(f"device ID: {device.device_id}")
         for key, value in device.data.items():
-            print(key, ":", value)
+            print(key.replace("_", " ") + ":", value)
 
 
 def init_list_parser(sub_parsers):
