@@ -333,7 +333,7 @@ def assign_device(args):
             f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
             f"but make sure that the assignment is correct."
         )
-    if vm.is_running() and not args.quiet:
+    if vm.is_running() and not args.quiet and device.devclass != "pci":
         _print_attach_hint(assignment, vm)
 
 
