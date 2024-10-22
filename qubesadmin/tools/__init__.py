@@ -24,6 +24,7 @@
 from __future__ import print_function
 
 import argparse
+import fnmatch
 import importlib
 import logging
 import os
@@ -37,7 +38,6 @@ import qubesadmin.vm
 
 #: constant returned when some action should be performed on all qubes
 VM_ALL = object()
-
 
 class QubesAction(argparse.Action):
     ''' Interface providing a convinience method to be called, after
@@ -151,6 +151,8 @@ class VmNameAction(QubesAction):
         setattr(namespace, self.dest, values)
 
     def parse_qubes_app(self, parser, namespace):
+        ''' Set ``namespace.domains`` to ``values`` '''
+        # pylint: disable=too-many-nested-blocks
         assert hasattr(namespace, 'app')
         setattr(namespace, 'domains', [])
         app = namespace.app
@@ -175,7 +177,16 @@ class VmNameAction(QubesAction):
                     except KeyError:
                         parser.error('no such domain: {!r}'.format(vm_name))
             else:
-                for vm_name in getattr(namespace, self.dest):
+                destinations = set()
+                for destination in getattr(namespace, self.dest):
+                    if any(wildcard in destination for wildcard in '*?[!]'):
+                        for domain in app.domains:
+                            if fnmatch.fnmatch(domain.name, destination):
+                                destinations.add(domain.name)
+                    else:
+                        destinations.add(destination)
+
+                for vm_name in destinations:
                     try:
                         namespace.domains += [app.domains[vm_name]]
                     except KeyError:

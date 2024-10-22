@@ -129,6 +129,46 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'dom0     Running  TestVM  -      -         -\n'
             'test-vm  Running  TestVM  -      -         -\n')
 
+    def test_104_wildcards(self):
+        app = TestApp()
+        app.domains = TestVMCollection(
+            [
+                ('dom0',                TestVM('dom0')),
+                ('debian-13',           TestVM('debian-13')),
+                ('debian-13-minimal',   TestVM('debian-13-minimal')),
+                ('debian-13-xfce',      TestVM('debian-13-xfce')),
+                ('debian-sid',          TestVM('debian-sid')),
+                ('fedora-41',           TestVM('fedora-41')),
+                ('fedora-41-minimal',   TestVM('fedora-41-minimal')),
+                ('fedora-41-xfce',      TestVM('fedora-41-xfce')),
+                ('fedora-rawhide',      TestVM('fedora-rawhide')),
+            ]
+        )
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-list', 'fedora*'], app=app)
+        self.assertEqual(stdout.getvalue(),
+        'fedora-41\nfedora-41-minimal\nfedora-41-xfce\nfedora-rawhide\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-list', '*minimal'], app=app)
+        self.assertEqual(stdout.getvalue(),
+        'debian-13-minimal\nfedora-41-minimal\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-list', '????'], app=app)
+        self.assertEqual(stdout.getvalue(),
+        'dom0\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[rs]*'], app=app)
+        self.assertEqual(stdout.getvalue(),
+        'debian-sid\nfedora-rawhide\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[!14s]*'], app=app)
+        self.assertEqual(stdout.getvalue(),
+        'fedora-rawhide\n')
+
     def test_110_network_tree(self):
         app = TestApp()
         app.domains = TestVMCollection(
