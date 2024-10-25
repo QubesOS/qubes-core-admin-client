@@ -41,7 +41,7 @@ Commands
 list
 ^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* list [-h] [--verbose] [--quiet] [-s] [*VMNAME* [*VMNAME* ...]]
+| :command:`qvm-device` *DEVICE_CLASS* list [-h] [--verbose] [--quiet] [*VMNAME* [*VMNAME* ...]]
 
 List devices.
 
@@ -63,9 +63,11 @@ aliases: ls, l
 attach
 ^^^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* attach [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+| :command:`qvm-device` *DEVICE_CLASS* attach [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:PORT_ID[:DEVICE_ID]*
 
-Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
+Attach the device from *BACKEND_DOMAIN* and port with *PORT_ID* to domain *VMNAME*.
+If optional *DEVICE_ID* is provided and does not match device ID of plugged device the attachment fails.
+The *DEVICE_ID* equals to `*` is ignored.
 
 .. option:: --option, -o
 
@@ -80,16 +82,18 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
 .. option:: --persistent, -p
 
-   Alias for `assign --required` for backward compatibility.
+   Short version for `attach` & `assign --required` for backward compatibility.
 
 aliases: a, at
 
 detach
 ^^^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* detach [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+| :command:`qvm-device` *DEVICE_CLASS* detach [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:PORT_ID[:DEVICE_ID]*
 
-Detach the device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
+Detach the device with *BACKEND_DOMAIN:PORT_ID* from domain *VMNAME*.
+If optional *DEVICE_ID* is provided and does not match device ID of plugged device the detachment fails.
+The *DEVICE_ID* equals to `*` is ignored.
 If no device is given, detach all *DEVICE_CLASS* devices.
 
 aliases: d, dt
@@ -97,9 +101,11 @@ aliases: d, dt
 assign
 ^^^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* assign [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+| :command:`qvm-device` *DEVICE_CLASS* assign [-h] [--verbose] [--quiet] [--ro] *VMNAME* *BACKEND_DOMAIN:PORT_ID[:DEVICE_ID]*
 
-Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
+Assign the device from *BACKEND_DOMAIN* and port with *PORT_ID* to domain *VMNAME*.
+If optional *DEVICE_ID* is not provided it device id of the plugged device is loaded.
+If *DEVICE_ID* is not provided and no device is currently plugged into the port, the assignment process will fail.
 
 .. option:: --option, -o
 
@@ -122,29 +128,33 @@ Assign the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
 .. option:: --port, --only-port
 
-   Ignore device presented identity and attach any device connected to the given port number.
+   Ignore device presented identity and attach automatically any device connected to this port in the future.
+   It is equivalent of providing `BACKEND_DOMAIN:PORT_ID:*` as argument.
 
 .. option:: --device, --only-device
 
-   Ignore current port identity and attach this device connected to any port.
+   Ignore the current port where the device is plugged in and ensure that this device will be attached automatically in the future, regardless of which port it is connected to.
+   It is equivalent of providing `BACKEND_DOMAIN:*:DEVICE_ID` as argument.
 
 aliases: s
 
 unassign
 ^^^^^^^^
 
-| :command:`qvm-device` *DEVICE_CLASS* unassign [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:DEVICE_ID*
+| :command:`qvm-device` *DEVICE_CLASS* unassign [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:PORT_ID[:DEVICE_ID]*
 
-Remove assignment of device with *BACKEND_DOMAIN:DEVICE_ID* from domain *VMNAME*.
+Remove assignment of device with *BACKEND_DOMAIN:PORT_ID:DEVICE_ID* from domain *VMNAME*.
 If no device is given, remove assignments of all *DEVICE_CLASS* devices.
 
 .. option:: --port, --only-port
 
    Remove port assignment.
+   It is equivalent of providing `BACKEND_DOMAIN:PORT_ID:*` as argument.
 
 .. option:: --device, --only-device
 
    Remove device identity based assignment.
+   It is equivalent of providing `BACKEND_DOMAIN:*:DEVICE_ID` as argument.
 
 aliases: u
 
