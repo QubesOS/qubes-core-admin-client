@@ -1,3 +1,24 @@
+qubes-core-admin-client (4.3.6-1) unstable; urgency=medium
+
+  [ Simon Gaiser ]
+  * qvm-start-daemon: Pass KDE specific guid arguments for stubdomain
+    too
+
+  [ Ali Mirjamali ]
+  * Add `max_clipboard_size` GUI Daemon option
+
+  [ Yaroslav Bolyukin ]
+  * fix: do not crash on pool with no volumes
+
+  [ Ali Mirjamali ]
+  * Document killing of paused qubes on shutdown
+
+  [ Marek Marczykowski-Górecki ]
+  * ci: update to R4.3
+  * doc: drop intersphinx mapping
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 27 Oct 2024 04:42:13 +0100
+
 qubes-core-admin-client (4.3.5-1) unstable; urgency=medium
 
   [ neoniobium ]
