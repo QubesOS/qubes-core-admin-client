@@ -31,6 +31,11 @@ Options
 
    Exclude the qube from :option:`--all`.
 
+Notes
+-----
+
+Paused qubes will be killed on system shutdown.
+
 Authors
 -------
 
