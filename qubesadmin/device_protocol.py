@@ -862,6 +862,7 @@ class DeviceInfo(VirtualDevice):
     def __init__(
         self,
         port: Port,
+        *,
         vendor: Optional[str] = None,
         product: Optional[str] = None,
         manufacturer: Optional[str] = None,
@@ -1225,6 +1226,7 @@ class DeviceAssignment:
         port_id: str,
         devclass: str,
         device_id: Optional[str] = None,
+        *,
         frontend_domain: Optional[QubesVM] = None,
         options=None,
         mode: Union[str, AssignmentMode] = "manual",
