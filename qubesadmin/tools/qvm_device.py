@@ -98,7 +98,9 @@ def list_devices(args):
     domains = args.domains if hasattr(args, "domains") else None
     lines = _load_lines(args.app, domains, args.devclass, actual_devices=True)
     lines = list(lines.values())
-    if args.assignments:
+    # short command without (list/ls) should print just existing devices
+    # short command is not a great place for introducing listing specific flags
+    if getattr(args, "assignments", False):
         # we need to check assignments for all domains since
         # selected vm can be mentioned there as backend
         extra_lines = _load_lines(
