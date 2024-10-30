@@ -27,7 +27,9 @@ import asyncio
 
 import qubesadmin.tests
 import qubesadmin.tools.qvm_start_daemon
-from  qubesadmin.tools.qvm_start_daemon import GUI_DAEMON_OPTIONS
+from qubesadmin.tools.qvm_start_daemon import GUI_DAEMON_OPTIONS
+from qubesadmin.tools.qvm_start_daemon import validator_key_sequence, \
+        validator_trayicon_mode, validator_color
 import qubesadmin.vm
 
 
@@ -93,7 +95,7 @@ class TC_00_qvm_start_gui(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.property.Get', 'xid', None)] = \
             b'0\x00default=99 type=int 99'
 
-        for name, _kind in GUI_DAEMON_OPTIONS:
+        for name, _kind, _validator in GUI_DAEMON_OPTIONS:
             self.app.expected_calls[
                 ('test-vm', 'admin.vm.feature.Get',
                  'gui-' + name.replace('_', '-'), None)] = \
@@ -754,3 +756,33 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
                                unittest.mock.call(vm2, monitor_layout)])
         mock_get_monior_layout.assert_called_once_with()
         self.assertAllCalled()
+
+    def test_071_validators(self):
+        self.assertFalse(validator_key_sequence(123))
+        self.assertFalse(validator_key_sequence('Super-X'))
+        self.assertTrue(validator_key_sequence('Ctrl-shift-F12'))
+        self.assertFalse(validator_key_sequence('F13'))
+        self.assertFalse(validator_trayicon_mode(True))
+        self.assertTrue(validator_trayicon_mode('bg'))
+        self.assertTrue(validator_trayicon_mode('tint+border1'))
+        self.assertFalse(validator_trayicon_mode('shadow'))
+        self.assertFalse(validator_color(321))
+        self.assertTrue(validator_color('0x123456'))
+        self.assertTrue(validator_color('0XFFF'))
+        self.assertTrue(validator_color('lime'))
+        self.assertFalse(validator_color('scarlet'))
+        self.assertFalse(validator_color('octarine'))
+
+    def test_072_feature_validation(self):
+        self.setup_common_args()
+
+        self.app.expected_calls[
+            ('gui-vm', 'admin.vm.feature.Get',
+             'gui-default-override-redirect', None)] = \
+                 b'0\x00ask'
+
+        _args, config = self.run_common_args()
+        self.assertEqual(config, '''\
+global: {
+}
+''')

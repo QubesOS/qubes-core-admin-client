@@ -42,6 +42,7 @@ Requires:   python%{python3_pkgversion}-qubesdb
 Requires:   python%{python3_pkgversion}-rpm
 Requires:   python%{python3_pkgversion}-tqdm
 Requires:   python%{python3_pkgversion}-pyxdg
+Requires:   python%{python3_pkgversion}-xlib
 Conflicts:  qubes-core-dom0 < 4.3.0
 Conflicts:  qubes-manager < 4.0.6
 
