@@ -839,6 +839,10 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertEqual(vm.get_power_state(), 'Halted')
         self.assertAllCalled()
 
+    def test_051_space_in_vmname(self):
+        with self.assertRaises(ValueError):
+            self.app.add_new_vm('AppVM', 'VM Name with spaces', 'red')
+
 
 class TC_20_QubesLocal(unittest.TestCase):
     def setUp(self):
