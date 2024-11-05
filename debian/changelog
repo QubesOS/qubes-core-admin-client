@@ -1,3 +1,31 @@
+qubes-core-admin-client (4.2.16-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Document usb-reset-on-attach qvm-service
+
+  [ Ben Grande ]
+  * Document service software-rendering
+
+  [ Ali Mirjamali ]
+  * Improve qvm-check mechanism on invalid domains
+  * Improving unit tests for qvm-check
+  * Extended QubesArgumentParser & VmNameAction for qvm-check
+
+  [ Euwiiwueir ]
+  * Fix the synopsis sections of qvm-run, qvm-create manpages
+
+  [ Ali Mirjamali ]
+  * Support DNF5 UpdateVM for qvm-template
+
+  [ Yaroslav Bolyukin ]
+  * fix: do not crash on pool with no volumes
+
+  [ Marek Marczykowski-Górecki ]
+  * doc: drop intersphinx mapping
+  * pylint: deal with too-many-positional-arguments
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 05 Nov 2024 20:24:25 +0100
+
 qubes-core-admin-client (4.2.15-1) unstable; urgency=medium
 
   [ Simon Gaiser ]
