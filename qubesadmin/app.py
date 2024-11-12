@@ -361,7 +361,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self.domains.clear_cache()
         return self.domains[name]
 
-    def clone_vm(self, src_vm, new_name, *, new_cls=None, pool=None, pools=None,
+    def clone_vm(self, src_vm, new_name, new_cls=None, *, pool=None, pools=None,
                  ignore_errors=False, ignore_volumes=None,
                  ignore_devices=False):
         # pylint: disable=too-many-statements
