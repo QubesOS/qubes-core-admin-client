@@ -39,22 +39,77 @@ import qubesadmin.tools
 import qubesadmin.vm
 from qubesadmin.tools import xcffibhelpers
 
+# pylint: disable=wrong-import-position,wrong-import-order
+from Xlib import X, XK
+from Xlib.display import Display
+from Xlib.error import DisplayConnectionError
+
 GUI_DAEMON_PATH = '/usr/bin/qubes-guid'
 PACAT_DAEMON_PATH = '/usr/bin/pacat-simple-vchan'
 QUBES_ICON_DIR = '/usr/share/icons/hicolor/128x128/devices'
 
+def validator_key_sequence(sequence: str) -> bool:
+    """ xside.c key sequence validation is not case sensitive and supports more
+    choices than Global Config's limited choices, so we replicate it here """
+    if not isinstance(sequence, str):
+        return False
+    if sequence.lower() in ['none', 'disable']:
+        return True
+    while '-' in sequence:
+        modifier, sequence = sequence.split('-', 1)
+        if not modifier.lower() in \
+                ['shift', 'ctrl', 'alt', 'mod1', 'mod2', 'mod3', 'mod4']:
+            return False
+    try:
+        display = Display()
+        result = display.keysym_to_keycode(XK.string_to_keysym(sequence))
+        display.close()
+        return result != X.NoSymbol
+    except DisplayConnectionError:
+        return False
+
+def validator_trayicon_mode(mode: str) -> bool:
+    """ xside.c tray mode validation is replicated here """
+    if not isinstance(mode, str):
+        return False
+    if mode in ['bg', 'border1', 'border2', 'tint']:
+        return True
+    if mode.startswith('tint'):
+        if mode[4:] in ['+border1', '+border2', '+saturation50', '+whitehack']:
+            return True
+    return False
+
+def validator_color(color: str) -> bool:
+    """ xside.c `parse_color` validation code is replicated here """
+    if not isinstance(color, str):
+        return False
+    if re.match(r"^0[xX](?:[0-9a-fA-F]{3}){1,2}$", color.strip()):
+        # Technically `parse_color` could parse values such as `0x0`
+        # Xlib.xobject.colormap conventions & standards are different.
+        return True
+    try:
+        display = Display()
+        result = display.screen().default_colormap.alloc_named_color(color)
+        display.close()
+        if result is not None:
+            return True
+    except DisplayConnectionError:
+        return False
+    return False
+
 GUI_DAEMON_OPTIONS = [
-    ('allow_fullscreen', 'bool'),
-    ('override_redirect_protection', 'bool'),
-    ('override_redirect', 'str'),
-    ('allow_utf8_titles', 'bool'),
-    ('secure_copy_sequence', 'str'),
-    ('secure_paste_sequence', 'str'),
-    ('windows_count_limit', 'int'),
-    ('trayicon_mode', 'str'),
-    ('window_background_color', 'str'),
-    ('startup_timeout', 'int'),
-    ('max_clipboard_size', 'int'),
+    ('allow_fullscreen', 'bool', (lambda x: isinstance(x, bool))),
+    ('override_redirect_protection', 'bool', (lambda x: isinstance(x, bool))),
+    ('override_redirect', 'str', (lambda x: x in ['allow', 'disable'])),
+    ('allow_utf8_titles', 'bool', (lambda x: isinstance(x, bool))),
+    ('secure_copy_sequence', 'str', validator_key_sequence),
+    ('secure_paste_sequence', 'str', validator_key_sequence),
+    ('windows_count_limit', 'int', (lambda x: isinstance(x, int) and x > 0)),
+    ('trayicon_mode', 'str', validator_trayicon_mode),
+    ('window_background_color', 'str', validator_color),
+    ('startup_timeout', 'int', (lambda x: isinstance(x, int) and x >= 0)),
+    ('max_clipboard_size', 'int', \
+            (lambda x: isinstance(x, int) and 256 <= x <= 256000)),
 ]
 
 formatter = logging.Formatter(
@@ -108,12 +163,12 @@ def retrieve_gui_daemon_options(vm, guivm):
 
     options = {}
 
-    for name, kind in GUI_DAEMON_OPTIONS:
-        feature_value = vm.features.get(
-            'gui-' + name.replace('_', '-'), None)
+    for name, kind, validator in GUI_DAEMON_OPTIONS:
+        feature = 'gui-' + name.replace('_', '-')
+        feature_value = vm.features.get(feature, None)
         if feature_value is None:
-            feature_value = guivm.features.get(
-                'gui-default-' + name.replace('_', '-'), None)
+            feature = 'gui-default-' + name.replace('_', '-')
+            feature_value = guivm.features.get(feature, None)
         if feature_value is None:
             continue
 
@@ -125,6 +180,15 @@ def retrieve_gui_daemon_options(vm, guivm):
             value = feature_value
         else:
             assert False, kind
+
+        if not validator(value):
+            message = f"{vm.name}: Ignoring invalid feature:\n" \
+                      f"{feature}={feature_value}"
+            log.error(message)
+            if not sys.stdout.isatty():
+                subprocess.run(['notify-send', '-a', 'Qubes GUI Daemon', \
+                    '--icon', 'dialog-warning', message], check=False)
+            continue
 
         options[name] = value
     return options
@@ -141,7 +205,7 @@ def serialize_gui_daemon_options(options):
         '',
         'global: {',
     ]
-    for name, kind in GUI_DAEMON_OPTIONS:
+    for name, kind, validator in GUI_DAEMON_OPTIONS:
         if name in options:
             value = options[name]
             if kind == 'bool':
@@ -152,6 +216,14 @@ def serialize_gui_daemon_options(options):
                 serialized = escape_config_string(value)
             else:
                 assert False, kind
+
+            if not validator(value):
+                message = f"Ignoring invalid GUI property:\n{name}={value}"
+                log.error(message)
+                if not sys.stdout.isatty():
+                    subprocess.run(['notify-send', '-a', 'Qubes GUI Daemon', \
+                        '--icon', 'dialog-warning', message], check=False)
+                continue
 
             lines.append('  {} = {};'.format(name, serialized))
     lines.append('}')

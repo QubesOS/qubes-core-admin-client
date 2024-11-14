@@ -7,7 +7,7 @@ include:
   project: QubesOS/qubes-continuous-integration
 checks:pylint:
   before_script:
-  - sudo dnf install -y python3-rpm
+  - sudo dnf install -y python3-rpm python3-xlib
   - pip3 install --quiet -r ci/requirements.txt
   script:
   - export PATH="$HOME/.local/bin:$PATH"
@@ -19,15 +19,15 @@ checks:tests:
   after_script:
   - ci/codecov-wrapper
   before_script:
-  - sudo dnf install -y openssl python3-rpm sequoia-sqv
+  - sudo dnf install -y openssl python3-rpm sequoia-sqv python3-xlib libnotify
+    xorg-x11-server-Xvfb
   - pip3 install --quiet -r ci/requirements.txt
   - git config --global --add safe.directory "$PWD"
   script:
   - python3 setup.py build
   # simulate "normal" qubes env for most tests
-  - export DISPLAY=:0
-  - ./run-tests
-  - python3 -m coverage xml
+  - xvfb-run ./run-tests
+  - xvfb-run python3 -m coverage xml
   stage: checks
   tags:
   - docker
