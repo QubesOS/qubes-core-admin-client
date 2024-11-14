@@ -340,6 +340,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         elif template is not None:
             template = str(template)
 
+        if ' ' in name:
+            raise ValueError(f'Qube name could not contain space: {name}')
         if pool and pools:
             raise ValueError('only one of pool= and pools= can be used')
 
