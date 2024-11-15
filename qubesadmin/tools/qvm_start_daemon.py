@@ -416,14 +416,12 @@ def get_monitor_layout():
                         elif dpi > 150:
                             dpi = 150
                         else:
-                            # if lower, don't provide this info to the VM at all
-                            dpi = 0
-                        if dpi:
-                            # now calculate dimensions based on approximate DPI
-                            phys_size = " {} {}".format(
-                                int(output_params['width']) * 254 // dpi // 10,
-                                int(output_params['height']) * 254 // dpi // 10,
-                            )
+                            dpi = 96
+                        # now calculate dimensions based on approximate DPI
+                        phys_size = " {} {}".format(
+                            int(output_params['width']) * 254 // dpi // 10,
+                            int(output_params['height']) * 254 // dpi // 10,
+                        )
                     outputs.append("%s %s %s %s%s\n" % (
                         output_params['width'],
                         output_params['height'],

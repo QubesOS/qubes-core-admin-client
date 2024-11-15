@@ -493,7 +493,7 @@ VGA1 disconnected (normal left inverted right x axis y axis)
 VIRTUAL1 disconnected (normal left inverted right x axis y axis)
 '''.splitlines()
         self.assertEqual(qubesadmin.tools.qvm_start_daemon.get_monitor_layout(),
-                         ['1920 1200 0 0\n'])
+                         ['1920 1200 0 0 508 317\n'])
 
     @unittest.mock.patch('subprocess.Popen')
     def test_051_get_monitor_layout_multiple(self, proc_mock):
