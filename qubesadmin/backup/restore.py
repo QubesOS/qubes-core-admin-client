@@ -2086,27 +2086,27 @@ class BackupRestore(object):
                             tag, vm.name, err)
 
             for bus in vm.devices:
-                for backend_domain, ident in vm.devices[bus]:
-                    options = vm.devices[bus][(backend_domain, ident)]
+                for backend_domain, port_id in vm.devices[bus]:
+                    options = vm.devices[bus][(backend_domain, port_id)]
                     if 'required' in options:
                         required = options['required']
                         del options['required']
                     else:
                         required = False
-                    assignment = DeviceAssignment(
+                    assignment = DeviceAssignment.new(
                         backend_domain=self.app.domains[backend_domain],
-                        ident=ident,
+                        port_id=port_id,
                         devclass=bus,
+                        device_id=None,
                         options=options,
-                        attach_automatically=True,
-                        required=required,
+                        mode='required' if required else 'auto-attach',
                     )
                     try:
                         if not self.options.verify_only:
                             new_vm.devices[bus].assign(assignment)
                     except Exception as err:  # pylint: disable=broad-except
                         self.log.error('Error assigning device %s:%s to %s: %s',
-                            bus, ident, vm.name, err)
+                            bus, port_id, vm.name, err)
 
         # Set VM dependencies - only non-default setting
         for vm in vms.values():

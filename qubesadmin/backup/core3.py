@@ -122,14 +122,14 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
             assert bus_name is not None
             for node in bus_node.findall('./device'):
                 backend_domain = node.get('backend-domain')
-                ident = node.get('id')
+                port_id = node.get('id')
                 options = {}
                 for opt_node in node.findall('./option'):
                     opt_name = opt_node.get('name')
                     options[opt_name] = opt_node.text
                 options['required'] = device_protocol.qbool(
                     node.get('required', 'yes'))
-                vm.devices[bus_name][(backend_domain, ident)] = options
+                vm.devices[bus_name][(backend_domain, port_id)] = options
 
         # extract base properties
         if vm.klass == 'AdminVM':

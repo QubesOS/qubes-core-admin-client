@@ -45,8 +45,10 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b'test-vm3 class=AppVM state=Running\n')
         self.expected_device_call(
             'test-vm1', 'Available',
-            b"0\0dev1 ident='dev1' devclass='testclass' vendor='itl'"
-            b" product='test-device' backend_domain='test-vm1'"
+            b"0\0dev1 device_id='dead:beef:babe:u012345' "
+            b"port_id='dev1' devclass='testclass' vendor='itl' "
+            b"interfaces='u012345' product='test-device' "
+            b"backend_domain='test-vm1'"
         )
         self.vm1 = self.app.domains['test-vm1']
         self.vm2 = self.app.domains['test-vm2']
@@ -58,7 +60,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         """
         self.expected_device_call(
             'test-vm2', 'Available',
-            b"0\0dev2 ident='dev2' devclass='testclass' vendor='? `'"
+            b"0\0dev2 port_id='dev2' devclass='testclass' vendor='? `'"
             b" product='test-device' backend_domain='test-vm2'"
         )
         self.expected_device_call('test-vm3', 'Available')
@@ -75,7 +77,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list'], app=self.app)
             self.assertEqual(
                 [x.rstrip() for x in buf.getvalue().splitlines()],
-                ['test-vm1:dev1  ?******: itl test-device',
+                ['test-vm1:dev1  Multimedia: itl test-device',
                  'test-vm2:dev2  ?******: ? ` test-device']
             )
 
@@ -86,10 +88,13 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         # This shouldn't be listed
         self.expected_device_call(
             'test-vm2', 'Available',
-            b"0\0dev2 ident='dev2' devclass='testclass' backend_domain='test-vm2'\n")
+            b"0\0dev2 device_id='serial' port_id='dev2' "
+            b"devclass='testclass' backend_domain='test-vm2'\n")
         self.expected_device_call(
             'test-vm3', 'Available',
-            b"0\0dev3 ident='dev3' devclass='testclass' backend_domain='test-vm3' vendor='evil inc.' product='test-device-3'\n"
+            b"0\0dev3 port_id='dev3' device_id='0000:0000::p000000' "
+            b"devclass='testclass' backend_domain='test-vm3' "
+            b"vendor='evil inc.' product='test-device-3'\n"
         )
         self.expected_device_call('test-vm1', 'Attached')
         self.expected_device_call('test-vm2', 'Attached')
@@ -97,29 +102,28 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.expected_device_call('test-vm1', 'Assigned')
         self.expected_device_call(
             'test-vm2', 'Assigned',
-            b"0\0test-vm1+dev1 ident='dev1' devclass='testclass' "
-            b"backend_domain='test-vm1' attach_automatically='yes' "
-            b"required='yes' _option='other option' _extra_opt='yes'\n"
-            b"test-vm3+dev3 ident='dev3' devclass='testclass' "
-            b"backend_domain='test-vm3' attach_automatically='yes' "
-            b"required='yes'\n"
+            b"0\0test-vm1+dev1 port_id='dev1' devclass='testclass' "
+            b"backend_domain='test-vm1' mode='required' _option='other option' "
+            b"_extra_opt='yes'\n"
+            b"test-vm3+dev3 device_id='0000:0000::p000000' port_id='dev3' "
+            b"devclass='testclass' backend_domain='test-vm3' mode='required'\n"
         )
         self.expected_device_call(
             'test-vm3', 'Assigned',
-            b"0\0test-vm1+dev1 ident='dev1' devclass='testclass' "
-            b"backend_domain='test-vm1' attach_automatically='yes' "
-            b"required='yes' _option='test option'\n"
+            b"0\0test-vm1+dev1 port_id='dev1' devclass='testclass' "
+            b"backend_domain='test-vm1' mode='required' _option='test option'\n"
         )
 
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
             qubesadmin.tools.qvm_device.main(
-                ['testclass', 'list', 'test-vm3'], app=self.app)
+                ['testclass', 'list', '-s', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  ?******: itl test-device          '
-                'test-vm2 (option=other option, extra_opt=yes), '
-                'test-vm3 (option=test option)\n'
-                'test-vm3:dev3  ?******: evil inc. test-device-3  test-vm2\n'
+'test-vm1:dev1  any device                        '
+'*test-vm2 (required: option=other option, extra_opt=yes), '
+'*test-vm3 (required: option=test option)\n'
+'test-vm3:dev3  0000:0000::p000000                *test-vm2 (required)\n'
+'test-vm3:dev3  ?******: evil inc. test-device-3  \n'
             )
 
     def test_002_list_attach(self):
@@ -129,15 +133,14 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         # This shouldn't be listed
         self.expected_device_call(
             'test-vm2', 'Available',
-            b"0\0dev2 ident='dev1' devclass='testclass' backend_domain='test-vm2'\n")
+            b"0\0dev2 port_id='dev1' devclass='testclass' backend_domain='test-vm2'\n")
         self.expected_device_call('test-vm3', 'Available')
         self.expected_device_call('test-vm1', 'Attached')
         self.expected_device_call('test-vm2', 'Attached')
         self.expected_device_call(
             'test-vm3', 'Attached',
-            b"0\0test-vm1+dev1 ident='dev1' devclass='testclass' "
-            b"backend_domain='test-vm1' attach_automatically='yes' "
-            b"required='yes'\n"
+            b"0\0test-vm1+dev1 port_id='dev1' devclass='testclass' "
+            b"backend_domain='test-vm1' mode='required'\n"
         )
         self.expected_device_call('test-vm1', 'Assigned')
         self.expected_device_call('test-vm2', 'Assigned')
@@ -148,7 +151,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  ?******: itl test-device  test-vm3\n'
+                'test-vm1:dev1  Multimedia: itl test-device  '
+                'test-vm3 (attached)\n'
             )
 
     def test_003_list_device_classes(self):
@@ -169,9 +173,10 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
     def test_010_attach(self):
         """ Test attach action """
         self.app.expected_calls[(
-            'test-vm2', 'admin.vm.device.testclass.Attach', 'test-vm1+dev1',
-            b"required='no' attach_automatically='no' ident='dev1' "
-            b"devclass='testclass' backend_domain='test-vm1' "
+            'test-vm2', 'admin.vm.device.testclass.Attach',
+            'test-vm1+dev1:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' mode='manual' "
             b"frontend_domain='test-vm2'")] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'attach', 'test-vm2', 'test-vm1:dev1'], app=self.app)
@@ -180,9 +185,10 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
     def test_011_attach_options(self):
         """ Test `read-only` attach option """
         self.app.expected_calls[(
-            'test-vm2', 'admin.vm.device.testclass.Attach', 'test-vm1+dev1',
-            b"required='no' attach_automatically='no' ident='dev1' "
-            b"devclass='testclass' backend_domain='test-vm1' "
+            'test-vm2', 'admin.vm.device.testclass.Attach',
+            'test-vm1+dev1:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' mode='manual' "
             b"frontend_domain='test-vm2' _read-only='yes'")] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'attach', '-o', 'ro=True', 'test-vm2', 'test-vm1:dev1'],
@@ -196,7 +202,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'attach', '-p', 'test-vm2', 'dev1'],
                     app=self.app)
-            self.assertIn('expected a backend vm & device id',
+            self.assertIn(
+                'expected a backend vm, port id and [optional] device id',
                 stderr.getvalue())
         self.assertAllCalled()
 
@@ -218,7 +225,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'attach', '-p', 'test-vm2', 'no-such-vm:dev3'],
                     app=self.app)
-            self.assertIn('no backend vm',
+            self.assertIn('no such backend vm!',
                 stderr.getvalue())
         self.assertAllCalled()
 
@@ -226,7 +233,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         """ Test detach action """
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Detach',
-             'test-vm1+dev1', None)] = b'0\0'
+             'test-vm1+dev1:dead:beef:babe:u012345', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'detach', 'test-vm2', 'test-vm1:dev1'], app=self.app)
         self.assertAllCalled()
@@ -235,7 +242,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         """ Test detach action """
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Detach',
-             'test-vm1+dev7', None)] = b'0\0'
+             'test-vm1+dev7:0000:0000::?******', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'detach', 'test-vm2', 'test-vm1:dev7'], app=self.app)
         self.assertAllCalled()
@@ -247,10 +254,10 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b'0\0test-vm1+dev1\ntest-vm1+dev2\n'
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Detach',
-             'test-vm1+dev1', None)] = b'0\0'
+             'test-vm1+dev1:*', None)] = b'0\0'
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Detach',
-             'test-vm1+dev2', None)] = b'0\0'
+             'test-vm1+dev2:*', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'detach', 'test-vm2'], app=self.app)
         self.assertAllCalled()
@@ -259,10 +266,14 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         """ Test assign action """
         self.app.domains['test-vm2'].is_running = lambda: True
         self.app.expected_calls[(
-            'test-vm2', 'admin.vm.device.testclass.Assign', 'test-vm1+dev1',
-            b"required='no' attach_automatically='yes' ident='dev1' "
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
             b"devclass='testclass' backend_domain='test-vm1' "
-            b"frontend_domain='test-vm2' _identity='0000:0000::?******'"
+            b"mode='auto-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1'], app=self.app)
@@ -272,27 +283,36 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         """ Test assign as required """
         self.app.domains['test-vm2'].is_running = lambda: True
         self.app.expected_calls[(
-            'test-vm2', 'admin.vm.device.testclass.Assign', 'test-vm1+dev1',
-            b"required='yes' attach_automatically='yes' ident='dev1' "
-            b"devclass='testclass' backend_domain='test-vm1' "
-            b"frontend_domain='test-vm2' _identity='0000:0000::?******'"
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' mode='required' "
+            b"frontend_domain='test-vm2'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', '--required', 'test-vm2', 'test-vm1:dev1'], app=self.app)
         self.assertAllCalled()
 
-    def test_032_assign_options(self):
+    def test_032_assign_ask_and_options(self):
         """ Test `read-only` assign option """
         self.app.domains['test-vm2'].is_running = lambda: True
         self.app.expected_calls[(
-            'test-vm2', 'admin.vm.device.testclass.Assign', 'test-vm1+dev1',
-            b"required='no' attach_automatically='yes' ident='dev1' "
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
             b"devclass='testclass' backend_domain='test-vm1' "
-            b"frontend_domain='test-vm2' _read-only='yes' "
-            b"_identity='0000:0000::?******'")] = b'0\0'
+            b"mode='ask-to-attach' frontend_domain='test-vm2' _read-only='yes'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
             qubesadmin.tools.qvm_device.main(
-                ['testclass', 'assign', '--ro', 'test-vm2', 'test-vm1:dev1'],
+                ['testclass', 'assign', '--ro', '--ask', 'test-vm2',
+                 'test-vm1:dev1'],
                 app=self.app)
             self.assertIn('Assigned.', buf.getvalue())
             self.assertIn('now restart domain', buf.getvalue())
@@ -305,18 +325,19 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'assign', 'test-vm2', 'dev1'],
                     app=self.app)
-            self.assertIn('expected a backend vm & device id',
+            self.assertIn(
+                'expected a backend vm, port id and [optional] device id',
                 stderr.getvalue())
         self.assertAllCalled()
 
     def test_034_assign_invalid_device(self):
         """ Test attach action """
         with qubesadmin.tests.tools.StderrBuffer() as stderr:
-            with self.assertRaises(SystemExit):
-                qubesadmin.tools.qvm_device.main(
+            retcode = qubesadmin.tools.qvm_device.main(
                     ['testclass', 'assign', 'test-vm2', 'test-vm1:invalid'],
                     app=self.app)
-            self.assertIn('doesn\'t expose testclass device', stderr.getvalue())
+            self.assertEqual(retcode, 1)
+            self.assertIn("doesn't expose testclass device", stderr.getvalue())
         self.assertAllCalled()
 
     def test_035_assign_invalid_backend(self):
@@ -326,28 +347,199 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_device.main(
                     ['testclass', 'assign', 'test-vm2', 'no-such-vm:dev3'],
                     app=self.app)
-            self.assertIn('no backend vm', stderr.getvalue())
+            self.assertIn('no such backend vm!', stderr.getvalue())
         self.assertAllCalled()
 
-    def test_040_unassign(self):
+    def test_036_assign_port(self):
+        """ Test assign action """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:*',
+            b"device_id='*' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1', '--port'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_037_assign_port_asterisk(self):
+        """ Test assign action """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:*',
+            b"device_id='*' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1:*'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_038_assign_device_from_port(self):
+        """ Test assign action """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+*:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='*' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1', '--device'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_039_assign_explicit_device(self):
+        """ Test assign action """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:cafe:cafe::0123456u654321',
+            b"device_id='cafe:cafe::0123456u654321' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'assign', 'test-vm2',
+             'test-vm1:dev1:cafe:cafe::0123456u654321'], app=self.app)
+        self.assertAllCalled()
+
+    def test_040_assign_explicit_device_device_id(self):
+        """ Test assign action """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+*:cafe:cafe::0123456u654321',
+            b"device_id='cafe:cafe::0123456u654321' port_id='*' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'assign', 'test-vm2',
+             'test-vm1:dev1:cafe:cafe::0123456u654321', '--device'],
+            app=self.app)
+        self.assertAllCalled()
+
+    @mock.patch("builtins.open", new_callable=mock.mock_open,
+                read_data="test-vm2 u012345, *543210")
+    def test_041_assign_denied_device(self, mock_deny_list):
+        """ Test user warning """
+        self.app.domains['test-vm2'].is_running = lambda: False
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1:dead:beef:babe:u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='ask-to-attach' frontend_domain='test-vm2'"
+        )] = b'0\0'
+        with qubesadmin.tests.tools.StdoutBuffer() as buf:
+            qubesadmin.tools.qvm_device.main(
+                ['testclass', 'assign', '--ask', 'test-vm2', 'test-vm1:dev1'],
+                app=self.app)
+            self.assertIn('Warning:', buf.getvalue())
+        self.assertAllCalled()
+
+    def test_050_unassign(self):
         """ Test unassign action """
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
-             'test-vm1+dev1', None)] = b'0\0'
+             'test-vm1+dev1:dead:beef:babe:u012345', None)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
-            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1'], app=self.app)
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1'],
+            app=self.app)
         self.assertAllCalled()
 
-    def test_041_unassign_unknown(self):
+    def test_051_unassign_unknown(self):
         """ Test unassign action """
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
-             'test-vm1+dev7', None)] = b'0\0'
+             'test-vm1+dev7:0000:0000::?******', None)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
-            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev7'], app=self.app)
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev7'],
+            app=self.app)
         self.assertAllCalled()
 
-    def test_042_unassign_all(self):
+    def test_052_unassign_port(self):
+        """ Test unassign action """
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+dev1:*', None)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1', '--port'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_053_unassign_device_from_port(self):
+        """ Test unassign action """
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+*:dead:beef:babe:u012345', None)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1', '--device'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_054_unassign_explicit_device(self):
+        """ Test unassign action """
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+dev1:dead:beef:babe:u0123456', None)] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2',
+             'test-vm1:dev1:dead:beef:babe:u0123456'], app=self.app)
+        self.assertAllCalled()
+
+    def test_055_unassign_explicit_device_port(self):
+        """ Test unassign action """
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+dev1:*', None)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2',
+             'test-vm1:dev1:dead:beef:babe:u0123456', '--port'], app=self.app)
+        self.assertAllCalled()
+
+    def test_056_unassign_explicit_device_id(self):
+        """ Test unassign action """
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+*:cafe:cafe::0123456u654321', None)] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2',
+             'test-vm1:dev1:cafe:cafe::0123456u654321', '--device'], app=self.app)
+        self.assertAllCalled()
+
+    def test_057_unassign_all(self):
         """ Test unassign action """
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Assigned', None, None)] = \
@@ -355,11 +547,23 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
              b"test-vm1+dev2 devclass='testclass'\n")
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
-             'test-vm1+dev1', None)] = b'0\0'
+             'test-vm1+dev1:*', None)] = b'0\0'
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
-             'test-vm1+dev2', None)] = b'0\0'
+             'test-vm1+dev2:*', None)] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'unassign', 'test-vm2'], app=self.app)
         self.assertAllCalled()
 
+    def test_060_device_info(self):
+        """ Test printing info about device """
+        with qubesadmin.tests.tools.StdoutBuffer() as buf:
+            qubesadmin.tools.qvm_device.main(
+                ['testclass', 'info', 'test-vm1:dev1'],
+                app=self.app)
+            self.assertIn('Multimedia: itl test-device\ndevice ID: dead:beef:babe:u012345',
+                          buf.getvalue())
+        self.assertAllCalled()

@@ -1433,14 +1433,14 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     str(value).encode() if value is not None else b'')] = b'0\0'
 
             for bus, devices in vm['devices'].items():
-                for (backend_domain, ident), options in devices.items():
+                for (backend_domain, port_id), options in devices.items():
                     encoded_options = \
-                        (f"required='yes' attach_automatically='yes' "
-                         f"ident='{ident}' devclass='{bus}' backend_domain='{backend_domain}'"
-                         f" frontend_domain='{name}'".encode())
+                        (f"device_id='*' port_id='{port_id}' devclass='{bus}' "
+                         f"backend_domain='{backend_domain}' mode='required' "
+                         f"frontend_domain='{name}'".encode())
                     self.app.expected_calls[
                         (name, 'admin.vm.device.{}.Assign'.format(bus),
-                        '{}+{}'.format(backend_domain, ident),
+                        '{}+{}:*'.format(backend_domain, port_id),
                         encoded_options)] = b'0\0'
 
             for feature, value in vm['features'].items():

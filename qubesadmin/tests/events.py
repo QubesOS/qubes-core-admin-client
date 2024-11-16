@@ -24,6 +24,9 @@ import socket
 import subprocess
 import qubesadmin.tests
 import unittest
+
+from qubesadmin.device_protocol import VirtualDevice, Port
+
 try:
     # qubesadmin.events require python3, so this tests can also use python3 features
     import asyncio
@@ -257,8 +260,12 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         handler = unittest.mock.Mock()
         self.dispatcher.add_handler('device-attach:test', handler)
         self.dispatcher.handle('test-vm', 'device-attach:test',
-            device='test-vm2:dev', options='{}')
+            device='test-vm2:dev:id', options='{}')
         vm = self.app.domains.get_blind('test-vm')
+        self.app.domains.get_blind('test-vm2').devices = {
+            'test': {'dev': VirtualDevice(
+                Port(self.app.domains.get_blind('test-vm2'),"dev", "test"),
+                device_id="id")}}
         dev = self.app.domains.get_blind('test-vm2').devices['test']['dev']
         handler.assert_called_once_with(vm, 'device-attach:test', device=dev,
             options='{}')

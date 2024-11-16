@@ -445,8 +445,8 @@ class QubesArgumentParser(argparse.ArgumentParser):
             qubesadmin.log.enable()
 
     def print_error(self, *args, **kwargs):
-        ''' Print to ``sys.stderr``'''
-        print(*args, file=sys.stderr, **kwargs)
+        """ Print to ``sys.stderr``"""
+        print("Error:", *args, file=sys.stderr, **kwargs)
 
 
 class SubParsersHelpAction(argparse._HelpAction):
