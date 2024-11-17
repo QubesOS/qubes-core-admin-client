@@ -56,6 +56,10 @@ Options
 
    Determine if (any of given) VM can reach network
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Authors
 -------
 

@@ -80,6 +80,10 @@ Options
 
     Specify the pool to use for the specific volume
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Qube classes
 ------------
 

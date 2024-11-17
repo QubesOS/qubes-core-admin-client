@@ -50,6 +50,10 @@ Options
 
    don't really shutdown or kill the domains; useful with :option:`--wait`
 
+.. option:: --version
+
+   Show program's version number and exit
+
 
 Authors
 -------

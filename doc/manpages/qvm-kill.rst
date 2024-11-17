@@ -32,6 +32,10 @@ Options
 
    decrease verbosity
 
+.. option:: --version
+
+   Show program's version number and exit
+
 
 Authors
 -------
