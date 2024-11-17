@@ -1,3 +1,83 @@
+qubes-core-admin-client (4.3.7-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Allow vm class to be given as positional argument to clone_vm
+
+  [ Ali Mirjamali ]
+  * Ignore invalid GUI related features and options
+  * Avoid spaces in values for `admin.vm.Create` calls
+  * Report XRandR display size for lodpi displays
+
+  [ Piotr Bartman-Szwarc ]
+  * q-dev: port
+  * q-dev: comparison
+  * q-dev: assignment
+  * q-dev: add device_identity to device assignment
+  * q-dev: add ask option
+  * q-dev: backward compatible device_protocol
+  * q-dev: fix qvm-device
+  * q-dev: ask docs
+  * q-dev: add self_identity do device identity
+  * q-dev: refactor device_protocol.py
+  * q-dev: fix event handling
+  * q-dev: unify protocol
+  * q-dev: virtual device
+  * q-dev: device -> devices
+  * q-dev: matches
+  * q-dev: assign only device
+  * q-dev: docs
+  * q-dev: backend_name
+  * q-dev: make devclass required
+  * q-dev: device protocol
+  * q-dev: fixes
+  * q-dev: interface matches
+  * q-dev: assignment.device
+  * q-dev: warn user if assign device against deny list
+  * q-dev: add tests
+  * q-dev: print warning for flags --port and --device
+  * q-dev: fix block auto-attach
+  * q-dev: fix tests and cleanup
+  * q-dev: more elaborated assignment listing
+  * q-dev: update device_protocol.py
+  * q-dev: move deny-list's path constant
+  * q-dev: add more tests
+  * q-dev: Set.assignment
+  * q-dev: remove unused import
+  * q-dev: make pci can be only assigned as required
+  * q-dev: default qubes app
+  * q-dev: Attention -> Warning
+  * q-dev: print "Error:" before error message
+  * q-dev: prettier info output
+  * q-dev: extend backward compatibility of `attach --persistent`
+  * q-dev: fix check if device is attached after assignment
+  * q-dev: filter out not allowed arguments during attach
+  * q-dev: filter out not allowed arguments during detach
+  * q-dev: fix loading devices in event handling
+  * q-dev: fixes of devices assignment fronted
+  * q-dev: fixes corner cases in attach/assign
+  * q-dev: patching up qvm-device info
+  * q-dev: allow mic auto-attachment
+  * q-dev: add flag to device listing
+  * q-dev: ignore mode of currently attached devices
+  * q-dev: allow auto-attach of microphone
+  * q-dev: fix qvm-device
+  * q-dev: fix comparison of Ports
+  * q-dev: minor device_protocol fixes
+  * q-dev: introduce AnyPort
+  * q-dev: add short way to create DeviceAssignment
+  * q-dev: pylint + black
+  * q-dev: prettier device data printing
+  * q-dev: do not suggest attaching pci devices
+  * q-dev: update docs
+  * q-dev: fix default behavior of qvm-device *CLASS*
+  * q-dev: less scary device category names
+  * q-dev: fix tests and pylint
+
+  [ Marek Marczykowski-Górecki ]
+  * rpm: adjust dependencies for new devices API
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 17 Nov 2024 01:50:32 +0100
+
 qubes-core-admin-client (4.3.6-1) unstable; urgency=medium
 
   [ Simon Gaiser ]
