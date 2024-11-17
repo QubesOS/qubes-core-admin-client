@@ -75,6 +75,10 @@ Options
 
    Decrease verbosity.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Commands
 --------
 

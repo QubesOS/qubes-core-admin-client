@@ -68,6 +68,10 @@ Options
 
    Do not ask for confirmation
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Arguments
 ---------
 

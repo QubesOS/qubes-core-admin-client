@@ -76,6 +76,10 @@ Options
 
    Notify running instance in --watch mode about changed monitor layout
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Authors
 -------
 

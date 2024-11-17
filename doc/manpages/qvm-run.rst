@@ -138,6 +138,10 @@ Options
    Treat *COMMAND* as a command to be executed directly, not passed to a
    shell. This is default if there are additional arguments to `qvm-run`.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Authors
 -------
 

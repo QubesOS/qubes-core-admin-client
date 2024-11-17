@@ -188,7 +188,8 @@ class CommandCheckVisitor(docutils.nodes.SparseNodeVisitor):
                     sub_cmd, args, self.document)
                 node.walkabout(options_visitor)
                 options_visitor.check_undocumented_arguments(
-                    {'--help', '--quiet', '--verbose', '-h', '-q', '-v'})
+                    {'--help', '--quiet', '--verbose', '-h', '-q', '-v', \
+                    '--version'})
                 del self.sub_commands[cmd]
             except KeyError:
                 raise sphinx.errors.SphinxError(

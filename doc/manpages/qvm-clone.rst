@@ -51,6 +51,10 @@ Options
 
     Increase verbosity
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Authors
 -------
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>

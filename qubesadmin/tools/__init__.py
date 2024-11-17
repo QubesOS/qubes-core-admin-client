@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import argparse
 import importlib
+import importlib.metadata
 import logging
 import os
 import subprocess
@@ -342,9 +343,14 @@ class QubesArgumentParser(argparse.ArgumentParser):
         ``--force-root`` (optional, ignored, help is suppressed)
         ``--offline-mode`` do not talk to hypervisor (help is suppressed)
         ``--verbose`` and ``--quiet``
+
+    Calling program should set the ``version`` argument for ``--version`` option
+        The default is extracted from `qubesadmin` package information.
+        Setting ``version`` argument to '' will disable ``--version`` option.
     '''
 
-    def __init__(self, vmname_nargs=None, show_forceroot=False, **kwargs):
+    def __init__(self, vmname_nargs=None, show_forceroot=False, version=None, \
+            **kwargs):
 
         super().__init__(add_help=False, **kwargs)
 
@@ -368,6 +374,17 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--help', '-h', action=SubParsersHelpAction,
                           help='show this help message and exit')
+
+        if version is not None:
+            self.version = version
+        else:
+            _metadata_ = importlib.metadata.metadata('qubesadmin')
+            self.version = '{} ({}) {}'.format(os.path.basename(sys.argv[0]), \
+                _metadata_['summary'], _metadata_['version'])
+            self.version += '\nCopyright (C) {}'.format(_metadata_['author'])
+            self.version += '\nLicense: {}'.format(_metadata_['license'])
+        if self.version != '':
+            self.add_argument('--version', action='version')
 
         if self._vmname_nargs in [argparse.ZERO_OR_MORE, argparse.ONE_OR_MORE]:
             vm_name_group = VmNameGroup(self,

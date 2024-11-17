@@ -40,6 +40,10 @@ Options
 
    Exclude the qube from :option:`--all`.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Authors
 -------
 

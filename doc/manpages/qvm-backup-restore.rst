@@ -108,6 +108,10 @@ Options
   on the standard output. The log will be colored red if the standard output is
   a terminal.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>

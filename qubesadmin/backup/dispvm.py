@@ -107,6 +107,7 @@ class RestoreInDisposableVM:
         'auto_close': Option(('--auto-close',), skip),
         # make the verification easier, those don't really matter
         'help': Option(('--help', '-h'), skip),
+        'version': Option(('--version',), skip),
         'force_root': Option(('--force-root',), skip),
     }
 
