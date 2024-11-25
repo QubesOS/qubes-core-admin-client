@@ -77,7 +77,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list'], app=self.app)
             self.assertEqual(
                 [x.rstrip() for x in buf.getvalue().splitlines()],
-                ['test-vm1:dev1  Multimedia: itl test-device',
+                ['test-vm1:dev1  Audio: itl test-device',
                  'test-vm2:dev2  ?******: ? ` test-device']
             )
 
@@ -151,7 +151,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ['testclass', 'list', 'test-vm3'], app=self.app)
             self.assertEqual(
                 buf.getvalue(),
-                'test-vm1:dev1  Multimedia: itl test-device  '
+                'test-vm1:dev1  Audio: itl test-device  '
                 'test-vm3 (attached)\n'
             )
 
@@ -564,6 +564,6 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_device.main(
                 ['testclass', 'info', 'test-vm1:dev1'],
                 app=self.app)
-            self.assertIn('Multimedia: itl test-device\ndevice ID: dead:beef:babe:u012345',
+            self.assertIn('Audio: itl test-device\ndevice ID: dead:beef:babe:u012345',
                           buf.getvalue())
         self.assertAllCalled()
