@@ -1,6 +1,5 @@
 [MASTER]
 persistent=no
-ignore=tests
 extension-pkg-whitelist=lxml.etree
 
 [MESSAGES CONTROL]

@@ -21,6 +21,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=missing-docstring
+
 """ Tests for the `qvm-device` tool. """
 
 import unittest.mock as mock
