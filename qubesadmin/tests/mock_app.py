@@ -648,6 +648,12 @@ class MockQubesComplete(MockQubes):
         # # this system has some reasonable defaults
         self._qubes['dom0'].default_dispvm = "default-dvm"
 
+        self._qubes['test-vm2'] = MockQube(name="test-vm2", qapp=self,
+                                           features={'menu-favorites': ''})
+        self._qubes['dom0'].features['menu-initial-page'] = 'favorites_page'
+        self._qubes['dom0'].features['menu-sort-running'] = '1'
+        self._qubes['dom0'].features['menu-position'] = 'mouse'
+
         self.update_vm_calls()
 
         # also add a bunch of devices
