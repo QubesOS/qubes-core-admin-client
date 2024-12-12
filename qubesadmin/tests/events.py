@@ -23,20 +23,14 @@
 
 import socket
 import subprocess
-import qubesadmin.tests
+import asyncio
 import unittest
+import unittest.mock
 
+import qubesadmin.tests
+import qubesadmin.events
 from qubesadmin.device_protocol import VirtualDevice, Port
 
-try:
-    # qubesadmin.events require python3, so this tests can also use python3 features
-    import asyncio
-    import unittest.mock
-    import qubesadmin.events
-except ImportError:
-    # don't run any tests on python2
-    def load_tests(loader, tests, pattern):
-        return unittest.TestSuite()
 
 class TC_00_Events(qubesadmin.tests.QubesTestCase):
     def setUp(self):

@@ -404,7 +404,7 @@ class TC_10_Rule(qubesadmin.tests.QubesTestCase):
 
 class TC_11_Firewall(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TC_11_Firewall, self).setUp()
+        super().setUp()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=AppVM state=Halted\n'
         self.vm = self.app.domains['test-vm']

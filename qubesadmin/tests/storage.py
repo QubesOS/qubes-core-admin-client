@@ -28,7 +28,7 @@ import qubesadmin.storage
 
 class TestVMVolume(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TestVMVolume, self).setUp()
+        super().setUp()
         self.vol = qubesadmin.storage.Volume(self.app, vm='test-vm',
             vm_name='volname')
         self.pool_vol = qubesadmin.storage.Volume(self.app, pool='test-pool',
@@ -177,7 +177,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
 class TestPoolVolume(TestVMVolume):
     def setUp(self):
-        super(TestPoolVolume, self).setUp()
+        super().setUp()
         self.vol = qubesadmin.storage.Volume(self.app, pool='test-pool',
             vid='some-id')
 

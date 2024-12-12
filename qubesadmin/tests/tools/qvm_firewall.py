@@ -35,7 +35,7 @@ import qubesadmin.tools.qvm_firewall
 
 class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TC_00_RuleAction, self).setUp()
+        super().setUp()
         self.action = qubesadmin.tools.qvm_firewall.RuleAction(
             None, dest='rule')
 
@@ -112,7 +112,7 @@ class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
 
 class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TC_10_qvm_firewall, self).setUp()
+        super().setUp()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=AppVM state=Halted\n'
 

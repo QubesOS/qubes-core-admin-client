@@ -148,7 +148,7 @@ class QubesTest(qubesadmin.app.QubesBase):
     service_calls = None
 
     def __init__(self):
-        super(QubesTest, self).__init__()
+        super().__init__()
         #: expected Admin API calls and saved replies for them
         self.expected_calls = {}
         #: expected qrexec service calls and saved replies for them
@@ -194,7 +194,7 @@ class QubesTest(qubesadmin.app.QubesBase):
 
 class QubesTestCase(unittest.TestCase):
     def setUp(self):
-        super(QubesTestCase, self).setUp()
+        super().setUp()
         self.app = QubesTest()
 
     def assertAllCalled(self):

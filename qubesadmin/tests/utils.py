@@ -26,7 +26,7 @@ import qubesadmin.utils
 
 class TestVMUsage(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TestVMUsage, self).setUp()
+        super().setUp()
 
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \

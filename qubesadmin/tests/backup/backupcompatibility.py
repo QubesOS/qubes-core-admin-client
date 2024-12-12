@@ -799,13 +799,13 @@ class AppProxy(object):
 
 class MockVolume(qubesadmin.storage.Volume):
     def __init__(self, import_data_queue, delay_stream, *args, **kwargs):
-        super(MockVolume, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.app = AppProxy(self.app, import_data_queue,
             delay_stream=delay_stream)
 
 class MockFirewall(qubesadmin.firewall.Firewall):
     def __init__(self, import_data_queue, *args, **kwargs):
-        super(MockFirewall, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.vm.app = AppProxy(self.vm.app, import_data_queue)
 
 
@@ -816,7 +816,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
     storage_pool = None
 
     def tearDown(self):
-        super(TC_10_BackupCompatibility, self).tearDown()
+        super().tearDown()
 
     def create_whitelisted_appmenus(self, filename):
         with open(filename, "w") as f:
@@ -2097,5 +2097,5 @@ class TC_11_BackupCompatibilityIntoLVM(TC_10_BackupCompatibility):
         if options is None:
             options = {}
         options['override_pool'] = self.storage_pool
-        super(TC_11_BackupCompatibilityIntoLVM, self).restore_backup(source,
+        super().restore_backup(source,
             appvm, options, **kwargs)

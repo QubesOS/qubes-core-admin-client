@@ -25,7 +25,7 @@ import qubesadmin.tests
 
 class VMTestCase(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(VMTestCase, self).setUp()
+        super().setUp()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
         self.vm = self.app.domains['test-vm']

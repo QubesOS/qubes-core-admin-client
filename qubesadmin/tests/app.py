@@ -189,14 +189,14 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TC_10_QubesBase, self).setUp()
+        super().setUp()
         self.check_output_patch = mock.patch(
             'subprocess.check_output')
         self.check_output_mock = self.check_output_patch.start()
 
     def tearDown(self):
         self.check_output_patch.stop()
-        super(TC_10_QubesBase, self).tearDown()
+        super().tearDown()
 
     def test_010_new_simple(self):
         self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM', None,
@@ -871,7 +871,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
 
 class TC_20_QubesLocal(unittest.TestCase):
     def setUp(self):
-        super(TC_20_QubesLocal, self).setUp()
+        super().setUp()
         self.socket_dir = tempfile.mkdtemp()
         self.orig_sock = qubesadmin.config.QUBESD_SOCKET
         qubesadmin.config.QUBESD_SOCKET = os.path.join(self.socket_dir, 'sock')
@@ -912,7 +912,7 @@ class TC_20_QubesLocal(unittest.TestCase):
             except OSError:
                 pass
         shutil.rmtree(self.socket_dir)
-        super(TC_20_QubesLocal, self).tearDown()
+        super().tearDown()
 
     def test_000_qubesd_call(self):
         self.listen_and_send(b'0\0')
@@ -1036,7 +1036,7 @@ class TC_20_QubesLocal(unittest.TestCase):
 
 class TC_30_QubesRemote(unittest.TestCase):
     def setUp(self):
-        super(TC_30_QubesRemote, self).setUp()
+        super().setUp()
         self.proc_mock = mock.MagicMock()
         self.proc_mock.configure_mock(**{
             'return_value.returncode': 0,
@@ -1053,7 +1053,7 @@ class TC_30_QubesRemote(unittest.TestCase):
 
     def tearDown(self):
         self.proc_patch.stop()
-        super(TC_30_QubesRemote, self).tearDown()
+        super().tearDown()
 
     def test_000_qubesd_call(self):
         self.set_proc_stdout(b'0\0')

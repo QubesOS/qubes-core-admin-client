@@ -33,7 +33,7 @@ from qubesadmin.exc import QubesException
 
 class QubesLocalMock(qubesadmin.tests.QubesTest):
     def __init__(self):
-        super(QubesLocalMock, self).__init__()
+        super().__init__()
         self.__class__ = qubesadmin.app.QubesLocal
 
     qubesd_call = qubesadmin.tests.QubesTest.qubesd_call
@@ -41,7 +41,7 @@ class QubesLocalMock(qubesadmin.tests.QubesTest):
 
 class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TC_00_qvm_template_postprocess, self).setUp()
+        super().setUp()
         self.source_dir = tempfile.TemporaryDirectory()
 
     def tearDown(self):
@@ -49,7 +49,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             self.source_dir.cleanup()
         except FileNotFoundError:
             pass
-        super(TC_00_qvm_template_postprocess, self).tearDown()
+        super().tearDown()
 
     def test_000_import_root_img_raw(self):
         root_img = os.path.join(self.source_dir.name, 'root.img')

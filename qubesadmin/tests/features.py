@@ -26,7 +26,7 @@ import qubesadmin.tests
 
 class TC_00_Features(qubesadmin.tests.QubesTestCase):
     def setUp(self):
-        super(TC_00_Features, self).setUp()
+        super().setUp()
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=AppVM state=Running\n' \
             b'test-vm2 class=AppVM state=Running\n' \

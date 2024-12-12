@@ -32,12 +32,6 @@ from qubesadmin.backup.dispvm import RestoreInDisposableVM
 
 
 class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
-    def setUp(self):
-        super(TC_00_qvm_backup_restore, self).setUp()
-
-    def tearDown(self):
-        super(TC_00_qvm_backup_restore, self).tearDown()
-
     @mock.patch('qubesadmin.tools.qvm_backup_restore.input', create=True)
     @mock.patch('getpass.getpass')
     @mock.patch('qubesadmin.tools.qvm_backup_restore.BackupRestore')

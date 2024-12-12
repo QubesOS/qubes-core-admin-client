@@ -37,7 +37,7 @@ SIGNATURE_LEN = 512
 class BackupTestCase(qubesadmin.tests.QubesTestCase):
     class BackupErrorHandler(logging.Handler):
         def __init__(self, errors_queue, level=logging.NOTSET):
-            super(BackupTestCase.BackupErrorHandler, self).__init__(level)
+            super().__init__(level)
             self.errors_queue = errors_queue
 
         def emit(self, record):
@@ -45,12 +45,12 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
 
     def make_vm_name(self, name):
         try:
-            return super(BackupTestCase, self).make_vm_name(name)
+            return super().make_vm_name(name)
         except AttributeError:
             return 'test-' + name
 
     def setUp(self):
-        super(BackupTestCase, self).setUp()
+        super().setUp()
         self.error_detected = multiprocessing.Queue()
         self.log = logging.getLogger('qubesadmin.tests.backup')
         self.log.debug("Creating backupvm")
@@ -66,7 +66,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         backup_log.addHandler(self.error_handler)
 
     def tearDown(self):
-        super(BackupTestCase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.backupdir)
 
         backup_log = logging.getLogger('qubes.backup')

@@ -36,7 +36,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         if sys.stdout is not sys.__stdout__ or \
                 sys.stderr is not sys.__stderr__:
             self.skipTest('qvm-run change behavior on redirected stdout/stderr')
-        super(TC_00_qvm_run, self).setUp()
+        super().setUp()
 
     def default_filter_esc(self):
         return os.isatty(sys.stdout.fileno())
