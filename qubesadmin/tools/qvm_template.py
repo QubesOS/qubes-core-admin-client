@@ -581,7 +581,8 @@ def qrexec_repoquery(
                         '%Y-%m-%d %H:%M')
             elif buildtime.isnumeric():
                 # DNF5 provides seconds since epoch
-                buildtime = datetime.datetime.fromtimestamp(int(buildtime))
+                buildtime = datetime.datetime.fromtimestamp(int(buildtime),
+                    tz=datetime.timezone.utc)
             else:
                 raise ValueError
             # XXX: Perhaps whitelist licenses directly?
