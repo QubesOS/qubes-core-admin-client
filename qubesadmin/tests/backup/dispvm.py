@@ -35,9 +35,6 @@ from qubesadmin.backup.dispvm import RestoreInDisposableVM
 
 class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
 
-    def setUp(self):
-        super().setUp()
-
     def test_000_prepare_inner_args(self):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
             b'0\0dom0 class=AdminVM state=Running\n'
@@ -128,6 +125,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
 
     @unittest.mock.patch('subprocess.check_call')
     def test_020_create_dispvm(self, mock_check_call):
+        # pylint: disable=unused-argument
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
             b'0\0dom0 class=AdminVM state=Running\n'
             b'fedora-25 class=TemplateVM state=Halted\n'
@@ -147,7 +145,8 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
              b'True')] =  \
             b'0\0'
         self.app.expected_calls[
-            ('disp-backup-restore', 'admin.vm.feature.Set', 'tag-created-vm-with',
+            ('disp-backup-restore', 'admin.vm.feature.Set',
+             'tag-created-vm-with',
              b'backup-restore-in-progress')] =  \
             b'0\0'
         args = unittest.mock.Mock(appvm='dom0')
@@ -197,7 +196,8 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         self.assertEqual(self.app.service_calls, [
             ('backup-storage', 'qubes.RegisterBackupLocation',
              {'stdin':subprocess.PIPE, 'stdout':subprocess.PIPE}),
-            ('backup-storage', 'qubes.RegisterBackupLocation', b'/backup/path\n'),
+            ('backup-storage', 'qubes.RegisterBackupLocation',
+             b'/backup/path\n'),
         ])
         self.assertAllCalled()
 
@@ -238,7 +238,8 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             ('fedora-25', 'admin.vm.tag.Get', 'backup-restore-in-progress',
              None)] = b'0\x000'
         self.app.expected_calls[
-            ('disp-backup-restore', 'admin.vm.tag.Get', 'backup-restore-in-progress',
+            ('disp-backup-restore', 'admin.vm.tag.Get',
+             'backup-restore-in-progress',
              None)] = b'0\x000'
         self.app.expected_calls[
             ('restored1', 'admin.vm.tag.Get', 'backup-restore-in-progress',
@@ -324,6 +325,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
                     tmp.name):
                 obj.run()
 
+        # pylint: disable=no-member
         for m in methods:
             self.assertEqual(len(getattr(obj, m).mock_calls), 1)
         self.assertEqual(obj.dispvm.mock_calls, [
@@ -361,6 +363,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
                     tmp.name):
                 obj.run()
 
+        # pylint: disable=no-member
         for m in methods:
             self.assertEqual(len(getattr(obj, m).mock_calls), 1)
         self.assertEqual(obj.dispvm.mock_calls, [
@@ -397,6 +400,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
                     tmp.name):
                 with self.assertRaises(qubesadmin.exc.BackupRestoreError):
                     obj.run()
+        # pylint: disable=no-member
         for m in methods:
             self.assertEqual(len(getattr(obj, m).mock_calls), 1)
         self.assertEqual(obj.dispvm.mock_calls, [

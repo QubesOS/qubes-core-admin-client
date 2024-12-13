@@ -20,10 +20,10 @@
 
 # pylint: disable=missing-docstring
 
+from unittest import mock
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_clone
-from unittest import mock
 
 
 class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
@@ -64,10 +64,12 @@ class TC_00_qvm_clone(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=AppVM state=Halted\n' \
             b'test-vm class=AppVM state=Halted\n'
-        qubesadmin.tools.qvm_clone.main(['-P', 'some-pool', 'test-vm', 'new-vm'],
+        qubesadmin.tools.qvm_clone.main(
+            ['-P', 'some-pool', 'test-vm', 'new-vm'],
             app=self.app)
         self.app.clone_vm.assert_called_with(self.app.domains['test-vm'],
-            'new-vm', new_cls=None, pool='some-pool', pools={}, ignore_errors=False)
+            'new-vm', new_cls=None, pool='some-pool', pools={},
+            ignore_errors=False)
         self.assertAllCalled()
 
     def test_005_pools(self):

@@ -260,8 +260,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
             b'0\x00200101010000\n200201010000\n200301010000\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Revert', 'private', b'200301010000')] = \
-            b'0\x00'
+            ('testvm', 'admin.vm.volume.Revert', 'private',
+             b'200301010000')] = b'0\x00'
         self.assertEqual(0,
             qubesadmin.tools.qvm_volume.main(
                 ['revert', 'testvm:private'],
@@ -278,7 +278,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.ListSnapshots', 'private', None)] = \
             b'0\x00200101010000\n200201010000\n200301010000\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.Revert', 'private', b'200301010000')] = \
+            ('testvm', 'admin.vm.volume.Revert', 'private',
+             b'200301010000')] = \
             b'2\x00StoragePoolException\x00\x00Failed to revert volume: ' \
             b'some error\x00'
         with qubesadmin.tests.tools.StderrBuffer() as stderr:
@@ -565,8 +566,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
-            b'0\x00'
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private',
+             b'9\ntest-data')] = b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
             input_file.seek(0)
@@ -584,8 +585,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
-            b'0\x00'
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private',
+             b'9\ntest-data')] =  b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
             input_file.seek(0)
@@ -604,8 +605,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'512\ntest-data')] = \
-            b'0\x00'
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private',
+             b'512\ntest-data')] = b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
             input_file.seek(0)
@@ -631,7 +632,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             input_file.flush()
             self.assertEqual(0,
                 qubesadmin.tools.qvm_volume.main(
-                    ['import', '--no-resize', 'testvm:private', input_file.name],
+                    ['import', '--no-resize', 'testvm:private',
+                     input_file.name],
                     app=self.app))
         self.assertAllCalled()
 
@@ -642,8 +644,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             ('testvm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\n'
         self.app.expected_calls[
-            ('testvm', 'admin.vm.volume.ImportWithSize', 'private', b'9\ntest-data')] = \
-            b'0\x00'
+            ('testvm', 'admin.vm.volume.ImportWithSize', 'private',
+             b'9\ntest-data')] = b'0\x00'
         with tempfile.NamedTemporaryFile() as input_file:
             input_file.write(b'test-data')
             input_file.seek(0)

@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring,line-too-long
 
 import functools
 import os
@@ -316,34 +316,33 @@ global: {
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
-        pidfile = tempfile.NamedTemporaryFile()
-        pidfile.write(b'1234\n')
-        pidfile.flush()
-        self.addCleanup(pidfile.close)
+        with tempfile.NamedTemporaryFile() as pidfile:
+            pidfile.write(b'1234\n')
+            pidfile.flush()
 
-        patch_proc = unittest.mock.patch('asyncio.create_subprocess_exec')
-        patch_monitor_layout = unittest.mock.patch.object(
-            qubesadmin.tools.qvm_start_daemon,
-            'get_monitor_layout',
-            unittest.mock.Mock(return_value=['1600 900 0 0\n']))
-        patch_args = unittest.mock.patch.object(self.launcher,
-                                                'common_guid_args',
-                                                lambda vm: [])
-        patch_pidfile = unittest.mock.patch.object(self.launcher,
-                                                   'guid_pidfile',
-                                                   lambda vm: pidfile.name)
-        try:
-            mock_proc = patch_proc.start()
-            patch_args.start()
-            patch_pidfile.start()
-            patch_monitor_layout.start()
-            loop.run_until_complete(self.launcher.start_gui_for_vm(
-                self.app.domains['test-vm']))
-            # common arguments dropped for simplicity
-            mock_proc.assert_called_once_with(
-                '-d', '3000', '-n', '-K', '1234')
-        finally:
-            unittest.mock.patch.stopall()
+            patch_proc = unittest.mock.patch('asyncio.create_subprocess_exec')
+            patch_monitor_layout = unittest.mock.patch.object(
+                qubesadmin.tools.qvm_start_daemon,
+                'get_monitor_layout',
+                unittest.mock.Mock(return_value=['1600 900 0 0\n']))
+            patch_args = unittest.mock.patch.object(self.launcher,
+                                                    'common_guid_args',
+                                                    lambda vm: [])
+            patch_pidfile = unittest.mock.patch.object(self.launcher,
+                                                       'guid_pidfile',
+                                                       lambda vm: pidfile.name)
+            try:
+                mock_proc = patch_proc.start()
+                patch_args.start()
+                patch_pidfile.start()
+                patch_monitor_layout.start()
+                loop.run_until_complete(self.launcher.start_gui_for_vm(
+                    self.app.domains['test-vm']))
+                # common arguments dropped for simplicity
+                mock_proc.assert_called_once_with(
+                    '-d', '3000', '-n', '-K', '1234')
+            finally:
+                unittest.mock.patch.stopall()
 
         self.assertAllCalled()
 
@@ -444,6 +443,7 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
             b'0\x00default=False type=vm gui-vm'
 
+        # pylint: disable=protected-access
         self.app._local_name = 'gui-vm'
         vm = self.app.domains['test-vm']
         mock_start_vm = unittest.mock.Mock()
@@ -731,6 +731,7 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('test-vm4', 'admin.vm.property.Get', 'guivm', None)] = \
             b'0\x00default=False type=vm gui-vm'
 
+        # pylint: disable=protected-access
         self.app._local_name = 'gui-vm'
 
         vm = self.app.domains['test-vm']

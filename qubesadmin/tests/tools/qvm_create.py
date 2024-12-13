@@ -104,16 +104,16 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             root_file.file.flush()
             self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
                 None, b'name=new-vm label=red')] = b'0\x00'
-            self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
-                b'0\x00red\nblue\n'
+            self.app.expected_calls[('dom0', 'admin.label.List', None,
+                None)] = b'0\x00red\nblue\n'
             self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
                 b'0\x00new-vm class=AppVM state=Halted\n'
             self.app.expected_calls[
                 ('new-vm', 'admin.vm.volume.List', None, None)] = \
                 b'0\x00root\nprivate\nvolatile\nkernel\n'
             self.app.expected_calls[
-                ('new-vm', 'admin.vm.volume.ImportWithSize', 'root', b'9\nroot data')] = \
-                b'0\0'
+                ('new-vm', 'admin.vm.volume.ImportWithSize', 'root',
+                 b'9\nroot data')] = b'0\0'
             qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                 '--root-copy-from=' + root_file.name, 'new-vm'],
                 app=self.app)
@@ -126,16 +126,16 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             root_file.file.flush()
             self.app.expected_calls[('dom0', 'admin.vm.Create.StandaloneVM',
                 None, b'name=new-vm label=red')] = b'0\x00'
-            self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = \
-                b'0\x00red\nblue\n'
+            self.app.expected_calls[('dom0', 'admin.label.List', None,
+                None)] = b'0\x00red\nblue\n'
             self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
                 b'0\x00new-vm class=AppVM state=Halted\n'
             self.app.expected_calls[
                 ('new-vm', 'admin.vm.volume.List', None, None)] = \
                 b'0\x00root\nprivate\nvolatile\nkernel\n'
             self.app.expected_calls[
-                ('new-vm', 'admin.vm.volume.ImportWithSize', 'root', b'9\nroot data')] = \
-                b'0\0'
+                ('new-vm', 'admin.vm.volume.ImportWithSize', 'root',
+                 b'9\nroot data')] = b'0\0'
             qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
                 '--root-move-from=' + root_file.name, 'new-vm'],
                 app=self.app)
@@ -147,7 +147,8 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             root_file.file.write(b'root data')
             root_file.file.flush()
             with self.assertRaises(SystemExit):
-                qubesadmin.tools.qvm_create.main(['-l', 'red', '-C', 'StandaloneVM',
+                qubesadmin.tools.qvm_create.main(['-l', 'red',
+                    '-C', 'StandaloneVM',
                     '--root-copy-from=' + root_file.name,
                     '--root-move-from=' + root_file.name,
                     'new-vm'],
@@ -310,7 +311,8 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             b'0\x00red\nblue\n'
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00new-vm class=StandaloneVM state=Halted\n'
-        qubesadmin.tools.qvm_create.main(['-l', 'red', '--standalone', 'new-vm'],
+        qubesadmin.tools.qvm_create.main(
+            ['-l', 'red', '--standalone', 'new-vm'],
             app=self.app)
         self.assertAllCalled()
 

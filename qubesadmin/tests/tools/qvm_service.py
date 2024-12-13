@@ -202,5 +202,5 @@ class TC_00_qvm_service(qubesadmin.tests.QubesTestCase):
         with self.assertRaises(SystemExit):
             qubesadmin.tools.qvm_service.main(
                 ['some-vm', 'service1', 'invalid-value'],
-                app=self.app),
+                app=self.app)
         self.assertAllCalled()

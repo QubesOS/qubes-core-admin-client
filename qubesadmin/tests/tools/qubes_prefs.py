@@ -35,7 +35,8 @@ class TC_00_qubes_prefs(qubesadmin.tests.QubesTestCase):
             b'0\x00prop1 default=True type=str value1\n' \
             b'prop2 default=False type=str value2\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            self.assertEqual(0, qubesadmin.tools.qubes_prefs.main([], app=self.app))
+            self.assertEqual(0, qubesadmin.tools.qubes_prefs.main(
+                [], app=self.app))
         self.assertEqual(stdout.getvalue(),
             'prop1  D  value1\n'
             'prop2  -  value2\n')

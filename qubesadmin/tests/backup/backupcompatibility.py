@@ -2,7 +2,8 @@
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
-# Copyright (C) 2014 Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+# Copyright (C) 2014 Marek Marczykowski-Górecki
+#                                   <marmarek@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -16,7 +17,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+# USA.
 #
 
 # pylint: disable=missing-docstring
@@ -25,27 +27,22 @@ import functools
 import shutil
 import tempfile
 import unittest
-from distutils import spawn
-from multiprocessing import Queue
 
 import os
 import subprocess
-
-import logging
 
 import time
 
 import contextlib
 
 try:
-    import unittest.mock as mock
+    from unittest import mock
 except ImportError:
     import mock
 import re
 
 import multiprocessing
 import importlib.resources
-import sys
 
 import qubesadmin.backup.core2
 import qubesadmin.backup.core3
@@ -762,7 +759,8 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
         self.assertEqual(backup_app.globals, expected_data['globals'])
 
     def test_000_qubes_xml_r2(self):
-        xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-qubes.xml"
+        xml_path = importlib.resources.files("qubesadmin") / \
+            "tests/backup/v3-qubes.xml"
         with tempfile.NamedTemporaryFile() as qubes_xml:
             qubes_xml.file.write(xml_path.read_bytes())
             backup_app = qubesadmin.backup.core2.Core2Qubes(qubes_xml.name)
@@ -770,7 +768,8 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
 
     def test_010_qubes_xml_r4(self):
         self.maxDiff = None
-        xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-qubes.xml"
+        xml_path = importlib.resources.files("qubesadmin") / \
+            "tests/backup/v4-qubes.xml"
         with tempfile.NamedTemporaryFile() as qubes_xml:
             qubes_xml.file.write(xml_path.read_bytes())
             backup_app = qubesadmin.backup.core3.Core3Qubes(qubes_xml.name)
@@ -815,21 +814,21 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
     storage_pool = None
 
-    def tearDown(self):
-        super().tearDown()
-
     def create_whitelisted_appmenus(self, filename):
-        with open(filename, "w") as f:
-            f.write("gnome-terminal.desktop\n")
-            f.write("nautilus.desktop\n")
-            f.write("firefox.desktop\n")
-            f.write("mozilla-thunderbird.desktop\n")
-            f.write("libreoffice-startcenter.desktop\n")
+        with open(filename, "w", encoding="utf-8") as f_list:
+            f_list.write("gnome-terminal.desktop\n")
+            f_list.write("nautilus.desktop\n")
+            f_list.write("firefox.desktop\n")
+            f_list.write("mozilla-thunderbird.desktop\n")
+            f_list.write("libreoffice-startcenter.desktop\n")
 
-    def create_appmenus(self, dir, template, list):
-        for name in list:
-            with open(os.path.join(dir, name + ".desktop"), "w") as f:
-                f.write(template.format(name=name, comment=name, command=name))
+    def create_appmenus(self, dirname, template, flist):
+        for name in flist:
+            fname = os.path.join(dirname, name + ".desktop")
+            with open(fname, "w", encoding="utf-8") as f_list:
+                f_list.write(template.format(name=name,
+                                             comment=name,
+                                             command=name))
 
     def create_private_img(self, filename, sparse=True):
         signature = '/'.join(os.path.splitext(filename)[0].split('/')[-2:])
@@ -846,15 +845,15 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # but since sfdisk folks like to change command arguments in
         # incompatible way, have an partition table verbatim here
         ptable = (
-            '\x00\x00\x00\x00\x00\x00\x00\x00\xab\x39\xd5\xd4\x00\x00\x20\x00'
-            '\x00\x21\xaa\x82\x82\x28\x08\x00\x00\x00\x00\x00\x00\x20\xaa\x00'
-            '\x82\x29\x15\x83\x9c\x79\x08\x00\x00\x20\x00\x00\x01\x40\x00\x00'
-            '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\x55'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\xab\x39\xd5\xd4\x00\x00\x20\x00'
+            b'\x00\x21\xaa\x82\x82\x28\x08\x00\x00\x00\x00\x00\x00\x20\xaa\x00'
+            b'\x82\x29\x15\x83\x9c\x79\x08\x00\x00\x20\x00\x00\x01\x40\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\x55'
         )
-        with open(filename, 'r+') as f:
-            f.seek(0x1b0)
-            f.write(ptable)
+        with open(filename, 'rb+') as f_img:
+            f_img.seek(0x1b0)
+            f_img.write(ptable)
 
         # TODO: mkswap
 
@@ -879,9 +878,10 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         os.symlink("/usr/share/qubes/icons/green.png",
                    self.fullpath("appvms/test-work/icon.png"))
         self.create_private_img(self.fullpath("appvms/test-work/private.img"))
-        with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
-                f_firewall:
-            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-firewall.xml"
+        with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") \
+                as f_firewall:
+            xml_path = importlib.resources.files("qubesadmin") / \
+                "tests/backup/v3-firewall.xml"
             f_firewall.write(xml_path.read_bytes())
 
         # StandaloneVM
@@ -994,11 +994,12 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # dom0 files
         os.mkdir(self.fullpath('dom0-home'))
         os.mkdir(self.fullpath('dom0-home/user'))
-        for d in self.dom0_dirs:
-            os.mkdir(self.fullpath('dom0-home/user/' + d))
-        for f in self.dom0_files:
-            with open(self.fullpath('dom0-home/user/' + f), 'w') as ff:
-                ff.write('some content')
+        for dom0_dir in self.dom0_dirs:
+            os.mkdir(self.fullpath('dom0-home/user/' + dom0_dir))
+        for dom0_fname in self.dom0_files:
+            with open(self.fullpath('dom0-home/user/' + dom0_fname), 'w',
+                      encoding="utf-8") as dom0_f:
+                dom0_f.write('some content')
 
     def assertDirectoryExists(self, path):
         if not os.path.exists(path):
@@ -1016,10 +1017,10 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         expected_dir = os.path.expanduser(
             '~/home-restore-' + timestamp + '/dom0-home/user')
         self.assertTrue(os.path.exists(expected_dir))
-        for d in self.dom0_dirs:
-            self.assertDirectoryExists(os.path.join(expected_dir, d))
-        for f in self.dom0_files:
-            self.assertFileExists(os.path.join(expected_dir, f))
+        for dom0_dir in self.dom0_dirs:
+            self.assertDirectoryExists(os.path.join(expected_dir, dom0_dir))
+        for dom0_fname in self.dom0_files:
+            self.assertFileExists(os.path.join(expected_dir, dom0_fname))
         # cleanup
         shutil.rmtree(expected_dir)
 
@@ -1039,13 +1040,14 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             os.mkdir(self.fullpath('appvms/{}'.format(vm)))
             self.create_whitelisted_appmenus(self.fullpath(
                 'appvms/{}/whitelisted-appmenus.list'.format(vm)))
-            self.create_private_img(self.fullpath('appvms/{}/private.img'.format(
-                vm)))
+            self.create_private_img(self.fullpath(
+                'appvms/{}/private.img'.format(vm)))
 
         # setup firewall only on one VM
-        with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") as \
-                f_firewall:
-            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-firewall.xml"
+        with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") \
+                  as f_firewall:
+            xml_path = importlib.resources.files("qubesadmin") / \
+                "tests/backup/v4-firewall.xml"
             f_firewall.write(xml_path.read_bytes())
 
         # StandaloneVMs
@@ -1109,16 +1111,18 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             scrypt_pass = 'backup-header!' + password
         else:
             scrypt_pass = '20161020T123455-1234!{}!{}'.format(f_name, password)
-        p = subprocess.Popen(['scrypt', 'enc', '-P', '-t', '0.1',
-            os.path.join(basedir, f_name), os.path.join(basedir, output_name)],
-            stdin=subprocess.PIPE)
-        p.communicate(scrypt_pass.encode())
-        assert p.wait() == 0
+        with subprocess.Popen(['scrypt', 'enc', '-P', '-t', '0.1',
+                os.path.join(basedir, f_name),
+                os.path.join(basedir, output_name)],
+                stdin=subprocess.PIPE) as scrypt_p:
+            scrypt_p.communicate(scrypt_pass.encode())
+        assert scrypt_p.wait() == 0
         return output_name
 
     def calculate_hmac(self, f_name, algorithm="sha512", password="qubes"):
-        with open(self.fullpath(f_name), "r") as f_data:
-            with open(self.fullpath(f_name+".hmac"), "w") as f_hmac:
+        with open(self.fullpath(f_name), "r", encoding="utf-8") as f_data:
+            with open(self.fullpath(f_name+".hmac"), "w",
+                      encoding="utf-8") as f_hmac:
                 subprocess.check_call(
                     ["openssl", "dgst", "-"+algorithm, "-hmac", password],
                     stdin=f_data, stdout=f_hmac)
@@ -1142,32 +1146,32 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                ]
         if compressed:
             tar_cmdline.insert(-1, "--use-compress-program=%s" % "gzip")
-        tar = subprocess.Popen(tar_cmdline, stdout=subprocess.PIPE)
-        if encrypted:
-            encryptor = subprocess.Popen(
-                ["openssl", "enc", "-e", "-aes-256-cbc",
-                 "-md", "MD5", "-pass", "pass:qubes"],
-                stdin=tar.stdout,
-                stdout=subprocess.PIPE)
-            tar.stdout.close()
-            data = encryptor.stdout
-        else:
-            data = tar.stdout
-            encryptor = None
+        with subprocess.Popen(tar_cmdline, stdout=subprocess.PIPE) as tar:
+            if encrypted:
+                # pylint: disable=consider-using-with
+                encryptor = subprocess.Popen(
+                    ["openssl", "enc", "-e", "-aes-256-cbc",
+                     "-md", "MD5", "-pass", "pass:qubes"],
+                    stdin=tar.stdout,
+                    stdout=subprocess.PIPE)
+                tar.stdout.close()
+                data = encryptor.stdout
+            else:
+                data = tar.stdout
+                encryptor = None
 
-        stage1_dir = self.fullpath(os.path.join("stage1", subdir))
-        if not os.path.exists(stage1_dir):
-            os.makedirs(stage1_dir)
-        subprocess.check_call(["split", "--numeric-suffixes",
-                               "--suffix-length=3",
-                               "--bytes="+str(100*1024*1024), "-",
-                               os.path.join(stage1_dir,
-                                            os.path.basename(f_name+"."))],
-                              stdin=data)
-        data.close()
-        tar.wait()
-        if encryptor:
-            encryptor.wait()
+            stage1_dir = self.fullpath(os.path.join("stage1", subdir))
+            if not os.path.exists(stage1_dir):
+                os.makedirs(stage1_dir)
+            subprocess.check_call(["split", "--numeric-suffixes",
+                                   "--suffix-length=3",
+                                   "--bytes="+str(100*1024*1024), "-",
+                                   os.path.join(stage1_dir,
+                                                os.path.basename(f_name+"."))],
+                                  stdin=data)
+            data.close()
+            if encryptor:
+                encryptor.wait()
 
         for part in sorted(os.listdir(stage1_dir)):
             if not re.match(
@@ -1194,20 +1198,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             tar_cmdline.insert(-1, "--use-compress-program=%s" % compressed)
         elif compressed:
             tar_cmdline.insert(-1, "--use-compress-program=%s" % "gzip")
-        tar = subprocess.Popen(tar_cmdline, stdout=subprocess.PIPE)
-        data = tar.stdout
+        with subprocess.Popen(tar_cmdline, stdout=subprocess.PIPE) as tar:
+            data = tar.stdout
 
-        stage1_dir = self.fullpath(os.path.join("stage1", subdir))
-        if not os.path.exists(stage1_dir):
-            os.makedirs(stage1_dir)
-        subprocess.check_call(["split", "--numeric-suffixes",
-                               "--suffix-length=3",
-                               "--bytes="+str(100*1024*1024), "-",
-                               os.path.join(stage1_dir,
-                                            os.path.basename(f_name+"."))],
-                              stdin=data)
-        data.close()
-        tar.wait()
+            stage1_dir = self.fullpath(os.path.join("stage1", subdir))
+            if not os.path.exists(stage1_dir):
+                os.makedirs(stage1_dir)
+            subprocess.check_call(["split", "--numeric-suffixes",
+                                   "--suffix-length=3",
+                                   "--bytes="+str(100*1024*1024), "-",
+                                   os.path.join(stage1_dir,
+                                                os.path.basename(f_name+"."))],
+                                  stdin=data)
+            data.close()
 
         for part in sorted(os.listdir(stage1_dir)):
             if not re.match(
@@ -1228,64 +1231,65 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         :param compressed: Should the backup be compressed
         :return:
         """
-        output = open(self.fullpath("backup.bin"), "w")
-        with open(self.fullpath("backup-header"), "w") as f:
-            f.write(BACKUP_HEADER_R2.format(
-                encrypted=str(encrypted),
-                compressed=str(compressed)
-            ))
-        self.calculate_hmac("backup-header")
-        self.append_backup_stream("backup-header", output)
-        self.append_backup_stream("backup-header.hmac", output)
-        with open(self.fullpath("qubes.xml"), "wb") as f:
-            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-qubes.xml"
+        with open(self.fullpath("backup.bin"), "w", encoding="utf-8") as output:
+            with open(self.fullpath("backup-header"), "w",
+                      encoding="utf-8") as f_hdr:
+                f_hdr.write(BACKUP_HEADER_R2.format(
+                    encrypted=str(encrypted),
+                    compressed=str(compressed)
+                ))
+            self.calculate_hmac("backup-header")
+            self.append_backup_stream("backup-header", output)
+            self.append_backup_stream("backup-header.hmac", output)
+            with open(self.fullpath("qubes.xml"), "wb") \
+                      as f_qubesxml:
+                xml_path = importlib.resources.files("qubesadmin") / \
+                    "tests/backup/v3-qubes.xml"
 
-            qubesxml = xml_path.read_bytes()
-            if encrypted:
-                for vmname, subdir in MANGLED_SUBDIRS_R2.items():
-                    qubesxml = re.sub(r"[a-z-]*/{}".format(vmname).encode(),
-                                      subdir.encode(), qubesxml)
-                f.write(qubesxml)
-            else:
-                f.write(qubesxml)
+                qubesxml = xml_path.read_bytes()
+                if encrypted:
+                    for vmname, subdir in MANGLED_SUBDIRS_R2.items():
+                        qubesxml = re.sub(r"[a-z-]*/{}".format(vmname).encode(),
+                                          subdir.encode(), qubesxml)
+                    f_qubesxml.write(qubesxml)
+                else:
+                    f_qubesxml.write(qubesxml)
 
-        self.handle_v3_file("qubes.xml", "", output, encrypted=encrypted,
-                            compressed=compressed)
+            self.handle_v3_file("qubes.xml", "", output, encrypted=encrypted,
+                                compressed=compressed)
 
-        self.create_v1_files(r2b2=True)
-        for vm_type in ["appvms", "servicevms"]:
-            for vm_name in os.listdir(self.fullpath(vm_type)):
-                vm_dir = os.path.join(vm_type, vm_name)
-                for f_name in os.listdir(self.fullpath(vm_dir)):
-                    if encrypted:
-                        subdir = MANGLED_SUBDIRS_R2[vm_name]
-                    else:
-                        subdir = vm_dir
-                    self.handle_v3_file(
-                        os.path.join(vm_dir, f_name),
-                        subdir+'/', output,
-                        compressed=compressed,
-                        encrypted=encrypted)
+            self.create_v1_files(r2b2=True)
+            for vm_type in ["appvms", "servicevms"]:
+                for vm_name in os.listdir(self.fullpath(vm_type)):
+                    vm_dir = os.path.join(vm_type, vm_name)
+                    for f_name in os.listdir(self.fullpath(vm_dir)):
+                        if encrypted:
+                            subdir = MANGLED_SUBDIRS_R2[vm_name]
+                        else:
+                            subdir = vm_dir
+                        self.handle_v3_file(
+                            os.path.join(vm_dir, f_name),
+                            subdir+'/', output,
+                            compressed=compressed,
+                            encrypted=encrypted)
 
-        for vm_name in os.listdir(self.fullpath("vm-templates")):
-            vm_dir = os.path.join("vm-templates", vm_name)
-            if encrypted:
-                subdir = MANGLED_SUBDIRS_R2[vm_name]
-            else:
-                subdir = vm_dir
+            for vm_name in os.listdir(self.fullpath("vm-templates")):
+                vm_dir = os.path.join("vm-templates", vm_name)
+                if encrypted:
+                    subdir = MANGLED_SUBDIRS_R2[vm_name]
+                else:
+                    subdir = vm_dir
+                self.handle_v3_file(
+                    os.path.join(vm_dir, "."),
+                    subdir+'/', output,
+                    compressed=compressed,
+                    encrypted=encrypted)
+
             self.handle_v3_file(
-                os.path.join(vm_dir, "."),
-                subdir+'/', output,
+                'dom0-home/user',
+                'dom0-home/', output,
                 compressed=compressed,
                 encrypted=encrypted)
-
-        self.handle_v3_file(
-            'dom0-home/user',
-            'dom0-home/', output,
-            compressed=compressed,
-            encrypted=encrypted)
-
-        output.close()
 
     def create_v4_backup(self, compressed="gzip", big=False):
         """
@@ -1295,50 +1299,51 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         :param big: Should the backup include big(ish) VM?
         :return:
         """
-        output = open(self.fullpath("backup.bin"), "w")
-        with open(self.fullpath("backup-header"), "w") as f:
-            f.write(BACKUP_HEADER_R4.format(
-                compressed=str(bool(compressed)),
-                compression_filter=(compressed if compressed else "gzip")
-            ))
-        self.scrypt_encrypt("backup-header", output_name='backup-header.hmac')
-        self.append_backup_stream("backup-header", output)
-        self.append_backup_stream("backup-header.hmac", output)
-        with open(self.fullpath("qubes.xml"), "wb") as f:
-            xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-qubes.xml"
+        with open(self.fullpath("backup.bin"), "w", encoding="utf-8") as output:
+            with open(self.fullpath("backup-header"), "w",
+                      encoding="utf-8") as f_hdr:
+                f_hdr.write(BACKUP_HEADER_R4.format(
+                    compressed=str(bool(compressed)),
+                    compression_filter=(compressed if compressed else "gzip")
+                ))
+            self.scrypt_encrypt("backup-header",
+                                output_name='backup-header.hmac')
+            self.append_backup_stream("backup-header", output)
+            self.append_backup_stream("backup-header.hmac", output)
+            with open(self.fullpath("qubes.xml"), "wb") as f_qubesxml:
+                xml_path = importlib.resources.files("qubesadmin") / \
+                    "tests/backup/v4-qubes.xml"
 
-            qubesxml = xml_path.read_bytes()
-            for vmname, subdir in MANGLED_SUBDIRS_R4.items():
-                qubesxml = re.sub(
-                    r'backup-path">[a-z-]*/{}'.format(vmname).encode(),
-                    ('backup-path">' + subdir).encode(),
-                    qubesxml)
-            f.write(qubesxml)
+                qubesxml = xml_path.read_bytes()
+                for vmname, subdir in MANGLED_SUBDIRS_R4.items():
+                    qubesxml = re.sub(
+                        r'backup-path">[a-z-]*/{}'.format(vmname).encode(),
+                        ('backup-path">' + subdir).encode(),
+                        qubesxml)
+                f_qubesxml.write(qubesxml)
 
-        self.handle_v4_file("qubes.xml", "", output, compressed=compressed)
+            self.handle_v4_file("qubes.xml", "", output, compressed=compressed)
 
-        self.create_v4_files()
-        if big:
-            # make one AppVM non-sparse
-            self.create_private_img(
-                self.fullpath('appvms/test-work/private.img'),
-                sparse=False)
+            self.create_v4_files()
+            if big:
+                # make one AppVM non-sparse
+                self.create_private_img(
+                    self.fullpath('appvms/test-work/private.img'),
+                    sparse=False)
 
-        for vm_type in ["appvms", "vm-templates"]:
-            for vm_name in os.listdir(self.fullpath(vm_type)):
-                vm_dir = os.path.join(vm_type, vm_name)
-                for f_name in os.listdir(self.fullpath(vm_dir)):
-                    subdir = MANGLED_SUBDIRS_R4[vm_name]
-                    self.handle_v4_file(
-                        os.path.join(vm_dir, f_name),
-                        subdir+'/', output, compressed=compressed)
+            for vm_type in ["appvms", "vm-templates"]:
+                for vm_name in os.listdir(self.fullpath(vm_type)):
+                    vm_dir = os.path.join(vm_type, vm_name)
+                    for f_name in os.listdir(self.fullpath(vm_dir)):
+                        subdir = MANGLED_SUBDIRS_R4[vm_name]
+                        self.handle_v4_file(
+                            os.path.join(vm_dir, f_name),
+                            subdir+'/', output, compressed=compressed)
 
-        self.handle_v4_file(
-            'dom0-home/user',
-            'dom0-home/', output,
-            compressed=compressed)
-
-        output.close()
+            self.handle_v4_file(
+                'dom0-home/user',
+                'dom0-home/', output,
+                compressed=compressed)
 
     def setup_expected_calls(self, parsed_qubes_xml, templates_map=None):
         if templates_map is None:
@@ -1436,7 +1441,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     str(value).encode() if value is not None else b'')] = b'0\0'
 
             for bus, devices in vm['devices'].items():
-                for (backend_domain, port_id), options in devices.items():
+                for (backend_domain, port_id), _ in devices.items():
                     encoded_options = \
                         (f"device_id='*' port_id='{port_id}' devclass='{bus}' "
                          f"backend_domain='{backend_domain}' mode='required' "
@@ -1491,11 +1496,13 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         tmpdir.cleanup()
 
     def create_limited_tmpdir(self, size):
-        d = tempfile.TemporaryDirectory()
-        subprocess.run(['sudo', 'mount', '-t', 'tmpfs', 'none', d.name, '-o',
-                        'size={}'.format(size)], check=True)
-        self.addCleanup(self.cleanup_tmpdir, d)
-        return d.name
+        # pylint: disable=consider-using-with
+        tmpdir = tempfile.TemporaryDirectory()
+        subprocess.run(['sudo', 'mount', '-t', 'tmpfs', 'none',
+                        tmpdir.name, '-o', 'size={}'.format(size)],
+                       check=True)
+        self.addCleanup(self.cleanup_tmpdir, tmpdir)
+        return tmpdir.name
 
     def test_210_r2(self):
         self.create_v3_backup(False)
@@ -1516,7 +1523,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             'action=accept proto=tcp dstports=22-22\n'
             'action=accept proto=tcp dstports=9418-9418\n'
             'action=accept proto=tcp dst4=192.168.0.1/32 dstports=1234-1234\n'
-            'action=accept proto=tcp dsthost=fedorahosted.org dstports=443-443\n'
+            'action=accept proto=tcp dsthost=fedorahosted.org '
+            'dstports=443-443\n'
             'action=accept proto=tcp dsthost=xenbits.xen.org dstports=80-80\n'
             'action=drop\n'
         )
@@ -1583,7 +1591,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             'action=accept proto=tcp dstports=22-22\n'
             'action=accept proto=tcp dstports=9418-9418\n'
             'action=accept proto=tcp dst4=192.168.0.1/32 dstports=1234-1234\n'
-            'action=accept proto=tcp dsthost=fedorahosted.org dstports=443-443\n'
+            'action=accept proto=tcp dsthost=fedorahosted.org '
+            'dstports=443-443\n'
             'action=accept proto=tcp dsthost=xenbits.xen.org dstports=80-80\n'
             'action=drop\n'
         )
@@ -1650,7 +1659,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             'action=accept proto=tcp dstports=22-22\n'
             'action=accept proto=tcp dstports=9418-9418\n'
             'action=accept proto=tcp dst4=192.168.0.1/32 dstports=1234-1234\n'
-            'action=accept proto=tcp dsthost=fedorahosted.org dstports=443-443\n'
+            'action=accept proto=tcp dsthost=fedorahosted.org '
+            'dstports=443-443\n'
             'action=accept proto=tcp dsthost=xenbits.xen.org dstports=80-80\n'
             'action=drop\n'
         )
@@ -1698,7 +1708,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
-    @unittest.skipUnless(spawn.find_executable('scrypt'),
+    @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_230_r4(self):
         self.create_v4_backup("")
@@ -1768,7 +1778,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
-    @unittest.skipUnless(spawn.find_executable('scrypt'),
+    @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_230_r4_compressed(self):
         self.create_v4_backup("gzip")
@@ -1839,7 +1849,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
-    @unittest.skipUnless(spawn.find_executable('scrypt'),
+    @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_230_r4_custom_cmpression(self):
         self.create_v4_backup("bzip2")
@@ -1910,7 +1920,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
-    @unittest.skipUnless(spawn.find_executable('scrypt'),
+    @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_230_r4_uncommon_compression(self):
         self.create_v4_backup("less")
@@ -1941,7 +1951,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             for patch in patches:
                 patch.stop()
 
-    @unittest.skipUnless(spawn.find_executable('scrypt'),
+    @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_230_r4_uncommon_cmpression_forced(self):
         self.create_v4_backup("less")
@@ -2012,7 +2022,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
-    @unittest.skipUnless(spawn.find_executable('scrypt'),
+    @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_300_r4_no_space(self):
         self.create_v4_backup("", big=True)
@@ -2094,6 +2104,7 @@ class TC_11_BackupCompatibilityIntoLVM(TC_10_BackupCompatibility):
 
     def restore_backup(self, source=None, appvm=None, options=None,
             **kwargs):
+        # pylint: disable=arguments-differ
         if options is None:
             options = {}
         options['override_pool'] = self.storage_pool

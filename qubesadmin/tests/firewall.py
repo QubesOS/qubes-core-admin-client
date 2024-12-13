@@ -32,6 +32,10 @@ class TestOption(qubesadmin.firewall.RuleChoice):
     opt2 = 'opt2'
     another = 'another'
 
+    @property
+    def rule(self):
+        return ''
+
 
 # noinspection PyPep8Naming
 class TC_00_RuleChoice(qubesadmin.tests.QubesTestCase):

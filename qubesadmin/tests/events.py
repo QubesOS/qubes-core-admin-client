@@ -115,7 +115,7 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         stream = asyncio.StreamReader()
         cleanup_func = unittest.mock.Mock()
         self.dispatcher._get_events_reader = \
-            lambda vm: self.mock_get_events_reader(stream, cleanup_func,
+            lambda vm=None: self.mock_get_events_reader(stream, cleanup_func,
                 None, vm)
         handler = unittest.mock.Mock()
         self.dispatcher.add_handler('some-event', handler)

@@ -18,14 +18,14 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring,protected-access
 
 import itertools
+from unittest import mock
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_backup_restore
-from unittest import mock
 from qubesadmin.backup import BackupVM
 from qubesadmin.backup.restore import BackupRestore
 from qubesadmin.backup.dispvm import RestoreInDisposableVM
@@ -237,7 +237,8 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
         for paranoid restore mode"""
         parser = qubesadmin.tools.qvm_backup_restore.parser
         actions = parser._get_optional_actions()
-        options_tool = set(itertools.chain(*(a.option_strings for a in actions)))
+        options_tool = set(
+            itertools.chain(*(a.option_strings for a in actions)))
 
         options_parser = set(itertools.chain(
             *(o.opts for o in RestoreInDisposableVM.arguments.values())))

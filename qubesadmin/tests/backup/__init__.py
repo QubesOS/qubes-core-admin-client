@@ -28,6 +28,7 @@ import os
 
 import shutil
 
+import qubesadmin.backup
 import qubesadmin.backup.restore
 import qubesadmin.exc
 import qubesadmin.tests
@@ -75,21 +76,19 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
     def fill_image(self, path, size=None, sparse=False, signature=b''):
         block_size = 4096
 
-        self.log.debug("Filling %s" % path)
-        f = open(path, 'wb+')
-        if size is None:
-            f.seek(0, 2)
-            size = f.tell()
-        f.seek(0)
-        f.write(signature)
-        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
+        self.log.debug("Filling %s", path)
+        with open(path, 'wb+') as image_f:
+            if size is None:
+                image_f.seek(0, 2)
+                size = image_f.tell()
+            image_f.seek(0)
+            image_f.write(signature)
+            image_f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
 
-        for block_num in range(int(size/block_size)):
-            if sparse:
-                f.seek(block_size, 1)
-            f.write(b'a' * block_size)
-
-        f.close()
+            for _ in range(int(size/block_size)):
+                if sparse:
+                    image_f.seek(block_size, 1)
+                image_f.write(b'a' * block_size)
 
     # NOTE: this was create_basic_vms
     def create_backup_vms(self, pool=None):
@@ -97,7 +96,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
 
         vms = []
         vmname = self.make_vm_name('test-net')
-        self.log.debug("Creating %s" % vmname)
+        self.log.debug("Creating %s", vmname)
         testnet = self.app.add_new_vm('AppVM',
             name=vmname,
             label='red')
@@ -108,7 +107,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         self.fill_image(testnet.storage.export('private'), 20*1024*1024)
 
         vmname = self.make_vm_name('test1')
-        self.log.debug("Creating %s" % vmname)
+        self.log.debug("Creating %s", vmname)
         testvm1 = self.app.add_new_vm('AppVM',
             name=vmname, template=template, label='red')
         testvm1.uses_default_netvm = False
@@ -118,7 +117,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         self.fill_image(testvm1.storage.export('private'), 100 * 1024 * 1024)
 
         vmname = self.make_vm_name('testhvm1')
-        self.log.debug("Creating %s" % vmname)
+        self.log.debug("Creating %s", vmname)
         testvm2 = self.app.add_new_vm('StandaloneVM',
                                       name=vmname,
                                       label='red')
@@ -129,7 +128,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         vms.append(testvm2)
 
         vmname = self.make_vm_name('template')
-        self.log.debug("Creating %s" % vmname)
+        self.log.debug("Creating %s", vmname)
         testvm3 = self.app.add_new_vm('TemplateVM',
             name=vmname, label='red')
         testvm3.create_on_disk(pool=pool)
@@ -137,7 +136,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
         vms.append(testvm3)
 
         vmname = self.make_vm_name('custom')
-        self.log.debug("Creating %s" % vmname)
+        self.log.debug("Creating %s", vmname)
         testvm4 = self.app.add_new_vm('AppVM',
             name=vmname, template=testvm3, label='red')
         testvm4.create_on_disk(pool=pool)
@@ -147,33 +146,11 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
 
         return vms
 
-    def make_backup(self, vms, target=None, expect_failure=False, **kwargs):
-        if target is None:
-            target = self.backupdir
-        try:
-            backup = qubesadmin.backup.Backup(self.app, vms, **kwargs)
-        except qubesadmin.exc.QubesException as e:
-            if not expect_failure:
-                self.fail("QubesException during backup_prepare: %s" % str(e))
-            else:
-                raise
-
-        if 'passphrase' not in kwargs:
-            backup.passphrase = 'qubes'
-        backup.target_dir = target
-
-        try:
-            backup.backup_do()
-        except qubesadmin.exc.QubesException as e:
-            if not expect_failure:
-                self.fail("QubesException during backup_do: %s" % str(e))
-            else:
-                raise
-
     def restore_backup(self, source=None, appvm=None, options=None,
                        expect_errors=None, manipulate_restore_info=None,
                        passphrase='qubes', force_compression_filter=None,
                        tmpdir=None):
+        # pylint: disable=too-many-positional-arguments
         if source is None:
             backupfile = os.path.join(self.backupdir,
                                       sorted(os.listdir(self.backupdir))[-1])
@@ -218,21 +195,19 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
             os.unlink(backupfile)
 
     def create_sparse(self, path, size, signature=b''):
-        f = open(path, "wb")
-        f.write(signature)
-        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
-        f.truncate(size)
-        f.close()
+        with open(path, "wb") as f_img:
+            f_img.write(signature)
+            f_img.write(b'\0' * (SIGNATURE_LEN - len(signature)))
+            f_img.truncate(size)
 
     def create_full_image(self, path, size, signature=b''):
-        f = open(path, "wb")
-        f.write(signature)
-        f.write(b'\0' * (SIGNATURE_LEN - len(signature)))
-        block_size = 1024 ** 2
-        f.write(b'\0' * (block_size - SIGNATURE_LEN))
-        for _ in range(size // block_size - 1):
-            f.write(b'\1' * block_size)
-        f.close()
+        with open(path, "wb") as f_img:
+            f_img.write(signature)
+            f_img.write(b'\0' * (SIGNATURE_LEN - len(signature)))
+            block_size = 1024 ** 2
+            f_img.write(b'\0' * (block_size - SIGNATURE_LEN))
+            for _ in range(size // block_size - 1):
+                f_img.write(b'\1' * block_size)
 
     def vm_checksum(self, vms):
         hashes = {}
@@ -245,6 +220,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
                 vol_path = vm.storage.get_pool(volume).export(volume)
                 hasher = hashlib.sha1()
                 with open(vol_path, 'rb') as afile:
+                    # pylint: disable=cell-var-from-loop
                     for buf in iter(lambda: afile.read(4096000), b''):
                         hasher.update(buf)
                 hashes[vm.name][name] = hasher.hexdigest()
@@ -258,6 +234,7 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
             before backup
         :return:
         '''
+        # pylint: disable=invalid-name
         for vm in orig_vms:
             self.assertIn(vm.name, self.app.domains)
             restored_vm = self.app.domains[vm.name]

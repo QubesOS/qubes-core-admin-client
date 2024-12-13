@@ -22,8 +22,6 @@
 
 import unittest.mock
 
-import subprocess
-
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_start
@@ -89,8 +87,8 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
              b"frontend_domain='some-vm' _devtype='cdrom' "
              b"_read-only='True'")] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sr0:*', None)] = \
-            b'0\x00'
+            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sr0:*',
+             None)] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--cdrom=dom0:sr0', 'some-vm'],
             app=self.app)
         self.assertAllCalled()
@@ -198,7 +196,8 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
              None)] = b'0\x00'
         self.app.expected_calls[
             ('other-vm', 'admin.vm.feature.CheckWithTemplate', 'vmexec',
-             None)] = b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'vmexec\' not set\x00'
+             None)] = b'2\x00QubesFeatureNotFoundError\x00\x00' \
+                      b'Feature \'vmexec\' not set\x00'
 
         with unittest.mock.patch.object(self.app.domains['other-vm'], 'run') \
                 as mock_run:

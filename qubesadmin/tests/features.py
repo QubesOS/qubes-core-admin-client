@@ -54,7 +54,8 @@ class TC_00_Features(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.Get', 'feature1', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00feature1\x00'
         with self.assertRaises(KeyError):
-            value = self.vm.features['feature1']
+            # pylint: disable=pointless-statement
+            self.vm.features['feature1']
         self.assertAllCalled()
 
     def test_012_get_none(self):

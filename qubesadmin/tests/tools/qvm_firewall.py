@@ -32,6 +32,9 @@ import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_firewall
 
+class RuleNamespace(argparse.Namespace):
+    rule = None
+
 
 class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
     def setUp(self):
@@ -40,73 +43,73 @@ class TC_00_RuleAction(qubesadmin.tests.QubesTestCase):
             None, dest='rule')
 
     def test_000_named_opts(self):
-        ns = argparse.Namespace()
-        self.action(None, ns, ['dsthost=127.0.0.1', 'action=accept'])
-        self.assertEqual(ns.rule,
+        args = RuleNamespace()
+        self.action(None, args, ['dsthost=127.0.0.1', 'action=accept'])
+        self.assertEqual(args.rule,
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32'))
 
     def test_001_unnamed_opts(self):
-        ns = argparse.Namespace()
-        self.action(None, ns, ['accept', '127.0.0.1', 'tcp', '80'])
-        self.assertEqual(ns.rule,
+        args = RuleNamespace()
+        self.action(None, args, ['accept', '127.0.0.1', 'tcp', '80'])
+        self.assertEqual(args.rule,
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32',
                 proto='tcp', dstports=80))
 
     def test_002_unnamed_opts(self):
-        ns = argparse.Namespace()
-        self.action(None, ns, ['accept', '127.0.0.1', 'icmp', '8'])
-        self.assertEqual(ns.rule,
+        args = RuleNamespace()
+        self.action(None, args, ['accept', '127.0.0.1', 'icmp', '8'])
+        self.assertEqual(args.rule,
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32',
                 proto='icmp', icmptype=8))
 
     def test_003_mixed_opts(self):
-        ns = argparse.Namespace()
-        self.action(None, ns, ['dsthost=127.0.0.1', 'accept',
+        args = RuleNamespace()
+        self.action(None, args, ['dsthost=127.0.0.1', 'accept',
             'dstports=443', 'tcp'])
-        self.assertEqual(ns.rule,
+        self.assertEqual(args.rule,
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32',
                 proto='tcp', dstports=443))
 
     def test_004_expire_absolute(self):
-        ns = argparse.Namespace()
-        self.action(None, ns, ['dsthost=127.0.0.1', 'action=accept',
+        args = RuleNamespace()
+        self.action(None, args, ['dsthost=127.0.0.1', 'action=accept',
             'expire=1525054180'])
-        self.assertEqual(ns.rule,
+        self.assertEqual(args.rule,
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32',
                 expire=1525054180))
 
     def test_005_expire_relative(self):
-        ns = argparse.Namespace()
+        args = RuleNamespace()
         now = int(datetime.datetime.now().strftime('%s'))
-        self.action(None, ns, ['dsthost=127.0.0.1', 'action=accept',
+        self.action(None, args, ['dsthost=127.0.0.1', 'action=accept',
             'expire=+100'])
-        self.assertEqual(ns.rule,
+        self.assertEqual(args.rule,
             qubesadmin.firewall.Rule(
                 None, action='accept', dsthost='127.0.0.1/32',
                 expire=now+100))
 
     def test_006_dsthost_aliases(self):
-        ns = argparse.Namespace()
+        args = RuleNamespace()
         for name in ['dsthost', 'dst4', 'dst6']:
-            self.action(None, ns, [name + '=127.0.0.1', 'accept'])
-            self.assertEqual(ns.rule,
+            self.action(None, args, [name + '=127.0.0.1', 'accept'])
+            self.assertEqual(args.rule,
                 qubesadmin.firewall.Rule(
                     None, action='accept', dsthost='127.0.0.1/32'))
 
     def test_007_none_errors(self):
-        ns = argparse.Namespace()
+        args = RuleNamespace()
         with self.assertRaises(argparse.ArgumentError):
-            self.action(None, ns, ['dsthost=', 'action=accept'])
+            self.action(None, args, ['dsthost=', 'action=accept'])
         with self.assertRaises(argparse.ArgumentError):
-            self.action(None, ns, ['dsthost=127.0.0.1', 'dstports=',
+            self.action(None, args, ['dsthost=127.0.0.1', 'dstports=',
                                    'action=accept'])
         with self.assertRaises(argparse.ArgumentError):
-            self.action(None, ns, ['dsthost=127.0.0.1', 'icmptype=',
+            self.action(None, args, ['dsthost=127.0.0.1', 'icmptype=',
                                    'action=accept'])
 
 
@@ -122,7 +125,8 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             b'0\0action=accept dsthost=qubes-os.org\n' \
             b'action=drop proto=icmp\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_firewall.main(['test-vm', 'list'], app=self.app)
+            qubesadmin.tools.qvm_firewall.main(['test-vm', 'list'],
+                                               app=self.app)
             self.assertEqual(
                 [l.strip() for l in stdout.getvalue().splitlines()],
                 ['NO  ACTION  HOST          PROTOCOL  PORT(S)  SPECIAL '
@@ -165,8 +169,8 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_firewall.main(['test-vm'], app=self.app)
             line = stdout.getvalue().splitlines()[-1]
             match = re.match(
-                '0   accept  qubes-os.org  tcp       443      -         '
-                '      -          \+(.{4})s  -',
+                r'0   accept  qubes-os.org  tcp       443      -         '
+                r'      -          \+(.{4})s  -',
                 line)
             self.assertTrue(match, "no match for: {!r}".format(line))
             duration = int(match.group(1))

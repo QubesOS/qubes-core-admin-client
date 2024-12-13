@@ -51,7 +51,8 @@ class TC_00_qvm_pool_legacy(qubesadmin.tests.QubesTestCase):
             b'lvm volume_group thin_pool revisions_to_keep\n'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             self.assertEqual(0,
-                qubesadmin.tools.qvm_pool.main(['--help-drivers'], app=self.app))
+                qubesadmin.tools.qvm_pool.main(['--help-drivers'],
+                                               app=self.app))
         self.assertEqual(stdout.getvalue(),
             'DRIVER  OPTIONS\n'
             'file    dir_path, revisions_to_keep\n'

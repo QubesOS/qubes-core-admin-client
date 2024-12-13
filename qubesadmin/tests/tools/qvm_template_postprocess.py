@@ -42,6 +42,7 @@ class QubesLocalMock(qubesadmin.tests.QubesTest):
 class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super().setUp()
+        # pylint: disable=consider-using-with
         self.source_dir = tempfile.TemporaryDirectory()
 
     def tearDown(self):
@@ -54,8 +55,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     def test_000_import_root_img_raw(self):
         root_img = os.path.join(self.source_dir.name, 'root.img')
         volume_data = b'volume data'
-        with open(root_img, 'wb') as f:
-            f.write(volume_data)
+        with open(root_img, 'wb') as f_root:
+            f_root.write(volume_data)
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
@@ -74,8 +75,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     def test_001_import_root_img_tar_pre_mar_2024(self):
         root_img = os.path.join(self.source_dir.name, 'root.img')
         volume_data = b'volume data' * 1000
-        with open(root_img, 'wb') as f:
-            f.write(volume_data)
+        with open(root_img, 'wb') as f_root:
+            f_root.write(volume_data)
 
         subprocess.check_call(['tar', 'cf', 'root.img.tar', 'root.img'],
             cwd=self.source_dir.name)
@@ -105,8 +106,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     def test_001_import_root_img_tar(self):
         root_img = os.path.join(self.source_dir.name, 'root.img')
         volume_data = b'volume data' * 1000
-        with open(root_img, 'wb') as f:
-            f.write(volume_data)
+        with open(root_img, 'wb') as f_root:
+            f_root.write(volume_data)
 
         subprocess.check_call(['tar', 'cf', 'root.img.tar', 'root.img'],
             cwd=self.source_dir.name)
@@ -115,8 +116,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         os.unlink(root_img)
 
         spec = os.path.join(self.source_dir.name, 'template.spec')
-        with open(spec, 'w') as f:
-            f.writelines((
+        with open(spec, 'w', encoding="utf-8") as f_spec:
+            f_spec.writelines((
                 '%define _rpmdir %{expand:%%(pwd)}/build\n',
                 'Name: test\n',
                 'Summary: testing\n',
@@ -170,8 +171,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         os.makedirs(template_dir)
         root_img = os.path.join(template_dir, 'root.img')
         volume_data = b'volume data'
-        with open(root_img, 'wb') as f:
-            f.write(volume_data)
+        with open(root_img, 'wb') as f_root:
+            f_root.write(volume_data)
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
@@ -229,17 +230,20 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             'org.gnome.Terminal.desktop',
             'nm-connection-editor.desktop']
         with open(os.path.join(self.source_dir.name,
-                'vm-whitelisted-appmenus.list'), 'w') as f:
+                'vm-whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
             for entry in default_menu_items:
-                f.write(entry + '\n')
+                f_list.write(entry + '\n')
         with open(os.path.join(self.source_dir.name,
-                'whitelisted-appmenus.list'), 'w') as f:
+                'whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
             for entry in menu_items:
-                f.write(entry + '\n')
+                f_list.write(entry + '\n')
         with open(os.path.join(self.source_dir.name,
-                'netvm-whitelisted-appmenus.list'), 'w') as f:
+                'netvm-whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
             for entry in netvm_menu_items:
-                f.write(entry + '\n')
+                f_list.write(entry + '\n')
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
@@ -286,17 +290,20 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             'org.gnome.Terminal.desktop',
             'nm-connection-editor.desktop']
         with open(os.path.join(self.source_dir.name,
-                'vm-whitelisted-appmenus.list'), 'w') as f:
+                'vm-whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
             for entry in default_menu_items:
-                f.write(entry + '\n')
+                f_list.write(entry + '\n')
         with open(os.path.join(self.source_dir.name,
-                'whitelisted-appmenus.list'), 'w') as f:
+                'whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
             for entry in menu_items:
-                f.write(entry + '\n')
+                f_list.write(entry + '\n')
         with open(os.path.join(self.source_dir.name,
-                'netvm-whitelisted-appmenus.list'), 'w') as f:
+                'netvm-whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
             for entry in netvm_menu_items:
-                f.write(entry + '\n')
+                f_list.write(entry + '\n')
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Set',
@@ -340,14 +347,16 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
     @mock.patch('os.getuid')
     def test_012_import_appmenus_missing_user(self, mock_getuid, mock_getgrnam):
         with open(os.path.join(self.source_dir.name,
-                'vm-whitelisted-appmenus.list'), 'w') as f:
-            f.write('org.gnome.Terminal.desktop\n')
-            f.write('firefox.desktop\n')
+                'vm-whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
+            f_list.write('org.gnome.Terminal.desktop\n')
+            f_list.write('firefox.desktop\n')
         with open(os.path.join(self.source_dir.name,
-                'whitelisted-appmenus.list'), 'w') as f:
-            f.write('org.gnome.Terminal.desktop\n')
-            f.write('org.gnome.Software.desktop\n')
-            f.write('gnome-control-center.desktop\n')
+                'whitelisted-appmenus.list'), 'w',
+                encoding="utf-8") as f_list:
+            f_list.write('org.gnome.Terminal.desktop\n')
+            f_list.write('org.gnome.Software.desktop\n')
+            f_list.write('gnome-control-center.desktop\n')
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
@@ -362,7 +371,7 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_proc.mock_calls, [])
         self.assertAllCalled()
 
-    def add_new_vm_side_effect(self, *args, **kwargs):
+    def add_new_vm_side_effect(self, *_args, **_kwargs):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.domains.clear_cache()
@@ -526,8 +535,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             = b'0\0'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'template', None)] = \
-            b'2\0QubesNoSuchPropertyError\0\0invalid property \'template\' of ' \
-            b'test-vm\0'
+            b'2\0QubesNoSuchPropertyError\0\0invalid property ' \
+            b'\'template\' of test-vm\0'
 
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', 'pre-remove', 'test-vm',
@@ -543,8 +552,8 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             b'test-vm2 class=AppVM state=Halted\n'
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'template', None)] = \
-            b'2\0QubesNoSuchPropertyError\0\0invalid property \'template\' of ' \
-            b'test-vm\0'
+            b'2\0QubesNoSuchPropertyError\0\0invalid property ' \
+            b'\'template\' of test-vm\0'
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.property.Get', 'template', None)] = \
             b'0\0default=no type=vm test-vm'
@@ -575,8 +584,8 @@ virt-mode=hvm
 kernel=
 """
         template_conf = os.path.join(self.source_dir.name, 'template.conf')
-        with open(template_conf, 'w') as f:
-            f.write(template_config)
+        with open(template_conf, 'w', encoding="utf-8") as f_conf:
+            f_conf.write(template_config)
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.expected_calls[(
@@ -586,11 +595,14 @@ kernel=
         self.app.expected_calls[(
             'test-vm', 'admin.vm.feature.Set', 'linux-stubdom', b'1')] = b'0\0'
         self.app.expected_calls[(
-            'test-vm', 'admin.vm.feature.Set', 'net.fake-ip', b'192.168.1.100')] = b'0\0'
+            'test-vm', 'admin.vm.feature.Set', 'net.fake-ip',
+            b'192.168.1.100')] = b'0\0'
         self.app.expected_calls[(
-            'test-vm', 'admin.vm.feature.Set', 'net.fake-netmask', b'255.255.255.0')] = b'0\0'
+            'test-vm', 'admin.vm.feature.Set', 'net.fake-netmask',
+            b'255.255.255.0')] = b'0\0'
         self.app.expected_calls[(
-            'test-vm', 'admin.vm.feature.Set', 'net.fake-gateway', b'192.168.1.1')] = b'0\0'
+            'test-vm', 'admin.vm.feature.Set', 'net.fake-gateway',
+            b'192.168.1.1')] = b'0\0'
         self.app.expected_calls[(
             'test-vm', 'admin.vm.property.Set', 'virt_mode', b'hvm')] = b'0\0'
         self.app.expected_calls[(
@@ -614,40 +626,40 @@ kernel=
         with self.subTest('invalid feature value'):
             template_config = "gui=false\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
 
         with self.subTest('invalid feature name'):
             template_config = "invalid=1\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
 
         with self.subTest('invalid ip'):
             template_config = "net.fake-ip=1.2.3.4.5\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
 
         with self.subTest('invalid virt-mode'):
             template_config = "virt-mode=invalid\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
 
         with self.subTest('invalid kernel'):
             template_config = "kernel=1.2.3.4.5\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
         self.assertAllCalled()
@@ -662,8 +674,8 @@ kernel=
         with self.subTest('not allowed'):
             template_config = "virt-mode=pv\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
         with self.subTest('allowed'):
@@ -671,11 +683,12 @@ kernel=
                 allow_pv=True,
             )
             self.app.expected_calls[(
-                'test-vm', 'admin.vm.property.Set', 'virt_mode', b'pv')] = b'0\0'
+                'test-vm', 'admin.vm.property.Set', 'virt_mode',
+                b'pv')] = b'0\0'
             template_config = "virt-mode=pv\n"
             template_conf = os.path.join(self.source_dir.name, 'template.conf')
-            with open(template_conf, 'w') as f:
-                f.write(template_config)
+            with open(template_conf, 'w', encoding="utf-8") as f_conf:
+                f_conf.write(template_config)
             qubesadmin.tools.qvm_template_postprocess.import_template_config(
                 args, template_conf, vm)
         self.assertAllCalled()

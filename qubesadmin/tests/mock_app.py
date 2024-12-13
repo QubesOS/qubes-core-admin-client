@@ -298,6 +298,7 @@ class MockQube:
         if parameter default-ness is important, provide it as
         a (value, is_default) tuple
         """
+        # pylint: disable=too-many-positional-arguments
         if override_default_props:
             self.properties = deepcopy(override_default_props)
         else:
@@ -344,7 +345,6 @@ class MockQube:
     def __getattr__(self, item):
         if item in self.properties:
             return self.properties[item].value
-        return super().__getattr__(item)
 
     def set_property_default(self, prop, value):
         """Set a property as default."""
@@ -435,7 +435,7 @@ class MockQube:
         self.qapp.expected_calls[
             (self.name, "admin.vm.feature.List", None, None)] = \
             ("0\x00" + "".join(f"{feature}\n" for feature
-                               in self.features.keys())).encode()
+                               in self.features)).encode()
 
         # setup all volumeInfo related calls
         self.setup_volume_calls()
@@ -456,6 +456,7 @@ class MockQube:
         self.setup_device_calls()
         self.setup_firewall_rules(self.firewall_rules)
 
+        # pylint: disable=protected-access
         self.qapp._invalidate_cache_all()
 
     def setup_volume_calls(self):
@@ -539,7 +540,7 @@ class MockAdminVM(MockQube):
                          features=DEFAULT_DOM0_FEATURES.copy(),
                          override_default_props=DEFAULT_DOM0_PROPERTIES.copy())
         # make all properties that are unknown give an 'unknown property' error
-        for property_name in DEFAULT_VM_PROPERTIES.keys():
+        for property_name in DEFAULT_VM_PROPERTIES:
             if property_name not in self.properties:
                 self.qapp.expected_calls[
                     (self.name, "admin.vm.property.Get",
@@ -578,15 +579,14 @@ class MockDevice:
                 f"devclass='block' backend_domain='{self.backend_vm}' " \
                 f"serial='root/test.img' manufacturer='{self.description}'  " \
                 "interfaces='b******'\n"
-        elif self.dev_class == 'pci':
+        if self.dev_class == 'pci':
             _, d_id = self.dev_id.split(":")
             port = self.dev_id.replace(':', '_')
             return f"{port} device_id='{d_id}' " \
                 f"port_id='{port}' devclass='pci' " \
                 f"product='{self.description}' vendor='{self.description}' " \
                 f"interfaces='p0c0500' backend_domain='{self.backend_vm}'\n"
-        else:
-            return f'{self.dev_id} description={self.description}\n'
+        return f'{self.dev_id} description={self.description}\n'
 
     def attachment_string(self):
         if ":" in self.dev_id:

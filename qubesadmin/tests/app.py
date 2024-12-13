@@ -28,7 +28,7 @@ import unittest
 
 import multiprocessing
 
-import unittest.mock as mock
+from unittest import mock
 from unittest.mock import call
 
 import tempfile
@@ -151,7 +151,8 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
     def test_011_getitem_non_cache_power_state(self):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=AppVM state=Running\n'
-        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Running mem=1024'
         try:
             vm = self.app.domains['test-vm']
@@ -304,7 +305,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             (src, 'admin.vm.property.List', None, None)] = \
             b'0\0qid\nname\n' + \
-            b'\n'.join(prop.encode() for prop in properties.keys()) + \
+            b'\n'.join(prop.encode() for prop in properties) + \
             b'\n'
         for prop, value in properties.items():
             self.app.expected_calls[
@@ -814,7 +815,7 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
 
     def test_050_automatic_reset_cache(self):
         self.app.cache_enabled = True
-        self.dispatcher = qubesadmin.events.EventsDispatcher(self.app)
+        dispatcher = qubesadmin.events.EventsDispatcher(self.app)
         # first get few properties directly
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00vm1 class=AppVM state=Halted\n'
@@ -830,10 +831,12 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         self.assertEqual(vm.get_power_state(), 'Halted')
         self.assertAllCalled()
         # cache should be cleared when events connection is established
-        self.dispatcher.handle(None, 'connection-established')
+        dispatcher.handle(None, 'connection-established')
         self.app.actual_calls = []
-        self.app.expected_calls[('vm1', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Running mem=400000 mem_static_max=400000 cputime=0'
+        self.app.expected_calls[
+            ('vm1', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running mem=400000 mem_static_max=400000 ' \
+            b'cputime=0'
         self.app.expected_calls[
             ('vm1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\0qid default=False type=int 1\n' \
@@ -854,13 +857,14 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             ('vm1', 'admin.vm.property.Get', 'memory', None)] = \
             b'0\0default=False type=int 600'
         # this one is cached already
-        del self.app.expected_calls[('vm1', 'admin.vm.CurrentState', None, None)]
-        self.dispatcher.handle('vm1', 'property-set:memory',
+        del self.app.expected_calls[
+            ('vm1', 'admin.vm.CurrentState', None, None)]
+        dispatcher.handle('vm1', 'property-set:memory',
             name='memory', newvalue='600', oldvalue='500')
         self.assertEqual(vm.memory, 600)
         self.assertEqual(vm.get_power_state(), 'Running')
         # update cached power state based on event
-        self.dispatcher.handle('vm1', 'domain-shutdown')
+        dispatcher.handle('vm1', 'domain-shutdown')
         self.assertEqual(vm.get_power_state(), 'Halted')
         self.assertAllCalled()
 
@@ -876,6 +880,8 @@ class TC_20_QubesLocal(unittest.TestCase):
         self.orig_sock = qubesadmin.config.QUBESD_SOCKET
         qubesadmin.config.QUBESD_SOCKET = os.path.join(self.socket_dir, 'sock')
         self.proc = None
+        self.socket = None
+        self.socket_pipe = None
         self.app = qubesadmin.app.QubesLocal()
         self.tmpdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmpdir)
@@ -891,7 +897,7 @@ class TC_20_QubesLocal(unittest.TestCase):
         self.socket.listen(1)
 
         def worker(sock, pipe, send_data_):
-            conn, addr = sock.accept()
+            conn, _ = sock.accept()
             pipe.send(conn.makefile('rb').read())
             conn.sendall(send_data_)
             conn.close()
@@ -942,11 +948,10 @@ class TC_20_QubesLocal(unittest.TestCase):
                 payload_file, expected=b'some payload\n')
 
     def test_004_qubesd_call_payload_stream_proc(self):
-        service_path = os.path.join(self.tmpdir, 'test.service')
-        echo = subprocess.Popen(['echo', 'some payload'],
-            stdout=subprocess.PIPE)
-        self._call_test_service_with_payload_stream(
-            echo.stdout, expected=b'some payload\n')
+        with subprocess.Popen(['echo', 'some payload'],
+                              stdout=subprocess.PIPE) as echo:
+            self._call_test_service_with_payload_stream(
+                echo.stdout, expected=b'some payload\n')
 
     def test_005_qubesd_call_payload_stream_with_prefix(self):
         payload_input = os.path.join(self.tmpdir, 'payload-input')
@@ -961,12 +966,13 @@ class TC_20_QubesLocal(unittest.TestCase):
     def _call_test_service_with_payload_stream(
             self, payload_stream, payload=None, expected=b''):
         service_path = os.path.join(self.tmpdir, 'test.service')
-        with open(service_path, 'w') as f:
-            f.write('#!/bin/bash\n'
-                    'env > {dir}/env\n'
-                    'echo "$@" > {dir}/args\n'
-                    'cat > {dir}/payload\n'
-                    'echo -en \'0\\0return-value\'\n'.format(dir=self.tmpdir))
+        with open(service_path, 'w', encoding="utf-8") as f_service:
+            f_service.write(
+                '#!/bin/bash\n'
+                'env > {dir}/env\n'
+                'echo "$@" > {dir}/args\n'
+                'cat > {dir}/payload\n'
+                'echo -en \'0\\0return-value\'\n'.format(dir=self.tmpdir))
         os.chmod(service_path, 0o755)
 
         with mock.patch('qubesadmin.config.QREXEC_SERVICES_DIR',
@@ -976,11 +982,11 @@ class TC_20_QubesLocal(unittest.TestCase):
                 'some-arg', payload=payload, payload_stream=payload_stream)
         self.assertEqual(value, b'return-value')
         self.assertTrue(os.path.exists(self.tmpdir + '/env'))
-        with open(self.tmpdir + '/env') as env:
+        with open(self.tmpdir + '/env', encoding="utf-8") as env:
             self.assertIn('QREXEC_REMOTE_DOMAIN=dom0\n', env)
             self.assertIn('QREXEC_REQUESTED_TARGET=test-vm\n', env)
         self.assertTrue(os.path.exists(self.tmpdir + '/args'))
-        with open(self.tmpdir + '/args') as args:
+        with open(self.tmpdir + '/args', encoding="utf-8") as args:
             self.assertEqual(args.read(), 'some-arg\n')
         self.assertTrue(os.path.exists(self.tmpdir + '/payload'))
         with open(self.tmpdir + '/payload', 'rb') as payload_f:
@@ -990,7 +996,7 @@ class TC_20_QubesLocal(unittest.TestCase):
     def test_010_run_service(self):
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
-            p = self.app.run_service('some-vm', 'service.name')
+            self.app.run_service('some-vm', 'service.name')
             mock_proc.assert_called_once_with([
                 qubesadmin.config.QREXEC_CLIENT,
                 '-d', 'some-vm', '-T', 'DEFAULT:QUBESRPC service.name dom0'],
@@ -1003,7 +1009,7 @@ class TC_20_QubesLocal(unittest.TestCase):
     def test_011_run_service_filter_esc(self):
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
-            p = self.app.run_service('some-vm', 'service.name', filter_esc=True)
+            self.app.run_service('some-vm', 'service.name', filter_esc=True)
             mock_proc.assert_called_once_with([
                 qubesadmin.config.QREXEC_CLIENT,
                 '-d', 'some-vm', '-t', '-T',
@@ -1018,7 +1024,7 @@ class TC_20_QubesLocal(unittest.TestCase):
     def test_012_run_service_user(self):
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
-            p = self.app.run_service('some-vm', 'service.name', user='user')
+            self.app.run_service('some-vm', 'service.name', user='user')
             mock_proc.assert_called_once_with([
                 qubesadmin.config.QREXEC_CLIENT,
                 '-d', 'some-vm', '-T',
@@ -1058,6 +1064,7 @@ class TC_30_QubesRemote(unittest.TestCase):
     def test_000_qubesd_call(self):
         self.set_proc_stdout(b'0\0')
         self.app.qubesd_call('test-vm', 'some.method', 'arg1', b'payload')
+        # pylint: disable=unnecessary-dunder-call
         self.assertEqual(self.proc_mock.mock_calls, [
             mock.call([qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
                 'some.method+arg1'],
@@ -1071,6 +1078,7 @@ class TC_30_QubesRemote(unittest.TestCase):
     def test_001_qubesd_call_none_arg(self):
         self.set_proc_stdout(b'0\0')
         self.app.qubesd_call('test-vm', 'some.method', None, b'payload')
+        # pylint: disable=unnecessary-dunder-call
         self.assertEqual(self.proc_mock.mock_calls, [
             mock.call([qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
                 'some.method'],
@@ -1084,6 +1092,7 @@ class TC_30_QubesRemote(unittest.TestCase):
     def test_002_qubesd_call_none_payload(self):
         self.set_proc_stdout(b'0\0')
         self.app.qubesd_call('test-vm', 'some.method', None, None)
+        # pylint: disable=unnecessary-dunder-call
         self.assertEqual(self.proc_mock.mock_calls, [
             mock.call([qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
                 'some.method'],
@@ -1106,6 +1115,7 @@ class TC_30_QubesRemote(unittest.TestCase):
 
             value = self.app.qubesd_call('test-vm', 'some.method',
                 'some-arg', payload_stream=payload_file)
+        # pylint: disable=unnecessary-dunder-call
         self.assertListEqual(self.proc_mock.mock_calls, [
             mock.call(
                 [qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
@@ -1130,7 +1140,9 @@ class TC_30_QubesRemote(unittest.TestCase):
             payload_file.seek(0)
 
             value = self.app.qubesd_call('test-vm', 'some.method',
-                'some-arg', payload=b'first line\n', payload_stream=payload_file)
+                'some-arg', payload=b'first line\n',
+                payload_stream=payload_file)
+        # pylint: disable=unnecessary-dunder-call
         self.assertListEqual(self.proc_mock.mock_calls, [
             mock.call([qubesadmin.config.QREXEC_CLIENT_VM, 'test-vm',
                 'some.method+some-arg'],
@@ -1165,7 +1177,7 @@ class TC_30_QubesRemote(unittest.TestCase):
     @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_012_run_service_user(self):
         with self.assertRaises(ValueError):
-            p = self.app.run_service('some-vm', 'service.name', user='user')
+            self.app.run_service('some-vm', 'service.name', user='user')
 
     @mock.patch('os.isatty', lambda fd: fd == 2)
     def test_013_run_service_default_target(self):
@@ -1180,6 +1192,7 @@ class TC_30_QubesRemote(unittest.TestCase):
     def test_014_run_service_no_autostart1(self):
         self.set_proc_stdout( b'0\x00power_state=Running')
         self.app.run_service('some-vm', 'service.name', autostart=False)
+        # pylint: disable=unnecessary-dunder-call
         self.proc_mock.assert_has_calls([
             call([qubesadmin.config.QREXEC_CLIENT_VM,
                   'some-vm', 'admin.vm.CurrentState'],

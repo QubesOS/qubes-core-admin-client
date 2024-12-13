@@ -25,7 +25,7 @@ import qubesadmin.tests
 import qubesadmin.device_protocol
 
 from qubesadmin.device_protocol import (
-    DeviceAssignment, Port, VirtualDevice, DeviceInfo, UnknownDevice,
+    DeviceAssignment, DeviceInfo, UnknownDevice,
     AssignmentMode)
 
 

@@ -137,7 +137,8 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
 
     def test_030_resize(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.volume.Resize', 'volname', b'2048')] = b'0\x00'
+            ('test-vm', 'admin.vm.volume.Resize', 'volname', b'2048')] = \
+            b'0\x00'
         self.vol.resize(2048)
         self.assertAllCalled()
 
@@ -152,10 +153,9 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.volume.Import', 'volname', b'some-data')] = \
             b'0\x00'
-        input_proc = subprocess.Popen(['echo', '-n', 'some-data'],
-            stdout=subprocess.PIPE)
-        self.vol.import_data(input_proc.stdout)
-        input_proc.stdout.close()
+        with subprocess.Popen(['echo', '-n', 'some-data'],
+                stdout=subprocess.PIPE) as input_proc:
+            self.vol.import_data(input_proc.stdout)
         self.assertAllCalled()
 
     def test_050_clone(self):
@@ -309,7 +309,8 @@ class TestPool(qubesadmin.tests.QubesTestCase):
     def test_011_usage(self):
         self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00file\nlvm\n'
-        self.app.expected_calls[('dom0', 'admin.pool.UsageDetails', 'lvm', None)] = \
+        self.app.expected_calls[
+            ('dom0', 'admin.pool.UsageDetails', 'lvm', None)] = \
             b'0\x00data_size=204800\n' \
             b'data_usage=102400\n' \
             b'metadata_size=1024\n' \
@@ -326,7 +327,8 @@ class TestPool(qubesadmin.tests.QubesTestCase):
     def test_012_size_and_usage(self):
         self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
             b'0\x00file\nlvm\n'
-        self.app.expected_calls[('dom0', 'admin.pool.UsageDetails', 'lvm', None)] = \
+        self.app.expected_calls[
+            ('dom0', 'admin.pool.UsageDetails', 'lvm', None)] = \
             b'0\x00data_size=204800\n' \
             b'data_usage=102400\n' \
             b'metadata_size=1024\n' \

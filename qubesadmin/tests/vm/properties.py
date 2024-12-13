@@ -75,6 +75,7 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'admin.vm.property.Get', 'prop1', None)] = \
             b'0\x00default=False type=bool '
         with self.assertRaises(AttributeError):
+            # pylint: disable=pointless-statement
             self.vm.prop1
         self.assertAllCalled()
 
@@ -83,6 +84,7 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'admin.vm.property.Get', 'prop1', None)] = \
             b'0\x00default=False type=int '
         with self.assertRaises(AttributeError):
+            # pylint: disable=pointless-statement
             self.vm.prop1
         self.assertAllCalled()
 
@@ -113,6 +115,7 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
             b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
             b'\'invalid\' on test-vm\x00'
         with self.assertRaises(qubesadmin.exc.QubesNoSuchPropertyError):
+            # pylint: disable=pointless-statement
             self.vm.invalid
         self.assertFalse(hasattr(self.vm, 'invalid'))
         self.assertAllCalled()
@@ -203,6 +206,7 @@ class TC_00_Properties(qubesadmin.tests.vm.VMTestCase):
         self.app.cache_enabled = True
         self.assertEqual(self.vm.name, 'test-vm')
         with self.assertRaises(AttributeError):
+            # pylint: disable=pointless-statement
             self.vm.backup_timestamp
         self.assertEqual(self.vm.debug, False)
         self.assertEqual(self.vm.qid, 3)
@@ -242,11 +246,13 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.app.actual_calls = []
         del self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Set', 'name', b'test-vm2')]
-        vm = self.app.domains['test-vm']
+        # pylint: disable=pointless-statement
+        self.app.domains['test-vm']
         self.assertAllCalled()
 
     def test_010_power_state_running(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Running'
         self.assertEqual(self.vm.get_power_state(), 'Running')
         self.assertTrue(self.vm.is_running())
@@ -254,7 +260,8 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertFalse(self.vm.is_paused())
 
     def test_011_power_state_paused(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Paused'
         self.assertEqual(self.vm.get_power_state(), 'Paused')
         self.assertTrue(self.vm.is_running())
@@ -262,7 +269,8 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertTrue(self.vm.is_paused())
 
     def test_012_power_state_halted(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Halted'
         self.assertEqual(self.vm.get_power_state(), 'Halted')
         self.assertFalse(self.vm.is_running())
@@ -270,7 +278,8 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertFalse(self.vm.is_paused())
 
     def test_012_power_state_transient(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Transient'
         self.assertEqual(self.vm.get_power_state(), 'Transient')
         self.assertTrue(self.vm.is_running())
@@ -278,6 +287,7 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertFalse(self.vm.is_paused())
 
     def test_015_mem(self):
-        self.app.expected_calls[('test-vm', 'admin.vm.CurrentState', None, None)] = \
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00mem=1234'
         self.assertEqual(self.vm.get_mem(), 1234)

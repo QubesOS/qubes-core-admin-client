@@ -20,10 +20,10 @@
 
 # pylint: disable=missing-docstring
 
+import unittest.mock
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_remove
-import unittest.mock
 
 
 class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):

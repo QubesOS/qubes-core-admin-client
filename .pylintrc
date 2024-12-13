@@ -16,6 +16,7 @@ disable=
   inconsistent-return-statements,
   duplicate-code,
   fixme,
+  too-few-public-methods,
   locally-disabled,
   useless-object-inheritance,
   consider-using-set-comprehension,
@@ -48,16 +49,16 @@ module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 const-rgx=(([A-Za-z_][A-Za-z0-9_]*)|(__.*__))$
 
 # Regular expression which should only match correct class names
-class-rgx=([A-Z_][a-zA-Z0-9]+|TC_\d\d_[a-zA-Z0-9_]+)$
+class-rgx=([A-Z_][a-zA-Z0-9]+|TC_\d+_[a-zA-Z0-9_]+)$
 
 # Regular expression which should only match correct function names
-function-rgx=[a-z_][a-z0-9_]{2,30}$
+function-rgx=[a-z_][a-z0-9_]{2,40}$
 
 # Regular expression which should only match correct method names
-method-rgx=[a-z_][a-z0-9_]{2,30}$
+method-rgx=([a-z_][a-z0-9_]{2,60}|assert([A-Z][a-z0-9]*)*)$
 
 # Regular expression which should only match correct instance attribute names
-attr-rgx=[a-z_][a-z0-9_]{2,30}$
+attr-rgx=([a-z_][a-z0-9_]{2,40}|maxDiff)$
 
 # Regular expression which should only match correct argument names
 argument-rgx=[a-z_][a-z0-9_]{2,30}$

@@ -22,13 +22,13 @@
 
 import io
 import os
-import unittest.mock as mock
+from unittest import mock
 
 import asyncio
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
-import qubesadmin.tools.qvm_backup as qvm_backup
+from qubesadmin.tools import qvm_backup
 
 class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
     def test_000_write_backup_profile(self):
@@ -127,8 +127,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                 'destination_vm: dom0\n'
                 'include: null\n'
             )
-            with open(profile_path) as f:
-                self.assertEqual(expected_profile, f.read())
+            with open(profile_path, encoding="utf-8") as f_profile:
+                self.assertEqual(expected_profile, f_profile.read())
         finally:
             os.unlink(profile_path)
 
@@ -157,8 +157,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                 'include: null\n'
                 'passphrase_text: some password\n'
             )
-            with open(profile_path) as f:
-                self.assertEqual(expected_profile, f.read())
+            with open(profile_path, encoding="utf-8") as f_profile:
+                self.assertEqual(expected_profile, f_profile.read())
         finally:
             os.unlink(profile_path)
 
@@ -188,8 +188,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
             self.addCleanup(patch.stop)
             mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
                 b'1\0\0connection-established\0\0',
-                b'1\0\0backup-progress\0backup_profile\0test-profile\0progress\x000'
-                b'.25\0\0',
+                b'1\0\0backup-progress\0backup_profile\0test-profile\0'
+                b'progress\x000.25\0\0',
                 ])
         except ImportError:
             pass
@@ -255,7 +255,7 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                 'include: null\n'
                 'passphrase_text: other passphrase\n'
             )
-            with open(profile_path) as f:
-                self.assertEqual(expected_profile, f.read())
+            with open(profile_path, encoding="utf-8") as f_profile:
+                self.assertEqual(expected_profile, f_profile.read())
         finally:
             os.unlink(profile_path)

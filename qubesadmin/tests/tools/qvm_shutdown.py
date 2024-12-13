@@ -79,7 +79,8 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
-        qubesadmin.tools.qvm_shutdown.main(['some-vm', 'other-vm'], app=self.app),
+        qubesadmin.tools.qvm_shutdown.main(['some-vm', 'other-vm'],
+                                           app=self.app)
         self.assertAllCalled()
 
     @unittest.skipUnless(qubesadmin.tools.qvm_shutdown.have_events,

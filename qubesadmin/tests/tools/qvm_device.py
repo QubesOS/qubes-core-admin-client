@@ -25,7 +25,7 @@
 
 """ Tests for the `qvm-device` tool. """
 
-import unittest.mock as mock
+from unittest import mock
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.device_protocol
@@ -54,7 +54,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         )
         self.vm1 = self.app.domains['test-vm1']
         self.vm2 = self.app.domains['test-vm2']
-        self.vm1_device = self.app.domains['test-vm1'].devices['testclass']['dev1']
+        self.vm1_device = \
+            self.app.domains['test-vm1'].devices['testclass']['dev1']
 
     def test_000_list_all(self):
         """
@@ -135,7 +136,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         # This shouldn't be listed
         self.expected_device_call(
             'test-vm2', 'Available',
-            b"0\0dev2 port_id='dev1' devclass='testclass' backend_domain='test-vm2'\n")
+            b"0\0dev2 port_id='dev1' devclass='testclass' "
+            b"backend_domain='test-vm2'\n")
         self.expected_device_call('test-vm3', 'Available')
         self.expected_device_call('test-vm1', 'Attached')
         self.expected_device_call('test-vm2', 'Attached')
@@ -193,7 +195,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"devclass='testclass' backend_domain='test-vm1' mode='manual' "
             b"frontend_domain='test-vm2' _read-only='yes'")] = b'0\0'
         qubesadmin.tools.qvm_device.main(
-            ['testclass', 'attach', '-o', 'ro=True', 'test-vm2', 'test-vm1:dev1'],
+            ['testclass', 'attach', '-o', 'ro=True', 'test-vm2',
+             'test-vm1:dev1'],
             app=self.app)
         self.assertAllCalled()
 
@@ -214,7 +217,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StderrBuffer() as stderr:
             with self.assertRaises(SystemExit):
                 qubesadmin.tools.qvm_device.main(
-                    ['testclass', 'attach', '-p', 'test-vm2', 'test-vm1:invalid'],
+                    ['testclass', 'attach', '-p', 'test-vm2',
+                     'test-vm1:invalid'],
                     app=self.app)
             self.assertIn('doesn\'t expose testclass device',
                 stderr.getvalue())
@@ -225,7 +229,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StderrBuffer() as stderr:
             with self.assertRaises(SystemExit):
                 qubesadmin.tools.qvm_device.main(
-                    ['testclass', 'attach', '-p', 'test-vm2', 'no-such-vm:dev3'],
+                    ['testclass', 'attach', '-p', 'test-vm2',
+                     'no-such-vm:dev3'],
                     app=self.app)
             self.assertIn('no such backend vm!',
                 stderr.getvalue())
@@ -295,7 +300,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
-            ['testclass', 'assign', '--required', 'test-vm2', 'test-vm1:dev1'], app=self.app)
+            ['testclass', 'assign', '--required', 'test-vm2', 'test-vm1:dev1'],
+            app=self.app)
         self.assertAllCalled()
 
     def test_032_assign_ask_and_options(self):
@@ -439,7 +445,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     @mock.patch("builtins.open", new_callable=mock.mock_open,
                 read_data="test-vm2 u012345, *543210")
-    def test_041_assign_denied_device(self, mock_deny_list):
+    def test_041_assign_denied_device(self, _mock_deny_list):
         """ Test user warning """
         self.app.domains['test-vm2'].is_running = lambda: False
         self.app.expected_calls[(
@@ -538,7 +544,8 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
              'test-vm1+*:cafe:cafe::0123456u654321', None)] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'unassign', 'test-vm2',
-             'test-vm1:dev1:cafe:cafe::0123456u654321', '--device'], app=self.app)
+             'test-vm1:dev1:cafe:cafe::0123456u654321', '--device'],
+            app=self.app)
         self.assertAllCalled()
 
     def test_057_unassign_all(self):
@@ -566,6 +573,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_device.main(
                 ['testclass', 'info', 'test-vm1:dev1'],
                 app=self.app)
-            self.assertIn('Multimedia: itl test-device\ndevice ID: dead:beef:babe:u012345',
+            self.assertIn('Multimedia: itl test-device\n'
+                          'device ID: dead:beef:babe:u012345',
                           buf.getvalue())
         self.assertAllCalled()

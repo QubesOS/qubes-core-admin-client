@@ -19,7 +19,9 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-# pylint: disable=missing-docstring,too-many-lines
+# pylint: disable=missing-docstring
+# pylint: disable=too-many-lines,line-too-long,too-many-public-methods
+# pylint: disable=too-many-positional-arguments
 
 import re
 from unittest import mock, skipUnless
@@ -37,13 +39,12 @@ import rpm
 import qubesadmin.tests
 import qubesadmin.tools.qvm_template
 
-def gen_rpm(sign: bool, cb):
-    import tempfile, sys, os.path
-    with tempfile.TemporaryDirectory() as d:
-        if d[0] != '/':
+def gen_rpm(sign: bool, callback):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        if tmpdir[0] != '/':
             raise AssertionError('Temporary directory not absolute?')
-        with open(os.path.join(d, 'dummy.spec'), 'wb') as h:
-            h.write(b"""\
+        with open(os.path.join(tmpdir, 'dummy.spec'), 'wb') as f_spec:
+            f_spec.write(b"""\
 Name:		qubes-template-invalid
 Version:	0.0.0
 Release:	1
@@ -70,7 +71,7 @@ exec dd if=/dev/urandom status=none count=1 bs=1M "of=$RPM_BUILD_ROOT/nonsense"
             '--define=_topdir %{lua:print(posix.getcwd())}',
             '--quiet',
             'dummy.spec',
-        ], cwd=d, stdout=subprocess.DEVNULL)
+        ], cwd=tmpdir, stdout=subprocess.DEVNULL)
         subprocess.check_call([
             'gpg',
             '--homedir=.',
@@ -81,7 +82,7 @@ exec dd if=/dev/urandom status=none count=1 bs=1M "of=$RPM_BUILD_ROOT/nonsense"
             'test@example.com',
             'rsa',
             'sign',
-        ], cwd=d, stdout=subprocess.DEVNULL)
+        ], cwd=tmpdir, stdout=subprocess.DEVNULL)
         if sign:
             subprocess.check_call([
                 'rpmsign',
@@ -89,7 +90,7 @@ exec dd if=/dev/urandom status=none count=1 bs=1M "of=$RPM_BUILD_ROOT/nonsense"
                 '--macros=/usr/lib/rpm/macros',
                 '--define=_gpg_name test@example.com',
                 './RPMS/noarch/qubes-template-invalid-0.0.0-1.noarch.rpm',
-            ], cwd=d, env={'GNUPGHOME': '.'}, stdout=subprocess.DEVNULL)
+            ], cwd=tmpdir, env={'GNUPGHOME': '.'}, stdout=subprocess.DEVNULL)
         subprocess.check_call([
             'gpg',
             '--homedir=.',
@@ -97,10 +98,12 @@ exec dd if=/dev/urandom status=none count=1 bs=1M "of=$RPM_BUILD_ROOT/nonsense"
             '--armor',
             '--output=pub.asc',
             'test@example.com',
-        ], cwd=d)
-        cb(os.path.join(d, 'pub.asc'), os.path.join(d, 'RPMS/noarch/qubes-template-invalid-0.0.0-1.noarch.rpm'))
+        ], cwd=tmpdir)
+        callback(os.path.join(tmpdir, 'pub.asc'), os.path.join(tmpdir,
+            'RPMS/noarch/qubes-template-invalid-0.0.0-1.noarch.rpm'))
 
 class re_str(str):
+    # pylint: disable=invalid-name
     def __eq__(self, other):
         return bool(re.match(self, other))
 
@@ -113,7 +116,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         # which implementation of `column` we use
         self.mock_table = mock.patch('qubesadmin.tools.print_table')
         mock_table = self.mock_table.start()
-        def print_table(table, *args):
+        def print_table(table, *_):
             print(str(table))
         mock_table.side_effect = print_table
 
@@ -220,7 +223,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.Popen')
     @mock.patch('os.symlink')
-    def test_010_extract_rpm_success(self, mock_symlink, mock_popen, mock_path_exists):
+    def test_010_extract_rpm_success(self, mock_symlink, mock_popen,
+            mock_path_exists):
         mock_popen.return_value.__enter__.return_value = mock_popen.return_value
         pipe = mock.Mock()
         mock_popen.return_value.stdout = pipe
@@ -228,12 +232,13 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_popen.return_value.returncode = 0
         mock_path_exists.return_value = True
         with tempfile.NamedTemporaryFile() as fd, \
-                tempfile.TemporaryDirectory() as dir:
+                tempfile.TemporaryDirectory() as tmpdir:
             path = fd.name
-            dirpath = dir
+            dirpath = tmpdir
             ret = qubesadmin.tools.qvm_template.extract_rpm(
                 'test-vm', path, dirpath)
         self.assertEqual(ret, True)
+        # pylint: disable=unnecessary-dunder-call
         self.assertEqual(mock_popen.mock_calls, [
             mock.call(['rpm2archive', '-'],
                 stdin=mock.ANY,
@@ -254,46 +259,49 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock.call([
                 'truncate',
                 '--size=512',
-                dirpath + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00'
+                dirpath
+                + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00'
             ]),
             mock.call().__enter__(),
             mock.call().__exit__(None, None, None),
         ])
         self.assertEqual(mock_symlink.mock_calls, [
             mock.call(path,
-             dirpath + '//var/lib/qubes/vm-templates/test-vm/template.rpm')
+                      dirpath
+                      + '//var/lib/qubes/vm-templates/test-vm/template.rpm')
         ])
         self.assertAllCalled()
 
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.Popen')
     @mock.patch('os.symlink')
-    def test_011_extract_rpm_fail(self, mock_symlink, mock_popen, mock_path_exists):
+    def test_011_extract_rpm_fail(self, mock_symlink, mock_popen,
+            mock_path_exists):
         for failing_call in range(1, 5):
             mock_popen.reset_mock()
             with self.subTest(failing_call=failing_call):
                 pipe = mock.Mock()
 
+                # pylint: disable=cell-var-from-loop
                 def side_effect(_, **__):
                     side_effect.call_count += 1
-                    o = mock_popen.return_value
-                    o.__enter__.return_value = o
-                    o.stdout = pipe
-                    o.returncode = (
+                    outcome = mock_popen.return_value
+                    outcome.__enter__.return_value = outcome
+                    outcome.stdout = pipe
+                    outcome.returncode = (
                         1 if side_effect.call_count >= failing_call else
                         0
                     )
-                    return o
+                    return outcome
 
                 side_effect.call_count = 0
 
                 mock_popen.side_effect = side_effect
                 mock_path_exists.return_value = True
 
-                def symlink_side_effect(_s, _d):
+                def symlink_side_effect(_src, _dst):
                     if failing_call >= 4:
                         raise OSError("Error")
-                    return None
                 mock_symlink.side_effect = symlink_side_effect
 
                 with tempfile.NamedTemporaryFile() as fd, \
@@ -303,6 +311,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                     ret = qubesadmin.tools.qvm_template.extract_rpm(
                         'test-vm', path, dirpath)
                 self.assertEqual(ret, False)
+                # pylint: disable=unnecessary-dunder-call
                 self.assertEqual(mock_popen.mock_calls, [
                     mock.call(['rpm2archive', '-'],
                         stdin=mock.ANY,
@@ -325,7 +334,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                         'truncate',
                         '--size=512',
                         dirpath
-                        + '//var/lib/qubes/vm-templates/test-vm/root.img.part.00'
+                        + '//var/lib/qubes/vm-templates/test-vm/'
+                        'root.img.part.00'
                     ]),
                     mock.call().__enter__(),
                     mock.call().__exit__(None, None, None),
@@ -337,30 +347,35 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         class SuccessError(Exception):
             pass
         mock_get_keys.side_effect = SuccessError
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'):
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'):
             with self.subTest('not locked'):
                 with self.assertRaises(SuccessError):
                     # args don't matter
-                    qubesadmin.tools.qvm_template.install(mock.MagicMock(), None)
+                    qubesadmin.tools.qvm_template.install(mock.MagicMock(),
+                                                          None)
                 self.assertFalse(os.path.exists('/tmp/test.lock'))
 
             with self.subTest('lock exists but unlocked'):
-                with open('/tmp/test.lock', 'w') as f:
+                with open('/tmp/test.lock', 'wb') as f_lock:
                     with self.assertRaises(SuccessError):
                         # args don't matter
-                        qubesadmin.tools.qvm_template.install(mock.MagicMock(), None)
+                        qubesadmin.tools.qvm_template.install(mock.MagicMock(),
+                                                              None)
                 self.assertFalse(os.path.exists('/tmp/test.lock'))
             with self.subTest('locked'):
-                with open('/tmp/test.lock', 'w') as f:
-                    fcntl.flock(f, fcntl.LOCK_EX)
+                with open('/tmp/test.lock', 'wb') as f_lock:
+                    fcntl.flock(f_lock, fcntl.LOCK_EX)
                     with self.assertRaises(
                             qubesadmin.tools.qvm_template.AlreadyRunning):
                         # args don't matter
-                        qubesadmin.tools.qvm_template.install(mock.MagicMock(), None)
+                        qubesadmin.tools.qvm_template.install(mock.MagicMock(),
+                                                              None)
                     # and not cleaned up then
                     self.assertTrue(os.path.exists('/tmp/test.lock'))
 
     def add_new_vm_side_effect(self, *args, **kwargs):
+        # pylint: disable=unused-argument
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
         self.app.domains.clear_cache()
@@ -420,10 +435,11 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
-                mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
+                mock.patch('sys.stderr', new=io.StringIO()) as _mock_err, \
                 tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
             path = template_file.name
             args = argparse.Namespace(
@@ -451,7 +467,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_dl.assert_called_with(args, self.app,
             path_override='/var/cache/qvm-template',
             dl_list={}, version_selector=selector)
-        mock_verify.assert_called_once_with(template_file.name, '/tmp/keyring.gpg',
+        mock_verify.assert_called_once_with(template_file.name,
+            '/tmp/keyring.gpg',
             nogpgcheck=False)
         # Package is extracted
         mock_extract.assert_called_with('test-vm', path,
@@ -532,10 +549,11 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
-                mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
+                mock.patch('sys.stderr', new=io.StringIO()) as _mock_err, \
                 tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
             path = template_file.name
             args = argparse.Namespace(
@@ -605,11 +623,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_extract,
             mock_confirm,
             mock_call,
-            mock_mkdirs,
+            _mock_mkdirs,
             mock_rename):
         mock_verify.return_value = None
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -658,7 +677,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_extract,
             mock_confirm,
             mock_call,
-            mock_mkdirs,
+            _mock_mkdirs,
             mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\0test-vm class=TemplateVM state=Halted\n'
@@ -675,7 +694,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         }
         mock_dl_list.return_value = {}
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -731,7 +751,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_extract,
             mock_confirm,
             mock_call,
-            mock_mkdirs,
+            _mock_mkdirs,
             mock_rename):
         mock_verify.return_value = {
             rpm.RPMTAG_NAME        : 'Xqubes-template-test-vm',
@@ -745,7 +765,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             rpm.RPMTAG_VERSION     : '4.1'
         }
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
@@ -793,10 +814,11 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             mock_extract,
             mock_confirm,
             mock_call,
-            mock_mkdirs,
+            _mock_mkdirs,
             mock_rename):
         mock_time = mock.Mock(wraps=datetime.datetime)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
@@ -889,10 +911,12 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
-                mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+                mock.patch('sys.stderr', new=io.StringIO()) as _mock_err:
+            # pylint: disable=unused-variable
             args = argparse.Namespace(
                 templates='test-vm',
                 keyring='/tmp/keyring.gpg',
@@ -989,7 +1013,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
@@ -1067,10 +1092,11 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
             datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
         # Extraction error
         mock_extract.return_value = False
-        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                    '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
                 mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
-                mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
+                mock.patch('sys.stderr', new=io.StringIO()) as _mock_err, \
                 tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
             path = template_file.name
             args = argparse.Namespace(
@@ -1895,7 +1921,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_repoquery')
     def test_132_get_dl_list_multimerge0_success(self, mock_query):
         counter = 0
-        def f(*args):
+        def f_side_effect(*_args):
             nonlocal counter
             counter += 1
             if counter == 1:
@@ -1929,7 +1955,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                     'Qubes template\n for fedora-32\n'
                 )
             ]
-        mock_query.side_effect = f
+        mock_query.side_effect = f_side_effect
         args = argparse.Namespace(
             templates=['some.local.file.rpm', 'fedora-32:0', 'fedora-32:1']
         )
@@ -1947,7 +1973,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_repoquery')
     def test_132_get_dl_list_multimerge1_success(self, mock_query):
         counter = 0
-        def f(*args):
+        def f_side_effect(*_args):
             nonlocal counter
             counter += 1
             if counter == 1:
@@ -1981,7 +2007,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                     'Qubes template\n for fedora-32\n'
                 )
             ]
-        mock_query.side_effect = f
+        mock_query.side_effect = f_side_effect
         args = argparse.Namespace(
             templates=['some.local.file.rpm', 'fedora-32:2', 'fedora-32:1']
         )
@@ -2005,22 +2031,22 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-epoch',
+            'template-epoch',
             None)] = b'0\x000'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-version',
+            'template-version',
             None)] = b'0\x004.2'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-release',
+            'template-release',
             None)] = b'0\x0020200201'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2168,7 +2194,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm-2'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2216,22 +2242,22 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-epoch',
+            'template-epoch',
             None)] = b'0\x000'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-version',
+            'template-version',
             None)] = b'0\x004.3'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-release',
+            'template-release',
             None)] = b'0\x0020200201'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2296,7 +2322,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm-2'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2357,22 +2383,22 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-epoch',
+            'template-epoch',
             None)] = b'0\x000'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-version',
+            'template-version',
             None)] = b'0\x004.3'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-release',
+            'template-release',
             None)] = b'0\x0020200201'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2407,22 +2433,22 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-epoch',
+            'template-epoch',
             None)] = b'0\x000'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-version',
+            'template-version',
             None)] = b'0\x004.3'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-release',
+            'template-release',
             None)] = b'0\x0020200201'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2459,22 +2485,22 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-epoch',
+            'template-epoch',
             None)] = b'0\x000'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-version',
+            'template-version',
             None)] = b'0\x004.3'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-release',
+            'template-release',
             None)] = b'0\x0020200201'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2509,22 +2535,22 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-name',
+            'template-name',
             None)] = b'0\0test-vm'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-epoch',
+            'template-epoch',
             None)] = b'0\x000'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-version',
+            'template-version',
             None)] = b'0\x004.3'
         self.app.expected_calls[(
             'test-vm',
             'admin.vm.feature.Get',
-            f'template-release',
+            'template-release',
             None)] = b'0\x0020200201'
         mock_query.return_value = [
             qubesadmin.tools.qvm_template.Template(
@@ -2622,7 +2648,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_repoquery')
     def test_151_list_templates_available_success(self, mock_query):
         counter = 0
-        def f(*args):
+        def f_side_effect(*_args):
             nonlocal counter
             counter += 1
             if counter == 1:
@@ -2656,7 +2682,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                     'Qubes template\n for fedora-31\n'
                 )
             ]
-        mock_query.side_effect = f
+        mock_query.side_effect = f_side_effect
         args = argparse.Namespace(
             all=False,
             installed=False,
@@ -3057,6 +3083,7 @@ f'''Available Templates
 Available Templates
 [('test-vm', '2:4.1-2020', 'qubes-templates-itl')]
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('list', args, expected)
 
     def test_155_list_templates_all_implicit_success(self):
@@ -3077,6 +3104,7 @@ Available Templates
 Available Templates
 [('test-vm', '2:4.1-2020', 'qubes-templates-itl')]
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('list', args, expected)
 
     def test_156_list_templates_info_all_success(self):
@@ -3097,6 +3125,7 @@ Available Templates
 Available Templates
 [('Name', ':', 'test-vm'), ('Epoch', ':', '2'), ('Version', ':', '4.1'), ('Release', ':', '2020'), ('Size', ':', '1.0 MiB'), ('Repository', ':', 'qubes-templates-itl'), ('Buildtime', ':', '2020-09-01 14:30:00+00:00'), ('URL', ':', 'https://qubes-os.org'), ('License', ':', 'GPL'), ('Summary', ':', 'Qubes template for fedora-31'), ('Description', ':', 'Qubes template'), ('', ':', ' for fedora-31'), (' ', ' ', ' ')]
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('info', args, expected)
 
     def test_157_list_templates_list_all_machinereadable_success(self):
@@ -3115,6 +3144,7 @@ Available Templates
 '''installed|test-vm-2|1:4.0-2019|@commandline
 available|test-vm|2:4.1-2020|qubes-templates-itl
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('list', args, expected)
 
     def test_158_list_templates_info_all_machinereadable_success(self):
@@ -3133,6 +3163,7 @@ available|test-vm|2:4.1-2020|qubes-templates-itl
 '''installed|test-vm-2|1|4.0|2019|@commandline|1234321|2020-09-02 14:30:00|2020-09-02 15:30:00|GPL|https://qubes-os.org|Summary|Desc|desc
 available|test-vm|2|4.1|2020|qubes-templates-itl|1048576|2020-09-01 14:30:00||GPL|https://qubes-os.org|Qubes template for fedora-31|Qubes template| for fedora-31|
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('info', args, expected)
 
     def test_159_list_templates_list_all_machinereadablejson_success(self):
@@ -3150,6 +3181,7 @@ available|test-vm|2|4.1|2020|qubes-templates-itl|1048576|2020-09-01 14:30:00||GP
         expected = \
 '''{"installed": [{"name": "test-vm-2", "evr": "1:4.0-2019", "reponame": "@commandline"}], "available": [{"name": "test-vm", "evr": "2:4.1-2020", "reponame": "qubes-templates-itl"}]}
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('list', args, expected)
 
     def test_160_list_templates_info_all_machinereadablejson_success(self):
@@ -3167,6 +3199,7 @@ available|test-vm|2|4.1|2020|qubes-templates-itl|1048576|2020-09-01 14:30:00||GP
         expected = \
 r'''{"installed": [{"name": "test-vm-2", "epoch": "1", "version": "4.0", "release": "2019", "reponame": "@commandline", "size": "1234321", "buildtime": "2020-09-02 14:30:00", "installtime": "2020-09-02 15:30:00", "license": "GPL", "url": "https://qubes-os.org", "summary": "Summary", "description": "Desc\ndesc"}], "available": [{"name": "test-vm", "epoch": "2", "version": "4.1", "release": "2020", "reponame": "qubes-templates-itl", "size": "1048576", "buildtime": "2020-09-01 14:30:00", "installtime": "", "license": "GPL", "url": "https://qubes-os.org", "summary": "Qubes template for fedora-31", "description": "Qubes template\n for fedora-31\n"}]}
 '''
+        # pylint: disable=no-value-for-parameter
         self.__test_list_templates_all_success('info', args, expected)
 
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_repoquery')
@@ -3690,12 +3723,12 @@ test-vm : Qubes template for fedora-31
 
     def _mock_qrexec_download(self, args, app, spec, path,
                               key, dlsize=None, refresh=False):
+        # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
             '{} should not exist before'.format(path))
         # just create an empty file
-        with open(path, 'wb') as f:
-            if f is not None:
-                f.truncate(dlsize)
+        with open(path, 'wb') as f_template:
+            f_template.truncate(dlsize)
 
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
@@ -3703,7 +3736,7 @@ test-vm : Qubes template for fedora-31
     def test_180_download_success(self, mock_qrexec, mock_dllist,
                                   mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
@@ -3711,7 +3744,8 @@ test-vm : Qubes template for fedora-31
                 nogpgcheck=False,
                 retries=1
             )
-            pkgs = qubesadmin.tools.qvm_template.download(args, self.app, dir, {
+            pkgs = qubesadmin.tools.qvm_template.download(
+                args, self.app, tmpdir, {
                     'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                         ('1', '2', '3'), 'qubes-templates-itl', 1048576),
                     'fedora-32': qubesadmin.tools.qvm_template.DlEntry(
@@ -3723,19 +3757,19 @@ test-vm : Qubes template for fedora-31
             self.assertIn('fedora-32', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576),
                 mock.call(args, self.app, 'qubes-template-fedora-32-0:1-2',
-                    re_str(dir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     2048576)
             ])
             self.assertEqual(mock_dllist.mock_calls, [])
             self.assertEqual(mock_verify_rpm.mock_calls, [
-                mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                           '/tmp/keyring.gpg', template_name='fedora-31'),
-                mock.call(re_str(dir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
+                mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
                           '/tmp/keyring.gpg', template_name='fedora-32'),
             ])
 
@@ -3745,16 +3779,16 @@ test-vm : Qubes template for fedora-31
     def test_181_download_success_nosuffix(self, mock_qrexec, mock_dllist,
                                            mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=1,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
-            with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+            with mock.patch('sys.stderr', new=io.StringIO()) as _mock_err:
                 pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                         'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                             ('1', '2', '3'), 'qubes-templates-itl', 1048576)
@@ -3762,13 +3796,13 @@ test-vm : Qubes template for fedora-31
             self.assertIn('fedora-31', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
             self.assertEqual(mock_dllist.mock_calls, [])
             self.assertEqual(mock_verify_rpm.mock_calls, [
-                mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                           '/tmp/keyring.gpg', template_name='fedora-31'),
             ])
 
@@ -3782,7 +3816,7 @@ test-vm : Qubes template for fedora-31
             'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
                 ('1', '2', '3'), 'qubes-templates-itl', 1048576)
         }
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=1,
                 repo_files=[],
@@ -3791,12 +3825,12 @@ test-vm : Qubes template for fedora-31
                 nogpgcheck=False,
             )
             pkgs = qubesadmin.tools.qvm_template.download(args, self.app,
-                dir, None,
+                tmpdir, None,
                 qubesadmin.tools.qvm_template.VersionSelector.LATEST_LOWER)
             self.assertIn('fedora-31', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
@@ -3807,7 +3841,7 @@ test-vm : Qubes template for fedora-31
                         VersionSelector.LATEST_LOWER)
             ])
             self.assertEqual(mock_verify_rpm.mock_calls, [
-                mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                           '/tmp/keyring.gpg', template_name='fedora-31'),
             ])
 
@@ -3815,16 +3849,16 @@ test-vm : Qubes template for fedora-31
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
     def test_183_download_success_downloaddir(self, mock_qrexec, mock_dllist,
-                                              mock_verify_rpm):
+                                              _mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=1,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
                     'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
@@ -3833,7 +3867,7 @@ test-vm : Qubes template for fedora-31
             self.assertIn('fedora-31', pkgs)
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
@@ -3845,10 +3879,10 @@ test-vm : Qubes template for fedora-31
     def test_184_download_success_exists(self, mock_qrexec, mock_dllist,
                                          mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             with open(os.path.join(
-                        dir, 'qubes-template-fedora-31-1:2-3.rpm'),
-                    'w') as _:
+                        tmpdir, 'qubes-template-fedora-31-1:2-3.rpm'),
+                    'wb') as _:
                 pass
             args = argparse.Namespace(
                 retries=1,
@@ -3856,7 +3890,7 @@ test-vm : Qubes template for fedora-31
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
                 pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
@@ -3873,19 +3907,19 @@ test-vm : Qubes template for fedora-31
                     in mock_err.getvalue())
             self.assertEqual(mock_verify_rpm.mock_calls, [
                 mock.call(
-                    dir + '/qubes-template-fedora-31-1:2-3.rpm',
+                    tmpdir + '/qubes-template-fedora-31-1:2-3.rpm',
                     '/tmp/keyring.gpg',
                     template_name='fedora-31',
                 ),
                 mock.call(
-                    re_str(dir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     template_name='fedora-32',
                 ),
             ])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-32-0:1-2',
-                    re_str(dir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-32-0:1-2.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     2048576)
             ])
@@ -3895,12 +3929,12 @@ test-vm : Qubes template for fedora-31
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
     def test_185_download_success_existsmove(self, mock_qrexec, mock_dllist,
-                                             mock_verify_rpm):
+                                             _mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             with open(os.path.join(
-                        dir, 'qubes-template-fedora-31-1:2-3.rpm'),
-                    'w') as _:
+                        tmpdir, 'qubes-template-fedora-31-1:2-3.rpm'),
+                    'wb') as _:
                 pass
             args = argparse.Namespace(
                 retries=1,
@@ -3908,7 +3942,7 @@ test-vm : Qubes template for fedora-31
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
                 pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
@@ -3921,18 +3955,18 @@ test-vm : Qubes template for fedora-31
             self.assertEqual(mock_qrexec.mock_calls, [])
             self.assertEqual(mock_dllist.mock_calls, [])
             self.assertTrue(os.path.exists(
-                dir + '/qubes-template-fedora-31-1:2-3.rpm'))
+                tmpdir + '/qubes-template-fedora-31-1:2-3.rpm'))
 
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
     def test_186_download_success_existsnosuffix(self, mock_qrexec, mock_dllist,
-                                                 mock_verify_rpm):
+                                                 _mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             with open(os.path.join(
-                        dir, 'qubes-template-fedora-31-1:2-3.rpm'),
-                    'w') as _:
+                        tmpdir, 'qubes-template-fedora-31-1:2-3.rpm'),
+                    'wb') as _:
                 pass
             args = argparse.Namespace(
                 retries=1,
@@ -3940,7 +3974,7 @@ test-vm : Qubes template for fedora-31
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
                 pkgs = qubesadmin.tools.qvm_template.download(args, self.app, None, {
@@ -3953,7 +3987,7 @@ test-vm : Qubes template for fedora-31
             self.assertEqual(mock_qrexec.mock_calls, [])
             self.assertEqual(mock_dllist.mock_calls, [])
             self.assertTrue(os.path.exists(
-                dir + '/qubes-template-fedora-31-1:2-3.rpm'))
+                tmpdir + '/qubes-template-fedora-31-1:2-3.rpm'))
 
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
@@ -3961,21 +3995,21 @@ test-vm : Qubes template for fedora-31
     def test_187_download_success_retry(self, mock_qrexec, mock_dllist,
                                         mock_verify_rpm):
         counter = 0
-        def f(*args, **kwargs):
+        def f_qrexec(*args, **kwargs):
             nonlocal counter
             counter += 1
             if counter == 1:
                 raise ConnectionError
             self._mock_qrexec_download(*args, **kwargs)
-        mock_qrexec.side_effect = f
-        with tempfile.TemporaryDirectory() as dir:
+        mock_qrexec.side_effect = f_qrexec
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=2,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
                     mock.patch('os.remove') as mock_rm:
@@ -3986,22 +4020,22 @@ test-vm : Qubes template for fedora-31
                 self.assertIn('fedora-31', pkgs)
                 self.assertTrue('retrying...' in mock_err.getvalue())
                 self.assertEqual(mock_rm.mock_calls, [
-                    mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'))
+                    mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'))
                 ])
             self.assertEqual(mock_verify_rpm.mock_calls, [
                 mock.call(
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     template_name='fedora-31',
                 ),
             ])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576),
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
@@ -4014,21 +4048,21 @@ test-vm : Qubes template for fedora-31
                                      mock_verify_rpm):
         mock_qrexec.side_effect = self._mock_qrexec_download
         counter = 0
-        def f(*args, **kwargs):
+        def f_qrexec(*args, **kwargs):
             nonlocal counter
             counter += 1
             if counter <= 3:
                 raise ConnectionError
             self._mock_qrexec_download(*args, **kwargs)
-        mock_qrexec.side_effect = f
-        with tempfile.TemporaryDirectory() as dir:
+        mock_qrexec.side_effect = f_qrexec
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=3,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
                     mock.patch('os.remove') as mock_rm:
@@ -4041,22 +4075,22 @@ test-vm : Qubes template for fedora-31
                 self.assertEqual(mock_err.getvalue().count('retrying...'), 2)
                 self.assertTrue('download failed' in mock_err.getvalue())
                 self.assertEqual(mock_rm.mock_calls, [
-                    mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED')),
-                    mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED')),
-                    mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'))
+                    mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED')),
+                    mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED')),
+                    mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'))
                 ])
             self.assertEqual(mock_verify_rpm.mock_calls, [])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576),
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576),
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
@@ -4067,20 +4101,20 @@ test-vm : Qubes template for fedora-31
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
     def test_189_download_fail_interrupt(self, mock_qrexec, mock_dllist,
                                          mock_verify_rpm):
-        def f(*args):
+        def f_qrexec(*args):
             raise RuntimeError
-        mock_qrexec.side_effect = f
-        with tempfile.TemporaryDirectory() as dir:
+        mock_qrexec.side_effect = f_qrexec
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=3,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
-            with mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
-                    mock.patch('os.remove') as mock_rm:
+            with mock.patch('sys.stderr', new=io.StringIO()) as _mock_err, \
+                    mock.patch('os.remove') as _mock_rm:
                 with self.assertRaises(RuntimeError):
                     qubesadmin.tools.qvm_template.download(
                         args, self.app, None, {
@@ -4089,7 +4123,7 @@ test-vm : Qubes template for fedora-31
                         })
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
@@ -4105,14 +4139,14 @@ test-vm : Qubes template for fedora-31
         mock_verify_rpm.side_effect = \
             qubesadmin.tools.qvm_template.SignatureVerificationError
 
-        with tempfile.TemporaryDirectory() as dir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=3,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=True,  # make sure it gets ignored
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with self.assertRaises(qubesadmin.tools.qvm_template.SignatureVerificationError):
                 qubesadmin.tools.qvm_template.download(
@@ -4122,14 +4156,14 @@ test-vm : Qubes template for fedora-31
                     })
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm'),
                     '/tmp/keyring.gpg',
                     1048576)
             ])
             self.assertEqual(mock_dllist.mock_calls, [])
-            self.assertEqual(os.listdir(dir), [])
+            self.assertEqual(os.listdir(tmpdir), [])
             self.assertEqual(mock_verify_rpm.mock_calls, [
-                mock.call(re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                mock.call(re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                           '/tmp/keyring.gpg', template_name='fedora-31'),
             ])
 
@@ -4138,17 +4172,17 @@ test-vm : Qubes template for fedora-31
     @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
     def test_191_download_fail(self, mock_qrexec, mock_dllist,
                                mock_verify_rpm):
-        def f(*args, **kwargs):
+        def f_qrexec(*args, **kwargs):
             raise ConnectionError
-        mock_qrexec.side_effect = f
-        with tempfile.TemporaryDirectory() as dir:
+        mock_qrexec.side_effect = f_qrexec
+        with tempfile.TemporaryDirectory() as tmpdir:
             args = argparse.Namespace(
                 retries=1,
                 repo_files=[],
                 keyring='/tmp/keyring.gpg',
                 releasever='4.1',
                 nogpgcheck=False,
-                downloaddir=dir
+                downloaddir=tmpdir
             )
             with mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
                 with self.assertRaises(SystemExit):
@@ -4162,7 +4196,7 @@ test-vm : Qubes template for fedora-31
             self.assertEqual(mock_verify_rpm.mock_calls, [])
             self.assertEqual(mock_qrexec.mock_calls, [
                 mock.call(args, self.app, 'qubes-template-fedora-31-1:2-3',
-                    re_str(dir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
+                    re_str(tmpdir + '/.*/qubes-template-fedora-31-1:2-3.rpm.UNTRUSTED'),
                     '/tmp/keyring.gpg',
                     1048576),
             ])
@@ -4170,12 +4204,12 @@ test-vm : Qubes template for fedora-31
 
     def _mock_qrexec_download_short(self, args, app, spec, path,
                               key, dlsize=None, refresh=False):
+        # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
             '{} should not exist before'.format(path))
         # just create an empty file
-        with open(path, 'wb') as f:
-            if f is not None:
-                f.truncate(dlsize // 2)
+        with open(path, 'wb') as f_pkg:
+            f_pkg.truncate(dlsize // 2)
 
     @mock.patch('os.remove')
     @mock.patch('os.rename')
@@ -4195,7 +4229,7 @@ test-vm : Qubes template for fedora-31
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename,
+            _mock_rename,
             mock_remove):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=TemplateVM state=Halted\n'
@@ -4325,7 +4359,7 @@ test-vm : Qubes template for fedora-31
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename):
+            _mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=TemplateVM state=Halted\n'
         for key, val in [
@@ -4357,7 +4391,7 @@ test-vm : Qubes template for fedora-31
         mock_dl_list.return_value = dl_list
         selector = qubesadmin.tools.qvm_template.VersionSelector.REINSTALL
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
-                self.assertRaises(SystemExit) as e, \
+                self.assertRaises(SystemExit), \
                 mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
             args = argparse.Namespace(
                 templates=['test-vm'],
@@ -4415,7 +4449,7 @@ test-vm : Qubes template for fedora-31
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename):
+            _mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=TemplateVM state=Halted\n'
         build_time = '2020-09-01 14:30:00' # 1598970600
@@ -4593,10 +4627,11 @@ test-vm : Qubes template for fedora-31
             yes=False
         )
         def deps(app, vm):
+            # pylint: disable=unused-argument
             if vm == 'vm1':
                 return [(self.app.domains['vm2'], 'default_template'),
                         (self.app.domains['vm3'], 'netvm')]
-            if vm == 'vm2' or vm == 'vm3':
+            if vm in ('vm2', 'vm3'):
                 return [(self.app.domains['vm4'], 'netvm')]
             if vm == 'vm4':
                 return [(None, 'updatevm')]
@@ -4683,10 +4718,11 @@ test-vm : Qubes template for fedora-31
             yes=False
         )
         def deps(app, vm):
+            # pylint: disable=unused-argument
             if vm == 'vm1':
                 return [(self.app.domains['vm2'], 'default_template'),
                         (self.app.domains['vm3'], 'netvm')]
-            if vm == 'vm2' or vm == 'vm3':
+            if vm in ('vm2', 'vm3'):
                 return [(self.app.domains['vm4'], 'netvm')]
             if vm == 'vm4':
                 return [(None, 'updatevm')]
@@ -4734,7 +4770,7 @@ test-vm : Qubes template for fedora-31
             mock_confirm,
             mock_remove,
             mock_kill):
-        def append_new_vm_side_effect(*args, **kwargs):
+        def append_new_vm_side_effect(*_args, **_kwargs):
             self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] += \
                 b'dummy-1 class=TemplateVM state=Halted\n'
             self.app.domains.clear_cache()
@@ -4765,6 +4801,7 @@ test-vm : Qubes template for fedora-31
             yes=False
         )
         def deps(app, vm):
+            # pylint: disable=unused-argument
             if vm == 'vm1':
                 return [(self.app.domains['vm2'], 'default_template')]
             return []
@@ -4786,8 +4823,8 @@ test-vm : Qubes template for fedora-31
         self.assertAllCalled()
 
     def test_220_get_keys_for_repos_success(self):
-        with tempfile.NamedTemporaryFile() as f:
-            f.write(
+        with tempfile.NamedTemporaryFile() as repo_f:
+            repo_f.write(
 b'''[qubes-templates-itl]
 name = Qubes Templates repository
 #baseurl = https://yum.qubes-os.org/r$releasever/templates-itl
@@ -4817,9 +4854,9 @@ fastestmirror = 1
 gpgcheck = 1
 gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary-testing
 ''')
-            f.flush()
+            repo_f.flush()
             ret = qubesadmin.tools.qvm_template.get_keys_for_repos(
-                [f.name], 'r4.1')
+                [repo_f.name], 'r4.1')
             self.assertEqual(ret, {
                 'qubes-templates-itl':
                     '/etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-r4.1-primary',
@@ -4845,7 +4882,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename):
+            _mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=TemplateVM state=Halted\n'
         for key, val in [
@@ -4931,7 +4968,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
             mock_confirm,
             mock_call,
             mock_mkdirs,
-            mock_rename):
+            _mock_rename):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00test-vm class=TemplateVM state=Halted\n'
         for key, val in [
@@ -5484,9 +5521,9 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             quiet=True
         )
         def execute(pubkey, packagename):
-            with open(packagename, 'rb') as s:
-                b = self.app.expected_service_calls[
-                    ('test-vm', 'qubes.TemplateDownload')] = s.read()
+            with open(packagename, 'rb') as pkg:
+                self.app.expected_service_calls[
+                    ('test-vm', 'qubes.TemplateDownload')] = pkg.read()
             with tempfile.NamedTemporaryFile() as fd:
                 qubesadmin.tools.qvm_template.qrexec_download(
                     args, self.app, 'fedora-31:4.0', key=pubkey, path=fd.name)
@@ -5511,9 +5548,9 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             quiet=True
         )
         def execute(pubkey, packagename):
-            with open(packagename, 'rb') as s:
-                b = self.app.expected_service_calls[
-                    ('test-vm', 'qubes.TemplateDownload')] = s.read()
+            with open(packagename, 'rb') as pkg:
+                self.app.expected_service_calls[
+                    ('test-vm', 'qubes.TemplateDownload')] = pkg.read()
             with tempfile.NamedTemporaryFile() as fd:
                 with self.assertRaises(ConnectionError):
                     qubesadmin.tools.qvm_template.qrexec_download(
@@ -5547,10 +5584,12 @@ fastestmirror = 1
 gpgcheck = 1
 gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-primary
 '''
-            with open(temp_dir + '/first.repo', 'w') as f:
-                f.write(repo_str1)
-            with open(temp_dir + '/second.repo', 'w') as f:
-                f.write(repo_str2)
+            with open(temp_dir + '/first.repo', 'w', encoding="utf-8") \
+                    as f_repo:
+                f_repo.write(repo_str1)
+            with open(temp_dir + '/second.repo', 'w', encoding="utf-8") \
+                    as f_repo:
+                f_repo.write(repo_str2)
 
             qubesadmin.tools.qvm_template.main(
                 ['--updatevm=',
@@ -5645,7 +5684,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
         self.app.expected_calls[(
             'test-existing',
             'admin.vm.property.Set',
-            f'installed_by_rpm',
+            'installed_by_rpm',
             b'False')] = b'0\0'
         self.app.expected_calls[(
             'test-migrated',

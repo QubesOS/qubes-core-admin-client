@@ -55,7 +55,8 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
         args = parser.parse_args(
             ['-p', 'testprop=testvalue', '-p', 'testprop2=testvalue2'])
         self.assertEqual(
-            {'testprop': 'testvalue', 'testprop2': 'testvalue2'} | args.properties,
+            {'testprop': 'testvalue', 'testprop2': 'testvalue2'} | \
+            args.properties,
             args.properties)
 
     def test_003_set_prop_with_default(self):
@@ -66,7 +67,8 @@ class TC_00_PropertyAction(qubesadmin.tests.QubesTestCase):
 
         args = parser.parse_args(['-p', 'testprop=testvalue'])
         self.assertEqual(
-            {'testprop': 'testvalue', 'defaultprop': 'defaultvalue'} | args.properties,
+            {'testprop': 'testvalue', 'defaultprop': 'defaultvalue'} | \
+            args.properties,
             args.properties)
 
     def test_003_set_prop_override_default(self):

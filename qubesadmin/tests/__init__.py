@@ -60,7 +60,8 @@ class TestVMCollection(dict):
 
 
 class TestProcess(object):
-    def __init__(self, input_callback=None, stdout=None, stderr=None, stdout_data=None):
+    def __init__(self, input_callback=None, stdout=None, stderr=None,
+            stdout_data=None):
         self.input_callback = input_callback
         self.got_any_input = False
         self.stdin = io.BytesIO()
@@ -96,6 +97,7 @@ class TestProcess(object):
         self.stdin.truncate(0)
 
     def communicate(self, input=None):
+        # pylint: disable=redefined-builtin
         if input is not None:
             self.stdin.write(input)
         self.stdin.close()
@@ -123,22 +125,22 @@ class _AssertNotRaisesContext(object):
         self.expected = expected
         self.exception = None
 
+        # pylint: disable=invalid-name
         self.failureException = test_case.failureException
 
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, tb):
+    def __exit__(self, exc_type, exc_value, traceback_):
         if exc_type is None:
             return True
 
         if issubclass(exc_type, self.expected):
             raise self.failureException(
                 "{!r} raised, traceback:\n{!s}".format(
-                    exc_value, ''.join(traceback.format_tb(tb))))
-        else:
-            # pass through
-            return False
+                    exc_value, ''.join(traceback.format_tb(traceback_))))
+        # pass through
+        return False
 
 
 class QubesTest(qubesadmin.app.QubesBase):
@@ -175,12 +177,14 @@ class QubesTest(qubesadmin.app.QubesBase):
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, **kwargs):
+        # pylint: disable=arguments-differ
         self.service_calls.append((dest, service, kwargs))
         call_key = (dest, service)
         # TODO: consider it as a future extension, as a replacement for
         #  checking app.service_calls later
         # if call_key not in self.expected_service_calls:
-        #     raise AssertionError('Unexpected service call {!r}'.format(call_key))
+        #     raise AssertionError(
+        #         'Unexpected service call {!r}'.format(call_key))
         if call_key in self.expected_service_calls:
             kwargs = kwargs.copy()
             kwargs['stdout_data'] = self.expected_service_calls[call_key]
@@ -198,6 +202,7 @@ class QubesTestCase(unittest.TestCase):
         self.app = QubesTest()
 
     def assertAllCalled(self):
+        # pylint: disable=invalid-name
         self.assertEqual(
             set(self.app.expected_calls.keys()),
             set(self.app.actual_calls))
@@ -207,7 +212,7 @@ class QubesTestCase(unittest.TestCase):
             isinstance(ret, list) and ret],
             'Some calls not called expected number of times')
 
-    def assertNotRaises(self, excClass, callableObj=None, *args, **kwargs):
+    def assertNotRaises(self, excClass, *args, callableObj=None, **kwargs):
         """Fail if an exception of class excClass is raised
            by callableObj when invoked with arguments args and keyword
            arguments kwargs. If a different type of exception is
@@ -230,6 +235,7 @@ class QubesTestCase(unittest.TestCase):
                the_exception = cm.exception
                self.assertEqual(the_exception.error_code, 3)
         """
+        # pylint: disable=invalid-name
         context = _AssertNotRaisesContext(excClass, self)
         if callableObj is None:
             return context

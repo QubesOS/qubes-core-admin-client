@@ -34,7 +34,7 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
             ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
             b'0\0default=yes type=int 30'
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, None)
-        (stdout, stderr) = vm.run_service_for_stdio('test.service')
+        vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
             ('disp123', 'test.service', {'connect_timeout': 30}),
@@ -53,7 +53,7 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
             ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
             b'0\0default=yes type=int 30'
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, 'test-vm')
-        (stdout, stderr) = vm.run_service_for_stdio('test.service')
+        vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
             ('disp123', 'test.service', {'connect_timeout': 30}),
@@ -70,7 +70,7 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
 
     def test_010_remote_create_default(self):
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, None)
-        (stdout, stderr) = vm.run_service_for_stdio('test.service')
+        vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
             ('$dispvm', 'test.service', {}),
@@ -80,7 +80,7 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
 
     def test_011_remote_create_specific(self):
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, 'test-vm')
-        (stdout, stderr) = vm.run_service_for_stdio('test.service')
+        vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
             ('$dispvm:test-vm', 'test.service', {}),
