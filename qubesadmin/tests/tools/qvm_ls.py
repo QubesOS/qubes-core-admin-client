@@ -165,12 +165,14 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         'dom0\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[rs]*'], app=app)
+            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[rs]*'],
+                                         app=app)
         self.assertEqual(stdout.getvalue(),
         'debian-sid\nfedora-rawhide\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[!14s]*'], app=app)
+            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[!14s]*'],
+                                         app=app)
         self.assertEqual(stdout.getvalue(),
         'fedora-rawhide\n')
 
