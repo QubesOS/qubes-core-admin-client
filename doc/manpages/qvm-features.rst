@@ -341,6 +341,12 @@ Boot the HVM qube via UEFI boot, instead of legacy one. Support for this boot
 mode is experimental and may not work in all the cases. It is ignored for
 non-HVM qubes.
 
+End user specific features
+--------------------------
+
+Features with the `x-` prefix are specifically meant for end users and will
+never be used for internal Qubes OS features.
+
 Authors
 -------
 
