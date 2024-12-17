@@ -1,3 +1,22 @@
+qubes-core-admin-client (4.3.8-1) unstable; urgency=medium
+
+  [ Aaron Rainbolt ]
+  * Add events_max_delay setting for qubes-gui-daemon
+
+  [ Marta Marczykowska-Górecka ]
+  * Add event mock and various improvements to mock API
+
+  [ Marek Marczykowski-Górecki ]
+  * Add copyright header to qvm_template tests
+  * Enable pylint in tests
+  * tests: drop python2 handling
+  * Fix a lot of pylint issues
+  * qvm-template: Be explicit about UTC timezone
+  * Make "multimedia" devices more detailed
+  * Sync device_protocol with core-admin
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 17 Dec 2024 04:28:07 +0100
+
 qubes-core-admin-client (4.3.7-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
