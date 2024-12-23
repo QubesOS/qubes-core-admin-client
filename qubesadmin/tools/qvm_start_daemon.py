@@ -110,7 +110,8 @@ GUI_DAEMON_OPTIONS = [
     ('startup_timeout', 'int', (lambda x: isinstance(x, int) and x >= 0)),
     ('max_clipboard_size', 'int', \
             (lambda x: isinstance(x, int) and 256 <= x <= 256000)),
-    ('events_max_delay', 'int', (lambda x: isinstance(x, int) and x >= 0)),
+    ('events_max_delay', 'int', \
+            (lambda x: isinstance(x, int) and 0 <= x <= 5000)),
 ]
 
 formatter = logging.Formatter(
