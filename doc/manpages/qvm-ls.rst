@@ -61,6 +61,10 @@ General options
 
    No spinner today.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Formatting options
 ------------------
 

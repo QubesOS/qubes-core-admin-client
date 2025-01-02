@@ -72,6 +72,10 @@ Options
    Temporarily attach Windows tools CDROM to the domain. This is equivalent with
    `--cdrom=dom0:/usr/lib/qubes/qubes-windows-tools.iso`.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 
 Authors
 -------

@@ -38,6 +38,10 @@ Options
 
     Increase verbosity
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Commands
 --------
 

@@ -27,6 +27,10 @@ Options
 
    Unset the feature.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Description
 -----------
 

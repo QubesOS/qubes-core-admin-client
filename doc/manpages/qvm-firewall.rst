@@ -37,6 +37,10 @@ Options
 
    in combination with `list` action, print raw rules
 
+.. option:: --version
+
+   Show program's version number and exit
+
 
 Actions description
 -------------------

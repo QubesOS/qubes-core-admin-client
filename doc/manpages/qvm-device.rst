@@ -35,6 +35,10 @@ Options
 
    list device classes
 
+.. option:: --version
+
+   Show program's version number and exit
+
 Commands
 ========
 

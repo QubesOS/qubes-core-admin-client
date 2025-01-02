@@ -43,6 +43,10 @@ Options
 
    Ignored; for compatibility with older scripts.
 
+.. option:: --version
+
+   Show program's version number and exit
+
 
 Common properties
 =================
