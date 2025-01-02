@@ -308,14 +308,14 @@ class FlagsColumn(Column):
 
 
 def calc_size(vm, volume_name):
-    ''' Calculates the volume size in MB '''
+    ''' Calculates the volume size in MiB '''
     try:
         return vm.volumes[volume_name].size // 1024 // 1024
     except KeyError:
         return 0
 
 def calc_usage(vm, volume_name):
-    ''' Calculates the volume usage in MB '''
+    ''' Calculates the volume usage in MiB '''
     try:
         return vm.volumes[volume_name].usage // 1024 // 1024
     except KeyError:

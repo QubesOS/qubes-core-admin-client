@@ -158,7 +158,7 @@ mac
     For template-based HVM ``auto`` mode means to clone template MAC.
 
 maxmem
-    Accepted values: memory size in MB
+    Accepted values: memory size in MiB
 
     Maximum memory size available for this VM. Dynamic memory management (aka
     qmemman) will not be able to balloon over this limit. For VMs with
@@ -168,7 +168,7 @@ maxmem
     TemplateBasedVM uses its template's value as a default.
 
 memory
-    Accepted values: memory size in MB
+    Accepted values: memory size in MiB
 
     Initial memory size for VM. This should be large enough to allow VM startup
     - before qmemman starts managing memory for this VM. For VM with qmemman
@@ -205,7 +205,7 @@ qrexec_timeout
     TemplateBasedVM uses its template's value as a default.
 
 stubdom_mem
-    Accepted values: memory in MB
+    Accepted values: memory in MiB
 
     Amount of memory to allocate to stubdomain. By default let Xen choose
     sensible value. This property is mostly for debugging early stubdomain
