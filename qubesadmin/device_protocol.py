@@ -656,7 +656,7 @@ class DeviceCategory(Enum):
         "p03****",
         "p04****",
     )
-    Audio = ("p0403**", "u01****")
+    Audio = ("p0403**", "p0401**", "u01****")
     Display = ("p0300**", "p0380**")
     Video = ("p0400**", "u0e****")
     Wireless = ("ue0****", "p0d****")
