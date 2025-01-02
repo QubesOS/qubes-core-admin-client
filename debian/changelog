@@ -1,3 +1,23 @@
+qubes-core-admin-client (4.3.9-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Add UNIX wildcards support
+  * Dedicate `x-` prefix for user's custom features
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix too long lines in tests
+
+  [ Ali Mirjamali ]
+  * Fix `events_max_delay` validation
+
+  [ Marek Marczykowski-Górecki ]
+  * q-dev: Add "Multimedia audio controller" as audio device too
+
+  [ Ali Mirjamali ]
+  * Add `--version`
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 02 Jan 2025 06:18:32 +0100
+
 qubes-core-admin-client (4.3.8-1) unstable; urgency=medium
 
   [ Aaron Rainbolt ]
