@@ -142,6 +142,14 @@ feature manually.
 
 Default: not internal VM
 
+anon-timezone
+^^^^^^^^^^^^^
+
+Do not expose the system timezone to the VM.
+
+Default: expose the timezone in the VM via the
+``/qubes-timezone`` key in QubesDB.
+
 appmenus-legacy
 ^^^^^^^^^^^^^^^
 
