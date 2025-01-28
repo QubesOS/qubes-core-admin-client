@@ -785,12 +785,17 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         """Update cached VM power state.
 
         This method is designed to be hooked as an event handler for:
+
         - domain-pre-start
+        - domain-start-failed
         - domain-start
-        - domain-shutdown
         - domain-paused
         - domain-unpaused
-        - domain-start-failed
+        - domain-suspended
+        - domain-resumed
+        - domain-pre-shutdown
+        - domain-shutdown-failed
+        - domain-shutdown
 
         This is done in :py:class:`qubesadmin.events.EventsDispatcher` class
         directly, before calling other handlers.

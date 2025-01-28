@@ -196,6 +196,14 @@ qubesadmin\.tools\.qvm\_template\_postprocess module
     :undoc-members:
     :show-inheritance:
 
+qubesadmin\.tools\.qvm\_top module
+----------------------------------------------------
+
+.. automodule:: qubesadmin.tools.qvm_top
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 qubesadmin\.tools\.qvm\_unpause module
 --------------------------------------
 
