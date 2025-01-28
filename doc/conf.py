@@ -366,6 +366,8 @@ man_pages = [
         u'Manage tags on a qube', _man_pages_author, 1),
     ('manpages/qvm-template', 'qvm-template',
         u'Manage templates', _man_pages_author, 1),
+    ('manpages/qvm-top', 'qvm-top',
+        u'Top-like monitoring tool', _man_pages_author, 1),
     ('manpages/qvm-unpause', 'qvm-unpause',
         u'Pause a qube', _man_pages_author, 1),
     ('manpages/qvm-volume', 'qvm-volume',
