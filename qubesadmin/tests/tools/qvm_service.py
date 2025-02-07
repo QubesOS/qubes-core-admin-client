@@ -20,6 +20,7 @@
 
 # pylint: disable=missing-docstring
 
+import sys
 import unittest
 
 import qubesadmin.tests
@@ -100,7 +101,7 @@ class TC_00_qvm_service(qubesadmin.tests.QubesTestCase):
             0)
         self.assertAllCalled()
 
-    @unittest.expectedFailure
+    @unittest.skipIf(sys.version_info.minor < 13, reason="argparse bug")
     def test_004_enable_opt_mixed(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -109,6 +110,18 @@ class TC_00_qvm_service(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.feature.Set',
              'service.service1', b'1')] = b'0\x00'
         with self.assertNotRaises(SystemExit):
+            self.assertEqual(
+                qubesadmin.tools.qvm_service.main(
+                    ['some-vm', '--enable', 'service1'],
+                    app=self.app),
+                0)
+        self.assertAllCalled()
+
+    @unittest.skipIf(
+        sys.version_info.minor >= 13, reason="argparse works correctly"
+    )
+    def test_004_enable_opt_mixed_broken(self):
+        with self.assertRaises(SystemExit):
             self.assertEqual(
                 qubesadmin.tools.qvm_service.main(
                     ['some-vm', '--enable', 'service1'],
