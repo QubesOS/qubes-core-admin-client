@@ -358,6 +358,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             (dst, 'admin.vm.firewall.Set', None, rules)] = \
             b'0\x00'
 
+        # notes
+        self.app.expected_calls[
+            (src, 'admin.vm.notes.Get', None, None)] = \
+            b'0\0'
+
         # storage
         for vm in (src, dst):
             self.app.expected_calls[
@@ -811,6 +816,50 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
         with self.assertRaises(qubesadmin.exc.QubesException):
             self.app.clone_vm('test-vm', 'new-name')
 
+        self.assertAllCalled()
+
+    def test_045_clone_notes_fail(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.notes.Get', None, None)] = \
+            b'0\0Secret Note\0'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.notes.Set', None, b'Secret Note\0')] = \
+            b'2\0QubesNotesException\0\0It was For Your Eyes Only!\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.List', None, None)] = \
+            b'0\0qid\nname\ntemplate\nlabel\nmemory\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.volume.List', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'label', None)] = \
+            b'0\0default=False type=label red'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'template', None)] = \
+            b'0\0default=False type=vm test-template'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'memory', None)] = \
+            b'0\0default=False type=int 400'
+        self.app.expected_calls[
+            ('new-name', 'admin.vm.property.Set', 'memory', b'400')] = \
+            b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.tag.List', None, None)] = \
+            b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.List', None, None)] = \
+            b'0\0'
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Halted\n' \
+            b'test-vm class=AppVM state=Halted\n' \
+            b'test-template class=TemplateVM state=Halted\n' \
+            b'test-net class=AppVM state=Halted\n'
+        self.app.expected_calls[('dom0', 'admin.vm.Create.AppVM',
+            'test-template', b'name=new-name label=red')] = b'0\x00'
+        self.app.expected_calls[('new-name', 'admin.vm.Remove', None, None)] = \
+            b'0\x00'
+        with self.assertRaises(qubesadmin.exc.QubesException):
+            self.app.clone_vm('test-vm', 'new-name')
         self.assertAllCalled()
 
     def test_050_automatic_reset_cache(self):
