@@ -1963,6 +1963,8 @@ class BackupRestore(object):
                         handlers[img_path] = data_func
                     handlers[os.path.join(vm_info.subdir, 'firewall.xml')] = \
                         functools.partial(vm_info.vm.handle_firewall_xml, vm)
+                    handlers[os.path.join(vm_info.subdir, 'notes.txt')] = \
+                        functools.partial(vm_info.vm.handle_notes_txt, vm)
                     handlers[os.path.join(vm_info.subdir,
                         'whitelisted-appmenus.list')] = \
                         functools.partial(self._handle_appmenus_list, vm)

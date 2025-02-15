@@ -140,6 +140,10 @@ class Core2VM(qubesadmin.backup.BackupVM):
         except:  # pylint: disable=bare-except
             vm.log.exception('Failed to set firewall')
 
+    def handle_notes_txt(self, vm, stream):
+        '''Qube notes did not exist at this time'''
+        raise NotImplementedError  # pragma: no cover
+
 
 class Core2Qubes(qubesadmin.backup.BackupApp):
     '''Parsed qubes.xml'''

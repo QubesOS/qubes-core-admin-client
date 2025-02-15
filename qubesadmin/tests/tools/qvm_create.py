@@ -269,6 +269,9 @@ class TC_00_qvm_create(qubesadmin.tests.QubesTestCase):
             ('template', 'admin.vm.volume.CloneFrom', 'root', None)] = \
             b'0\0clone-cookie'
         self.app.expected_calls[
+            ('template', 'admin.vm.notes.Get', None, None)] = \
+            b'0\0'
+        self.app.expected_calls[
             ('new-vm', 'admin.vm.volume.CloneTo', 'root', b'clone-cookie')] = \
             b'0\0'
         self.app.expected_calls[
