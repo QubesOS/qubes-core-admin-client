@@ -475,6 +475,16 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                         raise
 
             try:
+                vm_notes = src_vm.get_notes()
+                if vm_notes:
+                    dst_vm.set_notes(vm_notes)
+            except qubesadmin.exc.QubesException as e:
+                dst_vm.log.error(
+                    'Failed to set qube notes: {!s}'.format(e))
+                if not ignore_errors:
+                    raise
+
+            try:
                 dst_vm.firewall.save_rules(src_vm.firewall.rules)
             except qubesadmin.exc.QubesException as e:
                 self.log.error('Failed to set firewall: %s', e)
