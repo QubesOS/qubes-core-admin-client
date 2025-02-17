@@ -695,7 +695,7 @@ parsed_qubes_xml_v4 = {
         },
         'test-net': {
             'klass': 'AppVM',
-            'label': 'red',
+            'label': 'scarlet',
             'properties': {
                 'maxmem': '300',
                 'memory': '300',
@@ -749,8 +749,11 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
                 expected_data['domains'][vm]['template'], vm)
             self.assertEqual(backup_app.domains[vm].klass,
                 expected_data['domains'][vm]['klass'], vm)
-            self.assertEqual(backup_app.domains[vm].label,
-                expected_data['domains'][vm]['label'], vm)
+            if expected_data['domains'][vm]['label'] == 'scarlet':
+                self.assertEqual(backup_app.domains[vm].label, 'red', vm)
+            else:
+                self.assertEqual(backup_app.domains[vm].label,
+                    expected_data['domains'][vm]['label'], vm)
             self.assertEqual(backup_app.domains[vm].backup_path,
                 expected_data['domains'][vm]['backup_path'], vm)
             self.assertEqual(backup_app.domains[vm].included_in_backup,
@@ -1511,6 +1514,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             b'fedora-25 class=TemplateVM state=Halted\n'
             b'testvm class=AppVM state=Running\n'
         )
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = (
+            b'0\0red\norange\nyellow\ngreen\ngray\nblue\npurple\nblack\n'
+        )
         self.app.expected_calls[
             ('dom0', 'admin.property.Get', 'default_template', None)] = \
             b'0\0default=no type=vm fedora-25'
@@ -1579,6 +1585,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             b'fedora-25 class=TemplateVM state=Halted\n'
             b'testvm class=AppVM state=Running\n'
         )
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = (
+            b'0\0red\norange\nyellow\ngreen\ngray\nblue\npurple\nblack\n'
+        )
         self.app.expected_calls[
             ('dom0', 'admin.property.Get', 'default_template', None)] = \
             b'0\0default=no type=vm fedora-25'
@@ -1646,6 +1655,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             b'0\0dom0 class=AdminVM state=Running\n'
             b'fedora-25 class=TemplateVM state=Halted\n'
             b'testvm class=AppVM state=Running\n'
+        )
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = (
+            b'0\0red\norange\nyellow\ngreen\ngray\nblue\npurple\nblack\n'
         )
         self.app.expected_calls[
             ('dom0', 'admin.property.Get', 'default_template', None)] = \

@@ -2020,6 +2020,12 @@ class BackupRestore(object):
                 # can't create vm, but need backup info
                 new_vm = self.backup_app.domains[vm_name]
             else:
+                # do not fail if VM had a custom label. revert to red label
+                if not vm.label in self.app.labels:
+                    self.log.warning(
+                        'Reverting to red label while restoring %s ' \
+                        'since %s label does not exist', vm.name, vm.label)
+                    vm.label = "red"
                 try:
                     # first only create VMs, later setting may require other VMs
                     # be already created
