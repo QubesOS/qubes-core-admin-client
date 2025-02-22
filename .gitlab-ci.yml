@@ -20,7 +20,7 @@ checks:tests:
   - ci/codecov-wrapper
   before_script:
   - sudo dnf install -y openssl python3-rpm sequoia-sqv python3-xlib libnotify
-    xorg-x11-server-Xvfb
+  - sudo dnf install -y --enablerepo=qubes-host-r4.3-current-testing scrypt
   - pip3 install --quiet -r ci/requirements.txt
   - git config --global --add safe.directory "$PWD"
   script:
