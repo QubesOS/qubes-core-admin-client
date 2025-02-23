@@ -695,7 +695,7 @@ parsed_qubes_xml_v4 = {
         },
         'test-net': {
             'klass': 'AppVM',
-            'label': 'red',
+            'label': 'scarlet',
             'properties': {
                 'maxmem': '300',
                 'memory': '300',
@@ -1357,18 +1357,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             if name == 'dom0':
                 continue
 
+            label = 'red' if vm['label'] == 'scarlet' else vm['label']
             if self.storage_pool:
                 self.app.expected_calls[
                     ('dom0', 'admin.vm.CreateInPool.' + vm['klass'],
                      templates_map.get(vm['template'], vm['template']),
                     'name={} label={} pool={}'.format(
-                        name, vm['label'], self.storage_pool).encode())] = \
+                        name, label, self.storage_pool).encode())] = \
                     b'0\0'
             else:
                 self.app.expected_calls[
                     ('dom0', 'admin.vm.Create.' + vm['klass'],
                      templates_map.get(vm['template'], vm['template']),
-                    'name={} label={}'.format(name, vm['label']).encode())] =\
+                    'name={} label={}'.format(name, label).encode())] =\
                     b'0\0'
             extra_vm_list_lines.append(
                 '{} class={} state=Halted\n'.format(name, vm['klass']).encode())
@@ -1487,6 +1488,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             [orig_admin_vm_list] + \
             [orig_admin_vm_list + b''.join(extra_vm_list_lines)] * \
             len(extra_vm_list_lines)
+        self.app.expected_calls[('dom0', 'admin.label.List', None, None)] = (
+            b'0\0red\norange\nyellow\ngreen\ngray\nblue\npurple\nblack\n'
+        )
 
     def mock_appmenus(self, queue, vm, stream):
         queue.put((vm.name, 'appmenus', None, stream.read()))
