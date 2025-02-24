@@ -353,6 +353,28 @@ Boot the HVM qube via UEFI boot, instead of legacy one. Support for this boot
 mode is experimental and may not work in all the cases. It is ignored for
 non-HVM qubes.
 
+skip-update
+^^^^^^^^^^^
+
+By setting this feature to `1` for TemplateVMs and StandaloneVMs, you will not
+receive notifications if they are outdated or EOL. They will not be targeted for
+update via `qubes-vm-update` unless explicitly targeted with `--target` option.
+Similarly, updater GUI will not select them for update.
+
+prohibit-start
+^^^^^^^^^^^^^^
+
+Prevents qube from being started in anyway. By setting `prohibit-start` feature
+value of a qube to any non-empty string, the system will refuse to start it
+at all conditions (via qvm-run, qrexec, Qube Manager, ...). This is useful for
+known compromised qubes, awating some forensic analysis; templates user really
+need to keep in the original, unmodified state; qubes user want to re-configure
+and need not automatically started but the qube is a target of frequent qrexec
+calls. Feature value could contain the rationale for the start ban.
+
+Note: `prohibit-start` for a TemplateVM does not forbid start of AppVMs based
+on it.
+
 End user specific features
 --------------------------
 
