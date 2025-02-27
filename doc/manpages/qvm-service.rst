@@ -198,6 +198,18 @@ usb-reset-on-attach:
     This is known to help with some devices, that cannot deal with re-attaching
     to another driver.
 
+minimal-netvm:
+    Default: enabled in NetVM
+
+    Performs memory optimizations to make NetVM consume as little RAM as possible.
+    This is done by disabling unnecessary services and keeping a memory reserve
+    for the kernel drivers.
+
+minimal-usbvm:
+    Default: enabled in USBVM
+
+    Disables unnecessary services for USBVM.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
