@@ -2029,6 +2029,14 @@ class BackupRestore(object):
                         label=vm.label,
                         pool=self.options.override_pool,
                         **kwargs)
+                except qubesadmin.exc.QubesLabelNotFoundError:
+                    # do not fail if label is not present. revert to red label
+                    new_vm = self.app.add_new_vm(
+                        vm.klass,
+                        name=vm_name,
+                        label='red',
+                        pool=self.options.override_pool,
+                        **kwargs)
                 except Exception as err:  # pylint: disable=broad-except
                     self.log.error('Error restoring VM %s, skipping: %s',
                         vm.name, err)

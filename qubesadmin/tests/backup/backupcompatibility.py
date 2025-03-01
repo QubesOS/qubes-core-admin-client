@@ -695,7 +695,7 @@ parsed_qubes_xml_v4 = {
         },
         'test-net': {
             'klass': 'AppVM',
-            'label': 'red',
+            'label': 'scarlet',
             'properties': {
                 'maxmem': '300',
                 'memory': '300',
@@ -1357,7 +1357,31 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
             if name == 'dom0':
                 continue
 
-            if self.storage_pool:
+            if self.storage_pool and vm['label'] == 'scarlet':
+                self.app.expected_calls[
+                    ('dom0', 'admin.vm.CreateInPool.' + vm['klass'],
+                     templates_map.get(vm['template'], vm['template']),
+                    'name={} label={} pool={}'.format(
+                        name, 'scarlet', self.storage_pool).encode())] = \
+                    b'2\0QubesLabelNotFoundError\0\0No such label\0'
+                self.app.expected_calls[
+                    ('dom0', 'admin.vm.CreateInPool.' + vm['klass'],
+                     templates_map.get(vm['template'], vm['template']),
+                    'name={} label={} pool={}'.format(
+                        name, 'red', self.storage_pool).encode())] = \
+                    b'0\0'
+            elif vm['label'] == 'scarlet':
+                self.app.expected_calls[
+                    ('dom0', 'admin.vm.Create.' + vm['klass'],
+                     templates_map.get(vm['template'], vm['template']),
+                    'name={} label={}'.format(name, 'scarlet').encode())] =\
+                    b'2\0QubesLabelNotFoundError\0\0No such label\0'
+                self.app.expected_calls[
+                    ('dom0', 'admin.vm.Create.' + vm['klass'],
+                     templates_map.get(vm['template'], vm['template']),
+                    'name={} label={}'.format(name, 'red').encode())] =\
+                    b'0\0'
+            elif self.storage_pool:
                 self.app.expected_calls[
                     ('dom0', 'admin.vm.CreateInPool.' + vm['klass'],
                      templates_map.get(vm['template'], vm['template']),
