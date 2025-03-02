@@ -375,6 +375,18 @@ calls. Feature value could contain the rationale for the start ban.
 Note: `prohibit-start` for a TemplateVM does not forbid start of AppVMs based
 on it.
 
+custom-persist.*
+^^^^^^^^^^^^^^^^
+
+Adds a bind-dirs element in an AppVM where `custom-persist` service is
+enabled. The `custom-persist.*` key can take any arbitrary name and will
+have no effect on the feature behaviour. The value must be the absolute path to
+the file or directory that need to be added to the bind-dirs list.
+The entry value can be prefixed by settings to pre-create the resource in
+``/rw/bind-dirs`` before bind-mounting it . When using the pre-creation
+settings, the feature value must respect the following format:
+``<file|dir>:<owner>:<group>:<mode>:<absolute path>``.
+
 End user specific features
 --------------------------
 

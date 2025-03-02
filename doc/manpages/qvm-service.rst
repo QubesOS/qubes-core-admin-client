@@ -210,6 +210,15 @@ minimal-usbvm:
 
     Disables unnecessary services for USBVM.
 
+custom-persist:
+    Default: disabled
+
+    Enables minimal state AppVM (custom persist) feature. When enabled, user bind
+    dirs must be defined using qvm-features as ``/rw/config/qubes-bind-dirs.d/``
+    will be ignored (see feature documentation for more details).
+    This will also disable ``/home`` and ``/usr/local`` persistence as well as
+    ``/rw/config/*`` automatically executed configs.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
