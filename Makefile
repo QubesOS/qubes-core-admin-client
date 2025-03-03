@@ -20,6 +20,7 @@ install:
 	install -d $(DESTDIR)/etc/qubes/post-install.d
 	install -m 0755 scripts/30-keyboard-layout-service.sh \
 		$(DESTDIR)/etc/qubes/post-install.d/30-keyboard-layout-service.sh
+	install -D scripts/qvm-console $(DESTDIR)/usr/bin/qvm-console
 
 clean:
 	rm -rf test-packages/__pycache__ qubesadmin/__pycache__
