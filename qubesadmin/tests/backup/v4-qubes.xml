@@ -8,6 +8,7 @@
     <label color="0x3465a4" id="label-6">blue</label>
     <label color="0x75507b" id="label-7">purple</label>
     <label color="0x000000" id="label-8">black</label>
+    <label color="0xff2400" id="label-9">scarlet</label>
   </labels>
   <pools>
     <pool driver="lvm_thin" name="lvm" thin_pool="pool3" volume_group="core3"/>
@@ -392,7 +393,7 @@
     </domain>
     <domain id="domain-6" class="AppVM">
       <properties>
-        <property name="label">label-1</property>
+        <property name="label">label-9</property>
         <property name="maxmem">300</property>
         <property name="name">test-net</property>
         <property name="netvm"></property>
