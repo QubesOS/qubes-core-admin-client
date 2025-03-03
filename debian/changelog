@@ -1,3 +1,28 @@
+qubes-core-admin-client (4.3.11-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * tests: Account for argparse bug fix in Python 3.13
+
+  [ Marek Marczykowski-Górecki ]
+  * ci: install 'scrypt' tool for the backup tests
+
+  [ Ali Mirjamali ]
+  * Document `skip-update` & `prohibit-start` features
+
+  [ Guillaume Chinal ]
+  * doc for minimal-netvm and minimal-usbvm services
+
+  [ Ali Mirjamali ]
+  * Revert to red label while restoring on missing labels
+
+  [ Guillaume Chinal ]
+  * doc: custom-persist man pages
+
+  [ Rusty Bird ]
+  * tools/qvm-volume: add 'clear' action
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 03 Mar 2025 04:43:20 +0100
+
 qubes-core-admin-client (4.3.10-1) unstable; urgency=medium
 
   [ Ali Mirjamali ]
