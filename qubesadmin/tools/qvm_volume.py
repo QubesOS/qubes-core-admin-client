@@ -167,6 +167,18 @@ def import_volume(args):
             input_file.close()
 
 
+def clear_volume(args):
+    """ Clear the volume data. """
+
+    if not args.force:
+        print('This will empty the volume! '
+              '(Data may be preserved in a revision.)')
+        if input('Are you sure? [y/N] ').lower() != 'y':
+            print('Clear cancelled.')
+            return
+    args.volume.clear_data()
+
+
 def list_volumes(args):
     """ Called by the parser to execute the qvm-volume list subcommand. """
     app = args.app
@@ -332,6 +344,17 @@ def init_import_parser(sub_parsers):
     import_parser.set_defaults(func=import_volume)
 
 
+def init_clear_parser(sub_parsers):
+    """ Add 'clear' action related options """
+    clear_parser = sub_parsers.add_parser(
+        'clear', help='clear volume data')
+    clear_parser.add_argument(metavar='VM:VOLUME', dest='volume',
+                              action=qubesadmin.tools.VMVolumeAction)
+    clear_parser.add_argument('--force', '-f', action='store_true',
+        help='Do not prompt for confirmation')
+    clear_parser.set_defaults(func=clear_volume)
+
+
 def get_parser():
     """Create :py:class:`argparse.ArgumentParser` suitable for
     :program:`qvm-volume`.
@@ -350,6 +373,7 @@ def get_parser():
     init_list_parser(sub_parsers)
     init_revert_parser(sub_parsers)
     init_import_parser(sub_parsers)
+    init_clear_parser(sub_parsers)
     # default action
     parser.set_defaults(func=list_volumes)
 

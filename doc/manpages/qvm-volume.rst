@@ -148,11 +148,8 @@ case of importing from stdin, you may need to provide size explicitly with
 `--size` option. You can keep previous volume size by using `--no-resize`
 option.
 
-A specific use case is importing empty data to clear private volume:
-
-| :command:`qvm-volume` import --no-resize some-vm:private /dev/null
-
-Old data will be stored as a revision, subject to `revisions_to_keep` limit.
+Old data may be stored as a revision, subject to `revisions_to_keep`
+configuration.
 
 .. option:: --size
 
@@ -161,6 +158,19 @@ Old data will be stored as a revision, subject to `revisions_to_keep` limit.
 .. option:: --no-resize
 
    Do not resize volume before the import.
+
+clear
+^^^^^
+| :command:`qvm-volume clear` [--force|-f] *VMNAME:VOLUME*
+
+Clear the data in volume *VMNAME:VOLUME*, emptying it.
+
+Old data may be stored as a revision, subject to `revisions_to_keep`
+configuration.
+
+.. option:: --force, -f
+
+   Do not prompt for confirmation.
 
 Authors
 -------
