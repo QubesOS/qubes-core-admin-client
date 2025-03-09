@@ -60,6 +60,53 @@ List of known features
    This list of features may be incomplete, because extensions are free to use any
    values, without registering them anywhere.
 
+boot-mode.\*
+^^^^^^^^^^^^
+
+Boot mode information. Boot modes allow qubes to provide the user features that
+are controlled via kernel parameters. Each boot mode has one or more kernel
+parameters associated with it. If a qube is booted in a particular boot mode,
+that boot mode's kernel parameters are appended to the qube's usual kernel
+command line, activating the corresponding features within the VM. Templates
+that support toggling features in this way can advertise boot modes, which will
+then be shown in the settings dialog of Qube Manager. Templates can also specify
+default boot modes for themselves and for AppVMs based on them.
+
+All VMs have an implicitly defined bootmode, `default`, which appends no
+additional kernel parameters. It is used as a fallback in the event a template
+does not specify any boot modes, or there is no valid bootmode set.
+
+boot-mode.active
+^^^^^^^^^^^^^^^^
+
+The default boot mode this qube will use. This boot mode option is expected to
+be set by the template and should not be modified by the user. The user can
+override this boot mode by setting a boot mode in Qube Manager, or by setting
+the `bootmode` property with `qvm-prefs`.
+
+boot-mode.appvm-default
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The default boot mode AppVMs based on this template will use. This boot mode
+option is expected to be set by the template and should not be modified by the
+user. The user can override this boot mode by setting default boot mode for
+derived AppVMs in Qube Manager, or by setting the `appvm_default_bootmode`
+property with `qvm-prefs`.
+
+boot-mode.kernelopts.\*
+^^^^^^^^^^^^^^^^^^^^^^^
+
+A boot mode supported by this qube. The boot mode's ID is specified by the
+last dot-separated word in the feature key, while the boot mode's kernel
+options are specified by the feature value.
+
+boot-mode.name.\*
+^^^^^^^^^^^^^^^^^
+
+The user-visible pretty name for a boot mode. The ID of the boot mode with the
+given pretty name is specified by the last dot-separated word in the feature
+key, while the pretty name is specified by the feature value. 
+
 gui
 ^^^
 

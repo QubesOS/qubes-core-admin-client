@@ -107,10 +107,12 @@ class Property:
 
 
 DEFAULT_VM_PROPERTIES = {
+    "appvm_default_bootmode": Property("default", "str", True),
     "audiovm": Property("dom0", "vm", True),
     "auto_cleanup": Property("False", "bool", True),
     "autostart": Property("False", "bool", True),
     "backup_timestamp": Property("", "int", True),
+    "bootmode": Property("default", "str", True),
     "debug": Property("False", "bool", True),
     "default_dispvm": Property("default-dvm", "vm", False),
     "default_user": Property("user", "str", True),
@@ -199,7 +201,10 @@ ALL_KNOWN_FEATURES = [
     'supported-service.shutdown-idle', 'os', 'gui-allow-fullscreen',
     'gui-allow-utf8-titles', 'qubes-firewall', 'service.shutdown-idle',
     'supported-service.qubes-updates-proxy', 'service.clocksync',
-    'supported-service.clocksync', 'skip-update'
+    'supported-service.clocksync', 'skip-update', 'boot-mode.active',
+    'boot-mode.appvm-default', 'boot-mode.name.default',
+    'boot-mode.kernelopts.mode1', 'boot-mode.kernelopts.mode2',
+    'boot-mode.name.mode1', 'boot-mode.name.mode2',
 ]
 
 POSSIBLE_TAGS = ['whonix-updatevm', 'anon-gateway']
@@ -383,8 +388,10 @@ class MockQube:
 
         # create all propertyget calls
         for prop, value in self.properties.items():
-            if prop == 'template' and \
-                    self.klass in ("TemplateVM", "StandaloneVM"):
+            if ((prop == 'template') and \
+                    self.klass in ("TemplateVM", "StandaloneVM")) \
+                    or ((prop == 'appvm_default_bootmode') and \
+                    self.klass in ("AppVM",)):
                 self.qapp.expected_calls[
                     (self.name, "admin.vm.property.Get", prop, None)] = \
                     b'2\x00QubesNoSuchPropertyError\x00\x00No such property\x00'

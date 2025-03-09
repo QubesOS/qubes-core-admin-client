@@ -54,6 +54,19 @@ Common properties
 This list is non-exhaustive. For authoritative listing, see
 :option:`--help-properties` and documentation of the source code.
 
+appvm_default_bootmode
+
+    Specifies the boot mode AppVMs based on this VM will start in, unless
+    overridden by the `bootmode` property or the `boot-mode.active` feature.
+    If set to `default`, a fallback boot mode is used. Only present for
+    TemplateVMs. See :manpage:`qvm-features(1)` for details about boot modes.
+
+bootmode
+
+    Specifies the boot mode the VM will start in. If set to `default`, the
+    boot mode specified by the `boot-mode.active` feature will be used. See
+    :manpage:`qvm-features(1)` for details about boot modes.
+
 clockvm
 
     Qube used as a time source for dom0
