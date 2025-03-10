@@ -358,6 +358,11 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
             (dst, 'admin.vm.firewall.Set', None, rules)] = \
             b'0\x00'
 
+        # notes
+        self.app.expected_calls[
+            (src, 'admin.vm.notes.Get', None, None)] = \
+            b'0\0'
+
         # storage
         for vm in (src, dst):
             self.app.expected_calls[
