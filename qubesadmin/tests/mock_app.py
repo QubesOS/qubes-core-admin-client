@@ -457,6 +457,8 @@ class MockQube:
                     (self.name, "admin.vm.tag.Get", tag, None)] = b"0\x001"
 
         for tag in POSSIBLE_TAGS:
+            if self.tags and tag in self.tags:
+                continue
             self.qapp.expected_calls[
                 (self.name, "admin.vm.tag.Get", tag, None)] = b"0\x000"
 
