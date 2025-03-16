@@ -207,7 +207,7 @@ ALL_KNOWN_FEATURES = [
     'boot-mode.name.mode1', 'boot-mode.name.mode2',
 ]
 
-POSSIBLE_TAGS = ['whonix-updatevm', 'anon-gateway']
+POSSIBLE_TAGS = ['whonix-updatevm', 'anon-gateway', 'anon-vm']
 
 
 class VolumeInfo:
