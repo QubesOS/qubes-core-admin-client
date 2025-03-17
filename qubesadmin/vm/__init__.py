@@ -394,6 +394,23 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             self._klass = super().klass
         return self._klass
 
+    def get_notes(self) -> str:
+        ''' Get qube notes '''
+        try:
+            response = self.qubesd_call(self._method_dest, 'admin.vm.notes.Get')
+        except Exception as exc:
+            raise qubesadmin.exc.QubesNotesError(str(exc))
+        return response.decode()
+
+    def set_notes(self, notes: str):
+        ''' Set qube notes '''
+        try:
+            self.qubesd_call(self._method_dest, 'admin.vm.notes.Set', \
+                payload = str(notes).encode('ascii'))
+        except Exception as exc:
+            raise qubesadmin.exc.QubesNotesError(str(exc))
+
+
 class DispVMWrapper(QubesVM):
     '''Wrapper class for new DispVM, supporting only service call
 
