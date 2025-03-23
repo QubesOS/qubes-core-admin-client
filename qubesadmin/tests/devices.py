@@ -339,8 +339,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_082_add_denied_device_multiple(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.denied.Add', None, b"uabcdefm******")] = \
-            b"0\x00"
+            ('test-vm', 'admin.vm.device.denied.Add', None,
+             b"uabcdefm******")] = b"0\x00"
         self.app.domains['test-vm'].devices.deny(
             qubesadmin.device_protocol.DeviceInterface("uabcdef"),
             qubesadmin.device_protocol.DeviceInterface("m******"),
@@ -361,9 +361,8 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_085_allow_device_multiple(self):
         self.app.expected_calls[
-            (
-            'test-vm', 'admin.vm.device.denied.Remove', None, b"uabcdefm******")] = \
-            b"0\x00"
+            ('test-vm', 'admin.vm.device.denied.Remove', None,
+             b"uabcdefm******")] = b"0\x00"
         self.app.domains['test-vm'].devices.allow(
             qubesadmin.device_protocol.DeviceInterface("uabcdef"),
             qubesadmin.device_protocol.DeviceInterface("m******"),

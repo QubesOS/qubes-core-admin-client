@@ -760,6 +760,13 @@ class DeviceInterface:
 
     @staticmethod
     def from_str_bulk(interfaces: Optional[str]) -> List["DeviceInterface"]:
+        """Interprets string of interfaces as list of `DeviceInterface`.
+
+        Examples:
+        "cITERFC" -> [DeviceInterface("cITERFC")]
+        "cITERFCcinterfc" -> [DeviceInterface("cITERFC"),
+                              DeviceInterface("cinterfc")]
+        """
         interfaces = interfaces or ""
         if len(interfaces) % 7 != 0:
             raise QubesValueError(

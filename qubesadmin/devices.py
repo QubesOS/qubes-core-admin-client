@@ -305,6 +305,9 @@ class DeviceManager(dict):
         return self._vm.app.list_deviceclass()
 
     def deny(self, *interfaces: Iterable[DeviceInterface]):
+        """
+        Deny a device with any of the given interfaces from attaching to the VM.
+        """
         self._vm.qubesd_call(
             None,
             "admin.vm.device.denied.Add",
@@ -313,6 +316,9 @@ class DeviceManager(dict):
         )
 
     def allow(self, *interfaces: Iterable[DeviceInterface]):
+        """
+        Remove given interfaces from denied list.
+        """
         self._vm.qubesd_call(
             None,
             "admin.vm.device.denied.Remove",
