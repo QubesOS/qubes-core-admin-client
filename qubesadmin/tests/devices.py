@@ -323,3 +323,48 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.assertNotIn(devclass, seen)
             seen.add(devclass)
         self.assertEqual(seen, {'block', 'mic', 'usb'})
+
+    def test_080_add_denied_device(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.denied.Add', None, b"uabcdef")] = \
+            b"0\x00"
+        self.app.domains['test-vm'].devices.deny(
+            qubesadmin.device_protocol.DeviceInterface("uabcdef"))
+
+    def test_081_add_denied_device_empty(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.denied.Add', None, b'')] = \
+            b"0\x00"
+        self.app.domains['test-vm'].devices.deny()
+
+    def test_082_add_denied_device_multiple(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.denied.Add', None, b"uabcdefm******")] = \
+            b"0\x00"
+        self.app.domains['test-vm'].devices.deny(
+            qubesadmin.device_protocol.DeviceInterface("uabcdef"),
+            qubesadmin.device_protocol.DeviceInterface("m******"),
+        )
+
+    def test_083_allow_device(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.denied.Remove', None, b"uabcdef")] = \
+            b"0\x00"
+        self.app.domains['test-vm'].devices.allow(
+            qubesadmin.device_protocol.DeviceInterface("uabcdef"))
+
+    def test_084_allow_device_empty(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.denied.Remove', None, b'')] = \
+            b"0\x00"
+        self.app.domains['test-vm'].devices.allow()
+
+    def test_085_allow_device_multiple(self):
+        self.app.expected_calls[
+            (
+            'test-vm', 'admin.vm.device.denied.Remove', None, b"uabcdefm******")] = \
+            b"0\x00"
+        self.app.domains['test-vm'].devices.allow(
+            qubesadmin.device_protocol.DeviceInterface("uabcdef"),
+            qubesadmin.device_protocol.DeviceInterface("m******"),
+        )
