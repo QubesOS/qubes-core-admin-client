@@ -205,6 +205,7 @@ ALL_KNOWN_FEATURES = [
     'boot-mode.appvm-default', 'boot-mode.name.default',
     'boot-mode.kernelopts.mode1', 'boot-mode.kernelopts.mode2',
     'boot-mode.name.mode1', 'boot-mode.name.mode2',
+    'service.updates-proxy-setup'
 ]
 
 POSSIBLE_TAGS = ['whonix-updatevm', 'anon-gateway', 'anon-vm']
@@ -448,19 +449,23 @@ class MockQube:
         self.setup_volume_calls()
 
         # tags
-        if self.tags:
-            self.qapp.expected_calls[
-                (self.name, "admin.vm.tag.List", None, None)] = \
-                ("0\x00" + "".join(f"{tag}\n" for tag in self.tags)).encode()
-            for tag in self.tags:
-                self.qapp.expected_calls[
-                    (self.name, "admin.vm.tag.Get", tag, None)] = b"0\x001"
-
         for tag in POSSIBLE_TAGS:
             if self.tags and tag in self.tags:
                 continue
             self.qapp.expected_calls[
                 (self.name, "admin.vm.tag.Get", tag, None)] = b"0\x000"
+
+        if self.tags:
+            self.qapp.expected_calls[
+                (self.name, "admin.vm.tag.List", None, None)] = \
+                b"0\x00" + ("".join(f"{tag}\n" for tag in self.tags)).encode()
+            for tag in self.tags:
+                self.qapp.expected_calls[
+                    (self.name, "admin.vm.tag.Get", tag, None)] = b'0\0001'
+        else:
+            self.qapp.expected_calls[
+                (self.name, "admin.vm.tag.List", None, None)] = "0\x00".encode()
+
 
         self.setup_device_calls()
         self.setup_firewall_rules(self.firewall_rules)
@@ -530,6 +535,19 @@ class MockQube:
             (self.name, "admin.vm.device.mic.Assigned", None, None)] = \
             b"0\x00"
 
+        # currently attached devices
+        self.qapp.expected_calls[
+            (self.name, "admin.vm.device.pci.Attached", None, None)] = b"0\x00"
+        self.qapp.expected_calls[
+            (self.name, "admin.vm.device.block.Attached", None, None)] = \
+            b"0\x00"
+        self.qapp.expected_calls[
+            (self.name, "admin.vm.device.usb.Attached", None, None)] = \
+            b"0\x00"
+        self.qapp.expected_calls[
+            (self.name, "admin.vm.device.mic.Attached", None, None)] = \
+            b"0\x00"
+
     def setup_firewall_rules(self, rule_list: List[Dict[str, str]]):
         """setup firewall with provided rules: rules should be provided as
         list of dictionaries. Typical keys are action, proto, dsthost,
@@ -595,11 +613,13 @@ class MockDevice:
                 f"port_id='{port}' devclass='pci' " \
                 f"product='{self.description}' vendor='{self.description}' " \
                 f"interfaces='p0c0500' backend_domain='{self.backend_vm}'\n"
-        return f'{self.dev_id} description={self.description}\n'
+        return f"{self.dev_id} description='{self.description}'\n"
 
     def attachment_string(self):
         if ":" in self.dev_id:
             port, _ = self.dev_id.split(":")
+        elif self.dev_class == 'mic':
+            port = "mic"
         else:
             port = "00"
         string = (f"{self.backend_vm}+{self.dev_id} "
@@ -695,6 +715,22 @@ class QubesTestWrapper(QubesTest):
                         b'2\x00QubesFeatureNotFoundError\x00\x00' + \
                         str(feature).encode() + b'\x00'
 
+    def set_global_property(self, property_name: str, value: Optional[str]):
+        self._global_properties[property_name].value = value
+
+    def update_global_properties(self):
+        properties_getall = b"0\x00"
+
+        for property_name, value in self._global_properties.items():
+            self.app.expected_calls[('dom0', "admin.property.Get",
+                                     property_name, None)] = \
+                b"0\x00" + str(value).encode()
+            properties_getall += \
+                f"{property_name} {value}\n".encode()
+        self.app.expected_calls[
+            ('dom0', "admin.property.GetAll", None, None)] = \
+            properties_getall
+
 
 class MockQubes(QubesTestWrapper):
     """
@@ -714,7 +750,9 @@ class MockQubes(QubesTestWrapper):
                     'supported-service.qubes-updates-proxy': '1'})
         self._qubes['fedora-36'] = MockQube(
                 name="fedora-36", qapp=self,
-                klass='TemplateVM', netvm='')
+                klass='TemplateVM', netvm='',
+            features={
+                'service.updates-proxy-setup': 1})
 
         self._global_properties = GLOBAL_PROPERTIES.copy()
 
@@ -726,22 +764,6 @@ class MockQubes(QubesTestWrapper):
 
         self.update_global_properties()
         self.update_vm_calls()
-
-    def set_global_property(self, property_name: str, value: str):
-        self._global_properties[property_name].value = value
-
-    def update_global_properties(self):
-        properties_getall = b"0\x00"
-
-        for property_name, value in self._global_properties.items():
-            self.app.expected_calls[('dom0', "admin.property.Get",
-                                     property_name, None)] = \
-                b"0\x00" + str(value).encode()
-            properties_getall += \
-                f"{property_name} {value}\n".encode()
-        self.app.expected_calls[
-            ('dom0', "admin.property.GetAll", None, None)] = \
-            properties_getall
 
 
 class MockQubesComplete(MockQubes):
@@ -765,7 +787,8 @@ class MockQubesComplete(MockQubes):
             installed_by_rpm=True,
             features={'supported-service.qubes-u2f-proxy': '1',
                       'service.qubes-update-check': '1',
-                      'updates-available': 1})
+                      'updates-available': 1,
+                      'service.updates-proxy-setup': 1})
 
         self._qubes['default-dvm'] = MockQube(
             name="default-dvm", qapp=self, klass='DispVM',
