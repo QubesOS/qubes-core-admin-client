@@ -41,7 +41,7 @@ from qubesadmin.device_protocol import (
     UnknownDevice,
     DeviceAssignment,
     VirtualDevice,
-    AssignmentMode,
+    AssignmentMode, DeviceInterface,
 )
 
 
@@ -303,3 +303,25 @@ class DeviceManager(dict):
 
     def keys(self):
         return self._vm.app.list_deviceclass()
+
+    def deny(self, *interfaces: Iterable[DeviceInterface]):
+        """
+        Deny a device with any of the given interfaces from attaching to the VM.
+        """
+        self._vm.qubesd_call(
+            None,
+            "admin.vm.device.denied.Add",
+            None,
+            "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
+        )
+
+    def allow(self, *interfaces: Iterable[DeviceInterface]):
+        """
+        Remove given interfaces from denied list.
+        """
+        self._vm.qubesd_call(
+            None,
+            "admin.vm.device.denied.Remove",
+            None,
+            "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
+        )

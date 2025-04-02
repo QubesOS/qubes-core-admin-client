@@ -37,6 +37,7 @@ from enum import Enum
 from typing import Optional, Dict, Any, List, Union, Tuple, Callable
 
 import qubesadmin.exc
+from qubesadmin.exc import QubesValueError
 
 
 class ProtocolError(AssertionError):
@@ -712,7 +713,12 @@ class DeviceInterface:
                     f"for given {devclass=}",
                     file=sys.stderr,
                 )
-            ifc_full = devclass[0] + ifc_padded
+            if not all(c in string.hexdigits + "*" for c in ifc_padded):
+                raise ProtocolError("Invalid characters in interface encoding")
+            devclass_code = devclass[0].lower()
+            if devclass_code not in string.ascii_lowercase:
+                raise ProtocolError("Invalid characters in devclass encoding")
+            ifc_full = devclass_code + ifc_padded
         else:
             known_devclasses = {
                 "p": "pci",
@@ -751,6 +757,26 @@ class DeviceInterface:
     def unknown(cls) -> "DeviceInterface":
         """Value for unknown device interface."""
         return cls("?******")
+
+    @staticmethod
+    def from_str_bulk(interfaces: Optional[str]) -> List["DeviceInterface"]:
+        """Interprets string of interfaces as list of `DeviceInterface`.
+
+        Examples:
+        "cITERFC" -> [DeviceInterface("cITERFC")]
+        "cITERFCcinterfc" -> [DeviceInterface("cITERFC"),
+                              DeviceInterface("cinterfc")]
+        """
+        interfaces = interfaces or ""
+        if len(interfaces) % 7 != 0:
+            raise QubesValueError(
+                f"Invalid length of {interfaces=} "
+                f"(is {len(interfaces)}, expected multiple of 7)",
+            )
+        return [
+            DeviceInterface(interfaces[i : i + 7])
+            for i in range(0, len(interfaces), 7)
+        ]
 
     def __repr__(self):
         return self._interface_encoding
@@ -1139,11 +1165,7 @@ class DeviceInfo(VirtualDevice):
 
         if "interfaces" in properties:
             interfaces = properties["interfaces"]
-            interfaces = [
-                DeviceInterface(interfaces[i : i + 7])
-                for i in range(0, len(interfaces), 7)
-            ]
-            properties["interfaces"] = interfaces
+            properties["interfaces"] = DeviceInterface.from_str_bulk(interfaces)
 
         if "parent_ident" in properties:
             properties["parent"] = Port(
