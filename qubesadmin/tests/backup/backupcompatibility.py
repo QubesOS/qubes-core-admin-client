@@ -1563,13 +1563,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0))
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue))
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue))
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1632,13 +1638,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0))
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue))
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue))
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1700,13 +1712,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0))
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue))
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue))
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1769,13 +1787,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0))
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue))
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue))
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1840,13 +1864,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1911,13 +1941,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1954,13 +1990,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -1977,7 +2019,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
     @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
-    def test_230_r4_uncommon_cmpression_forced(self):
+    def test_230_r4_uncommon_compression_forced(self):
         self.create_v4_backup("less")
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
@@ -2013,13 +2055,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 0)),
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue)),
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp)
@@ -2160,13 +2208,19 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         dummy_timestamp = time.strftime("test-%Y-%m-%d-%H%M%S")
         patches = [
             mock.patch('qubesadmin.storage.Volume',
-                functools.partial(MockVolume, qubesd_calls_queue, 30)),
+                staticmethod(
+                    functools.partial(MockVolume, qubesd_calls_queue, 30))
+                ),
             mock.patch(
                 'qubesadmin.backup.restore.BackupRestore._handle_appmenus_list',
-                functools.partial(self.mock_appmenus, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(self.mock_appmenus, qubesd_calls_queue))
+                ),
             mock.patch(
                 'qubesadmin.firewall.Firewall',
-                functools.partial(MockFirewall, qubesd_calls_queue)),
+                staticmethod(
+                    functools.partial(MockFirewall, qubesd_calls_queue))
+                ),
             mock.patch(
                 'time.strftime',
                 return_value=dummy_timestamp),
