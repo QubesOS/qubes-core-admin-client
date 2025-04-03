@@ -35,9 +35,12 @@ import qubesadmin.tools.qvm_device
 class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
     """ Tests the output logic of the qvm-device tool """
 
-    def expected_device_call(self, vm, action, returned=b"0\0"):
+    def expected_device_call(
+        self, vm, action, returned=b"0\0", klass="testclass"
+    ):
         self.app.expected_calls[
-            (vm, f'admin.vm.device.testclass.{action}', None, None)] = returned
+            (vm, f"admin.vm.device.{klass}.{action}", None, None)
+        ] = returned
 
     def setUp(self):
         super().setUp()
@@ -172,6 +175,41 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             self.assertEqual(
                 buf.getvalue(),
                 'pci\nusb\n'
+            )
+
+    def test_004_list_pci_with_sbdf(self):
+        """
+        List PCI devices with SBDF info.
+        """
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\0dom0 class=AdminVM state=Running\n"
+        )
+        self.app.domains.clear_cache()
+        self.expected_device_call(
+            "dom0",
+            "Available",
+            b"0\00000_14.0:0x8086:0xa0ed::p0c0330 "
+            b"device_id='0x8086:0xa0ed::p0c0330' port_id='00_14.0' "
+            b"devclass='pci' backend_domain='dom0' product='p1' vendor='v' "
+            b"interfaces='p0c0330' _sbdf='0000:00:14.0'\n"
+            b"00_1d.0-00_00.0:0x8086:0x2725::p028000 "
+            b"device_id='0x8086:0x2725::p028000' port_id='00_1d.0-00_00.0' "
+            b"devclass='pci' backend_domain='dom0' product='p2' vendor='v' "
+            b"interfaces='p028000' _sbdf='0000:aa:00.0'\n",
+            klass="pci",
+        )
+        self.expected_device_call("dom0", "Attached", b"0\0", klass="pci")
+
+        with qubesadmin.tests.tools.StdoutBuffer() as buf:
+            qubesadmin.tools.qvm_device.main(
+                ["pci", "list", "--with-sbdf", "dom0"], app=self.app
+            )
+            self.assertEqual(
+                [x.rstrip() for x in buf.getvalue().splitlines()],
+                [
+                    "dom0:00_14.0          0000:00:14.0  PCI_USB: v p1",
+                    "dom0:00_1d.0-00_00.0  0000:aa:00.0  Network: v p2",
+                ],
             )
 
     def test_010_attach(self):

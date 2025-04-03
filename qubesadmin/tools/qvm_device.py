@@ -44,7 +44,7 @@ from qubesadmin.device_protocol import (
 from qubesadmin.devices import DEVICE_DENY_LIST
 
 
-def prepare_table(dev_list):
+def prepare_table(dev_list, with_sbdf=False):
     """Converts a list of :py:class:`qubes.devices.DeviceInfo` objects to a
     list of tuples for the :py:func:`qubes.tools.print_table`.
 
@@ -53,21 +53,35 @@ def prepare_table(dev_list):
 
     :param iterable dev_list: List of :py:class:`qubes.devices.DeviceInfo`
         objects.
+    :param bool with_sbdf: when True, include SBDF identifier of PCI device
     :returns: list of tuples
     """
     output = []
     header = []
     if sys.stdout.isatty():
-        header += [("BACKEND:DEVID", "DESCRIPTION", "USED BY")]  # NOQA
+        if with_sbdf:
+            header += [("BACKEND:DEVID", "SBDF", "DESCRIPTION", "USED BY")]
+        else:
+            header += [("BACKEND:DEVID", "DESCRIPTION", "USED BY")]
 
     for line in dev_list:
-        output += [
-            (
-                line.ident,
-                line.description,
-                str(line.assignments),
-            )
-        ]
+        if with_sbdf:
+            output += [
+                (
+                    line.ident,
+                    line.sbdf,
+                    line.description,
+                    str(line.assignments),
+                )
+            ]
+        else:
+            output += [
+                (
+                    line.ident,
+                    line.description,
+                    str(line.assignments),
+                )
+            ]
 
     return header + sorted(output)
 
@@ -81,6 +95,7 @@ class Line:
         self.description = device.description
         self.assignment = assignment
         self.frontends = []
+        self.sbdf = getattr(device, "data", {}).get("sbdf")
 
     @property
     def assignments(self):
@@ -96,6 +111,8 @@ def list_devices(args):
     """
     Called by the parser to execute the qubes-devices list subcommand."""
     domains = args.domains if hasattr(args, "domains") else None
+    if args.devclass != "pci":
+        args.with_sbdf = False
     lines = _load_lines(args.app, domains, args.devclass, actual_devices=True)
     lines = list(lines.values())
     # short command without (list/ls) should print just existing devices
@@ -107,7 +124,9 @@ def list_devices(args):
             args.app, [], args.devclass, actual_devices=False
         )
         lines += list(extra_lines.values())
-    qubesadmin.tools.print_table(prepare_table(lines))
+    qubesadmin.tools.print_table(
+        prepare_table(lines, with_sbdf=getattr(args, "with_sbdf"))
+    )
 
 
 def _load_lines(app, domains, devclass, actual_devices: bool):
@@ -469,6 +488,13 @@ def init_list_parser(sub_parsers):
         "indicated by '*' before qube name.",
     )
 
+    list_parser.add_argument(
+        "--with-sbdf",
+        "--resolve-paths",
+        action="store_true",
+        help="Include resolved PCI path (SBDF) identifier of the PCI "
+        "devices; ignored for non-PCI devices",
+    )
     vm_name_group = qubesadmin.tools.VmNameGroup(
         list_parser,
         required=False,
