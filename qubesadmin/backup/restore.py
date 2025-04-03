@@ -66,6 +66,7 @@ DEFAULT_CRYPTO_ALGORITHM = 'aes-256-cbc'
 DEFAULT_HMAC_ALGORITHM = 'scrypt'
 DEFAULT_COMPRESSION_FILTER = 'gzip'
 KNOWN_COMPRESSION_FILTERS = ('gzip', 'bzip2', 'xz')
+OPTIONAL_COMPRESSION_FILTERS = ('lzma', 'pigz', 'zstd', 'zstdmt')
 # lazy loaded
 KNOWN_CRYPTO_ALGORITHMS = []
 # lazy loaded
@@ -101,6 +102,13 @@ def init_supported_hmac_and_crypto():
     if not KNOWN_CRYPTO_ALGORITHMS:
         KNOWN_CRYPTO_ALGORITHMS.extend(get_supported_crypto_algo())
 
+def validate_compression_filter(compressor: str):
+    '''Check if the compression algorithm is available on the system'''
+    if compressor in KNOWN_COMPRESSION_FILTERS:
+        return True
+    if compressor in OPTIONAL_COMPRESSION_FILTERS and shutil.which(compressor):
+        return True
+    return False
 
 class BackupHeader(object):
     '''Structure describing backup-header file included as the first file in
@@ -118,7 +126,7 @@ class BackupHeader(object):
         'compression-filter': Header(
             field='compression_filter',
             t=str,
-            validator=lambda x: x in KNOWN_COMPRESSION_FILTERS),
+            validator=validate_compression_filter),
         'crypto-algorithm': Header(
             field='crypto_algorithm',
             t=str,
@@ -203,6 +211,11 @@ class BackupHeader(object):
                 raise QubesException("Unrecognized header type")
             if not header.validator(value):
                 if key == 'compression-filter':
+                    if value in OPTIONAL_COMPRESSION_FILTERS:
+                        raise QubesException(
+                            f"Optional '{value}' compression filter is not "
+                            "installed. Install it and retry."
+                        )
                     raise QubesException(
                         "Unusual compression filter '{f}' found. Use "
                         "--compression-filter={f} to use it anyway.".format(
