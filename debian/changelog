@@ -1,3 +1,29 @@
+qubes-core-admin-client (4.3.13-1) unstable; urgency=medium
+
+  [ Aaron Rainbolt ]
+  * Add boot mode support
+
+  [ Guillaume Chinal ]
+  * add anon-vm to the list of possible tags
+  * fix invalid tag value when using a tag from POSSIBLE_TAGS in
+    MockQube
+
+  [ Marta Marczykowska-Górecka ]
+  * Minor fixes to mock api
+
+  [ Piotr Bartman-Szwarc ]
+  * q-dev: update device_protocol.py
+  * q-dev: denied devices api draft
+  * q-dev: denied devices api tests
+  * q-dev: add docstrings and cleanup
+  * q-dev: fix tests/devices
+
+  [ Ali Mirjamali ]
+  * Enable more common compression filters for restoring
+  * Cleanup Backup Compatibility test output
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 06 Apr 2025 03:16:33 +0200
+
 qubes-core-admin-client (4.3.12-1) unstable; urgency=medium
 
   * Restore installing qvm-console
