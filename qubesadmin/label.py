@@ -26,7 +26,7 @@ import qubesadmin.exc
 class Label(object):
     '''Label definition for virtual machines
 
-    Label specifies colour of the padlock displayed next to VM's name.
+    Label specifies colour of the qube icon displayed next to VM's name.
 
     :param str color: colour specification as in HTML (``#abcdef``)
     :param str name: label's name like "red" or "green"
