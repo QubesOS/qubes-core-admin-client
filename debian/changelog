@@ -1,3 +1,13 @@
+qubes-core-admin-client (4.3.14-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Synchronize exc.py with core-admin
+
+  [ Kamil Aronowski ]
+  * Update the padlock icons reference in qubesadmin/label.py docstring
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 12 Apr 2025 03:17:40 +0200
+
 qubes-core-admin-client (4.3.13-1) unstable; urgency=medium
 
   [ Aaron Rainbolt ]
