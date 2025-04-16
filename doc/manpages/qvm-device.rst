@@ -53,6 +53,11 @@ List devices.
 
    Include info about device assignments, indicated by '*' before qube name.
 
+.. option:: --with-sbdf, --resolve-paths
+
+   For PCI devices list also resolved device path (SBDF). This eases looking up the device with other tools like lspci.
+   The option is ignored when listing non-PCI devices.
+
 .. option:: --all
 
    List devices from all qubes. You can use :option:`--exclude` to limit the
