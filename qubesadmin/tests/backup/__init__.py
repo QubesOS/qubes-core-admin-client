@@ -213,6 +213,10 @@ class BackupTestCase(qubesadmin.tests.QubesTestCase):
                          '\n'.join(errors))
         if not appvm and not os.path.isdir(backupfile):
             os.unlink(backupfile)
+        tmpdir = getattr(restore_op, "tmpdir", None)
+        del restore_op
+        if tmpdir:
+            self.assertFalse(os.path.exists(tmpdir))
 
     def create_sparse(self, path, size, signature=b''):
         f = open(path, "wb")

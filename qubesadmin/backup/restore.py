@@ -943,7 +943,7 @@ class BackupRestore(object):
         # due to possible location in ~/QubesIncoming, the prefix should not be
         # a valid VM name
         os.makedirs(tmpdir, exist_ok=True)
-        self.tmpdir = tempfile.mkdtemp(prefix="backup#restore-", dir=tmpdir)
+        self.tmpdir = tempfile.mkdtemp(prefix=".backup#restore-", dir=tmpdir)
 
         #: list of processes (Popen objects) to kill on cancel
         self.processes_to_kill_on_cancel = []
@@ -963,6 +963,15 @@ class BackupRestore(object):
 
         #: VMs included in the backup
         self.backup_app = self._process_qubes_xml()
+
+    def __del__(self):
+        """Since deleting tmp directory in `restore_do` does not work properly
+        (this is confirmed by the unittests), we check for its existence again
+        once more and delete it if it still exists.
+        """
+        if self.log.getEffectiveLevel() > logging.DEBUG:
+            if os.path.exists(self.tmpdir):
+                shutil.rmtree(self.tmpdir)
 
     def _start_retrieval_process(self, filelist, limit_count, limit_bytes):
         """Retrieve backup stream and extract it to :py:attr:`tmpdir`

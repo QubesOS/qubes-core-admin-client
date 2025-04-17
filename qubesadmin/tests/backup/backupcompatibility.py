@@ -1838,7 +1838,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
     @unittest.skipUnless(spawn.find_executable('scrypt'),
         "scrypt not installed")
-    def test_230_r4_custom_cmpression(self):
+    def test_230_r4_custom_compression(self):
         self.create_v4_backup("bzip2")
 
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
