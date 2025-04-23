@@ -20,6 +20,7 @@
 """Tool for managing VM templates."""
 
 import argparse
+import base64
 import collections
 import configparser
 import datetime
@@ -59,6 +60,8 @@ UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/var/tmp/qvm-template.lck'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
 TAR_HEADER_BYTES = 512
+WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
+WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
 UPDATEVM = str('global UpdateVM')
 
@@ -502,9 +505,48 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
     check_newline(spec, 'template name')
     payload += spec + '\n'
     payload += '---\n'
+
+    repo_config = ""
     for path in args.repo_files:
         with open(path, 'r', encoding='utf-8') as fd:
-            payload += fd.read() + '\n'
+            repo_config += fd.read() + '\n'
+    payload += repo_config
+
+    # Add base64 encoded files to payload if needed
+    def encode_key(path):
+        if path.startswith("file://"):
+            path = path[7:]
+
+        if not path.startswith(
+                "/etc/qubes/repo-templates/keys/") or not os.path.isfile(path):
+            return ""
+
+        encoded_key = "#" + path + "\n"
+        with open(path, "rb") as key:
+            encoded_key += f"#{base64.b64encode(key.read()).decode('ascii')}\n"
+        return encoded_key
+
+    def append_keys(payload):
+        config = configparser.ConfigParser()
+        try:
+            config.read_string(payload)
+        except RuntimeError:
+            return ""
+
+        file_list = set()
+        for section in config.sections():
+            for option in ["gpgkey", "sslclientcert", "sslclientkey"]:
+                if config.has_option(section, option):
+                    file_list.add(config.get(section, option))
+
+        encoded_keys = "".join(encode_key(file_path) for file_path in file_list)
+        if not encoded_keys:
+            return ""
+
+        return f"\n{WRAPPER_PAYLOAD_BEGIN}\n{encoded_keys}{WRAPPER_PAYLOAD_END}"
+
+    payload += append_keys(repo_config)
+
     return payload
 
 
