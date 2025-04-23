@@ -784,9 +784,23 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('gui-vm', 'admin.vm.feature.Get',
              'gui-default-override-redirect', None)] = \
                  b'0\x00ask'
+        self.app.expected_calls[
+            ('gui-vm', 'admin.vm.feature.Get',
+             'gui-default-allow-fullscreen', None)] = \
+                 b'0\x00True'
+        self.app.expected_calls[
+            ('gui-vm', 'admin.vm.feature.Get',
+             'gui-default-allow-utf8-titles', None)] = \
+                 b'0\x000'
+        self.app.expected_calls[
+            ('gui-vm', 'admin.vm.feature.Get',
+             'gui-default-override-redirect-protection', None)] = \
+                 b'0\x00Maybe'
 
         _args, config = self.run_common_args()
         self.assertEqual(config, '''\
 global: {
+  allow_fullscreen = true;
+  allow_utf8_titles = false;
 }
 ''')

@@ -175,7 +175,12 @@ def retrieve_gui_daemon_options(vm, guivm):
             continue
 
         if kind == 'bool':
-            value = bool(feature_value)
+            if feature_value in ["1", "true", "True"]:
+                value = True
+            elif feature_value in ["0", "", "false", "False"]:
+                value = False
+            else:
+                value = feature_value
         elif kind == 'int':
             value = int(feature_value)
         elif kind == 'str':
