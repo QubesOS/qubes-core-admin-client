@@ -52,6 +52,8 @@ means :py:obj:`False` and non-empty string (commonly ``'1'``) means
 extension-dependent. In most cases the default value for feature is retrieved
 from a qube template.
 
+Feature managed by the `system` must not be modified by users.
+
 List of known features
 ----------------------
 
@@ -105,7 +107,7 @@ boot-mode.name.\*
 
 The user-visible pretty name for a boot mode. The ID of the boot mode with the
 given pretty name is specified by the last dot-separated word in the feature
-key, while the pretty name is specified by the feature value. 
+key, while the pretty name is specified by the feature value.
 
 gui
 ^^^
@@ -184,8 +186,10 @@ internal
 
 Internal qubes (with this feature set to :py:obj:`True`) are not included in the
 menu, not available in GUI tools (e.g in Global Settings as a default net qube)
-and generally hidden from normal usage. It is not recommended to set this
-feature manually.
+and generally hidden from normal usage (including not showing as a Qrexec target
+for `Ask` rules. It is not recommended to set this feature manually. If this
+feature is set to a template, applications may consider qubes based on this
+template as internal also.
 
 Default: not internal VM
 
@@ -421,6 +425,81 @@ calls. Feature value could contain the rationale for the start ban.
 
 Note: `prohibit-start` for a TemplateVM does not forbid start of AppVMs based
 on it.
+
+preload-dispvm-max
+^^^^^^^^^^^^^^^^^^
+
+Number of disposables to preload. Upon setting, the number of running preloaded
+disposables will be adjusted to match the maximum configured, if there is not
+enough of them and there is enough available memory on the system, new ones will
+be created, if there are more than enough, the excess will be removed.
+
+|
+| **Valid on**: disposable template
+| **Type**: `int`
+| **Default**: `0`
+
+preload-dispvm
+^^^^^^^^^^^^^^
+
+Space separated list of preloaded disposables originated from the disposable
+template. Preloaded disposables are disposables that run in the background
+waiting for use, specially designed for minimal waiting time to open
+applications in a fresh disposable.
+
+Preloaded disposables have its GUI applications entries hidden and are paused to
+avoid user mistakes, as it is not intended to use them directly. To use them,
+target the disposable template to start a service in a disposable, instead of
+creating a new disposable, calls will be redirected to the first preloaded
+disposable in the list. As soon as the preloaded disposable is requested to be
+used, it is removed from the `preload-dispvm` list, GUI applications entries
+become visible, followed by a new disposable being preloaded.
+
+.. warning::
+
+   Applications configured to autostart by the disposable template or the
+   template itself will be interactive before the preloaded disposable can be
+   paused.
+
+|
+| **Managed by**: system
+| **Valid on**: disposable template
+| **Type**: `str`
+| **Default**: empty
+
+preload-dispvm-complete
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If `True`, preloaded disposable has completed all necessary steps to be usable.
+
+|
+| **Managed by**: system
+| **Valid on**: preloaded disposables
+| **Type**: `boolean`
+| **Default**: `False`
+
+preload-dispvm-requested
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+If `True`, preloaded disposable has been requested for use and is running the
+procedures to mark it as used.
+
+|
+| **Managed by**: system
+| **Valid on**: preloaded disposables
+| **Type**: `boolean`
+| **Default**: `False`
+
+preload-dispvm-used
+^^^^^^^^^^^^^^^^^^^
+
+If `True`, preloaded disposable has been used.
+
+|
+| **Managed by**: system
+| **Valid on**: preloaded disposables
+| **Type**: `boolean`
+| **Default**: `False`
 
 custom-persist.*
 ^^^^^^^^^^^^^^^^
