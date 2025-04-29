@@ -641,29 +641,29 @@ class DeviceCategory(Enum):
     """
 
     # pylint: disable=invalid-name
-    Other = "*******"
+    Other = ("*******", )  # also matches all devices, if used to block
 
-    Communication = ("u02****", "p07****")  # eg. modems
+    # The following devices are used in GUI for blocks; take note when changing
+
+    # modems, WiFi and Ethernet adapters
+    Network = ("u02****", "p0703**", "p02****", "ue0****")
     Input = ("u03****", "p09****")  # HID etc.
     Keyboard = ("u03**01", "p0900**")
     Mouse = ("u03**02", "p0902**")
     Printer = ("u07****",)
-    Scanner = ("p0903**",)
-    Microphone = ("m******",)
+    Image_Input = ("p0903**", "u06****", "u0e****") # cameras and scanners
+
+    Audio = ("p0403**", "p0401**", "p0408**", "u01****", "m******")
     # Multimedia = Audio, Video, Displays etc.
-    Multimedia = (
-        "u06****",
-        "u10****",
-        "p03****",
-        "p04****",
-    )
-    Audio = ("p0403**", "p0401**", "u01****")
-    Display = ("p0300**", "p0380**")
-    Video = ("p0400**", "u0e****")
-    Wireless = ("ue0****", "p0d****")
-    Bluetooth = ("ue00101", "p0d11**")
+    Multimedia = ("u10****", "p03****", "p04****")
+    Microphone = ("m******",)
+    USB_Storage = ("u08****", )
+    Block_Storage = ("b******", )
     Storage = ("b******", "u08****", "p01****")
-    Network = ("p02****",)
+    Bluetooth = ("ue00101", "p0d11**")
+    Smart_Card_Readers = ("u0b****", )
+
+    Display = ("p0300**", "p0380**")  # PCI screens?
     Memory = ("p05****",)
     PCI_Bridge = ("p06****",)
     Docking_Station = ("p0a****",)
@@ -677,7 +677,7 @@ class DeviceCategory(Enum):
         Returns `DeviceCategory` from data encoded in string.
         """
         result = DeviceCategory.Other
-        if len(interface_encoding) != len(DeviceCategory.Other.value):
+        if len(interface_encoding) != len(DeviceCategory.Other.value[0]):
             return result
         best_score = 0
 

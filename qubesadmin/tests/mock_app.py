@@ -63,7 +63,7 @@ import asyncio
 from unittest import mock
 from copy import deepcopy
 
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Any
 
 import qubesadmin.events
 from qubesadmin.tests import QubesTest
@@ -120,6 +120,7 @@ DEFAULT_VM_PROPERTIES = {
     "debug": Property("False", "bool", True),
     "default_dispvm": Property("default-dvm", "vm", False),
     "default_user": Property("user", "str", True),
+    "devices_denied": Property("", "str", True),
     "dns": Property("10.139.1.1 10.139.1.2", "str", True),
     "gateway": Property("", "str", True),
     "gateway6": Property("", "str", True),
@@ -224,6 +225,18 @@ ALL_KNOWN_FEATURES = [
     "boot-mode.name.mode1",
     "boot-mode.name.mode2",
     "service.updates-proxy-setup",
+    "qubes-vm-update-update-if-stale",
+    "restart-after-update",
+    "qubes-vm-update-hide-skipped",
+    "template-name",
+    "last-updates-check",
+    "last-update",
+    "prohibit-start",
+    "qubes-vm-update-hide-updated",
+    "qubes-vm-update-restart-servicevms",
+    "qubes-vm-update-restart-system",
+    "qubes-vm-update-restart-other",
+    "qubes-vm-update-max-concurrency",
 ]
 
 POSSIBLE_TAGS = ["whonix-updatevm", "anon-gateway", "anon-vm"]
@@ -648,6 +661,7 @@ class MockAdminVM(MockQube):
                 continue
 
 
+# pylint: disable=too-many-positional-arguments
 class MockDevice:
     """helper for adding a device to a qubes test instance"""
 
@@ -655,62 +669,69 @@ class MockDevice:
         self,
         qapp: QubesTest,
         dev_class: str,
-        description: str,
-        dev_id: str,
+        device_id: str,
         backend_vm: str,
+        port: str,
+        product: str,
+        vendor: str,
         attached: Optional[str] = None,
+        assigned: Optional[List[Tuple[str, str, list[Any] | None]]] = None,
     ):
         """
         :param qapp: QubesTest object
         :param dev_class: block / mic / usb
-        :param description: device description
-        :param dev_id: dev id (such as sda, 2-1, mic)
+        :param device_id: device_id
+        :param port: port
         :param backend_vm: name of the vm providing this device
-        :param attached: name of the qube to which the device is attached,
-        if any
+        :param attached: name of the qube to which the device is
+        currently attached,
+        :param assigned: list of the qubes to which the device is currently
+        assigned, tupled with mode ('ask-to-attach' or 'auto-attach')
         """
         self.qapp = qapp
         self.dev_class = dev_class
-        self.description = description
-        self.dev_id = dev_id
+        self.device_id = device_id
+        self.port = port
         self.backend_vm = backend_vm
         self.attached = attached
+        self.assigned = assigned
+        self.product = product
+        self.vendor = vendor
+
+        self.interface = self.device_id.split(":")[-1]
 
         self.update_calls()
 
     def device_string(self):
-        if self.dev_class == "block":
-            port, d_id = self.dev_id.split(":", 1)
-            return (
-                f"{self.dev_id} device_id='{d_id}' port_id='{port}' "
-                f"devclass='block' backend_domain='{self.backend_vm}' "
-                f"serial='root/test.img' manufacturer='{self.description}'  "
-                "interfaces='b******'\n"
-            )
-        if self.dev_class == "pci":
-            _, d_id = self.dev_id.split(":")
-            port = self.dev_id.replace(":", "_")
-            return (
-                f"{port} device_id='{d_id}' "
-                f"port_id='{port}' devclass='pci' "
-                f"product='{self.description}' vendor='{self.description}' "
-                f"interfaces='p0c0500' backend_domain='{self.backend_vm}'\n"
-            )
-        return f"{self.dev_id} description='{self.description}'\n"
+        return (
+            f"{self.port} device_id='{self.device_id}' "
+            f"port_id='{self.port}' devclass='{self.dev_class}' "
+            f"product='{self.product}' vendor='{self.vendor}' "
+            f"interfaces='{self.interface}' "
+            f"backend_domain='{self.backend_vm}'\n"
+        )
 
     def attachment_string(self):
-        if ":" in self.dev_id:
-            port, _ = self.dev_id.split(":")
-        elif self.dev_class == "mic":
-            port = "mic"
-        else:
-            port = "00"
         string = (
-            f"{self.backend_vm}+{self.dev_id} "
-            f"port_id='{port}' devclass='{self.dev_class}' "
-            f"backend_domain='{self.backend_vm}' mode='required' "
+            f"{self.backend_vm}+{self.port} "
+            f"port_id='{self.port}' devclass='{self.dev_class}' "
+            f"backend_domain='{self.backend_vm}' mode='manual' "
             f"frontend_domain='{self.attached}'"
         )
+        string += "\n"
+        return string
+
+    def assignment_string(self, vm, mode, opts):
+        string = (
+            f"{self.backend_vm}+{self.port} device_id='"
+            f"{self.device_id}' "
+            f"port_id='{self.port}' devclass='{self.dev_class}' "
+            f"backend_domain='{self.backend_vm}' mode='{mode}' "
+            f"frontend_domain='{vm}'"
+        )
+        if opts:
+            for opt in opts:
+                string += f" _{opt}='True'"
         string += "\n"
         return string
 
@@ -740,7 +761,7 @@ class MockDevice:
             current_response = self.qapp.expected_calls[
                 (
                     self.attached,
-                    f"admin.vm.device.{self.dev_class}.Assigned",
+                    f"admin.vm.device.{self.dev_class}.Attached",
                     None,
                     None,
                 )
@@ -748,13 +769,35 @@ class MockDevice:
             self.qapp.expected_calls[
                 (
                     self.attached,
-                    f"admin.vm.device.{self.dev_class}.Assigned",
+                    f"admin.vm.device.{self.dev_class}.Attached",
                     None,
                     None,
                 )
             ] = (
                 current_response + self.attachment_string().encode()
             )
+
+        if self.assigned:
+            for vm, mode, opts in self.assigned:
+                current_response = self.qapp.expected_calls[
+                    (
+                        vm,
+                        f"admin.vm.device.{self.dev_class}.Assigned",
+                        None,
+                        None,
+                    )
+                ]
+                self.qapp.expected_calls[
+                    (
+                        vm,
+                        f"admin.vm.device.{self.dev_class}.Assigned",
+                        None,
+                        None,
+                    )
+                ] = (
+                    current_response
+                    + self.assignment_string(vm, mode, opts).encode()
+                )
 
 
 class QubesTestWrapper(QubesTest):
@@ -987,20 +1030,78 @@ class MockQubesComplete(MockQubes):
         self._devices = [
             MockDevice(
                 self,
-                "mic",
-                "Internal Microphone",
-                "mic",
-                "dom0",
+                dev_class="mic",
+                device_id="dom0:mic::m000000",
+                backend_vm="dom0",
+                port="mic",
+                product="Internal Mic",
+                vendor="ACME",
                 attached="test-blue",
             ),
             # the usb stick appears as multiple devices, as they are wont to
-            MockDevice(self, "usb", "My USB Drive", "2-1", "sys-usb"),
-            MockDevice(self, "block", " ()", "sda::0", "sys-usb"),
-            MockDevice(self, "block", "(USB DISK)", "sda1::1", "sys-usb"),
-            MockDevice(self, "usb", "Internal Camera", "2-10", "sys-usb"),
-            MockDevice(self, "pci", "Host bridge", "00:00.0", "dom0"),
-            MockDevice(self, "pci", "PCI Bridge", "00:02.2", "dom0"),
-            MockDevice(self, "pci", "USB Controller", "00:03.2", "dom0"),
+            MockDevice(
+                self,
+                dev_class="usb",
+                device_id="1d6b:0104:CAFEBABE:u030101u300000",
+                backend_vm="sys-usb",
+                port="2-1",
+                product="My USB Drive",
+                vendor="SCP Foundation",
+            ),
+            MockDevice(
+                self,
+                dev_class="block",
+                device_id="1d6b:0104:CAFEBABE:b123456",
+                backend_vm="sys-usb",
+                port="sda",
+                product="(USB)",
+                vendor="SCP Foundation",
+            ),
+            MockDevice(
+                self,
+                dev_class="block",
+                device_id="1d6b:0104:CAFEBABE:b123456",
+                backend_vm="sys-usb",
+                port="sda",
+                product="()",
+                vendor="SCP Foundation",
+            ),
+            MockDevice(
+                self,
+                dev_class="usb",
+                device_id="04f2:b684:01.00.00:u0e0101u0e0201",
+                backend_vm="sys-usb",
+                port="2-7",
+                product="Internal Camera",
+                vendor="Saruman Industries",
+            ),
+            MockDevice(
+                self,
+                dev_class="pci",
+                device_id="0x8086:0x4621::p060000",
+                backend_vm="dom0",
+                port="00_00.0",
+                product="PCI Bridge",
+                vendor="Unnamed Industries",
+            ),
+            MockDevice(
+                self,
+                dev_class="pci",
+                device_id="0x8086:0x51e9::p0c8000",
+                backend_vm="dom0",
+                port="00_02.0",
+                product="I2C Controller",
+                vendor="Unnamed Industries",
+            ),
+            MockDevice(
+                self,
+                dev_class="pci",
+                device_id="0x8086:0x461e::p0c0330",
+                backend_vm="dom0",
+                port="00_03.0",
+                product="I2C Controller",
+                vendor="Unnamed Industries",
+            ),
         ]
 
         self.update_vm_calls()
