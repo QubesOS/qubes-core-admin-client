@@ -1,3 +1,9 @@
+qubes-core-admin-client (4.3.15-1) unstable; urgency=medium
+
+  * qvm-pci: optionally list SBDF of listed devices
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 09 May 2025 04:25:01 +0200
+
 qubes-core-admin-client (4.3.14-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
