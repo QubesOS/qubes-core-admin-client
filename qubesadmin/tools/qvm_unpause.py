@@ -40,7 +40,10 @@ def main(args=None, app=None):
     exit_code = 0
     for domain in args.domains:
         try:
-            domain.unpause()
+            if domain.is_suspended():
+                domain.resume()
+            else:
+                domain.unpause()
         except (IOError, OSError, qubesadmin.exc.QubesException) as e:
             exit_code = 1
             parser.print_error(str(e))

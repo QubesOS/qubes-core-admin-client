@@ -150,6 +150,26 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''
         self.qubesd_call(self._method_dest, 'admin.vm.Unpause')
 
+    def suspend(self):
+        '''
+        Suspend domain.
+
+        Suspend domain (S3). Pauses it if it does not suspend.
+
+        :return:
+        '''
+        self.qubesd_call(self._method_dest, 'admin.vm.Suspend')
+
+    def resume(self):
+        '''
+        Resume domain (from S3).
+
+        Opposite to :py:meth:`suspend`.
+
+        :return:
+        '''
+        self.qubesd_call(self._method_dest, 'admin.vm.Resume')
+
     def get_power_state(self):
         '''Return power state description string.
 
@@ -223,6 +243,16 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         '''
 
         return self.get_power_state() == 'Paused'
+
+    def is_suspended(self):
+        '''Check whether this domain is suspended.
+
+        :returns: :py:obj:`True` if this domain is suspended, \
+            :py:obj:`False` otherwise.
+        :rtype: bool
+        '''
+
+        return self.get_power_state() == 'Suspended'
 
     def is_running(self):
         '''Check whether this domain is running.
