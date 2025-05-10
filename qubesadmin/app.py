@@ -500,6 +500,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                         raise
 
             for feature, value in src_vm.features.items():
+                if (
+                    feature.startswith("preload-dispvm")
+                    and feature != "preload-dispvm-max"
+                ):
+                    continue
                 try:
                     dst_vm.features[feature] = value
                 except qubesadmin.exc.QubesException as e:
