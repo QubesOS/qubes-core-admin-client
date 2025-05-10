@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-pause` [-h] [--verbose] [--quiet] *VMNAME*
+:command:`qvm-pause` [-h] [--all] [--exclude EXCLUDE] [--verbose] [--quiet] [--suspend] [*VMNAME* ...]
 
 Options
 -------
@@ -30,6 +30,10 @@ Options
 .. option:: --exclude=EXCLUDE
 
    Exclude the qube from :option:`--all`.
+
+.. option:: --suspend, -S
+
+   Put the qube to (S3) suspend mode instead of emergency pause
 
 .. option:: --version
 

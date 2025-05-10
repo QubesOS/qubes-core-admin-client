@@ -20,8 +20,6 @@
 
 # pylint: disable=missing-docstring
 
-import unittest
-
 import qubesadmin.tests.vm
 
 
@@ -61,7 +59,6 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.unpause()
         self.assertAllCalled()
 
-    @unittest.skip('Not part of the mgmt API yet')
     def test_005_suspend(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Suspend', None, None)] = \
@@ -69,7 +66,6 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.suspend()
         self.assertAllCalled()
 
-    @unittest.skip('Not part of the mgmt API yet')
     def test_006_resume(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Resume', None, None)] = \

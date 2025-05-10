@@ -258,6 +258,7 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
+        self.assertFalse(self.vm.is_suspended())
 
     def test_011_power_state_paused(self):
         self.app.expected_calls[
@@ -267,6 +268,7 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertTrue(self.vm.is_paused())
+        self.assertFalse(self.vm.is_suspended())
 
     def test_012_power_state_halted(self):
         self.app.expected_calls[
@@ -276,6 +278,7 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertFalse(self.vm.is_running())
         self.assertTrue(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
+        self.assertFalse(self.vm.is_suspended())
 
     def test_012_power_state_transient(self):
         self.app.expected_calls[
@@ -285,6 +288,17 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertTrue(self.vm.is_running())
         self.assertFalse(self.vm.is_halted())
         self.assertFalse(self.vm.is_paused())
+        self.assertFalse(self.vm.is_suspended())
+
+    def test_013_power_state_suspended(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Suspended'
+        self.assertEqual(self.vm.get_power_state(), 'Suspended')
+        self.assertTrue(self.vm.is_running())
+        self.assertFalse(self.vm.is_halted())
+        self.assertFalse(self.vm.is_paused())
+        self.assertTrue(self.vm.is_suspended())
 
     def test_015_mem(self):
         self.app.expected_calls[

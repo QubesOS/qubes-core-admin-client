@@ -28,6 +28,13 @@ parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs='+',
     description='pause a qube',
     epilog='Paused qubes will be killed on system shutdown.')
 
+parser.add_argument(
+    "--suspend",
+    "-S",
+    action="store_true",
+    help="Put the qube to (S3) suspend mode instead of emergency pause",
+)
+
 
 def main(args=None, app=None):
     '''Main routine of :program:`qvm-pause`.
@@ -40,7 +47,10 @@ def main(args=None, app=None):
     exit_code = 0
     for domain in args.domains:
         try:
-            domain.pause()
+            if args.suspend:
+                domain.suspend()
+            else:
+                domain.pause()
         except (IOError, OSError, qubesadmin.exc.QubesException) as e:
             exit_code = 1
             parser.print_error(str(e))

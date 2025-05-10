@@ -30,6 +30,9 @@ class TC_00_qvm_unpause(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running\n'
+        self.app.expected_calls[
             ('some-vm', 'admin.vm.Unpause', None, None)] = b'0\x00'
         qubesadmin.tools.qvm_unpause.main(['some-vm'], app=self.app)
         self.assertAllCalled()
@@ -61,6 +64,9 @@ class TC_00_qvm_unpause(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Halted\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted\n'
         self.assertEqual(
             qubesadmin.tools.qvm_unpause.main(['some-vm'], app=self.app),
             1)
@@ -74,6 +80,12 @@ class TC_00_qvm_unpause(qubesadmin.tests.QubesTestCase):
             ('other-vm', 'admin.vm.Unpause', None, None)] = \
             b'0\x00'
         self.app.expected_calls[
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running\n'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running\n'
+        self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
@@ -81,4 +93,16 @@ class TC_00_qvm_unpause(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_unpause.main(['some-vm', 'other-vm'],
                 app=self.app),
             0)
+        self.assertAllCalled()
+
+    def test_005_resume_vm(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Suspended\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Suspended\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Resume', None, None)] = b'0\x00'
+        qubesadmin.tools.qvm_unpause.main(['some-vm'], app=self.app)
         self.assertAllCalled()
