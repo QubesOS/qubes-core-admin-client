@@ -434,6 +434,13 @@ The entry value can be prefixed by settings to pre-create the resource in
 settings, the feature value must respect the following format:
 ``<file|dir>:<owner>:<group>:<mode>:<absolute path>``.
 
+expert-mode
+^^^^^^^^^^^
+Allows expert mode for specific domain(s) or the entire system if it is enabled
+for the GUIVM (dom0 by default). At the time of writing this documentation, the
+only recognized feature is the `Debug Console` in Qui Domains systray widget.
+
+
 End user specific features
 --------------------------
 
