@@ -275,10 +275,27 @@ class RestoreInDisposableVM:
         lock = qubesadmin.utils.LockFile(LOCKFILE, True)
         lock.acquire()
         try:
+            self.app.log.info("Starting restore process in a DisposableVM...")
             self.create_dispvm()
             self.clear_old_tags()
             self.register_backup_source()
             self.dispvm.start()
+            try:
+                self.app.log.debug(
+                    "Checking for existence of qubes-core-admin-client"
+                )
+                self.dispvm.run("command -v qvm-backup-restore")
+            except subprocess.CalledProcessError:
+                raise qubesadmin.exc.QubesException(
+                    'qvm-backup-restore tool '
+                    'missing in {} template, install qubes-core-admin-client '
+                    'package there'.format(
+                        getattr(self.dispvm.template,
+                                'template',
+                                self.dispvm.template).name)
+                )
+            self.app.log.info("When operation completes, close its window "
+                              "manually.")
             self.dispvm.run_service_for_stdio('qubes.WaitForSession')
             if self.args.pass_file:
                 self.args.pass_file = self.transfer_pass_file(
