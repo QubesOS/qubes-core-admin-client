@@ -232,6 +232,9 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'virt_mode', None)] = \
             b'0\x00default=False type=str pv'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2QubesNoSuchPropertyErrorInvalid property 'is_preload' of test-vm"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -273,6 +276,9 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
             b'0\x00default=False type=bool False'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2QubesNoSuchPropertyErrorInvalid property 'is_preload' of test-vm"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -312,6 +318,9 @@ global: {
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
             b'0\x00default=False type=bool False'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2QubesNoSuchPropertyErrorInvalid property 'is_preload' of test-vm"
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
@@ -361,6 +370,9 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
             b'0\x00default=False type=int 3001'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2QubesNoSuchPropertyErrorInvalid property 'is_preload' of test-vm"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         self.app.expected_calls[
@@ -391,6 +403,9 @@ global: {
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
             b'0\x00default=False type=int 3001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2QubesNoSuchPropertyErrorInvalid property 'is_preload' of test-vm"
         # self.app.expected_calls[
         #    ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
         #    b'0\x00'
@@ -442,6 +457,9 @@ global: {
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
             b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2QubesNoSuchPropertyErrorInvalid property 'is_preload' of test-vm"
 
         # pylint: disable=protected-access
         self.app._local_name = 'gui-vm'
