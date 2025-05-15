@@ -386,7 +386,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         ignore_volumes=None,
         ignore_devices=False,
     ):
-        # pylint: disable=too-many-statements
+        # pylint: disable=too-many-statements disable=too-many-branches
         """Clone Virtual Machine
 
         Example usage with custom storage pools:
