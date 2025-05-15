@@ -986,10 +986,17 @@ class MockQubesComplete(MockQubes):
         self._qubes["default-dvm"] = MockQube(
             name="default-dvm",
             qapp=self,
-            klass="DispVM",
-            template_for_dispvms="True",
+            klass="AppVM",
+            template_for_dispvms=True,
             template="fedora-36",
             features={"appmenus-dispvm": "1"},
+        )
+
+        self._qubes["test-disp"] = MockQube(
+            name="test-disp",
+            qapp=self,
+            klass="DispVM",
+            template="default-dvm",
         )
 
         self._qubes["test-vm"] = MockQube(

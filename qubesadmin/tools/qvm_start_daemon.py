@@ -346,7 +346,7 @@ REGEX_OUTPUT = re.compile(
            (?P<height_mm>\d+)mm
         )?
         .*                             # ignore rest of line
-        )?                             # everything after (dis)connect is optional
+        )?                             # anything after (dis)connect is optional
         """
 )
 
@@ -565,6 +565,7 @@ class DAEMONLauncher:
         if (
             vm.features.check_with_template("no-monitor-layout", False)
             or not vm.is_running()
+            or getattr(vm, "is_preload", False)
         ):
             return
 
@@ -605,16 +606,17 @@ class DAEMONLauncher:
         """Send monitor layout to all (running) VMs"""
         monitor_layout = get_monitor_layout()
         for vm in self.app.domains:
-            if getattr(vm, "guivm", None) != vm.app.local_name:
+            if (
+                getattr(vm, "guivm", None) != vm.app.local_name
+                or vm.klass == "AdminVM"
+                or not vm.is_running()
+                or not vm.features.check_with_template("gui", True)
+                or getattr(vm, "is_preload", False)
+            ):
                 continue
-            if vm.klass == "AdminVM":
-                continue
-            if vm.is_running():
-                if not vm.features.check_with_template("gui", True):
-                    continue
-                asyncio.ensure_future(
-                    self.send_monitor_layout(vm, monitor_layout)
-                )
+            asyncio.ensure_future(
+                self.send_monitor_layout(vm, monitor_layout)
+            )
 
     @staticmethod
     def kde_guid_args(vm):
@@ -722,6 +724,8 @@ class DAEMONLauncher:
         :param monitor_layout: monitor layout to send; if None, fetch it from
             local X server.
         """
+        if getattr(vm, "is_preload", False):
+            return
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(["-d", str(vm.xid)])
 
@@ -748,6 +752,8 @@ class DAEMONLauncher:
 
         This function is a coroutine.
         """
+        if getattr(vm, "is_preload", False):
+            return
         want_stubdom = force
         if not want_stubdom and vm.features.check_with_template(
             "gui-emulated", False
@@ -779,6 +785,8 @@ class DAEMONLauncher:
 
         :param vm: VM for which start AUDIO daemon
         """
+        if getattr(vm, "is_preload", False):
+            return
         pacat_cmd = [PACAT_DAEMON_PATH, "-l", self.pacat_domid(vm), vm.name]
         vm.log.info("Starting AUDIO")
 
@@ -794,6 +802,8 @@ class DAEMONLauncher:
             one for target AppVM is running.
         :param monitor_layout: monitor layout configuration
         """
+        if getattr(vm, "is_preload", False):
+            return
         guivm = getattr(vm, "guivm", None)
         if guivm != vm.app.local_name:
             vm.log.info("GUI connected to {}. Skipping.".format(guivm))
@@ -815,6 +825,8 @@ class DAEMONLauncher:
 
         :param vm: VM for which AUDIO daemon should be started
         """
+        if getattr(vm, "is_preload", False):
+            return
         audiovm = getattr(vm, "audiovm", None)
         if audiovm != vm.app.local_name:
             vm.log.info("AUDIO connected to {}. Skipping.".format(audiovm))
@@ -832,7 +844,7 @@ class DAEMONLauncher:
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
 
-        if not self.is_watched(vm):
+        if not self.is_watched(vm) or getattr(vm, "is_preload", False):
             return
 
         try:
@@ -857,7 +869,7 @@ class DAEMONLauncher:
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM"""
 
-        if not self.is_watched(vm):
+        if not self.is_watched(vm) or getattr(vm, "is_preload", False):
             return
 
         self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
@@ -887,15 +899,15 @@ class DAEMONLauncher:
     def on_connection_established(self, _subject, _event, **_kwargs):
         """Handler of 'connection-established' event, used to launch GUI/AUDIO
         daemon for domains started before this tool."""
-
         monitor_layout = get_monitor_layout()
         self.app.domains.clear_cache()
         for vm in self.app.domains:
             try:
-                if vm.klass == "AdminVM":
-                    continue
-
-                if not self.is_watched(vm):
+                if (
+                    vm.klass == "AdminVM"
+                    or not self.is_watched(vm)
+                    or getattr(vm, "is_preload", False)
+                ):
                     continue
 
                 power_state = vm.get_power_state()
@@ -936,6 +948,28 @@ class DAEMONLauncher:
         if stubdom_xid != -1:
             self.cleanup_guid(stubdom_xid)
             self.cleanup_pacat_process(stubdom_xid)
+
+    def on_property_preload_set(self, vm, _event, **_kwargs):
+        """Handler of 'property-reset:is_preload' event, used to launch
+        GUI/AUDIO daemon after preload is marked as used."""
+        if (
+            not vm.klass == "DispVM"
+            or not self.is_watched(vm)
+            or getattr(vm, "is_preload", False)
+            or not vm.is_running()
+        ):
+            return
+        monitor_layout = get_monitor_layout()
+        try:
+            if "guivm" in self.enabled_services:
+                asyncio.ensure_future(
+                    self.start_gui(vm, monitor_layout=monitor_layout)
+                )
+            if "audiovm" in self.enabled_services:
+                asyncio.ensure_future(self.start_audio(vm))
+            self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+        except qubesadmin.exc.QubesDaemonCommunicationError as e:
+            vm.log.warning("Failed to handle %s: %s", vm.name, str(e))
 
     def on_property_audiovm_set(self, vm, event, **kwargs):
         """Handler for catching event related to dynamic AudioVM set/unset"""
@@ -1013,6 +1047,9 @@ class DAEMONLauncher:
             "connection-established", self.on_connection_established
         )
         events.add_handler("domain-stopped", self.on_domain_stopped)
+        events.add_handler(
+            "property-reset:is_preload", self.on_property_preload_set
+        )
 
         for event in [
             "property-set:audiovm",
