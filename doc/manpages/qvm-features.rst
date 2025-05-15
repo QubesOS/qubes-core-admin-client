@@ -429,10 +429,10 @@ on it.
 preload-dispvm-max
 ^^^^^^^^^^^^^^^^^^
 
-Number of disposables to preload. Upon setting, the number of running preloaded
-disposables will be adjusted to match the maximum configured, if there is not
-enough of them and there is enough available memory on the system, new ones will
-be created, if there are more than enough, the excess will be removed.
+Number of disposables to preload. Upon setting, the quantity of running
+preloaded disposables will be adjusted to match the maximum configured, if there
+is not enough of them and there is enough available memory on the system, new
+ones will be created, if there are more than enough, the excess will be removed.
 
 |
 | **Valid on**: disposable template
@@ -454,12 +454,6 @@ creating a new disposable, calls will be redirected to the first preloaded
 disposable in the list. As soon as the preloaded disposable is requested to be
 used, it is removed from the `preload-dispvm` list, GUI applications entries
 become visible, followed by a new disposable being preloaded.
-
-.. warning::
-
-   Applications configured to autostart by the disposable template or the
-   template itself will be interactive before the preloaded disposable can be
-   paused.
 
 |
 | **Managed by**: system
