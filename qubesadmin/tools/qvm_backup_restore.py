@@ -240,9 +240,6 @@ def main(args=None, app=None):
 
     if args.paranoid_mode:
         args.dom0_home = False
-        args.app.log.info("Starting restore process in a DisposableVM...")
-        args.app.log.info("When operation completes, close its window "
-                          "manually.")
         restore_in_dispvm = RestoreInDisposableVM(args.app, args)
         try:
             backup_log = restore_in_dispvm.run()
