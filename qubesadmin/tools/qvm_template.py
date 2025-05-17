@@ -20,6 +20,7 @@
 """Tool for managing VM templates."""
 
 import argparse
+import base64
 import collections
 import configparser
 import datetime
@@ -59,6 +60,8 @@ UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/var/tmp/qvm-template.lck'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
 TAR_HEADER_BYTES = 512
+WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
+WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
 UPDATEVM = str('global UpdateVM')
 
@@ -465,6 +468,52 @@ def qrexec_popen(
         stderr=subprocess.PIPE
     )
 
+def _is_file_in_repo_templates_keys_dir(path: str) -> bool:
+    """Check if the given path is a file located repo-template keys dir"""
+    return os.path.isfile(path) and path.startswith(
+        "/etc/qubes/repo-templates/keys/")
+
+def _encode_key(path):
+    """Base64-encoe a file to be placed in qvm-template payload"""
+    if path.startswith("file://"):
+        path = path[7:]
+
+    if not _is_file_in_repo_templates_keys_dir(path):
+        return ""
+
+    encoded_key = "#" + path + "\n"
+    with open(path, "rb") as key:
+        encoded_key += f"#{base64.b64encode(key.read()).decode('ascii')}\n"
+    return encoded_key
+
+def _replace_dnf_vars(path, releasever):
+    """Replace supported dnf variables in repo"""
+    for var in ["$releasever", "${releasever}"]:
+        path = path.replace(var, releasever)
+    return path
+
+def _append_keys(payload, releasever):
+    """Add GPG key and SSL cert/keys to qvm-template payload"""
+    config = configparser.ConfigParser()
+    try:
+        config.read_string(payload)
+    except RuntimeError:
+        return ""
+
+    file_list = set()
+    for section in config.sections():
+        for option in ["gpgkey", "sslclientcert", "sslclientkey"]:
+            if config.has_option(section, option):
+                file_list.add(
+                    _replace_dnf_vars(config.get(section, option),
+                                      releasever))
+
+    encoded_keys = "".join(
+        [_encode_key(file_path) for file_path in sorted(file_list)])
+    if not encoded_keys:
+        return ""
+
+    return f"\n{WRAPPER_PAYLOAD_BEGIN}\n{encoded_keys}{WRAPPER_PAYLOAD_END}"
 
 def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
                    spec: str, refresh: bool) -> str:
@@ -502,9 +551,14 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
     check_newline(spec, 'template name')
     payload += spec + '\n'
     payload += '---\n'
+
+    repo_config = ""
     for path in args.repo_files:
         with open(path, 'r', encoding='utf-8') as fd:
-            payload += fd.read() + '\n'
+            repo_config += fd.read() + '\n'
+    payload += repo_config
+
+    payload += _append_keys(repo_config, args.releasever)
     return payload
 
 
