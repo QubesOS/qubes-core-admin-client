@@ -83,3 +83,12 @@ class TC_00_qvm_pause(qubesadmin.tests.QubesTestCase):
                 app=self.app),
             0)
         self.assertAllCalled()
+
+    def test_005_suspend_vm(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Suspend', None, None)] = b'0\x00'
+        qubesadmin.tools.qvm_pause.main(['some-vm', '--suspend'], app=self.app)
+        self.assertAllCalled()
