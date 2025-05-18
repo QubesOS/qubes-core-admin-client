@@ -1,3 +1,16 @@
+qubes-core-admin-client (4.3.16-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Document `expert-mode`
+
+  [ Guillaume Chinal ]
+  * SSL auth and user GPG key support for user templates repos
+
+  [ Ali Mirjamali ]
+  * Allow S3 suspend via `qvm-pause --suspend`
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 18 May 2025 23:52:20 +0200
+
 qubes-core-admin-client (4.3.15-1) unstable; urgency=medium
 
   * qvm-pci: optionally list SBDF of listed devices
