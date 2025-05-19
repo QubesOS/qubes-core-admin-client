@@ -330,6 +330,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             self.assertEqual(len(getattr(obj, m).mock_calls), 1)
         self.assertEqual(obj.dispvm.mock_calls, [
             call.start(),
+            call.run('command -v qvm-backup-restore'),
             call.run_service_for_stdio('qubes.WaitForSession'),
             call.tags.add('backup-restore-mgmt'),
             call.run_with_args('terminal', 'qvm-backup-restore', 'args',
@@ -368,6 +369,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             self.assertEqual(len(getattr(obj, m).mock_calls), 1)
         self.assertEqual(obj.dispvm.mock_calls, [
             call.start(),
+            call.run('command -v qvm-backup-restore'),
             call.run_service_for_stdio('qubes.WaitForSession'),
             call.tags.add('backup-restore-mgmt'),
             call.run_with_args('terminal', 'qvm-backup-restore', 'args',
@@ -405,11 +407,48 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             self.assertEqual(len(getattr(obj, m).mock_calls), 1)
         self.assertEqual(obj.dispvm.mock_calls, [
             call.start(),
+            call.run('command -v qvm-backup-restore'),
             call.run_service_for_stdio('qubes.WaitForSession'),
             call.tags.add('backup-restore-mgmt'),
             call.run_with_args('terminal', 'qvm-backup-restore', 'args',
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL),
+            call.tags.discard('backup-restore-mgmt'),
+            call.kill()
+        ])
+        obj.transfer_pass_file.assert_not_called()
+
+    def test_103_missing_package(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\0dom0 class=AdminVM state=Running\n'
+            b'fedora-25 class=TemplateVM state=Halted\n'
+        )
+        args = unittest.mock.Mock(backup_location='/backup/path',
+            pass_file=None,
+            appvm=None)
+        obj = RestoreInDisposableVM(self.app, args)
+        methods = ['create_dispvm', 'clear_old_tags', 'register_backup_source',
+                   'finalize_tags']
+        for m in methods:
+            setattr(obj, m, unittest.mock.Mock())
+        obj.transfer_pass_file = unittest.mock.Mock()
+        obj.dispvm = unittest.mock.Mock()
+        obj.dispvm.run = unittest.mock.Mock()
+        obj.dispvm.run.side_effect = subprocess.CalledProcessError(
+            '1',
+            'command -v qvm-backup-restore',
+        )
+        with tempfile.NamedTemporaryFile() as tmp:
+            with unittest.mock.patch('qubesadmin.backup.dispvm.LOCKFILE',
+                    tmp.name):
+                with self.assertRaises(qubesadmin.exc.QubesException):
+                    obj.run()
+        # pylint: disable=no-member
+        for m in methods:
+            self.assertEqual(len(getattr(obj, m).mock_calls), 1)
+        self.assertEqual(obj.dispvm.mock_calls, [
+            call.start(),
+            call.run('command -v qvm-backup-restore'),
             call.tags.discard('backup-restore-mgmt'),
             call.kill()
         ])

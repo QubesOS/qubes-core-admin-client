@@ -101,6 +101,8 @@ Options
     - dom0 home directory (desktop environment settings)
     - PCI devices assignments
 
+  This operation requires `qubes-core-admin-client` package in the DisposableVM
+
 .. option:: --auto-close
 
   When running with --paranoid-mode (see above), automatically close restore
