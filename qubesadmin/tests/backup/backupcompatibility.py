@@ -1050,6 +1050,14 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 "tests/backup/v4-firewall.xml"
             f_firewall.write(xml_path.read_bytes())
 
+        # setup notes only on one VM
+        with open(
+                self.fullpath("appvms/test-work/notes.txt"),
+                "w+",
+                encoding="utf-8",
+            ) as notes:
+            notes.write("For Your Eyes Only")
+
         # StandaloneVMs
         for vm in ('test-standalonevm', 'test-hvm'):
             os.mkdir(self.fullpath('appvms/{}'.format(vm)))
@@ -1528,6 +1536,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.addCleanup(self.cleanup_tmpdir, tmpdir)
         return tmpdir.name
 
+    @unittest.skipIf(os.environ.get('DISABLE_LEGACY_TESTS', False),
+        'Set DISABLE_LEGACY_TESTS=1 environment variable to skip this test')
     def test_210_r2(self):
         self.create_v3_backup(False)
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
@@ -1601,6 +1611,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
+    @unittest.skipIf(os.environ.get('DISABLE_LEGACY_TESTS', False),
+        'Set DISABLE_LEGACY_TESTS=1 environment variable to skip this test')
     def test_220_r2_encrypted(self):
         self.create_v3_backup(True)
 
@@ -1676,6 +1688,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
+    @unittest.skipIf(os.environ.get('DISABLE_LEGACY_TESTS', False),
+        'Set DISABLE_LEGACY_TESTS=1 environment variable to skip this test')
     def test_230_r2_uncompressed(self):
         self.create_v3_backup(False, False)
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
@@ -1781,6 +1795,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.notes.Set', None,
+            b'For Your Eyes Only')] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
@@ -1858,6 +1875,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.notes.Set', None,
+            b'For Your Eyes Only')] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
@@ -1935,6 +1955,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.notes.Set', None,
+            b'For Your Eyes Only')] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
@@ -2049,6 +2072,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.notes.Set', None,
+            b'For Your Eyes Only')] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
@@ -2126,6 +2152,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.notes.Set', None,
+            b'For Your Eyes Only')] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 
@@ -2171,6 +2200,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         self.assertDom0Restored(dummy_timestamp)
 
+    @unittest.skipIf(os.environ.get('DISABLE_SUPER_SLOW_TESTS', False),
+        'Set DISABLE_SUPER_SLOW_TESTS=1 environment variable to skip this test')
     @unittest.skipUnless(shutil.which('scrypt'),
         "scrypt not installed")
     def test_300_r4_no_space(self):
@@ -2202,6 +2233,9 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         self.app.expected_calls[
             ('test-work', 'admin.vm.firewall.Set', None,
             firewall_data.encode())] = b'0\0'
+        self.app.expected_calls[
+            ('test-work', 'admin.vm.notes.Set', None,
+            b'For Your Eyes Only')] = b'0\0'
 
         qubesd_calls_queue = multiprocessing.Queue()
 

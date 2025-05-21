@@ -84,7 +84,7 @@ except:
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -344,6 +344,8 @@ man_pages = [
         u'Kill the specified qube', _man_pages_author, 1),
     ('manpages/qvm-ls', 'qvm-ls',
         u'List VMs and various information about them', _man_pages_author, 1),
+    ('manpages/qvm-notes', 'qvm-notes',
+        u'Manipulate qube notes', _man_pages_author, 1),
     ('manpages/qvm-pause', 'qvm-pause',
         u'Pause a specified qube(s)', _man_pages_author, 1),
     ('manpages/qvm-pool', 'qvm-pool',
@@ -370,7 +372,6 @@ man_pages = [
         u'Pause a qube', _man_pages_author, 1),
     ('manpages/qvm-volume', 'qvm-volume',
         u'Manage storage volumes of a qube', _man_pages_author, 1),
-
     ('manpages/qubes-prefs', 'qubes-prefs',
         u'Display system-wide Qubes settings', _man_pages_author, 1),
 ]
