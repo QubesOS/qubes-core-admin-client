@@ -42,7 +42,9 @@ Options
 Notes
 -----
 
-Paused qubes will be killed on system shutdown.
+Paused qubes will be killed on system shutdown. Emergency paused qubes will
+remain paused after computer suspend/resume; however, unpausing them may take
+longer than usual.
 
 Authors
 -------
