@@ -71,3 +71,7 @@ class BackupVM(object):
     def handle_firewall_xml(self, vm, stream):
         '''Import appropriate format of firewall.xml'''
         raise NotImplementedError
+
+    def handle_notes_txt(self, vm, stream):
+        '''Import qubes notes.txt'''
+        raise NotImplementedError  # pragma: no cover

@@ -232,5 +232,9 @@ class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
         super().__init__("Failed to access '%s' property" % prop)
 
 
+
+class QubesNotesError(QubesException):
+    """Some problem with qube notes."""
+
 # legacy name
 QubesDaemonNoResponseError = QubesDaemonAccessError
