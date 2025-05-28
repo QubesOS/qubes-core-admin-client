@@ -1,3 +1,17 @@
+qubes-core-admin-client (4.3.17-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Improve `qvm-backup-restore --paranoid-mode`
+  * Assure backup restore/verify tmpdir is properly deleted
+  * Add free-form text to qube for notes, comments, ...
+  * Document lengthy un-pause after resuming from suspend
+
+  [ Marta Marczykowska-Górecka ]
+  * Blackify mock_app
+  * Redefine DeviceCategories and improvements in MockDevices
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 28 May 2025 15:07:14 +0200
+
 qubes-core-admin-client (4.3.16-1) unstable; urgency=medium
 
   [ Ali Mirjamali ]
