@@ -432,10 +432,12 @@ preload-dispvm-max
 Number of disposables to preload. Upon setting, the number of running preloaded
 disposables will be adjusted to match the maximum configured, if there is not
 enough of them and there is enough available memory on the system, new ones will
-be created, if there are more than enough, the excess will be removed.
+be created, if there are more than enough, the excess will be removed. When set
+on `dom0`, preloaded disposables will derive from the `default_dispvm` and its
+setting has precedence over the qube disposable template feature.
 
 |
-| **Valid on**: disposable template
+| **Valid on**: disposable template and dom0
 | **Type**: `int`
 | **Default**: `0`
 
