@@ -125,7 +125,7 @@ def list_devices(args):
         )
         lines += list(extra_lines.values())
     qubesadmin.tools.print_table(
-        prepare_table(lines, with_sbdf=getattr(args, "with_sbdf"))
+        prepare_table(lines, with_sbdf=getattr(args, "with_sbdf", False))
     )
 
 
