@@ -647,16 +647,16 @@ class DeviceCategory(Enum):
 
     # modems, WiFi and Ethernet adapters
     Network = ("u02****", "p0703**", "p02****", "ue0****")
-    Input = ("u03****", "p09****")  # HID etc.
     Keyboard = ("u03**01", "p0900**")
     Mouse = ("u03**02", "p0902**")
+    Input = ("u03****", "p09****")  # HID etc.
     Printer = ("u07****",)
-    Image_Input = ("p0903**", "u06****", "u0e****") # cameras and scanners
+    Camera = ("p0903**", "u06****", "u0e****") # cameras and scanners
 
+    Microphone = ("m******",)
     Audio = ("p0403**", "p0401**", "p0408**", "u01****", "m******")
     # Multimedia = Audio, Video, Displays etc.
     Multimedia = ("u10****", "p03****", "p04****")
-    Microphone = ("m******",)
     USB_Storage = ("u08****", )
     Block_Storage = ("b******", )
     Storage = ("b******", "u08****", "p01****")
@@ -1019,7 +1019,7 @@ class DeviceInfo(VirtualDevice):
         else:
             for interface in self.interfaces:
                 if str(interface) != f"{self.devclass.upper()} device":
-                    cat = str(interface)
+                    cat = str(interface).replace("_", " ")
                     break
             else:
                 cat = f"{self.devclass.upper()} device"
