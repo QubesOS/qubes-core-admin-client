@@ -485,7 +485,8 @@ class Table(object):
                     domains.remove(dom)
                 except ValueError:
                     pass
-            if len(domains) >= last_len: raise Exception("Fuck You")
+            if len(domains) >= last_len:
+                raise Exception("sort_to_ttree: While loop is stuck!")
             level += 1
 
         return tree
