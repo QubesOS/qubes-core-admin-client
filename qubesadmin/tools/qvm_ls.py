@@ -390,13 +390,14 @@ class Table(object):
     :param list colnames: Names of the columns (need not to be uppercase).
     '''
     def __init__(self, domains, colnames, spinner, raw_data=False,
-                tree_sorted=False):
+                tree_sorted=False, ttree_sorted=False):
         self.domains = domains
         self.columns = tuple(Column.columns[col.upper().replace('_', '-')]
                 for col in colnames)
         self.spinner = spinner
         self.raw_data = raw_data
         self.tree_sorted = tree_sorted
+        self.ttree_sorted = ttree_sorted
 
     def get_head(self):
         '''Get table head data (all column heads).'''
@@ -406,7 +407,7 @@ class Table(object):
         '''Get single table row data (all columns for one domain).'''
         ret = []
         for col in self.columns:
-            if self.tree_sorted and col.ls_head == 'NAME':
+            if (self.tree_sorted or self.ttree_sorted) and col.ls_head == 'NAME':
                 ret.append(col.cell(vm, insertion))
             else:
                 ret.append(col.cell(vm))
@@ -456,6 +457,39 @@ class Table(object):
 
         return tree
 
+    def sort_to_ttree(self, domains):
+        '''Sort domains as a template tree. It returns a list of tuples. Each
+        tuple stores the level of the tree and the vm object.
+
+        :param list() domains: The domains which will be sorted
+        :return list(tuple()) tree: returns a list of tuple(level, vm)
+        '''
+        tree=[]
+        for dom in sorted(domains):
+            try:
+                if not dom.template:
+                    tree.append((0,dom))
+                    domains.remove(dom)
+            except AttributeError:
+                tree.append((0,dom))
+                domains.remove(dom)
+
+        level = 0
+        while len(domains) > 0:
+            last_len = len(domains)
+            for dom in sorted(domains):
+                try:
+                    tree.insert(
+                        tree.index((level,dom.template))+1,
+                        (level+1,dom))
+                    domains.remove(dom)
+                except ValueError:
+                    pass
+            if len(domains) >= last_len: raise Exception("Fuck You")
+            level += 1
+
+        return tree
+
     def write_table(self, stream=sys.stdout):
         '''Write whole table to file-like object.
 
@@ -471,6 +505,10 @@ class Table(object):
                 #FIXME: handle qubesadmin.exc.QubesVMNotFoundError
                 #       (see QubesOS/qubes-issues#5105)
                 insertion_vm_list = self.sort_to_tree(self.domains)
+                for insertion, vm in insertion_vm_list:
+                    table_data.append(self.get_row(vm, insertion))
+            elif self.ttree_sorted:
+                insertion_vm_list = self.sort_to_ttree(self.domains)
                 for insertion, vm in insertion_vm_list:
                     table_data.append(self.get_row(vm, insertion))
             else:
@@ -624,6 +662,10 @@ def get_parser():
         action='store_const', const='tree',
         help='sort domain list as network tree')
 
+    parser.add_argument('--ttree', '-T',
+        action='store_const', const='ttree',
+        help='sort domain list as template tree')
+
     parser.add_argument('--spinner',
         action='store_true', dest='spinner',
         help='reenable spinner')
@@ -719,7 +761,7 @@ def main(args=None, app=None):
     domains = [d for d in domains
                if matches_power_states(d, **pwrstates)]
 
-    table = Table(domains, columns, spinner, args.raw_data, args.tree)
+    table = Table(domains, columns, spinner, args.raw_data, args.tree, args.ttree)
     table.write_table(sys.stdout)
 
     return 0
