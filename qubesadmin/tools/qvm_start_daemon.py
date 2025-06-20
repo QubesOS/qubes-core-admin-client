@@ -779,7 +779,12 @@ class DAEMONLauncher:
 
         :param vm: VM for which start AUDIO daemon
         """
-        pacat_cmd = [PACAT_DAEMON_PATH, "-l", self.pacat_domid(vm), vm.name]
+        pacat_cmd = [
+            PACAT_DAEMON_PATH,
+            "-l",
+            str(self.pacat_domid(vm)),
+            vm.name,
+        ]
         vm.log.info("Starting AUDIO")
 
         await asyncio.create_subprocess_exec(*pacat_cmd)
