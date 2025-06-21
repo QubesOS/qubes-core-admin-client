@@ -346,7 +346,7 @@ REGEX_OUTPUT = re.compile(
            (?P<height_mm>\d+)mm
         )?
         .*                             # ignore rest of line
-        )?                             # everything after (dis)connect is optional
+        )?                             # anything after (dis)connect is optional
         """
 )
 
