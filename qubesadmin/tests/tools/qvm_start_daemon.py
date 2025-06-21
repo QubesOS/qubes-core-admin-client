@@ -232,6 +232,10 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'virt_mode', None)] = \
             b'0\x00default=False type=str pv'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -273,6 +277,10 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
             b'0\x00default=False type=bool False'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -312,6 +320,10 @@ global: {
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'debug', None)] = \
             b'0\x00default=False type=bool False'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
@@ -361,6 +373,10 @@ global: {
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
             b'0\x00default=False type=int 3001'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         self.app.expected_calls[
@@ -391,6 +407,10 @@ global: {
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
             b'0\x00default=False type=int 3001'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
         # self.app.expected_calls[
         #    ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
         #    b'0\x00'
@@ -410,6 +430,128 @@ global: {
 
     async def mock_coroutine(self, mock, *args, **kwargs):
         mock(*args, **kwargs)
+
+    def test_038_start_gui_skip_preload(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-disp class=DispVM state=Running\n' \
+            b'gui-vm class=AppVM state=Running'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
+            b'0\x00True'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.CheckWithTemplate',
+             'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'virt_mode', None)] = \
+            b'0\x00default=False type=str hvm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'xid', None)] = \
+            b'0\x00default=False type=int 3000'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
+            b'0\x00default=False type=int 3001'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Set', 'is_preload', b'True')] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'0\x00default=False type=bool True'
+
+        # pylint: disable=protected-access
+        self.app._local_name = 'gui-vm'
+        vm = self.app.domains['test-disp']
+        vm.is_preload = True
+        mock_start_vm = unittest.mock.Mock()
+        mock_start_stubdomain = unittest.mock.Mock()
+        patch_start_vm = unittest.mock.patch.object(
+            self.launcher, 'start_gui_for_vm', functools.partial(
+                self.mock_coroutine, mock_start_vm))
+        patch_start_stubdomain = unittest.mock.patch.object(
+            self.launcher, 'start_gui_for_stubdomain', lambda vm_, force:
+            self.mock_coroutine(mock_start_stubdomain, vm_))
+        try:
+            patch_start_vm.start()
+            patch_start_stubdomain.start()
+            loop.run_until_complete(self.launcher.start_gui(vm))
+            mock_start_vm.assert_not_called()
+            mock_start_stubdomain.assert_not_called()
+        finally:
+            unittest.mock.patch.stopall()
+
+    def test_039_start_gui_for_preload(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-disp class=DispVM state=Running\n' \
+            b'gui-vm class=AppVM state=Running'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
+            b'0\x00True'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.CheckWithTemplate',
+             'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'virt_mode', None)] = \
+            b'0\x00default=False type=str hvm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'xid', None)] = \
+            b'0\x00default=False type=int 3000'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
+            b'0\x00default=False type=int 3001'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b"2\x00QubesNoSuchPropertyError\x00\x00Invalid property " \
+            b"'is_preload' of test-disp\x00"
+
+        # pylint: disable=protected-access
+        self.app._local_name = 'gui-vm'
+        vm = self.app.domains['test-disp']
+
+        with \
+            unittest.mock.patch('asyncio.ensure_future'), \
+            unittest.mock.patch.object(
+                self.launcher, 'common_guid_args', lambda vm: []
+            ), \
+            unittest.mock.patch.object(
+                qubesadmin.tools.qvm_start_daemon,
+                'get_monitor_layout',
+                unittest.mock.Mock(return_value=None)
+            ), \
+            unittest.mock.patch.object(
+                self.launcher, 'start_gui', unittest.mock.Mock()
+            ) as mock_start, \
+            unittest.mock.patch.object(
+                self.launcher, 'start_audio', unittest.mock.Mock()
+            ) as mock_start_audio:
+            # Execute and validate
+            self.launcher.on_property_preload_set(
+                vm, 'property-reset:is_preload'
+            )
+            mock_start_audio.assert_called_once_with(vm)
+            mock_start.assert_called_once_with(vm, monitor_layout=None)
 
     def test_040_start_gui(self):
         loop = asyncio.new_event_loop()
@@ -442,6 +584,10 @@ global: {
         self.app.expected_calls[
             ('test-vm', 'admin.vm.property.Get', 'guivm', None)] = \
             b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
 
         # pylint: disable=protected-access
         self.app._local_name = 'gui-vm'
@@ -562,6 +708,10 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
 
         vm = self.app.domains['test-vm']
         mock_run_service = unittest.mock.Mock(spec={})
@@ -650,6 +800,10 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             ('test-vm', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
             b'0\x00default=False type=int 124'
         self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
@@ -691,6 +845,14 @@ HDMI1 connected 2560x1920+0+0 (normal left inverted right x axis y axis) 206mm x
             b'test-vm3 class=AppVM state=Running\n' \
             b'test-vm4 class=AppVM state=Halted\n' \
             b'gui-vm class=AppVM state=Running'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm\x00"
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property ' \
+            b"'is_preload' of test-vm2\x00"
         self.app.expected_calls[
             ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Running'
