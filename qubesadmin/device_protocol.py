@@ -1167,13 +1167,13 @@ class DeviceInfo(VirtualDevice):
             interfaces = properties["interfaces"]
             properties["interfaces"] = DeviceInterface.from_str_bulk(interfaces)
 
-        if "parent_ident" in properties:
+        if "parent_port_id" in properties:
             properties["parent"] = Port(
                 backend_domain=expected_device.backend_domain,
-                port_id=properties["parent_ident"],
+                port_id=properties["parent_port_id"],
                 devclass=properties["parent_devclass"],
             )
-            del properties["parent_ident"]
+            del properties["parent_port_id"]
             del properties["parent_devclass"]
 
         return cls(**properties)
