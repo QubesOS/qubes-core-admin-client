@@ -1,3 +1,25 @@
+qubes-core-admin-client (4.3.18-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix qvm-pci with default list action
+
+  [ Ben Grande ]
+  * Black
+  * Handle preloaded disposables
+  * Black formatter
+
+  [ Rusty Bird ]
+  * qvm-template: don't persist lock file across system reboots
+
+  [ Marek Marczykowski-Górecki ]
+  * pylint fixup
+  * Fix starting audio daemon
+
+  [ Ben Grande ]
+  * Late GUID for preloaded disposables
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 26 Jun 2025 18:58:00 +0200
+
 qubes-core-admin-client (4.3.17-1) unstable; urgency=medium
 
   [ Ali Mirjamali ]
