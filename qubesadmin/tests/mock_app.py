@@ -368,6 +368,20 @@ class MockQube:
 
         self._add_to_vm_list(name, klass)
 
+        if self.klass == "AdminVM":
+            self.properties["icon"].value = "adminvm-black"
+        elif (
+            self.klass == "AppVM"
+            and str(kwargs.get("template_for_dispvms", "False")) == "True"
+        ):
+            self.properties["icon"].value = (
+                "templatevm-" + self.properties["label"].value
+            )
+        else:
+            self.properties["icon"].value = (
+                self.klass.lower() + "-" + self.properties["label"].value
+            )
+
         for prop, value in kwargs.items():
             if prop in self.properties:
                 if isinstance(value, tuple):
@@ -379,13 +393,6 @@ class MockQube:
                     self.properties[prop].default = (
                         str(value) == DEFAULT_VM_PROPERTIES.get(prop).default
                     )
-
-        if self.klass == "AdminVM":
-            self.properties["icon"].value = "adminvm-black"
-        else:
-            self.properties["icon"].value = (
-                self.klass.lower() + "-" + self.properties["label"].value
-            )
 
         self.update_calls()
 
@@ -987,7 +994,7 @@ class MockQubesComplete(MockQubes):
             name="default-dvm",
             qapp=self,
             klass="AppVM",
-            template_for_dispvms=True,
+            template_for_dispvms="True",
             template="fedora-36",
             features={"appmenus-dispvm": "1"},
         )
