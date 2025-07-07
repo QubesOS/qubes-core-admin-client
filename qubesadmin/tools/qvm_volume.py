@@ -105,6 +105,7 @@ def info_volume(args):
             value = getattr(volume, args.property)
             if value is None:
                 value = ''
+            # Do not prettify `revisions_to_keep` here to keep it parsable
             print(value)
         else:
             raise qubesadmin.exc.StoragePoolException(
@@ -115,6 +116,8 @@ def info_volume(args):
             value = getattr(volume, item)
             if value is None:
                 value = ''
+            if item == "revisions_to_keep" and value == -1:
+                value = "-1 (snapshot disabled)"
             info[item] = str(value)
         info['is_outdated'] = str(volume.is_outdated())
 
