@@ -66,7 +66,7 @@ DEFAULT_CRYPTO_ALGORITHM = 'aes-256-cbc'
 DEFAULT_HMAC_ALGORITHM = 'scrypt'
 DEFAULT_COMPRESSION_FILTER = 'gzip'
 KNOWN_COMPRESSION_FILTERS = ('gzip', 'bzip2', 'xz')
-OPTIONAL_COMPRESSION_FILTERS = ('lzma', 'pigz', 'zstd', 'zstdmt')
+OPTIONAL_COMPRESSION_FILTERS = ('lzma', 'pbzip2', 'pigz', 'zstd', 'zstdmt')
 # lazy loaded
 KNOWN_CRYPTO_ALGORITHMS = []
 # lazy loaded
