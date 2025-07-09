@@ -117,6 +117,7 @@ GUI_DAEMON_OPTIONS = [
     ("secure_paste_sequence", "str", validator_key_sequence),
     ("windows_count_limit", "int", (lambda x: isinstance(x, int) and x > 0)),
     ("trayicon_mode", "str", validator_trayicon_mode),
+    ("trayicon_background_color", "str", validator_color),
     ("window_background_color", "str", validator_color),
     ("startup_timeout", "int", (lambda x: isinstance(x, int) and x >= 0)),
     (
