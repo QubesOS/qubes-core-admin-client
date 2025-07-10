@@ -464,8 +464,8 @@ become visible, followed by a new disposable being preloaded.
 | **Type**: `str`
 | **Default**: empty
 
-preload-dispvm-complete
-^^^^^^^^^^^^^^^^^^^^^^^
+preload-dispvm-completed
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 If `True`, preloaded disposable has completed all necessary steps to be usable.
 
@@ -475,22 +475,11 @@ If `True`, preloaded disposable has completed all necessary steps to be usable.
 | **Type**: `boolean`
 | **Default**: `False`
 
-preload-dispvm-requested
-^^^^^^^^^^^^^^^^^^^^^^^^
+preload-dispvm-in-progress
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If `True`, preloaded disposable has been requested for use and is running the
-procedures to mark it as used.
-
-|
-| **Managed by**: system
-| **Valid on**: preloaded disposables
-| **Type**: `boolean`
-| **Default**: `False`
-
-preload-dispvm-used
-^^^^^^^^^^^^^^^^^^^
-
-If `True`, preloaded disposable has been used.
+If `True`, preloaded disposable is being created and has not completed or has
+been requested for use and is running the procedures to mark it as used.
 
 |
 | **Managed by**: system
