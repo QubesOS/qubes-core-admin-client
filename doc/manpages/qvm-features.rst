@@ -361,6 +361,13 @@ Qubes agent version installed in the template/standalone. It contains just
 major.minor number (no patch number). Can be used to check if template was
 updated to the current qubes version after importing from older release.
 
+qemu-extra-args
+^^^^^^^^^^^^^^^
+
+Extra arguments to add to the QEMU running in a stubdomain. Applicable only for
+HVM qubes (as others don't have QEMU). A template-based qube defaults to a value
+taken from its template..
+
 stubdom-qrexec
 ^^^^^^^^^^^^^^
 
