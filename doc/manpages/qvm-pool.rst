@@ -68,6 +68,7 @@ drivers
 
 List all known drivers with their options.
 The listed driver options can be used with the ``-o options`` switch.
+See `qvm-volume(1)` manpage for detailed explanation of individual properties.
 
 aliases: d
 
@@ -77,7 +78,8 @@ info
 ^^^^
 | :command:`qvm-pool info` [-h] [--verbose] [--quiet] *POOL_NAME*
 
-Print info about a specified pool
+Print info about a specified pool. See `qvm-volume(1)` manpage for detailed
+explanation of individual properties.
 
 aliases: i
 
@@ -117,6 +119,8 @@ Modify driver options for a pool.
     option multiple times.
 
     .. seealso:: The `drivers` command for supported drivers and their options.
+
+See `qvm-volume(1)` manpage for detailed explanation of individual options.
 
 aliases: s
 
