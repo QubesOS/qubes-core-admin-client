@@ -395,7 +395,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             b'source=\n' \
             b'save_on_stop=True\n' \
             b'snap_on_start=False\n' \
-            b'revisions_to_keep=3\n' \
+            b'revisions_to_keep=-1\n' \
             b'ephemeral=False\n' \
             b'is_outdated=False\n'
         self.app.expected_calls[
@@ -417,7 +417,7 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
             'snap_on_start      False\n'
             'size               2147483648\n'
             'usage              10000000\n'
-            'revisions_to_keep  3\n'
+            'revisions_to_keep  -1 (snapshot disabled)\n'
             'ephemeral          False\n'
             'is_outdated        False\n'
             'List of available revisions (for revert):\n'
