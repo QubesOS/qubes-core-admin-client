@@ -1,3 +1,28 @@
+qubes-core-admin-client (4.3.19-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: fix icon for disposable template
+
+  [ Ben Grande ]
+  * Document default_dispvm preload feature
+  * Register preload features for better mock handling
+  * Update features manual page about preloads
+
+  [ Ali Mirjamali ]
+  * Documentation to volume `revisions_to_keep == -1`
+
+  [ Marta Marczykowska-Górecka ]
+  * Improve device category description
+  * Fix incorrect parent device serialization
+
+  [ Marek Marczykowski-Górecki ]
+  * doc: document qemu-extra-args feature
+
+  [ Ali Mirjamali ]
+  * Support `pbzip2` compression filter
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 20 Jul 2025 15:34:44 +0200
+
 qubes-core-admin-client (4.3.18-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
