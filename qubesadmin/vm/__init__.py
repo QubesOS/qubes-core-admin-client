@@ -311,7 +311,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """
         return self.app.run_service(self._method_dest, service, **kwargs)
 
-    def run_service_for_stdio(self, service, input=None, **kwargs):
+    def run_service_for_stdio(
+        self, service, input=None, timeout=None, **kwargs
+    ):
         """Run a service, pass an optional input and return (stdout, stderr).
 
         Raises an exception if return code != 0.
@@ -326,7 +328,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         p = self.run_service(service, **kwargs)
 
         # this one is actually a tuple, but there is no need to unpack it
-        stdouterr = p.communicate(input=input)
+        stdouterr = p.communicate(input=input, timeout=timeout)
 
         if p.returncode:
             exc = subprocess.CalledProcessError(p.returncode, service)

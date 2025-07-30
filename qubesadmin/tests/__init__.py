@@ -96,8 +96,8 @@ class TestProcess(object):
         self.got_any_input = True
         self.stdin.truncate(0)
 
-    def communicate(self, input=None):
-        # pylint: disable=redefined-builtin
+    def communicate(self, input=None, timeout=None):
+        # pylint: disable=redefined-builtin,unused-argument
         if input is not None:
             self.stdin.write(input)
         self.stdin.close()
