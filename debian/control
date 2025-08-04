@@ -41,6 +41,7 @@ Description: Qubes administrative tools
 Package: python3-qubesadmin
 Architecture: any
 Depends:
+ hwdata,
  python3-docutils,
  python3-lxml,
  python3-qubesdb,
