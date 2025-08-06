@@ -233,6 +233,7 @@ ALL_KNOWN_FEATURES = [
     "last-update",
     "prohibit-start",
     "preload-dispvm-max",
+    "preload-dispvm-threshold",
     "preload-dispvm",
     "preload-dispvm-in-progress",
     "preload-dispvm-completed",

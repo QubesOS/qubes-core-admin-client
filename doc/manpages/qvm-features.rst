@@ -449,6 +449,17 @@ feature until it is deleted.
 | **Type**: `int`
 | **Default**: `0`
 
+preload-dispvm-threshold
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The amount in MiB of free system memory that will never be used for preloading
+disposables. Ensures preloaded disposables do not consume all available memory.
+
+|
+| **Valid on**: dom0
+| **Type**: `int`
+| **Default**: `0`
+
 preload-dispvm
 ^^^^^^^^^^^^^^
 
