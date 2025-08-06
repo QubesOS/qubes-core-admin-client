@@ -1,3 +1,15 @@
+qubes-core-admin-client (4.3.20-1) unstable; urgency=medium
+
+  [ Ben Grande ]
+  * Black formatter
+  * Add timeout argument to Popen.communicate
+  * Add threshold preload feature
+
+  [ Marek Marczykowski-Górecki ]
+  * debian: add hwdata to dependencies
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 07 Aug 2025 01:17:29 +0200
+
 qubes-core-admin-client (4.3.19-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
