@@ -2103,6 +2103,11 @@ class BackupRestore(object):
                 self._restore_property(new_vm, prop, value)
 
             for feature, value in vm.features.items():
+                if (
+                    feature.startswith('preload-dispvm')
+                    and feature != 'preload-dispvm-max'
+                ):
+                    continue
                 try:
                     new_vm.features[feature] = value
                 except Exception as err:  # pylint: disable=broad-except
