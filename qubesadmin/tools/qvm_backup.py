@@ -44,11 +44,11 @@ parser.add_argument("--yes", "-y", action="store_true",
     dest="yes", default=False,
     help="Do not ask for confirmation")
 
-group = parser.add_mutually_exclusive_group()
-group.add_argument('--profile', action='store',
+parser.add_argument('--profile', action='store',
     help='Perform backup defined by a given profile')
-no_profile = group.add_argument_group('Profile setup',
-    'Manually specify profile options')
+no_profile = parser.add_argument_group(title="Profile setup",
+    description="Manually specify profile options "
+                "(could not be used together with --profile option)")
 no_profile.add_argument("--exclude", "-x", action="append",
     dest="exclude_list", default=[],
     help="Exclude the specified VM from the backup (may be "
@@ -65,7 +65,7 @@ no_profile.add_argument("--passphrase-file", "-p", action="store",
     help="Read passphrase from a file, or use '-' to read "
          "from stdin")
 no_profile.add_argument("--compress", "-z", action="store_true",
-    dest="compression", default=True,
+    dest="compression", default=None,
     help="Compress the backup (default)")
 no_profile.add_argument("--no-compress", action="store_false",
     dest="compression",
@@ -102,6 +102,8 @@ def write_backup_profile(output_stream, args, passphrase=None):
         profile_data['exclude'] = args.exclude_list
     if passphrase:
         profile_data['passphrase_text'] = passphrase
+    if args.compression is None:
+        args.compression = True
     profile_data['compression'] = args.compression
     if args.appvm and args.appvm != 'dom0':
         profile_data['destination_vm'] = args.appvm
@@ -159,6 +161,16 @@ def main(args=None, app=None):
             print('passphrase_text: ...')
             return 1
     else:
+        for no_profile_option in (
+                "exclude_list",
+                "passphrase_file",
+                "compression",
+                "save_profile"):
+            if getattr(args, no_profile_option):
+                parser.error(
+                    "--{} option could not be used together with --profile"
+                    .format(no_profile_option.replace("_", "-"))
+                )
         profile_name = args.profile
 
     try:

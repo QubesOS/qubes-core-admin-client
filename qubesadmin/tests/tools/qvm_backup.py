@@ -256,3 +256,8 @@ class TC_00_qvm_backup(qubesadmin.tests.QubesTestCase):
                 self.assertEqual(expected_profile, f.read())
         finally:
             os.unlink(profile_path)
+
+    def test_015_conflicting_args(self):
+        with self.assertRaises(SystemExit):
+            qvm_backup.main(['--profile', 'test-profile', '--compress'],
+                app=self.app)
