@@ -454,7 +454,8 @@ def main(args=None, app=None):
     if not args.really:
         parser.error('Do not call this tool directly.')
     if args.action == 'post-install':
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
             loop.run_until_complete(post_install(args))
             loop.stop()
