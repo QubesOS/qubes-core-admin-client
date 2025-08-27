@@ -894,7 +894,8 @@ def main():
             print(os.getpid(), file=lock_f)
             lock_f.flush()
             lock_f.truncate()
-            loop = asyncio.get_event_loop()
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             # pylint: disable=no-member
             events = qubesadmin.events.EventsDispatcher(args.app)
             # pylint: enable=no-member
@@ -941,7 +942,8 @@ def main():
         except (FileNotFoundError, ValueError) as e:
             parser.error(f'Cannot open pidfile {pidfile_path}: {str(e)}')
     else:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         tasks = []
         for vm in args.domains:
             if vm.is_running():
