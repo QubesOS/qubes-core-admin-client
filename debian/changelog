@@ -1,3 +1,10 @@
+qubes-core-admin-client (4.3.21-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Fix nested argparse argument groups
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 27 Aug 2025 04:18:44 +0200
+
 qubes-core-admin-client (4.3.20-1) unstable; urgency=medium
 
   [ Ben Grande ]
