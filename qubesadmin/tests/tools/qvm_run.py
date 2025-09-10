@@ -539,7 +539,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_008_dispvm_remote(self):
         ret = qubesadmin.tools.qvm_run.main(
-            ["--dispvm", "--service", "test.service"], app=self.app
+            ["--service", "--dispvm", "--", "test.service"], app=self.app
         )
         self.assertEqual(ret, 0)
         self.assertEqual(
@@ -585,15 +585,15 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.qubesd_connection_type = "socket"
         self.app.expected_calls[
             ("dom0", "admin.vm.CreateDisposable", None, None)
-        ] = b"0\0disp123"
+        ] = b"0\x00disp123"
         self.app.expected_calls[("disp123", "admin.vm.Kill", None, None)] = (
-            b"0\0"
+            b"0\x00"
         )
         self.app.expected_calls[
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\0default=yes type=int 30"
+        ] = b"0\x00default=yes type=int 30"
         ret = qubesadmin.tools.qvm_run.main(
-            ["--dispvm", "--service", "test.service"], app=self.app
+            ["--service", "--dispvm", "--", "test.service"], app=self.app
         )
         self.assertEqual(ret, 0)
         self.assertEqual(
@@ -618,13 +618,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.qubesd_connection_type = "socket"
         self.app.expected_calls[
             ("test-vm", "admin.vm.CreateDisposable", None, None)
-        ] = b"0\0disp123"
+        ] = b"0\x00disp123"
         self.app.expected_calls[("disp123", "admin.vm.Kill", None, None)] = (
-            b"0\0"
+            b"0\x00"
         )
         self.app.expected_calls[
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\0default=yes type=int 30"
+        ] = b"0\x00default=yes type=int 30"
         ret = qubesadmin.tools.qvm_run.main(
             ["--dispvm=test-vm", "--service", "test.service"], app=self.app
         )
@@ -704,13 +704,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.qubesd_connection_type = "socket"
         self.app.expected_calls[
             ("dom0", "admin.vm.CreateDisposable", None, None)
-        ] = b"0\0disp123"
+        ] = b"0\x00disp123"
         self.app.expected_calls[("disp123", "admin.vm.Kill", None, None)] = (
-            b"0\0"
+            b"0\x00"
         )
         self.app.expected_calls[
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\0default=yes type=int 30"
+        ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
@@ -744,18 +744,19 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.qubesd_connection_type = "socket"
         self.app.expected_calls[
             ("dom0", "admin.vm.CreateDisposable", None, None)
-        ] = b"0\0disp123"
+        ] = b"0\x00disp123"
         self.app.expected_calls[("disp123", "admin.vm.Kill", None, None)] = (
-            b"0\0"
+            b"0\x00"
         )
         self.app.expected_calls[
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\0default=yes type=int 30"
+        ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
-            ["--dispvm", "--no-gui", "test.command"], app=self.app
+            ["--no-gui", "--dispvm", "--", "test.command"], app=self.app
+        )
         )
         self.assertEqual(ret, 0)
         self.assertEqual(
