@@ -81,7 +81,8 @@ parser.add_argument(
     "--gui",
     action="store_true",
     default=None,
-    help='run the command with GUI (default on if "DISPLAY" is set)',
+    help='run the command with GUI (default on if "DISPLAY" is set, guivm '
+    "property is set and gui feature is True)",
 )
 
 parser.add_argument(
@@ -303,6 +304,15 @@ def run_command_single(args, vm):
     return proc, copy_proc, local_proc
 
 
+def has_gui(qube) -> bool:
+    """Returns ``True`` if qube can have a GUI."""
+    return (
+        os.environ.get("DISPLAY") is not None
+        and getattr(qube, "guivm", None)
+        and qube.features.check_with_template("gui", True)
+    )
+
+
 # pylint: disable=too-many-statements
 def main(args=None, app=None):
     """Main function of qvm-run tool"""
@@ -341,15 +351,19 @@ def main(args=None, app=None):
     if args.passio:
         verbose -= 1
 
-    if args.gui is None:
-        args.gui = os.environ.get("DISPLAY") is not None
-
     # --all and --exclude are handled by QubesArgumentParser
     domains = args.domains
     dispvm = None
+    gui_per_domain = {}
     if args.dispvm:
         if args.exclude:
             parser.error("Cannot use --exclude with --dispvm")
+        if args.gui is None:
+            args.gui = has_gui(
+                args.app.default_dispvm
+                if args.dispvm is True
+                else args.app.domains[args.dispvm]
+            )
         dispvm = qubesadmin.vm.DispVM.from_appvm(
             args.app, None if args.dispvm is True else args.dispvm
         )
@@ -357,6 +371,13 @@ def main(args=None, app=None):
     elif args.all_domains:
         # --all consider only running VMs
         domains = [vm for vm in domains if vm.is_running()]
+        if args.gui is None:
+            for qube in domains:
+                gui_per_domain[qube] = has_gui(qube)
+    else:
+        if args.gui is None:
+            assert len(domains) == 1
+            args.gui = has_gui(domains[0])
     if args.color_output:
         sys.stdout.write("\033[0;{}m".format(args.color_output))
         sys.stdout.flush()
@@ -404,7 +425,9 @@ def main(args=None, app=None):
                         file=sys.stderr,
                         color=args.color_stderr,
                     )
-                if args.gui and not args.dispvm:
+                if not args.dispvm and (
+                    args.gui or (args.all_domains and gui_per_domain.get(vm))
+                ):
                     wait_session = vm.run_service(
                         "qubes.WaitForSession",
                         stdout=subprocess.DEVNULL,
