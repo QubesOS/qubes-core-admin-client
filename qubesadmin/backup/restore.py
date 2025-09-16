@@ -55,6 +55,10 @@ from qubesadmin.exc import QubesException
 from qubesadmin.utils import size_to_human
 
 
+# Python 3.14 in Fedora 43 changes the default start method away from fork
+if multiprocessing.get_start_method(allow_none=True) != "fork":
+    multiprocessing.set_start_method("fork")
+
 # must be picklable
 QUEUE_FINISHED = "!!!FINISHED"
 QUEUE_ERROR = "!!!ERROR"
