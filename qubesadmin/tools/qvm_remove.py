@@ -19,7 +19,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-''' Remove domains from the system '''
+"""Remove domains from the system"""
 
 import sys
 
@@ -27,11 +27,15 @@ import qubesadmin.exc
 from qubesadmin.tools import QubesArgumentParser
 import qubesadmin.utils
 
-parser = QubesArgumentParser(description=__doc__,
-                             vmname_nargs='+')
-parser.add_argument("--force", "-f", action="store_true", dest="no_confirm",
-    default=False, help="Do not prompt for confirmation")
-
+parser = QubesArgumentParser(description=__doc__, vmname_nargs="+")
+parser.add_argument(
+    "--force",
+    "-f",
+    action="store_true",
+    dest="no_confirm",
+    default=False,
+    help="Do not prompt for confirmation",
+)
 
 
 def main(args=None, app=None):  # pylint: disable=missing-docstring
@@ -39,19 +43,24 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     go_ahead = ""
 
     if "dom0" in args.domains:
-        print("Domain 'dom0' cannot be removed.")
+        print("Domain 'dom0' cannot be removed.", file=sys.stderr)
         return 1
 
     if args.all_domains and not (args.no_confirm or args.exclude):
-        print("WARNING!!! Removing all domains may leave your system in an "
-              "unrecoverable state!")
+        print(
+            "WARNING!!! Removing all domains may leave your system in an "
+            "unrecoverable state!",
+            file=sys.stderr,
+        )
         go_ahead_remove_all = input("Are you certain? [N/IKNOWWHATIAMDOING]")
         if not go_ahead_remove_all == "IKNOWWHATIAMDOING":
-            print("Remove cancelled.")
+            print("Remove cancelled.", file=sys.stderr)
             return 1
 
     if not args.no_confirm:
-        print("This will completely remove the selected VM(s)...")
+        print(
+            "This will completely remove the selected VM(s)...", file=sys.stderr
+        )
         for vm in args.domains:
             print(" ", vm.name)
         go_ahead = input("Are you sure? [y/N] ").upper()
@@ -62,25 +71,49 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 del args.app.domains[vm.name]
             except qubesadmin.exc.QubesVMInUseError as e:
                 dependencies = qubesadmin.utils.vm_dependencies(vm.app, vm)
+                # Check qubes.app::domain-pre-delete for logic.
+                preloads = [
+                    (holder, prop)
+                    for holder, prop in dependencies
+                    if holder
+                    and getattr(holder, "is_preload", False)
+                    and (
+                        prop == "template"
+                        or (
+                            prop == "default_dispvm"
+                            and getattr(holder, "template", None) == vm
+                        )
+                    )
+                ]
+                dependencies = list(set(dependencies) - set(preloads))
                 if dependencies:
-                    print("VM {} cannot be removed. It is in use as:".format(
-                        vm.name))
-                    for (holder, prop) in dependencies:
+                    print(
+                        "VM {} cannot be removed. It is in use as:".format(
+                            vm.name
+                        ),
+                        file=sys.stderr,
+                    )
+                    for holder, prop in dependencies:
                         if holder:
-                            print(" - {} for {}".format(prop, holder.name))
+                            print(
+                                " - {} for {}".format(prop, holder.name),
+                                file=sys.stderr,
+                            )
                         else:
-                            print(" - global property {}".format(prop))
+                            print(
+                                " - global property {}".format(prop),
+                                file=sys.stderr,
+                            )
                 # Display the original message as well
                 parser.error_runtime(e)
             except qubesadmin.exc.QubesException as e:
                 parser.error_runtime(e)
         retcode = 0
     else:
-        print("Remove cancelled.")
+        print("Remove cancelled.", file=sys.stderr)
         retcode = 1
     return retcode
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

@@ -45,12 +45,73 @@ class TC_00_qvm_remove(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Remove', None, None)] = \
             b'2\x00QubesVMInUseError\x00\x00An error occurred\x00'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property\x00'
 
         mock_dependencies.return_value = \
             [(None, 'default_template'), (self.app.domains['some-vm'], 'netvm')]
-
         with self.assertRaises(SystemExit):
             qubesadmin.tools.qvm_remove.main(['-f', 'some-vm'], app=self.app)
+        mock_dependencies.assert_called_once()
 
-        self.assertTrue(mock_dependencies.called,
-                        "Dependencies check not called.")
+    @unittest.mock.patch('qubesadmin.utils.vm_dependencies')
+    def test_101_dvm_dependencies(self, mock_dependencies):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-template class=TemplateVM state=Halted\n' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'some-dvm class=AppVM state=Running\n' \
+            b'some-disp class=DispVM state=Running\n' \
+            b'some-disp2 class=DispVM state=Running\n'
+        self.app.expected_calls[
+            ('some-dvm', 'admin.vm.Remove', None, None)] = \
+            b'2\x00QubesVMInUseError\x00\x00An error occurred\x00'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'2\x00QubesNoSuchPropertyError\x00\x00Invalid property\x00'
+
+        # Cannot remove while it is default_dispvm of the system.
+        mock_dependencies.return_value = \
+            [(None, 'default_dispvm')]
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_remove.main(['-f', 'some-dvm'], app=self.app)
+        mock_dependencies.assert_called_once()
+        mock_dependencies.reset_mock()
+
+        # Cannot remove while it is default_dispvm of a qube.
+        mock_dependencies.return_value = \
+            [(self.app.domains['some-vm'], 'default_dispvm')]
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_remove.main(['-f', 'some-dvm'], app=self.app)
+        mock_dependencies.assert_called_once()
+        mock_dependencies.reset_mock()
+
+        # Cannot remove while it is default_dispvm of its own disposable.
+        self.app.expected_calls[
+            ('some-disp', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'0\x00default=False type=bool False'
+        mock_dependencies.return_value = \
+            [(self.app.domains['some-disp'], 'default_dispvm')]
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_remove.main(['-f', 'some-dvm'], app=self.app)
+        mock_dependencies.assert_called_once()
+        mock_dependencies.reset_mock()
+
+        # Cannot remove while it is template of non preload.
+        self.app.expected_calls[
+            ('some-disp', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'0\x00default=False type=bool True'
+        self.app.expected_calls[
+            ('some-disp2', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'0\x00default=False type=bool False'
+        mock_dependencies.return_value = [
+            (self.app.domains['some-disp'], 'template'),
+            (self.app.domains['some-disp2'], 'template')
+        ]
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_remove.main(['-f', 'some-dvm'], app=self.app)
+        mock_dependencies.assert_called_once()
+        mock_dependencies.reset_mock()
+
+        self.assertAllCalled()
