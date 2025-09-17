@@ -75,7 +75,8 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
     force = args.force or bool(args.all_domains)
 
     if have_events:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     remaining_domains = args.domains
     for _ in range(len(args.domains)):
         this_round_domains = set(remaining_domains)

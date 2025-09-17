@@ -205,7 +205,8 @@ def main(args=None, app=None):
         with open(profile_path, 'w', encoding='utf-8') as f_profile:
             write_backup_profile(f_profile, args, passphrase)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     if have_events:
         # pylint: disable=no-member
         events_dispatcher = qubesadmin.events.EventsDispatcher(args.app)
