@@ -156,7 +156,7 @@ def handle_broken(app, args, restore_info):
         app.log.info("Existing VMs will NOT be removed or altered.")
     else:
         app.log.info("The above VMs will be copied and added to your system.")
-        app.log.info("existing VMs will NOT be removed.")
+        app.log.info("Existing VMs will NOT be removed.")
 
     if there_are_missing_templates:
         app.log.warning("*** One or more TemplateVMs are missing on the "
