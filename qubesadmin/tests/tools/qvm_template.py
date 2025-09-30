@@ -451,6 +451,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -565,6 +566,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=True,
+                skip_start=False,
                 pool='my-pool'
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -643,6 +645,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -710,6 +713,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -781,6 +785,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -832,6 +837,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -927,6 +933,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 yes=False,
                 keep_cache=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -1028,6 +1035,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 yes=False,
                 keep_cache=True,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -1108,6 +1116,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -4298,6 +4307,7 @@ test-vm : Qubes template for fedora-31
                 yes=False,
                 keep_cache=True,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -4404,6 +4414,7 @@ test-vm : Qubes template for fedora-31
                 yes=False,
                 keep_cache=True,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             qubesadmin.tools.qvm_template.install(args, self.app,
@@ -4515,6 +4526,7 @@ test-vm : Qubes template for fedora-31
                 releasever='4.1',
                 yes=False,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -4923,6 +4935,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
                 yes=False,
                 keep_cache=True,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             qubesadmin.tools.qvm_template.install(args, self.app,
@@ -5009,6 +5022,7 @@ gpgkey = file:///etc/qubes/repo-templates/keys/RPM-GPG-KEY-qubes-$releasever-pri
                 yes=False,
                 keep_cache=True,
                 allow_pv=False,
+                skip_start=False,
                 pool=None
             )
             qubesadmin.tools.qvm_template.install(args, self.app,

@@ -180,6 +180,9 @@ def get_parser() -> argparse.ArgumentParser:
             parser_downgrade, parser_upgrade]:
         parser_x.add_argument('--allow-pv', action='store_true',
             help='Allow templates that set virt_mode to pv.')
+        parser_x.add_argument('--skip-start', action='store_true',
+            help='Do not start templates to call their '
+                 'qubes.PostInstall service.')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
 
     # qvm-template download
@@ -1188,6 +1191,8 @@ def install(
             ]
             if args.allow_pv:
                 cmdline.append('--allow-pv')
+            if args.skip_start:
+                cmdline.append('--skip-start')
             if not override_existing and args.pool:
                 cmdline += ['--pool', args.pool]
             subprocess.check_call(cmdline + [

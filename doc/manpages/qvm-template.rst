@@ -85,7 +85,7 @@ Commands
 install
 ^^^^^^^
 
-| :command:`qvm-template install` [-h] [--pool *POOL*] [--nogpgcheck] [--allow-pv] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
+| :command:`qvm-template install` [-h] [--pool *POOL*] [--nogpgcheck] [--allow-pv] [--skip-start] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Install template packages.
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
@@ -106,6 +106,10 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 
    Allow templates that set virt_mode to pv.
 
+.. option:: --skip-start
+
+   Do not start templates to call their qubes.PostInstall service.
+
 .. option:: --downloaddir DOWNLOADDIR
 
    Specify download directory. (default: .)
@@ -117,7 +121,7 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 {reinstall,downgrade,upgrade}
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-| :command:`qvm-template {reinstall,downgrade,upgrade}` [-h] [--nogpgcheck] [--allow-pv] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
+| :command:`qvm-template {reinstall,downgrade,upgrade}` [-h] [--nogpgcheck] [--allow-pv] [--skip-start] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Reinstall/downgrade/upgrade template packages.
 
@@ -134,6 +138,10 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 .. option:: --allow-pv
 
    Allow templates that set virt_mode to pv.
+
+.. option:: --skip-start
+
+   Do not start templates to call their qubes.PostInstall service.
 
 .. option:: --downloaddir DOWNLOADDIR
 
