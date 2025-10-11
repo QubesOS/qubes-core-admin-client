@@ -183,7 +183,15 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00test-vm class=AppVM state=Running\n"
             b"test-vm2 class=AppVM state=Running\n"
             b"test-vm3 class=AppVM state=Halted\n"
+            b"disp007 class=DispVM state=Paused\n"
         )
+        for vm in ["test-vm", "test-vm2"]:
+            self.app.expected_calls[
+                (vm, "admin.vm.feature.Get", "internal", None)
+            ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00"
+        self.app.expected_calls[
+            ("disp007", "admin.vm.feature.Get", "internal", None)
+        ] = b"0\x001x00"
         self.app.expected_calls[
             ("test-vm", "admin.vm.CurrentState", None, None)
         ] = b"0\x00power_state=Running"
@@ -193,6 +201,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ("test-vm3", "admin.vm.CurrentState", None, None)
         ] = b"0\x00power_state=Halted"
+        self.app.expected_calls[
+            ("disp007", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Paused"
         self.app.expected_calls[
             ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
@@ -787,13 +798,23 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00test-vm class=AppVM state=Running\n"
             b"test-vm2 class=AppVM state=Running\n"
             b"test-vm3 class=AppVM state=Halted\n"
+            b"disp007 class=DispVM state=Paused\n"
         )
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.Get", "internal", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00"
+        self.app.expected_calls[
+            ("disp007", "admin.vm.feature.Get", "internal", None)
+        ] = b"0\x001x00"
         self.app.expected_calls[
             ("test-vm", "admin.vm.CurrentState", None, None)
         ] = b"0\x00power_state=Running"
         self.app.expected_calls[
             ("test-vm3", "admin.vm.CurrentState", None, None)
         ] = b"0\x00power_state=Halted"
+        self.app.expected_calls[
+            ("disp007", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Paused"
         self.app.expected_calls[
             ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"

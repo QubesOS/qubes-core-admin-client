@@ -106,3 +106,31 @@ class TC_00_qvm_unpause(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.Resume', None, None)] = b'0\x00'
         qubesadmin.tools.qvm_unpause.main(['some-vm'], app=self.app)
         self.assertAllCalled()
+
+    def test_006_all_vms(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Paused\n' \
+            b'SleepingBeauty class=AppVM state=Suspended\n'
+        for vm in ["some-vm", "other-vm"]:
+            self.app.expected_calls[
+                (vm, "admin.vm.feature.Get", "internal", None)
+            ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00"
+            self.app.expected_calls[
+                (vm, 'admin.vm.Unpause', None, None)] = \
+                b'0\x00'
+        self.app.expected_calls[
+            ("SleepingBeauty", "admin.vm.feature.Get", "internal", None)
+        ] = b"0\x001x00"
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running\n'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Paused\n'
+        self.assertEqual(
+            qubesadmin.tools.qvm_unpause.main(['--all'],
+                app=self.app),
+            0)
+        self.assertAllCalled()

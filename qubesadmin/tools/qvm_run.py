@@ -370,7 +370,13 @@ def main(args=None, app=None):
         domains = [dispvm]
     elif args.all_domains:
         # --all consider only running VMs
-        domains = [vm for vm in domains if vm.is_running()]
+        domains = [
+            vm
+            for vm in domains
+            if vm.is_running()
+            and not vm.features.get("internal")
+            and not vm.is_paused()
+        ]
         if args.gui is None:
             for qube in domains:
                 gui_per_domain[qube] = has_gui(qube)

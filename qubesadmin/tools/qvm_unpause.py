@@ -38,7 +38,14 @@ def main(args=None, app=None):
 
     args = parser.parse_args(args, app=app)
     exit_code = 0
-    for domain in args.domains:
+    domains = args.domains
+    if args.all_domains:
+        domains = [
+            vm
+            for vm in domains
+            if not vm.features.get("internal")
+        ]
+    for domain in domains:
         try:
             if domain.is_suspended():
                 domain.resume()
