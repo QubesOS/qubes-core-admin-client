@@ -32,22 +32,24 @@ you can use MockDispatcher that does nothing.
 Example: to run qui-domains widget in a qube using MockQubes,
 replace it's main with the following:
 
-def main():
-    ''' main function '''
-    # qapp = qubesadmin.Qubes()
-    # dispatcher = qubesadmin.events.EventsDispatcher(qapp)
-    # stats_dispatcher = qubesadmin.events.EventsDispatcher(
-        qapp, api_method='admin.vm.Stats')
 
-    import qubesadmin.tests.mock_app as mock_app
-    qapp = mock_app.MockQubesComplete()
-    dispatcher = mock_app.MockDispatcher(qapp)
-    stats_dispatcher = mock_app.MockDispatcher(
-        qapp, api_method='admin.vm.Stats')
+>>> def main():
+... ''' main function '''
+... # qapp = qubesadmin.Qubes()
+... # dispatcher = qubesadmin.events.EventsDispatcher(qapp)
+... # stats_dispatcher = qubesadmin.events.EventsDispatcher(
+... #    qapp, api_method='admin.vm.Stats'
+... # )
+...
+>>> import qubesadmin.tests.mock_app as mock_app
+... qapp = mock_app.MockQubesComplete()
+... dispatcher = mock_app.MockDispatcher(qapp)
+... stats_dispatcher = mock_app.MockDispatcher(
+...     qapp, api_method='admin.vm.Stats')
+...
+>>> # continues as normal
 
-    # continues as normal
-
-To run a mocked program, remember to extend pythonpath appropriately, z.B.:
+To run a mocked program, remember to extend PYTHONPATH appropriately, z.B.:
     PYTHONPATH=../core-admin-client:. python3 qui/tray/domains.py
 
 To collect information to modify this script, you can use the wrapper function
@@ -999,7 +1001,7 @@ class MockQubesComplete(MockQubes):
             name="default-dvm",
             qapp=self,
             klass="AppVM",
-            template_for_dispvms="True",
+            template_for_dispvms=True,
             template="fedora-36",
             features={"appmenus-dispvm": "1"},
         )
@@ -1009,6 +1011,32 @@ class MockQubesComplete(MockQubes):
             qapp=self,
             klass="DispVM",
             template="default-dvm",
+        )
+
+        self._qubes["test-alt-dvm"] = MockQube(
+            name="test-alt-dvm",
+            qapp=self,
+            klass="AppVM",
+            template_for_dispvms=True,
+            template="fedora-36",
+            features={"appmenus-dispvm": "1"},
+        )
+
+        self._qubes["test-alt-disp"] = MockQube(
+            name="test-alt-disp",
+            qapp=self,
+            klass="DispVM",
+            template="test-alt-dvm",
+        )
+
+        self._qubes["test-alt-dvm-running"] = MockQube(
+            name="test-alt-dvm-running",
+            qapp=self,
+            klass="AppVM",
+            template_for_dispvms=True,
+            template="fedora-36",
+            features={"appmenus-dispvm": "1"},
+            running=True,
         )
 
         self._qubes["test-vm"] = MockQube(
