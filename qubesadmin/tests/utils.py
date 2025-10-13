@@ -35,7 +35,10 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
             b'template2 class=TemplateVM state=Running\n' \
             b'vm2 class=AppVM state=Running\n' \
             b'sys-net class=AppVM state=Running\n' \
-            b'sys-firewall class=AppVM state=Running\n'
+            b'sys-firewall class=AppVM state=Running\n' \
+            b'test-dvm class=AppVM state=Running\n' \
+            b'disp1 class=DispVM state=Running\n' \
+            b'disp2 class=DispVM state=Running\n'
 
         self.global_properties = ['default_dispvm', 'default_netvm',
                                   'default_guivm', 'default_audiovm',
@@ -47,13 +50,20 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                 ('dom0', 'admin.property.Get', prop, None)] = \
                 b'0\x00default=True type=vm vm2'
 
-        self.vms = ['vm1', 'vm2', 'sys-net', 'sys-firewall',
-                    'template1', 'template2']
+        self.vms = [
+            'vm1', 'vm2', 'sys-net', 'sys-firewall', 'template1', 'template2',
+            'test-dvm', 'disp1', 'disp2',
+        ]
 
-        self.vm_properties = ['template', 'netvm', 'guivm', 'audiovm',
-                              'default_dispvm', 'management_dispvm']
+        self.vm_properties = [
+            'template', 'netvm', 'guivm', 'audiovm', 'default_dispvm',
+            'management_dispvm'
+        ]
 
         for vm in self.vms:
+            self.app.expected_calls[
+                (vm, 'admin.vm.property.Get', 'is_preload', None)
+            ] = b'2\0QubesNoSuchPropertyError\0\0invalid property\0'
             for prop in self.vm_properties:
                 if not prop.startswith('template') or \
                         not vm.startswith('template'):
@@ -64,6 +74,7 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                     self.app.expected_calls[
                         (vm, 'admin.vm.property.Get', prop, None)] = \
                         b'2\0QubesNoSuchPropertyError\0\0invalid property\0'
+
 
     def test_00_only_global(self):
         result = qubesadmin.utils.vm_dependencies(self.app,
@@ -113,6 +124,27 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                                                   self.app.domains['sys-net'])
 
         self.assertListEqual(result, [(self.app.domains['vm1'], 'netvm')])
+
+    def test_05_preloaded_disposables(self):
+        self.app.expected_calls[
+            ('disp1', 'admin.vm.property.Get', 'template', None)
+        ] = b'0\x00default=False type=vm test-dvm'
+        self.app.expected_calls[
+            ('disp2', 'admin.vm.property.Get', 'template', None)
+        ] = b'0\x00default=False type=vm test-dvm'
+        self.app.expected_calls[
+            ('disp1', 'admin.vm.property.Get', 'is_preload', None)
+        ] = b'0\x00default=False type=bool False'
+        self.app.expected_calls[
+            ('disp2', 'admin.vm.property.Get', 'is_preload', None)
+        ] = b'0\x00default=False type=bool True'
+
+        result = qubesadmin.utils.vm_dependencies(
+            self.app, self.app.domains['test-dvm']
+        )
+        self.assertListEqual(
+            result, [(self.app.domains['disp1'], 'template')]
+        )
 
 
 class TestVMExecEncode(qubesadmin.tests.QubesTestCase):
