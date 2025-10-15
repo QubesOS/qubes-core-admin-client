@@ -194,6 +194,14 @@ usb-reset-on-attach:
     This is known to help with some devices, that cannot deal with re-attaching
     to another driver.
 
+servicevm
+    Default: disabled
+
+    Changes the qube icon to ServiceVM theme and moves the qube to ``SERVICE``
+    tab of Qubes Application Menu.
+    If the qube ``provides_network`` property set/reset to True or False,
+    the value of ``servicevm`` feature is automatically readjusted accordingly.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
