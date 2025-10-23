@@ -1,3 +1,18 @@
+qubes-core-admin-client (4.3.23-1) unstable; urgency=medium
+
+  [ Rusty Bird ]
+  * qvm-template: pass through --skip-start to qvm-template-postprocess
+
+  [ Ben Grande ]
+  * Add less important disp template and disp
+  * Exclude preloads from removal output
+  * Add running disposable template for app menu
+
+  [ Ali Mirjamali ]
+  * Exclude preloaded disposables from `qvm-run --all`
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 23 Oct 2025 04:39:08 +0200
+
 qubes-core-admin-client (4.3.22-1) unstable; urgency=medium
 
   [ Ben Grande ]
