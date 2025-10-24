@@ -219,6 +219,14 @@ custom-persist:
     This will also disable ``/home`` and ``/usr/local`` persistence as well as
     ``/rw/config/*`` automatically executed configs.
 
+servicevm
+    Default: disabled
+
+    Changes the qube icon to ServiceVM theme and moves the qube to ``SERVICE``
+    tab of Qubes Application Menu.
+    If the qube ``provides_network`` property set/reset to True or False,
+    the value of ``servicevm`` feature is automatically readjusted accordingly.
+
 Authors
 =======
 | Joanna Rutkowska <joanna at invisiblethingslab dot com>
