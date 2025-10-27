@@ -264,7 +264,7 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 info
 ^^^^
 
-| :command:`qvm-template list` [-h] [--all] [--installed] [--available] [--extras] [--upgrades] [--machine-readable | --machine-readable-json] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
+| :command:`qvm-template info` [-h] [--all] [--installed] [--available] [--extras] [--upgrades] [--machine-readable | --machine-readable-json] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Display details about templates.
 
