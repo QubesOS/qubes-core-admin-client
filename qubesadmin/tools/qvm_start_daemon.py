@@ -222,6 +222,7 @@ class KeyboardLayout:
         self.options = split_string[4].decode()
         self.options = ",".join(opt for opt in self.options.split(",")
                                 if not opt.startswith("grp:"))
+        self.current_layout = None
 
     def get_property(self, layout_num):
         """Return the selected keyboard layout as formatted for keyboard_layout
@@ -291,10 +292,9 @@ class XWatcher:
         new_property = self.keyboard_layout.get_property(
             self.selected_layout)
 
-        current_property = self.current_vm.keyboard_layout
-
-        if new_property != current_property:
+        if new_property != self.keyboard_layout.current_layout:
             self.current_vm.keyboard_layout = new_property
+            self.keyboard_layout.current_layout = new_property
 
     def event_reader(self, callback):
         """Poll for X events related to keyboard layout"""
