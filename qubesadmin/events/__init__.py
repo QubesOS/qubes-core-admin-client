@@ -229,6 +229,35 @@ class EventsDispatcher(object):
                 vm = kwargs['vm']
                 self.app.domains.clear_cache(invalidate_name=str(vm))
             subject = None
+        # invalidate cache if needed; call it before other handlers
+        # as those may want to use cached value
+        if event.startswith('property-set:') or \
+                event.startswith('property-reset:'):
+            self.app._invalidate_cache(subject, event, **kwargs)
+        elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
+                       'domain-paused', 'domain-unpaused',
+                       'domain-start-failed'):
+            self.app._update_power_state_cache(subject, event, **kwargs)
+            subject.devices.clear_cache()
+        elif event == 'connection-established':
+            # on (re)connection, clear cache completely - we don't have
+            # guarantee about not missing any events before this point
+            self.app._invalidate_cache_all()
+        elif event.split(":")[0] in (
+            "device-assign",
+            "device-unassign",
+            "device-assignment-changed"
+        ):
+            devclass = event.split(":")[1]
+            subject.devices[devclass]._assignment_cache = None
+        elif event.split(":")[0] in (
+            "device-attach",
+            "device-detach",
+            "device-removed"
+        ):
+            devclass = event.split(":")[1]
+            subject.devices[devclass]._attachment_cache = None
+
         # deserialize known attributes
         if event.startswith('device-'):
             try:
@@ -256,19 +285,6 @@ class EventsDispatcher(object):
                         kwargs['port'], devclass, self.app.domains, blind=True)
             except (KeyError, ValueError):
                 pass
-        # invalidate cache if needed; call it before other handlers
-        # as those may want to use cached value
-        if event.startswith('property-set:') or \
-                event.startswith('property-reset:'):
-            self.app._invalidate_cache(subject, event, **kwargs)
-        elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
-                       'domain-paused', 'domain-unpaused',
-                       'domain-start-failed'):
-            self.app._update_power_state_cache(subject, event, **kwargs)
-        elif event == 'connection-established':
-            # on (re)connection, clear cache completely - we don't have
-            # guarantee about not missing any events before this point
-            self.app._invalidate_cache_all()
 
         handlers = [h_func for h_name, h_func_set in self.handlers.items()
             for h_func in h_func_set
