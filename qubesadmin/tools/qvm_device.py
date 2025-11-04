@@ -757,6 +757,7 @@ def get_parser(device_class=None):
 def main(args=None, app=None):
     """Main routine of :program:`qvm-block`."""
     app = app or qubesadmin.Qubes()
+    app.cache_enabled = True
 
     basename = os.path.basename(sys.argv[0])
     devclass = None
