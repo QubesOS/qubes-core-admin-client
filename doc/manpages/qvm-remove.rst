@@ -14,7 +14,7 @@
 
 Synopsis
 --------
-:command:`qvm-remove` [-h] [--verbose] [--quiet] [--force] [--force-root] [--all] [--exclude *EXCLUDE*] [--just-db] [*VMNAME* [*VMNAME* ...]]
+:command:`qvm-remove` [-h] [--verbose] [--quiet] [--force] [--force-root] [--all] [--exclude *EXCLUDE*] [*VMNAME* [*VMNAME* ...]]
 
 Options
 -------
