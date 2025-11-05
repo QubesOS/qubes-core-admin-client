@@ -131,7 +131,7 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
             mock.call.info(
                 'The above VMs will be copied and added to your system.'),
             mock.call.info(
-                'Exisiting VMs will NOT be removed.'),
+                'Existing VMs will NOT be removed.'),
             mock.call.warning(
                 '*** One or more {}s are missing on the host! ***'.format(
                     missing_name)),
