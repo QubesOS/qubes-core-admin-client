@@ -62,6 +62,12 @@ class DeviceCollection:
         self._vm = vm
         self._class = class_
         self._dev_cache = {}
+        #: attachments cache, `None` means "not cached (yet)",
+        #: in contrast to empty list which means "cached empty list"
+        self._attachment_cache = None
+        #: assignments cache, `None` means "not cached (yet)",
+        #: in contrast to empty list which means "cached empty list"
+        self._assignment_cache = None
 
     def attach(self, assignment: DeviceAssignment) -> None:
         """
@@ -75,6 +81,9 @@ class DeviceCollection:
                 "did you mean `qvm-pci assign --required ...`"
             )
         self._add(assignment, "attach")
+        # clear the whole cache instead of saving provided assignment, it might
+        # get modified before actually attaching
+        self._attachment_cache = None
 
     def detach(self, assignment: DeviceAssignment) -> None:
         """
@@ -84,6 +93,7 @@ class DeviceCollection:
             (obtained from :py:meth:`assignments`)
         """
         self._remove(assignment, "detach")
+        self._assignment_cache = None
 
     def assign(self, assignment: DeviceAssignment) -> None:
         """
@@ -113,6 +123,9 @@ class DeviceCollection:
             )
 
         self._add(assignment, "assign")
+        # clear the whole cache instead of saving provided assignment, it might
+        # get modified before actually assigning
+        self._assignment_cache = None
 
     def unassign(self, assignment: DeviceAssignment) -> None:
         """
@@ -122,6 +135,7 @@ class DeviceCollection:
             (obtained from :py:meth:`assignments`)
         """
         self._remove(assignment, "unassign")
+        self._assignment_cache = None
 
     def _add(self, assignment: DeviceAssignment, action: str) -> None:
         """
@@ -186,6 +200,10 @@ class DeviceCollection:
         """
         List devices which are attached to this vm.
         """
+        if self._attachment_cache is not None:
+            yield from self._attachment_cache
+            return
+        new_cache = []
         assignments_str = self._vm.qubesd_call(
             None, "admin.vm.device.{}.Attached".format(self._class)
         ).decode()
@@ -195,9 +213,14 @@ class DeviceCollection:
                 head, self._class, self._vm.app.domains, blind=True
             )
 
-            yield DeviceAssignment.deserialize(
+            assignment = DeviceAssignment.deserialize(
                 untrusted_rest.encode("ascii"), expected_device=device
             )
+            new_cache.append(assignment)
+            yield assignment
+
+        if self._vm.app.cache_enabled:
+            self._attachment_cache = new_cache
 
     def get_assigned_devices(
         self, required_only: bool = False
@@ -207,6 +230,12 @@ class DeviceCollection:
 
         Safe to access before libvirt bootstrap.
         """
+        if self._assignment_cache is not None:
+            for assignment in self._assignment_cache:
+                if not required_only or assignment.required:
+                    yield assignment
+            return
+        new_cache = []
         assignments_str = self._vm.qubesd_call(
             None, "admin.vm.device.{}.Assigned".format(self._class)
         ).decode()
@@ -219,8 +248,12 @@ class DeviceCollection:
             assignment = DeviceAssignment.deserialize(
                 untrusted_rest.encode("ascii"), expected_device=device
             )
+            new_cache.append(assignment)
             if not required_only or assignment.required:
                 yield assignment
+
+        if self._vm.app.cache_enabled:
+            self._assignment_cache = new_cache
 
     def get_exposed_devices(self) -> Iterable[DeviceInfo]:
         """
@@ -252,6 +285,7 @@ class DeviceCollection:
             repr(device),
             required.value.encode("utf-8"),
         )
+        self._assignment_cache = None
 
     __iter__ = get_exposed_devices
 
@@ -260,6 +294,8 @@ class DeviceCollection:
         Clear cache of available devices.
         """
         self._dev_cache.clear()
+        self._assignment_cache = None
+        self._attachment_cache = None
 
     def __getitem__(self, item):
         """Get device object with given port_id.
@@ -325,3 +361,8 @@ class DeviceManager(dict):
             None,
             "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
         )
+
+    def clear_cache(self):
+        """Clear cache of all available device classes"""
+        for devclass in self.values():
+            devclass.clear_cache()

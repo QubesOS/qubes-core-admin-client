@@ -255,6 +255,49 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
         self.assertAllCalled()
 
+    def test_042_assignments_cache(self):
+        self.app.cache_enabled = True
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Attached', None, None)] = \
+            (b"0\0test-vm2+dev1 backend_domain='test-vm2' port_id='dev1' "
+             b"mode='manual' devclass='test' "
+             b"frontend_domain='test-vm' _ro='True'\n")
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Assigned', None, None)] = \
+            (b"0\0test-vm3+dev2 backend_domain='test-vm3' devclass='test' "
+             b"port_id='dev2' mode='required' "
+             b"frontend_domain='test-vm' _ro='False'\n")
+        # populate cache
+        list(self.vm.devices['test'].get_dedicated_devices())
+
+        self.assertAllCalled()
+        self.app.expected_calls.clear()
+
+        # get again, should be cached now
+        assigns = sorted(list(
+            self.vm.devices['test'].get_dedicated_devices()))
+
+        self.assertEqual(len(assigns), 2)
+        self.assertIsInstance(assigns[0], DeviceAssignment)
+        self.assertEqual(assigns[0].backend_domain,
+                         self.app.domains['test-vm2'])
+        self.assertEqual(assigns[0].port_id, 'dev1')
+        self.assertEqual(assigns[0].frontend_domain,
+                         self.app.domains['test-vm'])
+        self.assertEqual(assigns[0].options, {'ro': 'True'})
+        self.assertEqual(assigns[0].required, False)
+        self.assertEqual(assigns[0].devclass, 'test')
+
+        self.assertIsInstance(assigns[1], DeviceAssignment)
+        self.assertEqual(assigns[1].backend_domain,
+                         self.app.domains['test-vm3'])
+        self.assertEqual(assigns[1].port_id, 'dev2')
+        self.assertEqual(assigns[1].frontend_domain,
+                         self.app.domains['test-vm'])
+        self.assertEqual(assigns[1].options, {'ro': 'False'})
+        self.assertEqual(assigns[1].required, True)
+        self.assertEqual(assigns[1].devclass, 'test')
+
     def test_050_required(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Assigned', None, None)] = \
