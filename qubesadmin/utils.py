@@ -143,6 +143,7 @@ def vm_dependencies(app, reference_vm):
     for vm in app.domains:
         if vm == reference_vm:
             continue
+        is_preload = getattr(vm, "is_preload", False)
         for prop in vm_properties:
             if not hasattr(vm, prop):
                 continue
@@ -150,7 +151,18 @@ def vm_dependencies(app, reference_vm):
                 is_prop_default = vm.property_is_default(prop)
             except qubesadmin.exc.QubesPropertyAccessError:
                 is_prop_default = False
-            if reference_vm == getattr(vm, prop, None) and not is_prop_default:
+            if (
+                reference_vm == getattr(vm, prop, None)
+                and not is_prop_default
+                and not (
+                    is_preload
+                    and prop == "template"
+                    or (
+                        prop == "default_dispvm"
+                        and getattr(vm, "template", None) == vm
+                    )
+                )
+            ):
                 result.append((vm, prop))
 
     return result
