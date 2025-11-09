@@ -1,3 +1,30 @@
+qubes-core-admin-client (4.3.24-1) unstable; urgency=medium
+
+  [ Ali Mirjamali ]
+  * Document `servicevm` feature
+  * Cache GUIVM keyboard layout in `qvm-start-daemon`
+
+  [ Marek Marczykowski-Górecki ]
+  * Cache device assignments/attachments
+  * Enable cache for qvm-device
+
+  [ Jordan Mynes ]
+  * fix: typo exisiting --> existing
+  * fix: typo Exisiting --> Existing
+  * revert: fixed accidental decapitalization
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix 'Exisiting' typo in tests too
+
+  [ jamke ]
+  * Remove `--just-db` option from auto-generated man of qvm-remove
+  * Fix mistake in man qvm-template: use info instead of list
+
+  [ Ben Grande ]
+  * Ignore preload as a dependency
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 09 Nov 2025 02:49:02 +0100
+
 qubes-core-admin-client (4.3.23-1) unstable; urgency=medium
 
   [ Rusty Bird ]
