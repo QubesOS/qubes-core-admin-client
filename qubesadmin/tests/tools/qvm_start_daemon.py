@@ -431,7 +431,7 @@ global: {
     async def mock_coroutine(self, mock, *args, **kwargs):
         mock(*args, **kwargs)
 
-    def test_038_start_gui_skip_preload(self):
+    def test_035_start_gui_skip_preload(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.addCleanup(loop.close)
@@ -449,6 +449,9 @@ global: {
         self.app.expected_calls[
             ('test-disp', 'admin.vm.feature.CheckWithTemplate',
              'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.Get', 'preload-dispvm-early-gui', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
         self.app.expected_calls[
             ('test-disp', 'admin.vm.property.Get', 'virt_mode', None)] = \
@@ -486,7 +489,7 @@ global: {
         finally:
             unittest.mock.patch.stopall()
 
-    def test_039_start_gui_for_preload(self):
+    def test_036_start_gui_for_preload(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.addCleanup(loop.close)
@@ -520,6 +523,71 @@ global: {
         self.app.expected_calls[
             ('test-disp', 'admin.vm.property.Get', 'is_preload', None)] = \
             b'0\x00default=False type=bool False'
+
+        # pylint: disable=protected-access
+        self.app._local_name = 'gui-vm'
+        vm = self.app.domains['test-disp']
+
+        with \
+            unittest.mock.patch('asyncio.ensure_future'), \
+            unittest.mock.patch.object(
+                self.launcher, 'common_guid_args', lambda vm: []
+            ), \
+            unittest.mock.patch.object(
+                qubesadmin.tools.qvm_start_daemon,
+                'get_monitor_layout',
+                unittest.mock.Mock(return_value=None)
+            ), \
+            unittest.mock.patch.object(
+                self.launcher, 'start_gui', unittest.mock.Mock()
+            ) as mock_start, \
+            unittest.mock.patch.object(
+                self.launcher, 'start_audio', unittest.mock.Mock()
+            ) as mock_start_audio:
+            # Execute and validate
+            self.launcher.on_property_preload_set(
+                vm, 'property-reset:is_preload'
+            )
+            mock_start_audio.assert_called_once_with(vm)
+            mock_start.assert_called_once_with(vm, monitor_layout=None)
+
+    def test_037_start_gui_for_early_preload(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-disp class=DispVM state=Running\n' \
+            b'gui-vm class=AppVM state=Running'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.CheckWithTemplate', 'gui', None)] = \
+            b'0\x00True'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.CheckWithTemplate',
+             'no-monitor-layout', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'virt_mode', None)] = \
+            b'0\x00default=False type=str hvm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'xid', None)] = \
+            b'0\x00default=False type=int 3000'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'stubdom_xid', None)] = \
+            b'0\x00default=False type=int 3001'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'guivm', None)] = \
+            b'0\x00default=False type=vm gui-vm'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.property.Get', 'is_preload', None)] = \
+            b'0\x00default=False type=bool True'
+        self.app.expected_calls[
+            ('test-disp', 'admin.vm.feature.Get', 'preload-dispvm-early-gui', None)] = \
+            b'0\x00True'
 
         # pylint: disable=protected-access
         self.app._local_name = 'gui-vm'

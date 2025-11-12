@@ -565,7 +565,10 @@ class DAEMONLauncher:
         if (
             vm.features.check_with_template("no-monitor-layout", False)
             or not vm.is_running()
-            or getattr(vm, "is_preload", False)
+            or (
+                getattr(vm, "is_preload", False)
+                and not vm.features.get("preload-dispvm-early-gui", None)
+            )
         ):
             return
 
@@ -611,12 +614,14 @@ class DAEMONLauncher:
                 or vm.klass == "AdminVM"
                 or not vm.is_running()
                 or not vm.features.check_with_template("gui", True)
-                or getattr(vm, "is_preload", False)
             ):
                 continue
-            asyncio.ensure_future(
-                self.send_monitor_layout(vm, monitor_layout)
-            )
+            if (
+                getattr(vm, "is_preload", False)
+                and not vm.features.get("preload-dispvm-early-gui", None)
+            ):
+                continue
+            asyncio.ensure_future(self.send_monitor_layout(vm, monitor_layout))
 
     @staticmethod
     def kde_guid_args(vm):
@@ -724,7 +729,9 @@ class DAEMONLauncher:
         :param monitor_layout: monitor layout to send; if None, fetch it from
             local X server.
         """
-        if getattr(vm, "is_preload", False):
+        if getattr(vm, "is_preload", False) and not vm.features.get(
+            "preload-dispvm-early-gui", None
+        ):
             return
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(["-d", str(vm.xid)])
@@ -752,7 +759,9 @@ class DAEMONLauncher:
 
         This function is a coroutine.
         """
-        if getattr(vm, "is_preload", False):
+        if getattr(vm, "is_preload", False) and not vm.features.get(
+            "preload-dispvm-early-gui", None
+        ):
             return
         want_stubdom = force
         if not want_stubdom and vm.features.check_with_template(
@@ -785,7 +794,9 @@ class DAEMONLauncher:
 
         :param vm: VM for which start AUDIO daemon
         """
-        if getattr(vm, "is_preload", False):
+        if getattr(vm, "is_preload", False) and not vm.features.get(
+            "preload-dispvm-early-gui", None
+        ):
             return
         pacat_cmd = [
             PACAT_DAEMON_PATH,
@@ -807,7 +818,9 @@ class DAEMONLauncher:
             one for target AppVM is running.
         :param monitor_layout: monitor layout configuration
         """
-        if getattr(vm, "is_preload", False):
+        if getattr(vm, "is_preload", False) and not vm.features.get(
+            "preload-dispvm-early-gui", None
+        ):
             return
         guivm = getattr(vm, "guivm", None)
         if guivm != vm.app.local_name:
@@ -830,7 +843,9 @@ class DAEMONLauncher:
 
         :param vm: VM for which AUDIO daemon should be started
         """
-        if getattr(vm, "is_preload", False):
+        if getattr(vm, "is_preload", False) and not vm.features.get(
+            "preload-dispvm-early-gui", None
+        ):
             return
         audiovm = getattr(vm, "audiovm", None)
         if audiovm != vm.app.local_name:
@@ -849,7 +864,10 @@ class DAEMONLauncher:
     def on_domain_spawn(self, vm, _event, **kwargs):
         """Handler of 'domain-spawn' event, starts GUI daemon for stubdomain"""
 
-        if not self.is_watched(vm) or getattr(vm, "is_preload", False):
+        if not self.is_watched(vm) or (
+            getattr(vm, "is_preload", False)
+            and not vm.features.get("preload-dispvm-early-gui", None)
+        ):
             return
 
         try:
@@ -874,7 +892,10 @@ class DAEMONLauncher:
         """Handler of 'domain-start' event, starts GUI/AUDIO daemon for
         actual VM"""
 
-        if not self.is_watched(vm) or getattr(vm, "is_preload", False):
+        if not self.is_watched(vm) or (
+            getattr(vm, "is_preload", False)
+            and not vm.features.get("preload-dispvm-early-gui", None)
+        ):
             return
 
         self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
@@ -911,7 +932,12 @@ class DAEMONLauncher:
                 if (
                     vm.klass == "AdminVM"
                     or not self.is_watched(vm)
-                    or getattr(vm, "is_preload", False)
+                    or (
+                        getattr(vm, "is_preload", False)
+                        and not vm.features.get(
+                            "preload-dispvm-early-gui", None
+                        )
+                    )
                 ):
                     continue
 
@@ -960,7 +986,10 @@ class DAEMONLauncher:
         if (
             not vm.klass == "DispVM"
             or not self.is_watched(vm)
-            or getattr(vm, "is_preload", False)
+            or (
+                getattr(vm, "is_preload", False)
+                and not vm.features.get("preload-dispvm-early-gui", None)
+            )
             or not vm.is_running()
         ):
             return
