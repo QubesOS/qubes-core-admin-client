@@ -501,10 +501,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                         raise
 
             for feature, value in src_vm.features.items():
-                if (
-                    feature.startswith("preload-dispvm")
-                    and feature != "preload-dispvm-max"
-                ):
+                if feature.startswith("preload-dispvm") and feature not in [
+                    "preload-dispvm-max",
+                    "preload-dispvm-early-gui",
+                ]:
                     continue
                 try:
                     dst_vm.features[feature] = value
@@ -520,8 +520,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 if vm_notes:
                     dst_vm.set_notes(vm_notes)
             except qubesadmin.exc.QubesException as e:
-                dst_vm.log.error(
-                    'Failed to clone qube notes: {!s}'.format(e))
+                dst_vm.log.error("Failed to clone qube notes: {!s}".format(e))
                 if not ignore_errors:
                     raise
 

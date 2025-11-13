@@ -460,6 +460,18 @@ disposables. Ensures preloaded disposables do not consume all available memory.
 | **Type**: `int`
 | **Default**: `0`
 
+preload-dispvm-early-gui
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If `True`, disposables that are preloaded after this feature is set on the
+disposable template will wait for the disposable to have a GUI session to
+complete the preload stage.
+
+|
+| **Valid on**: disposable template and preloaded disposable
+| **Type**: `bool`
+| **Default**: `False`
+
 preload-dispvm
 ^^^^^^^^^^^^^^
 
