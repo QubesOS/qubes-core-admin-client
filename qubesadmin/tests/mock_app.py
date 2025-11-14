@@ -132,6 +132,7 @@ DEFAULT_VM_PROPERTIES = {
     "installed_by_rpm": Property("False", "bool", True),
     "ip": Property("10.137.0.2", "str", True),
     "ip6": Property("", "str", True),
+    "is_preload": Property("False", bool, False),
     "kernel": Property("5.15.52-1.fc32", "str", True),
     "kernelopts": Property("", "str", True),
     "keyboard_layout": Property("us++", "str", True),
