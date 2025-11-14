@@ -41,7 +41,6 @@ from qubesadmin.device_protocol import (
     DeviceInterface,
     ProtocolError,
 )
-from qubesadmin.devices import DEVICE_DENY_LIST
 
 
 def prepare_table(dev_list, with_sbdf=False):
@@ -350,9 +349,9 @@ def assign_device(args):
     )
     if is_on_deny_list(args.device, vm) and not args.quiet:
         print(
-            "Warning: The assigned device is on the denied list: "
-            f"{DEVICE_DENY_LIST}\n           Auto-attach will work, "
-            f"but make sure that the assignment is correct."
+            "Warning: The assigned device is on the denied list."
+            "\n           Auto-attach will work, "
+            "but make sure that the assignment is correct."
         )
     if vm.is_running() and not args.quiet and device.devclass != "pci":
         _print_attach_hint(assignment, vm)
@@ -375,46 +374,23 @@ def _print_attach_hint(assignment, vm):
         )
 
 
-def is_on_deny_list(device, dest):
+def is_on_deny_list(device, dest_vm):
     """
-    Checks if *any* interface of the device is on the deny list for `dest` vm.
-
-    Reads a deny list from a file (see `DEVICE_DENY_LIST`), which contains
-    vm names and their associated denied interfaces.
-
-    The deny list file should be formatted such that each line contains
-    a vm name followed by a comma-separated list of denied interfaces.
-    Interfaces can be separated by commas or spaces.
-
-    Example:
-    ```
-    vm1 u******, b012345
-    vm2 ******
-    ```
-    vm1 denies USB devices and block interface `012345`
-    vm2 denies *all* devices.
+    Checks if *any* interface of the device is on the deny list for
+    `dest_vm` vm.
     """
-    deny = {}
+    deny_list = []
     try:
-        with open(DEVICE_DENY_LIST, "r", encoding="utf-8") as file:
-            for line in file:
-                line = line.strip()
-
-                if line:
-                    name, *values = line.split()
-
-                    values = " ".join(values).replace(",", " ").split()
-                    values = set([v for v in values if len(v) > 0])
-
-                    deny[name] = deny.get(name, set()).union(set(values))
-    except IOError:
+        deny_list = DeviceInterface.from_str_bulk(dest_vm.devices_denied)
+    except (qubesadmin.exc.QubesValueError,
+            qubesadmin.exc.QubesPropertyAccessError,
+            AttributeError):
         pass
 
     # check if any presented interface is on deny list
-    for interface in deny.get(dest.name, set()):
-        pattern = DeviceInterface(interface)
+    for interface in deny_list:
         for devint in device.interfaces:
-            if pattern.matches(devint):
+            if interface.matches(devint):
                 return True
     return False
 

@@ -25,7 +25,6 @@
 
 """ Tests for the `qvm-device` tool. """
 
-from unittest import mock
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.device_protocol
@@ -320,6 +319,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1'], app=self.app)
         self.assertAllCalled()
@@ -337,6 +342,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', '--required', 'test-vm2', 'test-vm1:dev1'],
             app=self.app)
@@ -355,6 +366,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
             qubesadmin.tools.qvm_device.main(
                 ['testclass', 'assign', '--ro', '--ask', 'test-vm2',
@@ -407,6 +424,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"mode='auto-attach' frontend_domain='test-vm2'"
         )] = b'0\0'
         self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
+        self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
@@ -424,6 +447,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"devclass='testclass' backend_domain='test-vm1' "
             b"mode='auto-attach' frontend_domain='test-vm2'"
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
@@ -445,6 +474,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', 'test-vm2', 'test-vm1:dev1', '--device'],
             app=self.app)
@@ -460,6 +495,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"devclass='testclass' backend_domain='test-vm1' "
             b"mode='auto-attach' frontend_domain='test-vm2'"
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', 'test-vm2',
              'test-vm1:dev1:cafe:cafe::0123456u654321'], app=self.app)
@@ -475,15 +516,19 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"devclass='testclass' backend_domain='test-vm1' "
             b"mode='auto-attach' frontend_domain='test-vm2'"
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'assign', 'test-vm2',
              'test-vm1:dev1:cafe:cafe::0123456u654321', '--device'],
             app=self.app)
         self.assertAllCalled()
 
-    @mock.patch("builtins.open", new_callable=mock.mock_open,
-                read_data="test-vm2 u012345, *543210")
-    def test_041_assign_denied_device(self, _mock_deny_list):
+    def test_041_assign_denied_device(self):
         """ Test user warning """
         self.app.domains['test-vm2'].is_running = lambda: False
         self.app.expected_calls[(
@@ -493,6 +538,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"devclass='testclass' backend_domain='test-vm1' "
             b"mode='ask-to-attach' frontend_domain='test-vm2'"
         )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str u012345*543210'
         with qubesadmin.tests.tools.StdoutBuffer() as buf:
             qubesadmin.tools.qvm_device.main(
                 ['testclass', 'assign', '--ask', 'test-vm2', 'test-vm1:dev1'],

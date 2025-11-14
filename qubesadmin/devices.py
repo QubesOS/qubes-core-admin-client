@@ -45,9 +45,6 @@ from qubesadmin.device_protocol import (
 )
 
 
-DEVICE_DENY_LIST = "/etc/qubes/device-deny.list"
-
-
 class DeviceCollection:
     """Bag for devices.
 
