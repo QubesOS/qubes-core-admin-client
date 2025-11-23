@@ -257,6 +257,12 @@ class EventsDispatcher(object):
         ):
             devclass = event.split(":")[1]
             subject.devices[devclass]._attachment_cache = None
+        elif event.split(":")[0] in ("device-removed",):
+            devclass = event.split(":")[1]
+            try:
+                subject.devices[devclass]._dev_cache[kwargs["port"]]
+            except KeyError:
+                pass
 
         # deserialize known attributes
         if event.startswith('device-'):
