@@ -1,3 +1,15 @@
+qubes-core-admin-client (4.3.25-1) unstable; urgency=medium
+
+  [ Marta Marczykowska-Górecka ]
+  * Remove old denylist from qvm-device
+  * Add is_preload property to mocks
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix definition of is_preload property
+  * devices: invalidate device cache on device-removed event
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 29 Nov 2025 19:32:45 +0100
+
 qubes-core-admin-client (4.3.24-1) unstable; urgency=medium
 
   [ Ali Mirjamali ]
