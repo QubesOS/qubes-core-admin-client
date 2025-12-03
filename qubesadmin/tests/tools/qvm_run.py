@@ -1148,6 +1148,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_023_dispvm_no_shell(self):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Halted\n"
+        )
         self.app.expected_calls[
             (
                 "$dispvm:test-vm",
@@ -1275,6 +1278,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_027_no_shell_dispvm(self):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Halted\n"
+        )
         self.app.expected_calls[
             (
                 "$dispvm:test-vm",
@@ -1283,6 +1289,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 None,
             )
         ] = b"0\x001"
+        self.app.expected_calls[
+            (
+                "$dispvm:test-vm",
+                "admin.vm.feature.CheckWithTemplate",
+                "os",
+                None,
+            )
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm=test-vm", "command", "--", "arg"],
             app=self.app,
@@ -1306,6 +1320,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_028_argparse_bug_workaround(self):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Halted\n"
+        )
         self.app.expected_calls[
             (
                 "$dispvm:test-vm",
@@ -1314,6 +1331,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 None,
             )
         ] = b"0\x001"
+        self.app.expected_calls[
+            (
+                "$dispvm:test-vm",
+                "admin.vm.feature.CheckWithTemplate",
+                "os",
+                None,
+            )
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm=test-vm", "command", "--", "--"],
             app=self.app,
@@ -1371,6 +1396,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ("$dispvm", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
         ] = b"0\x001"
+        self.app.expected_calls[
+            ("$dispvm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm", "--", "test-vm", "command", "arg"],
             app=self.app,
@@ -1397,6 +1425,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ("$dispvm", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
         ] = b"0\x001"
+        self.app.expected_calls[
+            ("$dispvm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm", "--", "test-vm", "command", "--"],
             app=self.app,
