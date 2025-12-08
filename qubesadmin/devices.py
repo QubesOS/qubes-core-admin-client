@@ -154,7 +154,7 @@ class DeviceCollection:
         self._vm.qubesd_call(
             None,
             f"admin.vm.device.{self._class}.{action.capitalize()}",
-            repr(assignment),
+            assignment.repr_for_qarg,
             assignment.serialize(),
         )
 
@@ -179,7 +179,7 @@ class DeviceCollection:
         self._vm.qubesd_call(
             None,
             f"admin.vm.device.{self._class}.{action.capitalize()}",
-            repr(assignment),
+            assignment.repr_for_qarg,
         )
 
     def get_dedicated_devices(self) -> Iterable[DeviceAssignment]:
@@ -266,7 +266,9 @@ class DeviceCollection:
                 expected_devclass=self._class,
             )
 
-    def update_assignment(self, device: Port, required: AssignmentMode):
+    def update_assignment(
+            self, device: VirtualDevice, required: AssignmentMode
+    ):
         """
         Update assignment of already attached device.
 
@@ -279,7 +281,7 @@ class DeviceCollection:
         self._vm.qubesd_call(
             None,
             "admin.vm.device.{}.Set.assignment".format(self._class),
-            repr(device),
+            device.repr_for_qarg,
             required.value.encode("utf-8"),
         )
         self._assignment_cache = None

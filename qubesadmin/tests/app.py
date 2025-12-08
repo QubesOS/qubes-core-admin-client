@@ -751,13 +751,13 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
              b"backend_domain='test-vm3' mode='required'\n")
 
         self.app.expected_calls[
-            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm2+dev1:*',
+            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm2+dev1+_',
              b"device_id='*' port_id='dev1' "
              b"devclass='pci' backend_domain='test-vm2' mode='required' "
              b"frontend_domain='new-name' _ro='yes'")] = b'0\0'
 
         self.app.expected_calls[
-            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm3+dev2:*',
+            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm3+dev2+_',
              b"device_id='*' port_id='dev2' "
              b"devclass='pci' backend_domain='test-vm3' mode='required' "
              b"frontend_domain='new-name'")] = b'0\0'
@@ -798,13 +798,13 @@ class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
              b"backend_domain='test-vm3' mode='required'\n")
 
         self.app.expected_calls[
-            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm2+dev1:*',
+            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm2+dev1+_',
              b"device_id='*' port_id='dev1' "
              b"devclass='pci' backend_domain='test-vm2' mode='required' "
              b"frontend_domain='new-name' _ro='yes'")] = b'0\0'
 
         self.app.expected_calls[
-            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm3+dev2:*',
+            ('new-name', 'admin.vm.device.pci.Assign', 'test-vm3+dev2+_',
              b"device_id='*' port_id='dev2' "
              b"devclass='pci' backend_domain='test-vm3' mode='required' "
              b"frontend_domain='new-name'")] = \
