@@ -1367,7 +1367,9 @@ class DeviceAssignment:
             return devices[0]
         if len(devices) > 1:
             raise ProtocolError("Too many devices matches to assignment")
-        raise ProtocolError("No devices matches to assignment")
+        return UnknownDevice(port=self.port,
+                             device_id=self.device_id,
+                             attachment=self)
 
     @property
     def port(self) -> Port:
