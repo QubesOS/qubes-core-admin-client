@@ -235,6 +235,10 @@ def attach_device(args):
     try:
         try:
             dev = assignment.device
+            if isinstance(dev, UnknownDevice):
+                raise qubesadmin.exc.QubesException(
+                    "Unknown device, skipping attachment of device from the "
+                    f"port {assignment}")
         except ProtocolError as exc:
             raise qubesadmin.exc.QubesException(str(exc))
 
@@ -298,6 +302,8 @@ def detach_device(args):
 
         if not assignment.matches(actual_dev):
             raise qubesadmin.exc.QubesException(f"{device} is not attached.")
+        if isinstance(actual_dev, UnknownDevice):
+            raise qubesadmin.exc.QubesException(f"{device} not found.")
 
         vm.devices[args.devclass].detach(assignment)
     elif args.device:

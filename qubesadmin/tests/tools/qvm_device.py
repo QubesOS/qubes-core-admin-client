@@ -284,12 +284,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_021_detach_unknown(self):
         """ Test detach action """
-        self.app.expected_calls[
-            ('test-vm2', 'admin.vm.device.testclass.Detach',
-             'test-vm1+dev7+0000+0000++_______', None)] = b'0\0'
-        qubesadmin.tools.qvm_device.main(
-            ['testclass', 'detach', 'test-vm2', 'test-vm1:dev7'], app=self.app)
-        self.assertAllCalled()
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            retcode = qubesadmin.tools.qvm_device.main(
+                ['testclass', 'detach', 'test-vm2', 'test-vm1:dev7'],
+                app=self.app)
+            self.assertEqual(retcode, 1)
+            self.assertIn("not found", stderr.getvalue())
 
     def test_022_detach_all(self):
         """ Test detach action """
