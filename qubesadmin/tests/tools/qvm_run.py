@@ -1444,3 +1444,114 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ],
         )
         self.assertAllCalled()
+
+    def test_040_run_root_shell(self):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Running\n"
+        )
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Running"
+        ret = qubesadmin.tools.qvm_run.main(
+            ["--no-gui", "-u", "root", "test-vm", "shell command"], app=self.app
+        )
+        self.assertEqual(ret, 0)
+        self.assertEqual(
+            self.app.service_calls,
+            [
+                (
+                    "test-vm",
+                    "qubes.VMRootShell",
+                    {
+                        "stdout": subprocess.DEVNULL,
+                        "stderr": subprocess.DEVNULL,
+                        "user": None,
+                    },
+                ),
+                ("test-vm", "qubes.VMRootShell", b"shell command; exit\n"),
+            ],
+        )
+        self.assertAllCalled()
+
+    def test_041_run_root_exec(self):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Running\n"
+        )
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
+        ] = b"0\x001"
+        self.app.expected_calls[
+            (
+                "test-vm",
+                "admin.vm.feature.CheckWithTemplate",
+                "supported-rpc.qubes.VMRootExec",
+                None,
+            )
+        ] = b"0\x001"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Running"
+        ret = qubesadmin.tools.qvm_run.main(
+            ["--no-gui", "-u", "root", "test-vm", "command", "arg"],
+            app=self.app,
+        )
+        self.assertEqual(ret, 0)
+        self.assertEqual(
+            self.app.service_calls,
+            [
+                (
+                    "test-vm",
+                    "qubes.VMRootExec+command+arg",
+                    {
+                        "stdout": subprocess.DEVNULL,
+                        "stderr": subprocess.DEVNULL,
+                        "user": None,
+                    },
+                ),
+                ("test-vm", "qubes.VMRootExec+command+arg", b""),
+            ],
+        )
+        self.assertAllCalled()
+
+    def test_041_run_root_exec_not_supported(self):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Running\n"
+        )
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
+        ] = b"0\x001"
+        self.app.expected_calls[
+            (
+                "test-vm",
+                "admin.vm.feature.CheckWithTemplate",
+                "supported-rpc.qubes.VMRootExec",
+                None,
+            )
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature '...' not set\x00"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Running"
+        ret = qubesadmin.tools.qvm_run.main(
+            ["--no-gui", "-u", "root", "test-vm", "command", "arg"],
+            app=self.app,
+        )
+        self.assertEqual(ret, 0)
+        self.assertEqual(
+            self.app.service_calls,
+            [
+                (
+                    "test-vm",
+                    "qubes.VMExec+command+arg",
+                    {
+                        "stdout": subprocess.DEVNULL,
+                        "stderr": subprocess.DEVNULL,
+                        "user": "root",
+                    },
+                ),
+                ("test-vm", "qubes.VMExec+command+arg", b""),
+            ],
+        )
+        self.assertAllCalled()
