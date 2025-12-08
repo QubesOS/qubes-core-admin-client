@@ -66,12 +66,13 @@ def qbool(value):
 
     if isinstance(value, str):
         lcvalue = value.lower()
-        if lcvalue in ('0', 'no', 'false', 'off'):
+        if lcvalue in ("0", "no", "false", "off"):
             return False
-        if lcvalue in ('1', 'yes', 'true', 'on'):
+        if lcvalue in ("1", "yes", "true", "on"):
             return True
-        raise qubesadmin.exc.QubesValueError(
-            'Invalid literal for boolean property: {!r}'.format(value))
+        raise QubesValueError(
+            "Invalid literal for boolean property: {!r}".format(value)
+        )
 
     return bool(value)
 
@@ -545,6 +546,15 @@ class VirtualDevice:
     def __repr__(self):
         return f"{self.port!r}:{self.device_id}"
 
+    @property
+    def repr_for_qarg(self):
+        """Object representation for qrexec argument"""
+        res = repr(self).replace(":", "+")
+        # replace '?' in category
+        unknown_dev = repr(DeviceInterface.unknown())
+        res = res.replace(unknown_dev, "_" * len(unknown_dev))
+        return res.replace("*", "_")
+
     def __str__(self):
         return f"{self.port}:{self.device_id}"
 
@@ -604,12 +614,20 @@ class VirtualDevice:
         """
         if backend is None:
             backend_name, identity = representation.split(sep, 1)
+            if backend_name == "_":
+                backend_name = "*"
             if backend_name != "*":
                 backend = get_domain(backend_name)
         else:
             identity = representation
 
-        port_id, _, devid = identity.partition(":")
+        port_id, _, devid = identity.replace(sep, ":").partition(":")
+        if port_id == "_":
+            port_id = "*"
+        if devid == "_":
+            devid = "*"
+        unknown_dev = repr(DeviceInterface.unknown())
+        devid = devid.replace("_" * len(unknown_dev), unknown_dev)
         return cls(
             Port(backend_domain=backend, port_id=port_id, devclass=devclass),
             device_id=devid or None,
@@ -641,7 +659,7 @@ class DeviceCategory(Enum):
     """
 
     # pylint: disable=invalid-name
-    Other = ("*******", )  # also matches all devices, if used to block
+    Other = ("*******",)  # also matches all devices, if used to block
 
     # The following devices are used in GUI for blocks; take note when changing
 
@@ -651,17 +669,17 @@ class DeviceCategory(Enum):
     Mouse = ("u03**02", "p0902**")
     Input = ("u03****", "p09****")  # HID etc.
     Printer = ("u07****",)
-    Camera = ("p0903**", "u06****", "u0e****") # cameras and scanners
+    Camera = ("p0903**", "u06****", "u0e****")  # cameras and scanners
 
     Microphone = ("m******",)
     Audio = ("p0403**", "p0401**", "p0408**", "u01****", "m******")
     # Multimedia = Audio, Video, Displays etc.
     Multimedia = ("u10****", "p03****", "p04****")
-    USB_Storage = ("u08****", )
-    Block_Storage = ("b******", )
+    USB_Storage = ("u08****",)
+    Block_Storage = ("b******",)
     Storage = ("b******", "u08****", "p01****")
     Bluetooth = ("ue00101", "p0d11**")
-    Smart_Card_Readers = ("u0b****", )
+    Smart_Card_Readers = ("u0b****",)
 
     Display = ("p0300**", "p0380**")  # PCI screens?
     Memory = ("p05****",)
@@ -1284,6 +1302,11 @@ class DeviceAssignment:
 
     def __repr__(self):
         return f"{self.virtual_device!r}"
+
+    @property
+    def repr_for_qarg(self):
+        """Object representation for qrexec argument"""
+        return self.virtual_device.repr_for_qarg
 
     def __str__(self):
         return f"{self.virtual_device}"
