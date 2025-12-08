@@ -1480,7 +1480,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                          f"frontend_domain='{name}'".encode())
                     self.app.expected_calls[
                         (name, 'admin.vm.device.{}.Assign'.format(bus),
-                        '{}+{}:*'.format(backend_domain, port_id),
+                        '{}+{}+_'.format(backend_domain, port_id),
                         encoded_options)] = b'0\0'
 
             for feature, value in vm['features'].items():

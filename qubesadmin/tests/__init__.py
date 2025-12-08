@@ -20,6 +20,7 @@
 
 # pylint: disable=missing-docstring
 
+import string
 import subprocess
 import traceback
 import unittest
@@ -29,6 +30,7 @@ import io
 import qubesadmin
 import qubesadmin.app
 
+QREXEC_ALLOWED_CHARS = string.ascii_letters + string.digits + "_-+."
 
 class TestVM(object):
     def __init__(self, name, **kwargs):
@@ -162,6 +164,9 @@ class QubesTest(qubesadmin.app.QubesBase):
 
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
+        if arg:
+            assert all(c in QREXEC_ALLOWED_CHARS for c in arg), \
+                f"forbidden char in service arg '{arg}"
         if payload_stream:
             payload = (payload or b'') + payload_stream.read()
         call_key = (dest, method, arg, payload)
@@ -178,6 +183,8 @@ class QubesTest(qubesadmin.app.QubesBase):
 
     def run_service(self, dest, service, **kwargs):
         # pylint: disable=arguments-differ
+        assert all(c in QREXEC_ALLOWED_CHARS for c in service), \
+            f"forbidden char in service '{service}"
         self.service_calls.append((dest, service, kwargs))
         call_key = (dest, service)
         # TODO: consider it as a future extension, as a replacement for

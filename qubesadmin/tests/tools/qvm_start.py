@@ -81,13 +81,13 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+sr0:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+sr0+_',
              b"device_id='*' port_id='sr0' "
              b"devclass='block' backend_domain='dom0' mode='required' "
              b"frontend_domain='some-vm' _devtype='cdrom' "
              b"_read-only='True'")] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sr0:*',
+            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sr0+_',
              None)] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--cdrom=dom0:sr0', 'some-vm'],
             app=self.app)
@@ -104,13 +104,13 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+sdb1:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+sdb1+_',
              b"device_id='*' port_id='sdb1' "
              b"devclass='block' backend_domain='dom0' mode='required' "
              b"frontend_domain='some-vm' _devtype='disk' "
              b"_read-only='False'")] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sdb1:*',
+            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sdb1+_',
              None)] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--hd=dom0:sdb1', 'some-vm'],
             app=self.app)
@@ -127,13 +127,13 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+sdb1:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+sdb1+_',
              b"device_id='*' port_id='sdb1' "
              b"devclass='block' backend_domain='dom0' mode='required' "
              b"frontend_domain='some-vm' _devtype='disk' "
              b"_read-only='False'")] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sdb1:*',
+            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+sdb1+_',
              None)] = b'0\x00'
         qubesadmin.tools.qvm_start.main(['--drive=hd:dom0:sdb1', 'some-vm'],
             app=self.app)
@@ -154,13 +154,13 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+loop12:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'dom0+loop12+_',
              b"device_id='*' port_id='loop12' "
              b"devclass='block' backend_domain='dom0' mode='required' "
              b"frontend_domain='some-vm' _devtype='cdrom' "
              b"_read-only='True'")] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+loop12:*', None
+            ('some-vm', 'admin.vm.device.block.Unassign', 'dom0+loop12+_', None
              )] = b'0\x00loop12\n'
         mock_subprocess.return_value = b"/dev/loop12"
         qubesadmin.tools.qvm_start.main([
@@ -186,13 +186,13 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'other-vm+loop7:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'other-vm+loop7+_',
              b"device_id='*' port_id='loop7' "
              b"devclass='block' backend_domain='other-vm' mode='required' "
              b"frontend_domain='some-vm' _devtype='cdrom' "
              b"_read-only='True'")] = b'0\x00'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Unassign', 'other-vm+loop7:*',
+            ('some-vm', 'admin.vm.device.block.Unassign', 'other-vm+loop7+_',
              None)] = b'0\x00'
         self.app.expected_calls[
             ('other-vm', 'admin.vm.feature.CheckWithTemplate', 'vmexec',
@@ -221,7 +221,7 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Halted'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'other-vm+loop7:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'other-vm+loop7+_',
              b"device_id='*' port_id='loop7' "
              b"devclass='block' backend_domain='other-vm' mode='required' "
              b"frontend_domain='some-vm' _devtype='cdrom' "
@@ -231,7 +231,7 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             b'2\x00QubesException\x00\x00An error occurred\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.device.block.Detach',
-            'other-vm+loop7:*', None)] = b'0\x00'
+            'other-vm+loop7+_', None)] = b'0\x00'
         qubesadmin.tools.qvm_start.main([
             '--cdrom=other-vm:loop7',
             'some-vm'],
@@ -248,7 +248,7 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00power_state=Halted'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.device.block.Assign', 'other-vm+loop7:*',
+            ('some-vm', 'admin.vm.device.block.Assign', 'other-vm+loop7+_',
              b"device_id='*' port_id='loop7' "
              b"devclass='block' backend_domain='other-vm' mode='required' "
              b"frontend_domain='some-vm' _devtype='cdrom' "

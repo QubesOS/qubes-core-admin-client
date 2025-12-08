@@ -117,7 +117,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_020_attach(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1:*',
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
              b"device_id='*' port_id='dev1' devclass='test' "
              b"backend_domain='test-vm2' mode='manual' "
              b"frontend_domain='test-vm'")] = \
@@ -129,7 +129,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_021_attach_options(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1:*',
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
              b"device_id='*' port_id='dev1' devclass='test' "
              b"backend_domain='test-vm2' mode='manual' "
              b"frontend_domain='test-vm' _ro='True' "
@@ -143,7 +143,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_022_attach_required(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1:*',
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
              b"device_id='*' port_id='dev1' devclass='test' "
              b"backend_domain='test-vm2' mode='required' "
              b"frontend_domain='test-vm'")] = b'0\0'
@@ -155,7 +155,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_023_attach_required_options(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1:*',
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
              b"device_id='*' port_id='dev1' devclass='test' "
              b"backend_domain='test-vm2' mode='required' "
              b"frontend_domain='test-vm' _ro='True'")] = b'0\0'
@@ -168,7 +168,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_030_detach(self):
         self.app.expected_calls[
-            ('test-vm', 'admin.vm.device.test.Detach', 'test-vm2+dev1:*',
+            ('test-vm', 'admin.vm.device.test.Detach', 'test-vm2+dev1+_',
              None)] = b'0\0'
         assign = DeviceAssignment.new(
             self.app.domains['test-vm2'], 'dev1', devclass='test')
@@ -333,7 +333,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
     def test_070_update_assignment_required(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
-             'test-vm2+dev1:*', b'required')] = b'0\0'
+             'test-vm2+dev1+_', b'required')] = b'0\0'
         dev = DeviceAssignment.new(
             self.app.domains['test-vm2'], devclass='test', port_id='dev1')
         self.vm.devices['test'].update_assignment(dev, AssignmentMode.REQUIRED)
@@ -342,7 +342,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
     def test_071_update_assignment_ask(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
-             'test-vm2+dev1:*', b'ask-to-attach')] = b'0\0'
+             'test-vm2+dev1+_', b'ask-to-attach')] = b'0\0'
         dev = DeviceAssignment.new(
             self.app.domains['test-vm2'], devclass='test', port_id='dev1')
         self.vm.devices['test'].update_assignment(dev, AssignmentMode.ASK)
@@ -351,7 +351,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
     def test_072_update_assignment_auto(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
-             'test-vm2+dev1:*', b'auto-attach')] = b'0\0'
+             'test-vm2+dev1+_', b'auto-attach')] = b'0\0'
         dev = DeviceAssignment.new(
             self.app.domains['test-vm2'], devclass='test', port_id='dev1')
         self.vm.devices['test'].update_assignment(dev, AssignmentMode.AUTO)
