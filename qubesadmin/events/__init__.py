@@ -264,6 +264,15 @@ class EventsDispatcher(object):
             except KeyError:
                 pass
 
+        handlers = [h_func for h_name, h_func_set in self.handlers.items()
+                    for h_func in h_func_set
+                    if fnmatch.fnmatch(event, h_name)]
+
+        # skip deserializing parameters (which may make further Admin API calls)
+        # if no handler is registered for the event
+        if not handlers:
+            return
+
         # deserialize known attributes
         if event.startswith('device-'):
             try:
@@ -292,9 +301,6 @@ class EventsDispatcher(object):
             except (KeyError, ValueError):
                 pass
 
-        handlers = [h_func for h_name, h_func_set in self.handlers.items()
-            for h_func in h_func_set
-            if fnmatch.fnmatch(event, h_name)]
         for handler in handlers:
             try:
                 handler(subject, event, **kwargs)
