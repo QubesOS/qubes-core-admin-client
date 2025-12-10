@@ -454,34 +454,31 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
 
 class DispVMWrapper(QubesVM):
-    """Wrapper class for new DispVM, supporting only service call
+    """
+    Wrapper class for new disposable, supporting only service call.
 
-    Note that when running in dom0, one need to manually kill the DispVM after
-    service call ends.
+    Note that when running in dom0, one need to manually kill the disposable
+    after service call ends.
     """
 
     def run_service(self, service, **kwargs):
-        if self.app.qubesd_connection_type == "socket":
-            # create dispvm at service call
-            if self._method_dest.startswith("$dispvm"):
-                if self._method_dest.startswith("$dispvm:"):
-                    method_dest = self._method_dest[len("$dispvm:") :]
-                else:
-                    method_dest = "dom0"
-                dispvm = self.app.qubesd_call(
-                    method_dest, "admin.vm.CreateDisposable"
-                )
-                dispvm = dispvm.decode("ascii")
-                self._method_dest = dispvm
-                # Service call may wait for session start, give it more time
-                # than default 5s
-                kwargs["connect_timeout"] = self.qrexec_timeout
+        """Create disposable if absent and run service."""
+        if (
+            self.app.qubesd_connection_type == "socket"
+            and self._method_dest.startswith("$dispvm")
+        ):
+            self.create_disposable()
+            # Service call may wait for session start, give it more time
+            # than default 5s
+            kwargs["connect_timeout"] = self.qrexec_timeout
         return super().run_service(service, **kwargs)
 
     def cleanup(self):
-        """Cleanup after DispVM usage"""
-        # in 'remote' case nothing is needed, as DispVM is cleaned up
-        # automatically
+        """
+        Cleanup after disposable usage.
+
+        Disposable is cleaned up automatically in 'remote' case.
+        """
         if (
             self.app.qubesd_connection_type == "socket"
             and not self._method_dest.startswith("$dispvm")
@@ -492,8 +489,13 @@ class DispVMWrapper(QubesVM):
                 pass
 
     def start(self):
-        """Start this DispVM"""
-        # create dispvm
+        """Create disposable if absent and start it."""
+        if self._method_dest.startswith("$dispvm"):
+            self.create_disposable()
+        super().start()
+
+    def create_disposable(self):
+        """Create disposable."""
         if self._method_dest.startswith("$dispvm"):
             if self._method_dest.startswith("$dispvm:"):
                 method_dest = self._method_dest[len("$dispvm:") :]
@@ -504,7 +506,7 @@ class DispVMWrapper(QubesVM):
             )
             dispvm = dispvm.decode("ascii")
             self._method_dest = dispvm
-        super().start()
+        return self
 
 
 class DispVM(QubesVM):
