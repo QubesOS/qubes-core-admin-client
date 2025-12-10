@@ -465,7 +465,7 @@ class DispVMWrapper(QubesVM):
         """Create disposable if absent and run service."""
         if (
             self.app.qubesd_connection_type == "socket"
-            and self._method_dest.startswith("$dispvm")
+            and self._method_dest.startswith("@dispvm")
         ):
             self.create_disposable()
             # Service call may wait for session start, give it more time
@@ -481,7 +481,7 @@ class DispVMWrapper(QubesVM):
         """
         if (
             self.app.qubesd_connection_type == "socket"
-            and not self._method_dest.startswith("$dispvm")
+            and not self._method_dest.startswith("@dispvm")
         ):
             try:
                 self.kill()
@@ -490,15 +490,15 @@ class DispVMWrapper(QubesVM):
 
     def start(self):
         """Create disposable if absent and start it."""
-        if self._method_dest.startswith("$dispvm"):
+        if self._method_dest.startswith("@dispvm"):
             self.create_disposable()
         super().start()
 
     def create_disposable(self):
         """Create disposable."""
-        if self._method_dest.startswith("$dispvm"):
-            if self._method_dest.startswith("$dispvm:"):
-                method_dest = self._method_dest[len("$dispvm:") :]
+        if self._method_dest.startswith("@dispvm"):
+            if self._method_dest.startswith("@dispvm:"):
+                method_dest = self._method_dest[len("@dispvm:") :]
             else:
                 method_dest = "dom0"
             dispvm = self.app.qubesd_call(
@@ -518,9 +518,9 @@ class DispVM(QubesVM):
         AppVM. If *appvm* is none, use default DispVM template"""
 
         if appvm:
-            method_dest = "$dispvm:" + str(appvm)
+            method_dest = "@dispvm:" + str(appvm)
         else:
-            method_dest = "$dispvm"
+            method_dest = "@dispvm"
 
         wrapper = DispVMWrapper(app, method_dest)
         return wrapper
