@@ -54,8 +54,13 @@ import qubesadmin.tools.qvm_kill
 import qubesadmin.tools.qvm_remove
 
 from qubesadmin.templates import (
+    DATE_FMT,
     PACKAGE_NAME_PREFIX,
     PATH_PREFIX,
+    DlEntry,
+    Template,
+    TemplateState,
+    VersionSelector,
     build_version_str,
     is_match_spec,
     qubes_release,
@@ -65,7 +70,6 @@ TEMP_DIR = '/var/tmp'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/run/qubes/qvm-template.lock'
-DATE_FMT = '%Y-%m-%d %H:%M:%S'
 WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
 WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
@@ -245,68 +249,6 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 parser = get_parser()
-
-
-class TemplateState(enum.Enum):
-    """Enum representing the state of a template."""
-    INSTALLED = 'installed'
-    AVAILABLE = 'available'
-    EXTRA = 'extra'
-    UPGRADABLE = 'upgradable'
-
-    def title(self) -> str:
-        """Return a long description of the state. Can be used as headings."""
-        # pylint: disable=invalid-name
-        TEMPLATE_TITLES = {
-            TemplateState.INSTALLED: 'Installed Templates',
-            TemplateState.AVAILABLE: 'Available Templates',
-            TemplateState.EXTRA: 'Extra Templates',
-            TemplateState.UPGRADABLE: 'Available Upgrades'
-        }
-        return TEMPLATE_TITLES[self]
-
-
-class VersionSelector(enum.Enum):
-    """Enum representing how the candidate template version is chosen."""
-    LATEST = enum.auto()
-    """Install latest version."""
-    REINSTALL = enum.auto()
-    """Reinstall current version."""
-    LATEST_LOWER = enum.auto()
-    """Downgrade to the highest version that is lower than the current one."""
-    LATEST_HIGHER = enum.auto()
-    """Upgrade to the highest version that is higher than the current one."""
-
-
-# pylint: disable=too-few-public-methods,inherit-non-class
-class Template(typing.NamedTuple):
-    """Details of a template."""
-    name: str
-    epoch: str
-    version: str
-    release: str
-    reponame: str
-    dlsize: int
-    buildtime: datetime.datetime
-    licence: str
-    url: str
-    summary: str
-    description: str
-
-    @property
-    def evr(self):
-        """Return a tuple of (EPOCH, VERSION, RELEASE)"""
-        return self.epoch, self.version, self.release
-
-
-class DlEntry(typing.NamedTuple):
-    """Information about a template to be downloaded."""
-    evr: typing.Tuple[str, str, str]
-    reponame: str
-    dlsize: int
-
-
-# pylint: enable=too-few-public-methods,inherit-non-class
 
 
 def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
