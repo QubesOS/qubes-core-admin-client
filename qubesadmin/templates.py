@@ -28,7 +28,9 @@ import tempfile
 import typing
 import sys
 
+import qubesadmin.app
 import qubesadmin.exc
+import qubesadmin.vm
 
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
 PATH_PREFIX = '/var/lib/qubes/vm-templates'
@@ -96,6 +98,59 @@ class DlEntry(typing.NamedTuple):
 
 
 # pylint: enable=too-few-public-methods,inherit-non-class
+
+
+def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
+    """Return Template object associated with ``vm``.
+
+    Requires the VM to be managed by qvm-template.
+    """
+    return Template(
+        vm.features['template-name'],
+        vm.features['template-epoch'],
+        vm.features['template-version'],
+        vm.features['template-release'],
+        vm.features['template-reponame'],
+        vm.get_disk_utilization(),
+        datetime.datetime.strptime(vm.features['template-buildtime'], DATE_FMT),
+        vm.features['template-license'],
+        vm.features['template-url'],
+        vm.features['template-summary'],
+        vm.features['template-description'].replace('|', '\n'))
+
+
+def query_local_evr(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[str, str, str]:
+    """Return the (epoch, version, release) of ``vm``.
+
+    Requires the VM to be managed by qvm-template.
+    """
+    return (
+        vm.features['template-epoch'],
+        vm.features['template-version'],
+        vm.features['template-release'])
+
+
+def is_managed_template(vm: qubesadmin.vm.QubesVM) -> bool:
+    """Return whether the VM is managed by qvm-template."""
+    return vm.features.get('template-name', None) == vm.name
+
+
+def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
+                            ) -> qubesadmin.vm.QubesVM:
+    """Return the QubesVM object associated with the given name if it exists
+    and is managed by qvm-template, otherwise raise an exception.
+
+    :raises QubesVMNotFoundError: if the template is not installed
+    :raises QubesVMError: if the VM exists but is not managed by qvm-template
+    """
+    if name not in app.domains:
+        raise qubesadmin.exc.QubesVMNotFoundError(
+            f"Template '{name}' not already installed.")
+    vm = app.domains[name]
+    if not is_managed_template(vm):
+        raise qubesadmin.exc.QubesVMError(
+            f"Template '{name}' is not managed by qvm-template.")
+    return vm
 
 
 def qubes_release() -> str:

@@ -62,7 +62,11 @@ from qubesadmin.templates import (
     TemplateState,
     VersionSelector,
     build_version_str,
+    get_managed_template_vm,
+    is_managed_template,
     is_match_spec,
+    query_local,
+    query_local_evr,
     qubes_release,
 )
 
@@ -249,53 +253,6 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 parser = get_parser()
-
-
-def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
-    """Return Template object associated with ``vm``.
-
-    Requires the VM to be managed by qvm-template.
-    """
-    return Template(
-        vm.features['template-name'],
-        vm.features['template-epoch'],
-        vm.features['template-version'],
-        vm.features['template-release'],
-        vm.features['template-reponame'],
-        vm.get_disk_utilization(),
-        datetime.datetime.strptime(vm.features['template-buildtime'], DATE_FMT),
-        vm.features['template-license'],
-        vm.features['template-url'],
-        vm.features['template-summary'],
-        vm.features['template-description'].replace('|', '\n'))
-
-
-def query_local_evr(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[str, str, str]:
-    """Return the (epoch, version, release) of ``vm``.
-
-    Requires the VM to be managed by qvm-template.
-    """
-    return (
-        vm.features['template-epoch'],
-        vm.features['template-version'],
-        vm.features['template-release'])
-
-
-def is_managed_template(vm: qubesadmin.vm.QubesVM) -> bool:
-    """Return whether the VM is managed by qvm-template."""
-    return vm.features.get('template-name', None) == vm.name
-
-
-def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
-                            ) -> qubesadmin.vm.QubesVM:
-    """Return the QubesVM object associated with the given name if it exists
-    and is managed by qvm-template, otherwise raise a parser error."""
-    if name not in app.domains:
-        parser.error(f"Template '{name}' not already installed.")
-    vm = app.domains[name]
-    if not is_managed_template(vm):
-        parser.error(f"Template '{name}' is not managed by qvm-template.")
-    return vm
 
 
 def confirm_action(msg: str, affected: typing.List[str]) -> None:
@@ -648,13 +605,21 @@ def filter_version(
                 # for the same-version matches, prefer non-testing one
                 insert = True
         elif version_selector == VersionSelector.REINSTALL:
-            vm = get_managed_template_vm(app, entry.name)
+            try:
+                vm = get_managed_template_vm(app, entry.name)
+            except (qubesadmin.exc.QubesVMNotFoundError,
+                    qubesadmin.exc.QubesVMError) as e:
+                parser.error(str(e))
             cur_ver = query_local_evr(vm)
             if rpm.labelCompare(evr, cur_ver) == 0:
                 insert = True
         elif version_selector in [VersionSelector.LATEST_LOWER,
                                   VersionSelector.LATEST_HIGHER]:
-            vm = get_managed_template_vm(app, entry.name)
+            try:
+                vm = get_managed_template_vm(app, entry.name)
+            except (qubesadmin.exc.QubesVMNotFoundError,
+                    qubesadmin.exc.QubesVMError) as e:
+                parser.error(str(e))
             cur_ver = query_local_evr(vm)
             cmp_res = -1 \
                 if version_selector == VersionSelector.LATEST_LOWER \
@@ -867,7 +832,11 @@ def install(
 
         # Check if version is really what we want
         if override_existing:
-            vm = get_managed_template_vm(app, name)
+            try:
+                vm = get_managed_template_vm(app, name)
+            except (qubesadmin.exc.QubesVMNotFoundError,
+                    qubesadmin.exc.QubesVMError) as e:
+                parser.error(str(e))
             pkg_evr = (
                 str(package_hdr[rpm.RPMTAG_EPOCHNUM]),
                 package_hdr[rpm.RPMTAG_VERSION],
