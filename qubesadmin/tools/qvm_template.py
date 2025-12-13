@@ -48,18 +48,18 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.vm
 import qubesadmin.utils
+import qubesadmin.templates
 import qubesadmin.tools
 import qubesadmin.tools.qvm_kill
 import qubesadmin.tools.qvm_remove
 
-PATH_PREFIX = '/var/lib/qubes/vm-templates'
+from qubesadmin.templates import PACKAGE_NAME_PREFIX, PATH_PREFIX
+
 TEMP_DIR = '/var/tmp'
-PACKAGE_NAME_PREFIX = 'qubes-template-'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
 LOCK_FILE = '/run/qubes/qvm-template.lock'
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
-TAR_HEADER_BYTES = 512
 WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
 WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
@@ -68,10 +68,6 @@ UPDATEVM = str('global UpdateVM')
 
 class AlreadyRunning(Exception):
     """Another qvm-template is already running"""
-
-
-class SignatureVerificationError(Exception):
-    """Package signature is invalid or missing"""
 
 
 def qubes_release() -> str:
@@ -748,103 +744,6 @@ def get_keys_for_repos(repo_files: typing.List[str],
     return keys
 
 
-def verify_rpm(path: str, key: str, *, nogpgcheck: bool = False,
-               template_name: typing.Optional[str] = None) -> rpm.hdr:
-    """Verify the digest and signature of a RPM package and return the package
-    header.
-
-    Note that verifying RPMs this way is prone to TOCTOU. This is okay for
-    local files, but may create problems if multiple instances of
-    **qvm-template** are downloading the same file, so a lock is needed in that
-    case.
-
-    :param path: Location of the RPM package
-    :param nogpgcheck: Whether to allow invalid GPG signatures
-    :param template_name: expected template name - if specified, verifies if
-           the package name matches expected template name
-
-    :return: RPM package header. If verification fails, raises an exception.
-    """
-    assert isinstance(nogpgcheck, bool), 'Must pass a boolean for nogpgcheck'
-    with open(path, 'rb') as fd:
-        if not nogpgcheck:
-            with tempfile.TemporaryDirectory() as rpmdb_dir:
-                subprocess.check_call(
-                    ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
-                try:
-                    output = subprocess.check_output([
-                        'rpmkeys',
-                        '--dbpath=' + rpmdb_dir,
-                        '--define=_pkgverify_level all',
-                        '--define=_pkgverify_flags 0x0',
-                        '--checksig',
-                        '-',
-                    ], env={'LC_ALL': 'C', **os.environ}, stdin=fd)
-                except subprocess.CalledProcessError as e:
-                    raise SignatureVerificationError(
-                        f"Signature verification failed: {e.output.decode()}")
-                if output != b'-: digests signatures OK\n':
-                    raise SignatureVerificationError(
-                        f"Signature verification failed: {output.decode()}")
-            fd.seek(0)
-        tset = rpm.TransactionSet()
-        # even if gpgcheck is not disabled, the database path is wrong
-        tset.setVSFlags(rpm.RPMVSF_MASK_NOSIGNATURES)
-        hdr = tset.hdrFromFdno(fd)
-    if template_name is not None:
-        if hdr[rpm.RPMTAG_NAME] != PACKAGE_NAME_PREFIX + template_name:
-            raise SignatureVerificationError(
-                'Downloaded package does not match expected template name')
-    return hdr
-
-
-def extract_rpm(name: str, path: str, target: str) -> bool:
-    """Extract a template RPM package.
-       If the package contains root.img file split across multiple parts,
-       only the first 512 bytes of the 00 part is retained (tar header) and
-       a symlink to the rpm file is created in target directory.
-
-    :param name: Name of the template
-    :param path: Location of the RPM package
-    :param target: Target path to extract to
-
-    :return: Whether the extraction succeeded
-    """
-    with open(path, 'rb') as pkg_f:
-        with subprocess.Popen(['rpm2archive', "-"],
-                stdin=pkg_f,
-                stdout=subprocess.PIPE) as rpm2archive:
-            # `-D` is GNUism
-            with subprocess.Popen([
-                'tar', 'xz', '-C', target, f'.{PATH_PREFIX}/{name}/',
-                '--exclude=root.img.part.?[!0]',
-                '--exclude=root.img.part.[!0]0'
-            ], stdin=rpm2archive.stdout, stdout=subprocess.DEVNULL) as tar:
-                pass
-    if rpm2archive.returncode != 0 or tar.returncode != 0:
-        return False
-
-    part_00_path = f'{target}/{PATH_PREFIX}/{name}/root.img.part.00'
-    if os.path.exists(part_00_path):
-        # retain minimal data needed to interrogate root.img size
-        with subprocess.Popen([
-            'truncate', f'--size={TAR_HEADER_BYTES}', part_00_path
-        ]) as truncate:
-            pass
-        if truncate.returncode != 0:
-            return False
-        # and create rpm file symlink
-        link_path = f'{target}/{PATH_PREFIX}/{name}/template.rpm'
-        try:
-            os.symlink(os.path.abspath(path),
-                       f'{target}/{PATH_PREFIX}/{name}/template.rpm')
-        except OSError as e:
-            print(f"Failed to create {link_path} symlink: {e!s}",
-                  file=sys.stderr)
-            return False
-    return True
-
-
 def filter_version(
         query_res,
         app: qubesadmin.app.QubesBase,
@@ -982,7 +881,7 @@ def download(
                 print(f"'{target}' already exists, skipping...",
                       file=sys.stderr)
                 # but still verify the package
-                package_hdrs[name] = verify_rpm(
+                package_hdrs[name] = qubesadmin.templates.verify_rpm(
                     target, repo_key, template_name=name)
                 continue
             print(f"Downloading '{spec}'...", file=sys.stderr)
@@ -1009,7 +908,7 @@ def download(
                 print(
                     'Warning: --nogpgcheck is ignored for downloaded templates',
                     file=sys.stderr)
-            package_hdr = verify_rpm(target_temp, repo_key, template_name=name)
+            package_hdr = qubesadmin.templates.verify_rpm(target_temp, repo_key, template_name=name)
             # after package is verified, rename to the target location
             os.rename(target_temp, target)
             package_hdrs[name] = package_hdr
@@ -1066,7 +965,7 @@ def install(
             repo_key = keys.get(reponame)
             if repo_key is None:
                 repo_key = args.keyring
-            package_hdr = verify_rpm(rpmfile, repo_key,
+            package_hdr = qubesadmin.templates.verify_rpm(rpmfile, repo_key,
                                      nogpgcheck=args.nogpgcheck)
             if not package_hdr:
                 parser.error(f"Package '{rpmfile}' verification failed.")
@@ -1181,7 +1080,7 @@ def install(
     for rpmfile, reponame, name, package_hdr in verified_rpm_list:
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
             print(f'Installing template \'{name}\'...', file=sys.stderr)
-            if not extract_rpm(name, rpmfile, target):
+            if not qubesadmin.templates.extract_rpm(name, rpmfile, target):
                 raise qubesadmin.exc.QubesException(
                     f'Failed to extract {name} template')
             cmdline = [

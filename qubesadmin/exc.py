@@ -217,6 +217,9 @@ class BackupRestoreError(QubesException):
         super().__init__(msg)
         self.backup_log = backup_log
 
+class SignatureVerificationError(Exception):
+    """Package signature is invalid or missing"""
+
 
 # pylint: disable=too-many-ancestors
 class QubesDaemonAccessError(QubesDaemonCommunicationError):
