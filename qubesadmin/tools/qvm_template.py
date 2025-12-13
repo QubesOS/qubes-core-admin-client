@@ -53,7 +53,13 @@ import qubesadmin.tools
 import qubesadmin.tools.qvm_kill
 import qubesadmin.tools.qvm_remove
 
-from qubesadmin.templates import PACKAGE_NAME_PREFIX, PATH_PREFIX
+from qubesadmin.templates import (
+    PACKAGE_NAME_PREFIX,
+    PATH_PREFIX,
+    build_version_str,
+    is_match_spec,
+    qubes_release,
+)
 
 TEMP_DIR = '/var/tmp'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
@@ -68,34 +74,6 @@ UPDATEVM = str('global UpdateVM')
 
 class AlreadyRunning(Exception):
     """Another qvm-template is already running"""
-
-
-def qubes_release() -> str:
-    """Return the Qubes release."""
-    if os.path.exists('/usr/share/qubes/marker-vm'):
-        with open('/usr/share/qubes/marker-vm', 'r', encoding='ascii') as fd:
-            # Get the first non-comment line
-            release = [l.strip() for l in fd.readlines()
-                       if l.strip() and not l.startswith('#')]
-            # sanity check
-            if release and release[0] and release[0][0].isdigit():
-                return release[0]
-    with open('/etc/os-release', 'r', encoding='ascii') as fd:
-        release = None
-        distro_id = None
-        for line in fd:
-            line = line.strip()
-            if not line or line[0] == '#':
-                continue
-            key, val = line.split('=', 1)
-            if key == 'ID':
-                distro_id = val
-            if key == 'VERSION_ID':
-                release = val.strip('\'"') # strip possible quotes
-        if distro_id and 'qubes' in distro_id and release:
-            return release
-    # Return default value instead of throwing so that it works on CI
-    return '4.1'
 
 
 class RepoOptCallback(argparse.Action):
@@ -329,45 +307,6 @@ class DlEntry(typing.NamedTuple):
 
 
 # pylint: enable=too-few-public-methods,inherit-non-class
-
-
-def build_version_str(evr: typing.Tuple[str, str, str]) -> str:
-    """Return version string described by ``evr``, which is in (epoch, version,
-    release) format."""
-    return '%s:%s-%s' % evr
-
-
-def is_match_spec(name: str, epoch: str, version: str, release: str, spec: str
-                  ) -> typing.Tuple[bool, float]:
-    """Check whether (name, epoch, version, release) matches the spec string.
-
-    For the algorithm, refer to section "NEVRA Matching" in the DNF
-    documentation.
-
-    Note that currently ``arch`` is ignored as the templates should be of
-    ``noarch``.
-
-    :return: A tuple. The first element indicates whether there is a match; the
-        second element represents the priority of the match (lower is better)
-    """
-    if epoch != '0':
-        targets = [
-            f'{name}-{epoch}:{version}-{release}',
-            f'{name}',
-            f'{name}-{epoch}:{version}'
-        ]
-    else:
-        targets = [
-            f'{name}-{epoch}:{version}-{release}',
-            f'{name}-{version}-{release}',
-            f'{name}',
-            f'{name}-{epoch}:{version}',
-            f'{name}-{version}'
-        ]
-    for prio, target in enumerate(targets):
-        if fnmatch.fnmatch(target, spec):
-            return True, prio
-    return False, float('inf')
 
 
 def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
