@@ -20,6 +20,8 @@
 """Template management for Qubes OS."""
 
 import os
+import base64
+import configparser
 import datetime
 import enum
 import fnmatch
@@ -36,6 +38,8 @@ DATE_FMT = '%Y-%m-%d %H:%M:%S'
 PATH_PREFIX = '/var/lib/qubes/vm-templates'
 PACKAGE_NAME_PREFIX = 'qubes-template-'
 TAR_HEADER_BYTES = 512
+WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
+WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
 
 class TemplateState(enum.Enum):
@@ -315,3 +319,72 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
                   file=sys.stderr)
             return False
     return True
+
+
+def _is_file_in_repo_templates_keys_dir(path: str) -> bool:
+    """Check if the given path is a file located repo-template keys dir"""
+    return os.path.isfile(path) and path.startswith(
+        "/etc/qubes/repo-templates/keys/")
+
+def _encode_key(path):
+    """Base64-encoe a file to be placed in qvm-template payload"""
+    if path.startswith("file://"):
+        path = path[7:]
+
+    if not _is_file_in_repo_templates_keys_dir(path):
+        return ""
+
+    encoded_key = "#" + path + "\n"
+    with open(path, "rb") as key:
+        encoded_key += f"#{base64.b64encode(key.read()).decode('ascii')}\n"
+    return encoded_key
+
+def _replace_dnf_vars(path, releasever):
+    """Replace supported dnf variables in repo"""
+    for var in ["$releasever", "${releasever}"]:
+        path = path.replace(var, releasever)
+    return path
+
+def append_keys(payload, releasever):
+    """Add GPG key and SSL cert/keys to qvm-template payload"""
+    config = configparser.ConfigParser()
+    try:
+        config.read_string(payload)
+    except RuntimeError:
+        return ""
+
+    file_list = set()
+    for section in config.sections():
+        for option in ["gpgkey", "sslclientcert", "sslclientkey"]:
+            if config.has_option(section, option):
+                file_list.add(
+                    _replace_dnf_vars(config.get(section, option),
+                                      releasever))
+
+    encoded_keys = "".join(
+        [_encode_key(file_path) for file_path in sorted(file_list)])
+    if not encoded_keys:
+        return ""
+
+    return f"\n{WRAPPER_PAYLOAD_BEGIN}\n{encoded_keys}{WRAPPER_PAYLOAD_END}"
+
+def get_keys_for_repos(repo_files: typing.List[str],
+                       releasever: str) -> typing.Dict[str, str]:
+    """List gpg keys
+
+    Returns a dict reponame -> key path
+    """
+    keys = {}
+    for repo_file in repo_files:
+        repo_config = configparser.ConfigParser()
+        repo_config.read(repo_file)
+        for repo in repo_config.sections():
+            try:
+                gpgkey_url = repo_config.get(repo, 'gpgkey')
+            except configparser.NoOptionError:
+                continue
+            gpgkey_url = gpgkey_url.replace('$releasever', releasever)
+            # support only file:// urls
+            if gpgkey_url.startswith('file://'):
+                keys[repo] = gpgkey_url[len('file://'):]
+    return keys
