@@ -60,12 +60,12 @@ from qubesadmin.templates import (
     Template,
     TemplateState,
     VersionSelector,
-    append_keys,
     build_version_str,
     get_keys_for_repos,
     get_managed_template_vm,
     is_managed_template,
     is_match_spec,
+    qrexec_download,
     qrexec_payload,
     qrexec_popen,
     qrexec_repoquery,
@@ -271,77 +271,6 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
             sys.exit(1)
 
 
-def qrexec_download(
-        args: argparse.Namespace,
-        app: qubesadmin.app.QubesBase,
-        spec: str,
-        path: str,
-        key: str,
-        dlsize: typing.Optional[int] = None,
-        refresh: bool = False) -> None:
-    """Download a template from repositories.
-
-    :param args: Arguments received by the application. Specifically,
-        ``args.{enablerepo,disablerepo,repoid,releasever,repo_files,updatevm,
-        quiet}`` are used
-    :param app: Qubes application object
-    :param spec: Package spec to query (refer to ``<package-name-spec>`` in the
-        DNF documentation)
-    :param path: Path to place the downloaded template
-    :param dlsize: Size of template to be downloaded. Used for the progress
-        bar. Optional
-    :param refresh: Whether to force refresh repo metadata. Defaults to False
-
-    :raises ConnectionError: if the qrexec call fails
-    """
-    with tempfile.TemporaryDirectory() as rpmdb_dir:
-        subprocess.check_call(
-            ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
-        try:
-            payload = qrexec_payload(app, spec, refresh, args.repos,
-                                     args.releasever, args.repo_files)
-        except qubesadmin.exc.QubesValueError as e:
-            parser.error(str(e))
-        with subprocess.Popen([
-            'rpmcanon',
-            '--dbpath=' + rpmdb_dir,
-            '--report-progress',
-            '--',
-            '/dev/stdin',
-            path
-        ], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as rpmcanon:
-            # Don't filter ESCs for binary files
-            proc = qrexec_popen(app, 'qubes.TemplateDownload', args.updatevm,
-                                stdout=rpmcanon.stdin, filter_esc=False)
-            rpmcanon.stdin.close()
-            proc.stdin.write(payload.encode('UTF-8'))
-            proc.stdin.close()
-            with tqdm.tqdm(desc=spec, total=dlsize, unit_scale=True,
-                           unit_divisor=1000, unit='B',
-                           disable=args.quiet) as pbar:
-                last_count = 0
-                for i in rpmcanon.stdout:
-                    if i.endswith(b' bytes so far\n'):
-                        new_count = int(i[:-14])
-                        pbar.update(new_count - last_count)
-                        last_count = new_count
-                    elif i.endswith(b' bytes total\n'):
-                        actual_size = int(i[:-13])
-                        if dlsize is not None and dlsize != actual_size:
-                            raise ConnectionError(
-                                f"Downloaded file is {dlsize} bytes, "
-                                f"expected {actual_size}")
-                    else:
-                        raise ConnectionError(
-                            f'Bad line from rpmcanon: {i!r}')
-
-            if proc.wait() != 0:
-                raise ConnectionError(
-                    "qrexec call 'qubes.TemplateDownload' failed.")
-            if rpmcanon.wait() != 0:
-                raise ConnectionError("rpmcanon failed")
-
-
 def filter_version(
         query_res,
         app: qubesadmin.app.QubesBase,
@@ -448,6 +377,14 @@ def get_dl_list(
     return full_candid
 
 
+def _make_progress_callback(pbar):
+    last_bytes = [0]
+    def callback(current, total):
+        pbar.update(current - last_bytes[0])
+        last_bytes[0] = current
+    return callback
+
+
 def download(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
@@ -496,10 +433,18 @@ def download(
             done = False
             for attempt in range(args.retries):
                 try:
-                    qrexec_download(args, app, spec, target_temp,
-                                    repo_key, entry.dlsize)
+                    with tqdm.tqdm(desc=spec, total=entry.dlsize,
+                                   unit_scale=True, unit_divisor=1000,
+                                   unit='B', disable=args.quiet) as pbar:
+                        qrexec_download(app, spec, target_temp, repo_key,
+                                        args.repos, args.releasever,
+                                        args.repo_files, args.updatevm,
+                                        entry.dlsize,
+                                        progress_callback=_make_progress_callback(pbar))
                     done = True
                     break
+                except qubesadmin.exc.QubesValueError as e:
+                    parser.error(str(e))
                 except ConnectionError:
                     try:
                         os.remove(target_temp)

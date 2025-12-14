@@ -574,3 +574,73 @@ def qrexec_repoquery(
             raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed:"
                                    " unexpected data format.")
     return result
+
+
+def qrexec_download(
+        app: qubesadmin.app.QubesBase,
+        spec: str,
+        path: str,
+        key: str,
+        repos: typing.List[typing.Tuple[str, str]],
+        releasever: str,
+        repo_files: typing.List[str],
+        updatevm: typing.Optional[str] = None,
+        dlsize: typing.Optional[int] = None,
+        refresh: bool = False,
+        progress_callback: typing.Optional[typing.Callable[[int, int], None]] = None
+) -> None:
+    """Download a template from repositories.
+
+    :param app: Qubes application object
+    :param spec: Package spec to download
+    :param path: Path to place the downloaded template
+    :param key: Path to GPG key file for verification
+    :param repos: List of (operation, repo_id) tuples for repo configuration
+    :param releasever: Qubes release version
+    :param repo_files: List of paths to repo configuration files
+    :param updatevm: VM to download updates from. Empty string for current VM.
+    :param dlsize: Size of template to be downloaded (for progress reporting)
+    :param refresh: Whether to force refresh repo metadata
+    :param progress_callback: Optional callback for progress updates.
+        Called with (current_bytes, total_bytes).
+
+    :raises ConnectionError: if the qrexec call fails
+    """
+    with tempfile.TemporaryDirectory() as rpmdb_dir:
+        subprocess.check_call(
+            ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
+        payload = qrexec_payload(app, spec, refresh, repos, releasever,
+                                 repo_files)
+        with subprocess.Popen([
+            'rpmcanon',
+            '--dbpath=' + rpmdb_dir,
+            '--report-progress',
+            '--',
+            '/dev/stdin',
+            path
+        ], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as rpmcanon:
+            # Don't filter ESCs for binary files
+            proc = qrexec_popen(app, 'qubes.TemplateDownload', updatevm,
+                                stdout=rpmcanon.stdin, filter_esc=False)
+            rpmcanon.stdin.close()
+            proc.stdin.write(payload.encode('UTF-8'))
+            proc.stdin.close()
+            for i in rpmcanon.stdout:
+                if i.endswith(b' bytes so far\n'):
+                    if progress_callback:
+                        progress_callback(int(i[:-14]), dlsize)
+                elif i.endswith(b' bytes total\n'):
+                    actual_size = int(i[:-13])
+                    if dlsize is not None and dlsize != actual_size:
+                        raise ConnectionError(
+                            f"Downloaded file is {dlsize} bytes, "
+                            f"expected {actual_size}")
+                else:
+                    raise ConnectionError(
+                        f'Bad line from rpmcanon: {i!r}')
+
+            if proc.wait() != 0:
+                raise ConnectionError(
+                    "qrexec call 'qubes.TemplateDownload' failed.")
+            if rpmcanon.wait() != 0:
+                raise ConnectionError("rpmcanon failed")
