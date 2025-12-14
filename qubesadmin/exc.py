@@ -217,8 +217,13 @@ class BackupRestoreError(QubesException):
         super().__init__(msg)
         self.backup_log = backup_log
 
+
 class SignatureVerificationError(Exception):
     """Package signature is invalid or missing"""
+
+
+class AlreadyRunning(Exception):
+    """Another qvm-template is already running"""
 
 
 # pylint: disable=too-many-ancestors

@@ -24,8 +24,11 @@ import base64
 import configparser
 import datetime
 import enum
+import fcntl
 import fnmatch
+import functools
 import re
+import rpm
 import subprocess
 import tempfile
 import typing
@@ -36,6 +39,7 @@ import qubesadmin.exc
 import qubesadmin.vm
 
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
+LOCK_FILE = '/run/qubes/qvm-template.lock'
 PATH_PREFIX = '/var/lib/qubes/vm-templates'
 PACKAGE_NAME_PREFIX = 'qubes-template-'
 TAR_HEADER_BYTES = 512
@@ -644,3 +648,70 @@ def qrexec_download(
                     "qrexec call 'qubes.TemplateDownload' failed.")
             if rpmcanon.wait() != 0:
                 raise ConnectionError("rpmcanon failed")
+
+
+def locked(func):
+    """Execute given function under a lock in *LOCK_FILE*"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with open(LOCK_FILE, 'w', encoding='ascii') as lock:
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                raise qubesadmin.exc.AlreadyRunning(
+                    f"Cannot get lock on {LOCK_FILE}. Perhaps another instance "
+                    f"of qvm-template is running?")
+            try:
+                return func(*args, **kwargs)
+            finally:
+                os.remove(LOCK_FILE)
+    return wrapper
+
+
+def filter_version(
+        query_res,
+        app: qubesadmin.app.QubesBase,
+        version_selector: VersionSelector = VersionSelector.LATEST):
+    """Select only one version for given template name
+
+    :raises QubesVMNotFoundError: if template not installed (for REINSTALL,
+        LATEST_LOWER, LATEST_HIGHER)
+    :raises QubesVMError: if template exists but not managed by qvm-template
+    """
+    # We only select one package for each distinct package name
+    results: typing.Dict[str, Template] = {}
+
+    for entry in query_res:
+        evr = (entry.epoch, entry.version, entry.release)
+        insert = False
+        if version_selector == VersionSelector.LATEST:
+            if entry.name not in results:
+                insert = True
+            if entry.name in results \
+                    and rpm.labelCompare(results[entry.name].evr, evr) < 0:
+                insert = True
+            if entry.name in results \
+                    and rpm.labelCompare(results[entry.name].evr, evr) == 0 \
+                    and 'testing' not in entry.reponame:
+                # for the same-version matches, prefer non-testing one
+                insert = True
+        elif version_selector == VersionSelector.REINSTALL:
+            vm = get_managed_template_vm(app, entry.name)
+            cur_ver = query_local_evr(vm)
+            if rpm.labelCompare(evr, cur_ver) == 0:
+                insert = True
+        elif version_selector in [VersionSelector.LATEST_LOWER,
+                                  VersionSelector.LATEST_HIGHER]:
+            vm = get_managed_template_vm(app, entry.name)
+            cur_ver = query_local_evr(vm)
+            cmp_res = -1 \
+                if version_selector == VersionSelector.LATEST_LOWER \
+                else 1
+            if rpm.labelCompare(evr, cur_ver) == cmp_res:
+                if entry.name not in results \
+                        or rpm.labelCompare(results[entry.name].evr, evr) < 0:
+                    insert = True
+        if insert:
+            results[entry.name] = entry
+
+    return results.values()

@@ -61,10 +61,12 @@ from qubesadmin.templates import (
     TemplateState,
     VersionSelector,
     build_version_str,
+    filter_version,
     get_keys_for_repos,
     get_managed_template_vm,
     is_managed_template,
     is_match_spec,
+    locked,
     qrexec_download,
     qrexec_payload,
     qrexec_popen,
@@ -77,13 +79,8 @@ from qubesadmin.templates import (
 TEMP_DIR = '/var/tmp'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
-LOCK_FILE = '/run/qubes/qvm-template.lock'
 
 UPDATEVM = str('global UpdateVM')
-
-
-class AlreadyRunning(Exception):
-    """Another qvm-template is already running"""
 
 
 class RepoOptCallback(argparse.Action):
@@ -271,58 +268,6 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
             sys.exit(1)
 
 
-def filter_version(
-        query_res,
-        app: qubesadmin.app.QubesBase,
-        version_selector: VersionSelector = VersionSelector.LATEST):
-    """Select only one version for given template name"""
-    # We only select one package for each distinct package name
-    results: typing.Dict[str, Template] = {}
-
-    for entry in query_res:
-        evr = (entry.epoch, entry.version, entry.release)
-        insert = False
-        if version_selector == VersionSelector.LATEST:
-            if entry.name not in results:
-                insert = True
-            if entry.name in results \
-                    and rpm.labelCompare(results[entry.name].evr, evr) < 0:
-                insert = True
-            if entry.name in results \
-                    and rpm.labelCompare(results[entry.name].evr, evr) == 0 \
-                    and 'testing' not in entry.reponame:
-                # for the same-version matches, prefer non-testing one
-                insert = True
-        elif version_selector == VersionSelector.REINSTALL:
-            try:
-                vm = get_managed_template_vm(app, entry.name)
-            except (qubesadmin.exc.QubesVMNotFoundError,
-                    qubesadmin.exc.QubesVMError) as e:
-                parser.error(str(e))
-            cur_ver = query_local_evr(vm)
-            if rpm.labelCompare(evr, cur_ver) == 0:
-                insert = True
-        elif version_selector in [VersionSelector.LATEST_LOWER,
-                                  VersionSelector.LATEST_HIGHER]:
-            try:
-                vm = get_managed_template_vm(app, entry.name)
-            except (qubesadmin.exc.QubesVMNotFoundError,
-                    qubesadmin.exc.QubesVMError) as e:
-                parser.error(str(e))
-            cur_ver = query_local_evr(vm)
-            cmp_res = -1 \
-                if version_selector == VersionSelector.LATEST_LOWER \
-                else 1
-            if rpm.labelCompare(evr, cur_ver) == cmp_res:
-                if entry.name not in results \
-                        or rpm.labelCompare(results[entry.name].evr, evr) < 0:
-                    insert = True
-        if insert:
-            results[entry.name] = entry
-
-    return results.values()
-
-
 def get_dl_list(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
@@ -349,7 +294,11 @@ def get_dl_list(
                                      PACKAGE_NAME_PREFIX + template)
 
         # We only select one package for each distinct package name
-        query_res = filter_version(query_res, app, version_selector)
+        try:
+            query_res = filter_version(query_res, app, version_selector)
+        except (qubesadmin.exc.QubesVMNotFoundError,
+                qubesadmin.exc.QubesVMError) as e:
+            parser.error(str(e))
         # XXX: As it's possible to include version information in `template`,
         #      perhaps the messages can be improved
         if len(query_res) == 0:
@@ -466,24 +415,6 @@ def download(
             os.rename(target_temp, target)
             package_hdrs[name] = package_hdr
     return package_hdrs
-
-
-def locked(func):
-    """Execute given function under a lock in *LOCK_FILE*"""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        with open(LOCK_FILE, 'w', encoding='ascii') as lock:
-            try:
-                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError:
-                raise AlreadyRunning(
-                    f"Cannot get lock on {LOCK_FILE}. Perhaps another instance "
-                    f"of qvm-template is running?")
-            try:
-                return func(*args, **kwargs)
-            finally:
-                os.remove(LOCK_FILE)
-    return wrapper
 
 
 @locked
@@ -810,7 +741,11 @@ def list_templates(args: argparse.Namespace,
             query_res = qrexec_repoquery(app, args.repos, args.releasever,
                                          args.repo_files, args.updatevm)
         if not args.all_versions:
-            query_res = filter_version(query_res, app)
+            try:
+                query_res = filter_version(query_res, app)
+            except (qubesadmin.exc.QubesVMNotFoundError,
+                    qubesadmin.exc.QubesVMError) as e:
+                parser.error(str(e))
 
     if args.installed or args.all:
         for vm in app.domains:
