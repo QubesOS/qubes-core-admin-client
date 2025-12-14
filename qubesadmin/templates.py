@@ -25,6 +25,7 @@ import configparser
 import datetime
 import enum
 import fnmatch
+import re
 import subprocess
 import tempfile
 import typing
@@ -345,7 +346,7 @@ def _replace_dnf_vars(path, releasever):
         path = path.replace(var, releasever)
     return path
 
-def append_keys(payload, releasever):
+def _append_keys(payload, releasever):
     """Add GPG key and SSL cert/keys to qvm-template payload"""
     config = configparser.ConfigParser()
     try:
@@ -388,3 +389,188 @@ def get_keys_for_repos(repo_files: typing.List[str],
             if gpgkey_url.startswith('file://'):
                 keys[repo] = gpgkey_url[len('file://'):]
     return keys
+
+
+def qrexec_popen(
+        app: qubesadmin.app.QubesBase,
+        service: str,
+        updatevm: typing.Optional[str] = None,
+        stdout: typing.Union[int, typing.IO] = subprocess.PIPE,
+        filter_esc: bool = True) -> subprocess.Popen:
+    """Return ``Popen`` object that communicates with the given qrexec call.
+
+    Note that this falls back to invoking ``/etc/qubes-rpc/*`` directly if
+    ``updatevm`` is empty string.
+
+    :param app: Qubes application object
+    :param service: The qrexec service to invoke
+    :param updatevm: VM to use for the qrexec call. If empty/None, falls back
+        to direct invocation.
+    :param stdout: Where the process stdout points to. This is passed directly
+        to ``subprocess.Popen``. Defaults to ``subprocess.PIPE``
+    :param filter_esc: Whether to filter out escape sequences from
+        stdout/stderr. Defaults to True
+
+    :returns: ``Popen`` object that communicates with the given qrexec call
+    """
+    if updatevm:
+        return app.domains[updatevm].run_service(
+            service,
+            filter_esc=filter_esc,
+            stdout=stdout)
+    # pylint: disable=consider-using-with
+    return subprocess.Popen(
+        [f'/etc/qubes-rpc/{service}'], stdin=subprocess.PIPE, stdout=stdout,
+        stderr=subprocess.PIPE
+    )
+
+def qrexec_payload(
+        app: qubesadmin.app.QubesBase,
+        spec: str,
+        refresh: bool,
+        repos: typing.List[typing.Tuple[str, str]],
+        releasever: str,
+        repo_files: typing.List[str]) -> str:
+    """Return payload string for the ``qubes.Template*`` qrexec calls.
+
+    :param app: Qubes application object
+    :param spec: Package spec to query (refer to ``<package-name-spec>`` in the
+        DNF documentation)
+    :param refresh: Whether to force refresh repo metadata
+    :param repos: List of (operation, repo_id) tuples for repo configuration
+    :param releasever: Qubes release version
+    :param repo_files: List of paths to repo configuration files
+
+    :return: Payload string
+
+    :raises QubesValueError: if spec equals ``---`` or input contains ``\\n``
+    """
+    _ = app  # unused
+
+    if spec == '---':
+        raise qubesadmin.exc.QubesValueError(
+            "Malformed template name: argument should not be '---'.")
+
+    def check_newline(string, name):
+        if '\n' in string:
+            raise qubesadmin.exc.QubesValueError(
+                f"Malformed {name}: argument should not contain '\\n'.")
+
+    payload = ''
+    for repo_op, repo_id in repos:
+        check_newline(repo_id, '--' + repo_op)
+        payload += f'--{repo_op}={repo_id}\n'
+    if refresh:
+        payload += '--refresh\n'
+    check_newline(releasever, '--releasever')
+    payload += f'--releasever={releasever}\n'
+    check_newline(spec, 'template name')
+    payload += spec + '\n'
+    payload += '---\n'
+
+    repo_config = ""
+    for path in repo_files:
+        with open(path, 'r', encoding='utf-8') as fd:
+            repo_config += fd.read() + '\n'
+    payload += repo_config
+
+    payload += _append_keys(repo_config, releasever)
+    return payload
+
+
+def qrexec_repoquery(
+        app: qubesadmin.app.QubesBase,
+        repos: typing.List[typing.Tuple[str, str]],
+        releasever: str,
+        repo_files: typing.List[str],
+        updatevm: typing.Optional[str] = None,
+        spec: str = '*',
+        refresh: bool = False) -> typing.List[Template]:
+    """Query template information from repositories.
+
+    :param app: Qubes application object
+    :param repos: List of (operation, repo_id) tuples for repo configuration
+    :param releasever: Qubes release version
+    :param repo_files: List of paths to repo configuration files
+    :param updatevm: VM to download updates from. Empty string for current VM.
+    :param spec: Package spec to query (refer to ``<package-name-spec>`` in the
+        DNF documentation). Defaults to ``*``
+    :param refresh: Whether to force refresh repo metadata. Defaults to False
+
+    :raises ConnectionError: if the qrexec call fails
+
+    :return: List of ``Template`` objects representing the result of the query
+    """
+    payload = qrexec_payload(app, spec, refresh, repos, releasever, repo_files)
+    proc = qrexec_popen(app, 'qubes.TemplateSearch', updatevm)
+    proc.stdin.write(payload.encode('UTF-8'))
+    proc.stdin.close()
+    stdout = proc.stdout.read(1 << 20).decode('ascii', 'strict')
+    proc.stdout.close()
+    stderr = proc.stderr.read(1 << 10).decode('ascii', 'strict')
+    proc.stderr.close()
+    if proc.wait() != 0:
+        for line in stderr.rstrip().split('\n'):
+            print(f"[Qrexec] {line}", file=sys.stderr)
+        raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
+    name_re = re.compile(r'\A[A-Za-z0-9._+][A-Za-z0-9._+-]*\Z')
+    evr_re = re.compile(r'\A[A-Za-z0-9._+~]*\Z')
+    date_re = re.compile(r'\A\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}\Z')
+    licence_re = re.compile(r'\A[A-Za-z0-9._+()][A-Za-z0-9._+()-]*\Z')
+    result = []
+    # FIXME: This breaks when \n is the first character of the description
+    for line in stdout.split('|\n'):
+        # Note that there's an empty entry at the end as .strip() is not used.
+        # This is because if .strip() is used, the .split() will not work.
+        if line == '':
+            continue
+        # This is specific to DNF5:
+        if line.endswith('|'):
+            line = line[:-1]
+        entry = line.split('|')
+        try:
+            # If there is an incorrect number of entries, raise an error
+            # Unpack manually instead of stuffing into `Template` right away
+            # so that it's easier to mutate stuff.
+            name, epoch, version, release, reponame, dlsize, \
+            buildtime, licence, url, summary, description = entry
+
+            # Ignore packages that are not templates
+            if not name.startswith(PACKAGE_NAME_PREFIX):
+                continue
+            name = name[len(PACKAGE_NAME_PREFIX):]
+
+            # Check that the values make sense
+            if not re.fullmatch(name_re, name):
+                raise ValueError
+            for val in [epoch, version, release]:
+                if not re.fullmatch(evr_re, val):
+                    raise ValueError
+            if not re.fullmatch(name_re, reponame):
+                raise ValueError
+            dlsize = int(dlsize)
+            # First verify that the date does not look weird, then parse it
+            if re.fullmatch(date_re, buildtime):
+                buildtime = datetime.datetime.strptime(buildtime, \
+                        '%Y-%m-%d %H:%M')
+            elif buildtime.isnumeric():
+                # DNF5 provides seconds since epoch
+                buildtime = datetime.datetime.fromtimestamp(int(buildtime),
+                    tz=datetime.timezone.utc)
+            else:
+                raise ValueError
+            # XXX: Perhaps whitelist licenses directly?
+            if not re.fullmatch(licence_re, licence):
+                raise ValueError
+            # Check name actually matches spec
+            if not is_match_spec(PACKAGE_NAME_PREFIX + name,
+                                 epoch, version, release, spec)[0]:
+                continue
+
+            result.append(Template(name, epoch, version, release, reponame,
+                                   dlsize, buildtime, licence, url, summary,
+                                   description))
+        except (TypeError, ValueError):
+            raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed:"
+                                   " unexpected data format.")
+    return result

@@ -66,6 +66,9 @@ from qubesadmin.templates import (
     get_managed_template_vm,
     is_managed_template,
     is_match_spec,
+    qrexec_payload,
+    qrexec_popen,
+    qrexec_repoquery,
     query_local,
     query_local_evr,
     qubes_release,
@@ -268,183 +271,6 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
             sys.exit(1)
 
 
-def qrexec_popen(
-        args: argparse.Namespace,
-        app: qubesadmin.app.QubesBase,
-        service: str,
-        stdout: typing.Union[int, typing.IO] = subprocess.PIPE,
-        filter_esc: bool = True) -> subprocess.Popen:
-    """Return ``Popen`` object that communicates with the given qrexec call in
-    ``args.updatevm``.
-
-    Note that this falls back to invoking ``/etc/qubes-rpc/*`` directly if
-    ``args.updatevm`` is empty string.
-
-    :param args: Arguments received by the application. ``args.updatevm`` is
-        used
-    :param app: Qubes application object
-    :param service: The qrexec call to invoke
-    :param stdout: Where the process stdout points to. This is passed directly
-        to ``subprocess.Popen``. Defaults to ``subprocess.PIPE``
-
-        Note that stderr is always set to ``subprocess.PIPE``
-    :param filter_esc: Whether to filter out escape sequences from
-        stdout/stderr. Defaults to True
-
-    :returns: ``Popen`` object that communicates with the given qrexec call
-    """
-    if args.updatevm:
-        return app.domains[args.updatevm].run_service(
-            service,
-            filter_esc=filter_esc,
-            stdout=stdout)
-    # pylint: disable=consider-using-with
-    return subprocess.Popen(
-        [f'/etc/qubes-rpc/{service}'], stdin=subprocess.PIPE, stdout=stdout,
-        stderr=subprocess.PIPE
-    )
-
-def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
-                   spec: str, refresh: bool) -> str:
-    """Return payload string for the ``qubes.Template*`` qrexec calls.
-
-    :param args: Arguments received by the application. Specifically,
-        ``args.{enablerepo,disablerepo,repoid,releasever,repo_files}`` are used
-    :param app: Qubes application object
-    :param spec: Package spec to query (refer to ``<package-name-spec>`` in the
-        DNF documentation)
-    :param refresh: Whether to force refresh repo metadata
-
-    :return: Payload string
-
-    :raises: Parser error if spec equals ``---`` or input contains ``\\n``
-    """
-    _ = app  # unused
-
-    if spec == '---':
-        parser.error("Malformed template name: argument should not be '---'.")
-
-    def check_newline(string, name):
-        if '\n' in string:
-            parser.error(f"Malformed {name}:" +
-                         " argument should not contain '\\n'.")
-
-    payload = ''
-    for repo_op, repo_id in args.repos:
-        check_newline(repo_id, '--' + repo_op)
-        payload += f'--{repo_op}={repo_id}\n'
-    if refresh:
-        payload += '--refresh\n'
-    check_newline(args.releasever, '--releasever')
-    payload += f'--releasever={args.releasever}\n'
-    check_newline(spec, 'template name')
-    payload += spec + '\n'
-    payload += '---\n'
-
-    repo_config = ""
-    for path in args.repo_files:
-        with open(path, 'r', encoding='utf-8') as fd:
-            repo_config += fd.read() + '\n'
-    payload += repo_config
-
-    payload += append_keys(repo_config, args.releasever)
-    return payload
-
-
-def qrexec_repoquery(
-        args: argparse.Namespace,
-        app: qubesadmin.app.QubesBase,
-        spec: str = '*',
-        refresh: bool = False) -> typing.List[Template]:
-    """Query template information from repositories.
-
-    :param args: Arguments received by the application. Specifically,
-        ``args.{enablerepo,disablerepo,repoid,releasever,repo_files,updatevm}``
-        are used
-    :param app: Qubes application object
-    :param spec: Package spec to query (refer to ``<package-name-spec>`` in the
-        DNF documentation). Defaults to ``*``
-    :param refresh: Whether to force refresh repo metadata. Defaults to False
-
-    :raises ConnectionError: if the qrexec call fails
-
-    :return: List of ``Template`` objects representing the result of the query
-    """
-    payload = qrexec_payload(args, app, spec, refresh)
-    proc = qrexec_popen(args, app, 'qubes.TemplateSearch')
-    proc.stdin.write(payload.encode('UTF-8'))
-    proc.stdin.close()
-    stdout = proc.stdout.read(1 << 20).decode('ascii', 'strict')
-    proc.stdout.close()
-    stderr = proc.stderr.read(1 << 10).decode('ascii', 'strict')
-    proc.stderr.close()
-    if proc.wait() != 0:
-        for line in stderr.rstrip().split('\n'):
-            print(f"[Qrexec] {line}", file=sys.stderr)
-        raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed.")
-    name_re = re.compile(r'\A[A-Za-z0-9._+][A-Za-z0-9._+-]*\Z')
-    evr_re = re.compile(r'\A[A-Za-z0-9._+~]*\Z')
-    date_re = re.compile(r'\A\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}\Z')
-    licence_re = re.compile(r'\A[A-Za-z0-9._+()][A-Za-z0-9._+()-]*\Z')
-    result = []
-    # FIXME: This breaks when \n is the first character of the description
-    for line in stdout.split('|\n'):
-        # Note that there's an empty entry at the end as .strip() is not used.
-        # This is because if .strip() is used, the .split() will not work.
-        if line == '':
-            continue
-        # This is specific to DNF5:
-        if line.endswith('|'):
-            line = line[:-1]
-        entry = line.split('|')
-        try:
-            # If there is an incorrect number of entries, raise an error
-            # Unpack manually instead of stuffing into `Template` right away
-            # so that it's easier to mutate stuff.
-            name, epoch, version, release, reponame, dlsize, \
-            buildtime, licence, url, summary, description = entry
-
-            # Ignore packages that are not templates
-            if not name.startswith(PACKAGE_NAME_PREFIX):
-                continue
-            name = name[len(PACKAGE_NAME_PREFIX):]
-
-            # Check that the values make sense
-            if not re.fullmatch(name_re, name):
-                raise ValueError
-            for val in [epoch, version, release]:
-                if not re.fullmatch(evr_re, val):
-                    raise ValueError
-            if not re.fullmatch(name_re, reponame):
-                raise ValueError
-            dlsize = int(dlsize)
-            # First verify that the date does not look weird, then parse it
-            if re.fullmatch(date_re, buildtime):
-                buildtime = datetime.datetime.strptime(buildtime, \
-                        '%Y-%m-%d %H:%M')
-            elif buildtime.isnumeric():
-                # DNF5 provides seconds since epoch
-                buildtime = datetime.datetime.fromtimestamp(int(buildtime),
-                    tz=datetime.timezone.utc)
-            else:
-                raise ValueError
-            # XXX: Perhaps whitelist licenses directly?
-            if not re.fullmatch(licence_re, licence):
-                raise ValueError
-            # Check name actually matches spec
-            if not is_match_spec(PACKAGE_NAME_PREFIX + name,
-                                 epoch, version, release, spec)[0]:
-                continue
-
-            result.append(Template(name, epoch, version, release, reponame,
-                                   dlsize, buildtime, licence, url, summary,
-                                   description))
-        except (TypeError, ValueError):
-            raise ConnectionError("qrexec call 'qubes.TemplateSearch' failed:"
-                                   " unexpected data format.")
-    return result
-
-
 def qrexec_download(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
@@ -471,7 +297,11 @@ def qrexec_download(
     with tempfile.TemporaryDirectory() as rpmdb_dir:
         subprocess.check_call(
             ['rpmkeys', '--dbpath=' + rpmdb_dir, '--import', key])
-        payload = qrexec_payload(args, app, spec, refresh)
+        try:
+            payload = qrexec_payload(app, spec, refresh, args.repos,
+                                     args.releasever, args.repo_files)
+        except qubesadmin.exc.QubesValueError as e:
+            parser.error(str(e))
         with subprocess.Popen([
             'rpmcanon',
             '--dbpath=' + rpmdb_dir,
@@ -481,7 +311,7 @@ def qrexec_download(
             path
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as rpmcanon:
             # Don't filter ESCs for binary files
-            proc = qrexec_popen(args, app, 'qubes.TemplateDownload',
+            proc = qrexec_popen(app, 'qubes.TemplateDownload', args.updatevm,
                                 stdout=rpmcanon.stdin, filter_esc=False)
             rpmcanon.stdin.close()
             proc.stdin.write(payload.encode('UTF-8'))
@@ -585,7 +415,9 @@ def get_dl_list(
         if template.endswith('.rpm'):
             continue
 
-        query_res = qrexec_repoquery(args, app, PACKAGE_NAME_PREFIX + template)
+        query_res = qrexec_repoquery(app, args.repos, args.releasever,
+                                     args.repo_files, args.updatevm,
+                                     PACKAGE_NAME_PREFIX + template)
 
         # We only select one package for each distinct package name
         query_res = filter_version(query_res, app, version_selector)
@@ -1026,10 +858,12 @@ def list_templates(args: argparse.Namespace,
             query_res_set: typing.Set[Template] = set()
             for spec in args.templates:
                 query_res_set |= set(qrexec_repoquery(
-                    args, app, PACKAGE_NAME_PREFIX + spec))
+                    app, args.repos, args.releasever, args.repo_files,
+                    args.updatevm, PACKAGE_NAME_PREFIX + spec))
             query_res = list(query_res_set)
         else:
-            query_res = qrexec_repoquery(args, app)
+            query_res = qrexec_repoquery(app, args.repos, args.releasever,
+                                         args.repo_files, args.updatevm)
         if not args.all_versions:
             query_res = filter_version(query_res, app)
 
@@ -1102,7 +936,8 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     :param app: Qubes application object
     """
     # Search in both installed and available templates
-    query_res = qrexec_repoquery(args, app)
+    query_res = qrexec_repoquery(app, args.repos, args.releasever,
+                                 args.repo_files, args.updatevm)
     for vm in app.domains:
         if is_managed_template(vm):
             query_res.append(query_local(vm))
@@ -1445,7 +1280,8 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
 
     try:
         if p_args.refresh:
-            qrexec_repoquery(p_args, app, refresh=True)
+            qrexec_repoquery(app, p_args.repos, p_args.releasever,
+                             p_args.repo_files, p_args.updatevm, refresh=True)
 
         if p_args.command == 'download':
             download(p_args, app)
