@@ -73,8 +73,8 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('$dispvm', 'test.service', {}),
-            ('$dispvm', 'test.service', b''),
+            ('@dispvm', 'test.service', {}),
+            ('@dispvm', 'test.service', b''),
         ])
         self.assertAllCalled()
 
@@ -83,8 +83,8 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('$dispvm:test-vm', 'test.service', {}),
-            ('$dispvm:test-vm', 'test.service', b''),
+            ('@dispvm:test-vm', 'test.service', {}),
+            ('@dispvm:test-vm', 'test.service', b''),
         ])
         self.assertAllCalled()
 
