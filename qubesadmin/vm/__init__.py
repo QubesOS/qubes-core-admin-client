@@ -355,8 +355,12 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """Run a shell command inside the domain using qubes.VMShell qrexec."""
         # pylint: disable=redefined-builtin
         try:
+            service = "qubes.VMShell"
+            if kwargs.get("user", None) == "root":
+                kwargs.pop("user")
+                service = "qubes.VMRootShell"
             return self.run_service_for_stdio(
-                "qubes.VMShell",
+                service,
                 input=self.prepare_input_for_vmshell(command, input),
                 **kwargs
             )
@@ -374,9 +378,15 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """  # pylint: disable=redefined-builtin
         if self.features.check_with_template("vmexec", False):
             try:
+                service = "qubes.VMExec+"
+                if kwargs.get("user", None) == "root":
+                    if self.features.check_with_template(
+                        "supported-rpc.qubes.VMRootExec", False
+                    ):
+                        kwargs.pop("user")
+                        service = "qubes.VMRootExec+"
                 return self.run_service_for_stdio(
-                    "qubes.VMExec+" + qubesadmin.utils.encode_for_vmexec(args),
-                    **kwargs
+                    service + qubesadmin.utils.encode_for_vmexec(args), **kwargs
                 )
             except subprocess.CalledProcessError as e:
                 e.cmd = str(args)

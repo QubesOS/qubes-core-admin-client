@@ -271,16 +271,27 @@ def run_command_single(args, vm):
             service = "qubes.VMExec"
             if args.gui and args.dispvm:
                 service = "qubes.VMExecGUI"
+            elif args.user == "root" and vm.features.check_with_template(
+                "supported-rpc.qubes.VMRootExec", False
+            ):
+                service = "qubes.VMRootExec"
+                args.user = None
             service += "+" + qubesadmin.utils.encode_for_vmexec(all_args)
         else:
             service = "qubes.VMShell"
             if args.gui and args.dispvm:
                 service += "+WaitForSession"
+            elif args.user == "root":
+                service = "qubes.VMRootShell"
+                args.user = None
             shell_cmd = " ".join(shlex.quote(arg) for arg in all_args)
     else:
         service = "qubes.VMShell"
         if args.gui and args.dispvm:
             service += "+WaitForSession"
+        elif args.user == "root":
+            service = "qubes.VMRootShell"
+            args.user = None
         shell_cmd = args.cmd
 
     proc = vm.run_service(service, user=args.user, **run_kwargs)
