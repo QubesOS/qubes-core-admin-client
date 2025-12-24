@@ -257,8 +257,11 @@ def run_command_single(args, vm):
         args.cmd_args.insert(0, args.cmd)
         args.cmd = args.VMNAME
         args.VMNAME = None
-        if args.dispvm:
-            vm.create_disposable()
+
+    if args.dispvm:
+        vm.create_disposable()
+        if args.gui is None:
+            args.gui = has_gui(vm)
 
     use_exec = len(args.cmd_args) > 0 or args.no_shell
 
@@ -360,12 +363,6 @@ def main(args=None, app=None):
     if args.dispvm:
         if args.exclude:
             parser.error("Cannot use --exclude with --dispvm")
-        if args.gui is None:
-            args.gui = has_gui(
-                args.app.default_dispvm
-                if args.dispvm is True
-                else args.app.domains[args.dispvm]
-            )
         dispvm = qubesadmin.vm.DispVM.from_appvm(
             args.app, None if args.dispvm is True else args.dispvm
         )

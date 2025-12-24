@@ -652,13 +652,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_008_dispvm_remote(self):
         self.app.expected_calls[
-            ("dom0", "admin.property.Get", "default_dispvm", None)
-        ] = b"0\x00default=True type=vm default-dvm"
+            ("dom0", "admin.vm.CreateDisposable", None, None)
+        ] = b"0\x00disp123"
         self.app.expected_calls[
-            ("default-dvm", "admin.vm.property.Get", "guivm", None)
+            ("disp123", "admin.vm.property.Get", "guivm", None)
         ] = b"0\x00default=True type=vm dom0"
         self.app.expected_calls[
-            ("default-dvm", "admin.vm.feature.CheckWithTemplate", "gui", None)
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "gui", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'gui' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--service", "--dispvm", "--", "test.service"], app=self.app
@@ -668,7 +668,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             self.app.service_calls,
             [
                 (
-                    "@dispvm",
+                    "disp123",
                     "test.service",
                     {
                         "stdout": subprocess.DEVNULL,
@@ -676,20 +676,20 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "user": None,
                     },
                 ),
-                ("@dispvm", "test.service", b""),
+                ("disp123", "test.service", b""),
             ],
         )
         self.assertAllCalled()
 
     def test_009_dispvm_remote_specific(self):
-        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
-            b"0\x00test-vm class=AppVM state=Running\n"
-        )
         self.app.expected_calls[
-            ("test-vm", "admin.vm.property.Get", "guivm", None)
+            ("test-vm", "admin.vm.CreateDisposable", None, None)
+        ] = b"0\x00disp123"
+        self.app.expected_calls[
+            ("disp123", "admin.vm.property.Get", "guivm", None)
         ] = b"0\x00default=True type=vm dom0"
         self.app.expected_calls[
-            ("test-vm", "admin.vm.feature.CheckWithTemplate", "gui", None)
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "gui", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'gui' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--dispvm=test-vm", "--service", "test.service"], app=self.app
@@ -699,7 +699,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             self.app.service_calls,
             [
                 (
-                    "@dispvm:test-vm",
+                    "disp123",
                     "test.service",
                     {
                         "stdout": subprocess.DEVNULL,
@@ -707,7 +707,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "test.service", b""),
+                ("disp123", "test.service", b""),
             ],
         )
         self.assertAllCalled()
@@ -721,16 +721,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00"
         )
         self.app.expected_calls[
-            ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\x00default=yes type=int 30"
-        self.app.expected_calls[
-            ("dom0", "admin.property.Get", "default_dispvm", None)
-        ] = b"0\x00default=True type=vm default-dvm"
-        self.app.expected_calls[
-            ("default-dvm", "admin.vm.property.Get", "guivm", None)
+            ("disp123", "admin.vm.property.Get", "guivm", None)
         ] = b"0\x00default=True type=vm dom0"
         self.app.expected_calls[
-            ("default-dvm", "admin.vm.feature.CheckWithTemplate", "gui", None)
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "gui", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'gui' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--service", "--dispvm", "--", "test.service"], app=self.app
@@ -746,7 +740,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
-                        "connect_timeout": 30,
                     },
                 ),
                 ("disp123", "test.service", b""),
@@ -756,11 +749,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_011_dispvm_local_specific(self):
         self.app.qubesd_connection_type = "socket"
-        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
-            b"0\x00test-vm class=AppVM state=Running\n"
-        )
         self.app.expected_calls[
-            ("test-vm", "admin.vm.property.Get", "guivm", None)
+            ("disp123", "admin.vm.property.Get", "guivm", None)
         ] = b"0\x00default=False type=vm "
         self.app.expected_calls[
             ("test-vm", "admin.vm.CreateDisposable", None, None)
@@ -768,9 +758,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[("disp123", "admin.vm.Kill", None, None)] = (
             b"0\x00"
         )
-        self.app.expected_calls[
-            ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\x00default=yes type=int 30"
         ret = qubesadmin.tools.qvm_run.main(
             ["--dispvm=test-vm", "--service", "test.service"], app=self.app
         )
@@ -785,7 +772,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
-                        "connect_timeout": 30,
                     },
                 ),
                 ("disp123", "test.service", b""),
@@ -865,17 +851,11 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00"
         )
         self.app.expected_calls[
-            ("dom0", "admin.property.Get", "default_dispvm", None)
-        ] = b"0\x00default=True type=vm default-dvm"
-        self.app.expected_calls[
-            ("default-dvm", "admin.vm.property.Get", "guivm", None)
+            ("disp123", "admin.vm.property.Get", "guivm", None)
         ] = b"0\x00default=True type=vm dom0"
         self.app.expected_calls[
-            ("default-dvm", "admin.vm.feature.CheckWithTemplate", "gui", None)
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "gui", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'gui' not set\x00"
-        self.app.expected_calls[
-            ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
@@ -893,7 +873,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
-                        "connect_timeout": 30,
                     },
                 ),
                 (
@@ -914,9 +893,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00"
         )
         self.app.expected_calls[
-            ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\x00default=yes type=int 30"
-        self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
@@ -933,7 +909,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
-                        "connect_timeout": 30,
                     },
                 ),
                 ("disp123", "qubes.VMShell", b"test.command; exit\n"),
@@ -950,14 +925,8 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00"
         )
         self.app.expected_calls[
-            ("dom0", "admin.property.Get", "default_dispvm", None)
-        ] = b"0\x00default=True type=vm default-dvm"
-        self.app.expected_calls[
-            ("default-dvm", "admin.vm.property.Get", "guivm", None)
+            ("disp123", "admin.vm.property.Get", "guivm", None)
         ] = b"0\x00default=False type=vm "
-        self.app.expected_calls[
-            ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
-        ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
@@ -975,7 +944,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
-                        "connect_timeout": 30,
                     },
                 ),
                 ("disp123", "qubes.VMShell", b"test.command; exit\n"),
@@ -1149,12 +1117,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_023_dispvm_no_shell(self):
         self.app.expected_calls[
-            (
-                "@dispvm:test-vm",
-                "admin.vm.feature.CheckWithTemplate",
-                "vmexec",
-                None,
-            )
+            ("test-vm", "admin.vm.CreateDisposable", None, None)
+        ] = b"0\x00disp123"
+        self.app.expected_calls[
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
         ] = b"0\x001"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--no-shell", "--dispvm=test-vm", "command"],
@@ -1165,7 +1131,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             self.app.service_calls,
             [
                 (
-                    "@dispvm:test-vm",
+                    "disp123",
                     "qubes.VMExec+command",
                     {
                         "stdout": subprocess.DEVNULL,
@@ -1173,7 +1139,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "qubes.VMExec+command", b""),
+                ("disp123", "qubes.VMExec+command", b""),
             ],
         )
         self.assertAllCalled()
@@ -1276,20 +1242,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_027_no_shell_dispvm(self):
         self.app.expected_calls[
-            (
-                "test-vm",
-                "admin.vm.CreateDisposable",
-                None,
-                None,
-            )
+            ("test-vm", "admin.vm.CreateDisposable", None, None)
         ] = b"0\x00disp123"
         self.app.expected_calls[
-            (
-                "disp123",
-                "admin.vm.feature.CheckWithTemplate",
-                "vmexec",
-                None,
-            )
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
         ] = b"0\x001"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm=test-vm", "command", "--", "arg"],
@@ -1315,12 +1271,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_028_argparse_bug_workaround(self):
         self.app.expected_calls[
-            (
-                "test-vm",
-                "admin.vm.CreateDisposable",
-                None,
-                None,
-            )
+            ("test-vm", "admin.vm.CreateDisposable", None, None)
         ] = b"0\x00disp123"
         self.app.expected_calls[
             (
@@ -1354,12 +1305,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_029_command_is_dashdash(self):
         self.app.expected_calls[
-            (
-                "@dispvm:test-vm",
-                "admin.vm.feature.CheckWithTemplate",
-                "vmexec",
-                None,
-            )
+            ("test-vm", "admin.vm.CreateDisposable", None, None)
+        ] = b"0\x00disp123"
+        self.app.expected_calls[
+            ("disp123", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
         ] = b"0\x001"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm=test-vm", "--no-shell", "--", "--"],
@@ -1370,7 +1319,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             self.app.service_calls,
             [
                 (
-                    "@dispvm:test-vm",
+                    "disp123",
                     "qubes.VMExec+----",
                     {
                         "stdout": subprocess.DEVNULL,
@@ -1378,19 +1327,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "qubes.VMExec+----", b""),
+                ("disp123", "qubes.VMExec+----", b""),
             ],
         )
         self.assertAllCalled()
 
     def test_030_no_shell_dispvm(self):
         self.app.expected_calls[
-            (
-                "dom0",
-                "admin.vm.CreateDisposable",
-                None,
-                None,
-            )
+            ("dom0", "admin.vm.CreateDisposable", None, None)
         ] = b"0\x00disp123"
         self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
@@ -1419,12 +1363,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
 
     def test_031_argparse_bug_workaround(self):
         self.app.expected_calls[
-            (
-                "dom0",
-                "admin.vm.CreateDisposable",
-                None,
-                None,
-            )
+            ("dom0", "admin.vm.CreateDisposable", None, None)
         ] = b"0\x00disp123"
         self.app.expected_calls[
             ("disp123", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
