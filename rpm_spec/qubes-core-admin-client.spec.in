@@ -22,6 +22,7 @@ Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
 Requires:   qubes-repo-templates
 Requires:   scrypt
+Requires:   zstd
 Requires:   qubes-rpm-oxide >= 0.2.3
 Requires:   xrandr
 BuildArch:  noarch
