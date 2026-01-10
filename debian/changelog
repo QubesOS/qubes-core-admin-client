@@ -1,3 +1,23 @@
+qubes-core-admin-client (4.3.26-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Sync device_protocol.py with core-admin
+  * Use serialization for qrexec argument
+  * tests: check if calls are using only allowed characters
+  * Deserialize device in events only if there is a handler registered
+
+  [ Ben Grande ]
+  * Add method to solely create disposable
+  * Use newer disposable token
+
+  [ Marek Marczykowski-Górecki ]
+  * use qubes.VMRootExec/qubes.VMRootShell services when root needed
+  * rpm: bump qubes-core-dom0 dependency version
+  * backup: fix expat import
+  * tests: flush temporary qubes.xml file before using it via path
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 10 Jan 2026 22:39:42 +0100
+
 qubes-core-admin-client (4.3.25-1) unstable; urgency=medium
 
   [ Marta Marczykowska-Górecka ]
