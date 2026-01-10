@@ -20,7 +20,7 @@
 
 '''Parser for core3 qubes.xml'''
 
-import xml.parsers
+import xml.parsers.expat
 import logging
 import lxml.etree
 
