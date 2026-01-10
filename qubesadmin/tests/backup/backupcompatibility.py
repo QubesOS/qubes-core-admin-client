@@ -762,6 +762,7 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
         xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v3-qubes.xml"
         with tempfile.NamedTemporaryFile() as qubes_xml:
             qubes_xml.file.write(xml_path.read_bytes())
+            qubes_xml.file.flush()
             backup_app = qubesadmin.backup.core2.Core2Qubes(qubes_xml.name)
         self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_r2)
 
@@ -770,6 +771,7 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
         xml_path = importlib.resources.files("qubesadmin") / "tests/backup/v4-qubes.xml"
         with tempfile.NamedTemporaryFile() as qubes_xml:
             qubes_xml.file.write(xml_path.read_bytes())
+            qubes_xml.file.flush()
             backup_app = qubesadmin.backup.core3.Core3Qubes(qubes_xml.name)
         self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_v4)
 
