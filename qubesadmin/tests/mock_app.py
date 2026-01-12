@@ -691,6 +691,7 @@ class MockDevice:
         vendor: str,
         attached: Optional[str] = None,
         assigned: Optional[List[Tuple[str, str, list[Any] | None]]] = None,
+        device_unknown: bool = False,
     ):
         """
         :param qapp: QubesTest object
@@ -712,6 +713,7 @@ class MockDevice:
         self.assigned = assigned
         self.product = product
         self.vendor = vendor
+        self.device_unknown = device_unknown
 
         self.interface = self.device_id.split(":")[-1]
 
@@ -761,16 +763,17 @@ class MockDevice:
             )
         ]
 
-        self.qapp.expected_calls[
-            (
-                self.backend_vm,
-                f"admin.vm.device.{self.dev_class}.Available",
-                None,
-                None,
+        if not self.device_unknown:
+            self.qapp.expected_calls[
+                (
+                    self.backend_vm,
+                    f"admin.vm.device.{self.dev_class}.Available",
+                    None,
+                    None,
+                )
+            ] = (
+                current_response + self.device_string().encode()
             )
-        ] = (
-            current_response + self.device_string().encode()
-        )
 
         if self.attached:
             current_response = self.qapp.expected_calls[
