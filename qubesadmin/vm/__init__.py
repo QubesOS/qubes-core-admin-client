@@ -471,6 +471,10 @@ class DispVMWrapper(QubesVM):
     after service call ends.
     """
 
+    def __init__(self, *args, **kwargs):
+        self._redirect_dispvm_calls = kwargs.pop("redirect_dispvm_calls", False)
+        super().__init__(*args, **kwargs)
+
     def run_service(self, service, **kwargs):
         """Create disposable if absent and run service."""
         if (
@@ -523,14 +527,21 @@ class DispVM(QubesVM):
     """Disposable VM"""
 
     @classmethod
-    def from_appvm(cls, app, appvm):
+    def from_appvm(cls, app, appvm, redirect_dispvm_calls=False):
         """Returns a wrapper for calling service in a new DispVM based on given
-        AppVM. If *appvm* is none, use default DispVM template"""
+        AppVM. If *appvm* is none, use default DispVM template
+
+        If **redirect_dispvm_calls** is used, calls made before the disposable
+        is created will instead guess the disposable template to query for
+        features, properties etc.
+        """
 
         if appvm:
             method_dest = "@dispvm:" + str(appvm)
         else:
             method_dest = "@dispvm"
 
-        wrapper = DispVMWrapper(app, method_dest)
+        wrapper = DispVMWrapper(
+            app, method_dest, redirect_dispvm_calls=redirect_dispvm_calls
+        )
         return wrapper

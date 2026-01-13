@@ -69,13 +69,23 @@ class PropertyHolder(object):
         :param payload_stream: file-like object to read payload from
         :return: Data returned by qubesd (string)
         '''
+        if not self.app:
+            raise NotImplementedError
         if dest is None:
             dest = self._method_dest
+        if (
+            getattr(self, "_redirect_dispvm_calls", False)
+            and dest.startswith("@dispvm")
+        ):
+            if dest.startswith("@dispvm:"):
+                dest = dest[len("@dispvm:") :]
+            else:
+                dest = getattr(self.app, "default_dispvm", None)
+                if dest:
+                    dest = dest.name
         # have the actual implementation at Qubes() instance
-        if self.app:
-            return self.app.qubesd_call(dest, method, arg, payload,
-                payload_stream)
-        raise NotImplementedError
+        return self.app.qubesd_call(dest, method, arg, payload,
+            payload_stream)
 
     @staticmethod
     def _parse_qubesd_response(response_data):

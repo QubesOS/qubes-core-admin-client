@@ -165,9 +165,9 @@ target_parser.add_argument(
     action="store",
     nargs="?",
     const=True,
-    metavar="BASE_APPVM",
-    help="start a service in new Disposable VM; "
-    "optionally specify base AppVM for DispVM",
+    metavar="DISPOSABLE_TEMPLATE",
+    help="start a service in new disposable qube; optionally specify a "
+    "disposable template, else the system default will be used",
 )
 parser.add_argument("VMNAME", nargs="?", action=qubesadmin.tools.VmNameAction)
 
@@ -257,6 +257,9 @@ def run_command_single(args, vm):
         args.cmd_args.insert(0, args.cmd)
         args.cmd = args.VMNAME
         args.VMNAME = None
+
+    if args.dispvm and args.gui is None:
+        args.gui = has_gui(vm)
 
     use_exec = len(args.cmd_args) > 0 or args.no_shell
 
@@ -369,14 +372,9 @@ def main(args=None, app=None):
     if args.dispvm:
         if args.exclude:
             parser.error("Cannot use --exclude with --dispvm")
-        if args.gui is None:
-            args.gui = has_gui(
-                args.app.default_dispvm
-                if args.dispvm is True
-                else args.app.domains[args.dispvm]
-            )
         dispvm = qubesadmin.vm.DispVM.from_appvm(
-            args.app, None if args.dispvm is True else args.dispvm
+            args.app, None if args.dispvm is True else args.dispvm,
+            redirect_dispvm_calls=True
         )
         domains = [dispvm]
     elif args.all_domains:
