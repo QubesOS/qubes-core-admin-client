@@ -1,3 +1,13 @@
+qubes-core-admin-client (4.3.27-1) unstable; urgency=medium
+
+  [ Ben Grande ]
+  * Check dummy disp properties vs probable template
+
+  [ Ali Mirjamali ]
+  * Do not hide `qubes-backup-restore` working files
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 13 Jan 2026 03:00:07 +0100
+
 qubes-core-admin-client (4.3.26-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
