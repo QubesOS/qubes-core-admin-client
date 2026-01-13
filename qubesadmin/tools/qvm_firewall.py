@@ -44,7 +44,8 @@ class RuleAction(argparse.Action):
         if not values:
             setattr(namespace, self.dest, None)
             return
-        assumed_order = ['action', 'dsthost', 'proto', 'dstports', 'icmptype']
+        assumed_order = ['action', 'forwardtype', 'proto', 'dsthost',
+            'srchost', 'dstports', 'srcports', 'icmptype']
         allowed_opts = assumed_order + ['specialtarget', 'comment', 'expire']
         kwargs = {}
         for opt in values:
@@ -61,6 +62,8 @@ class RuleAction(argparse.Action):
                     'invalid rule description: {}'.format(opt))
             if key in ['dst4', 'dst6']:
                 key = 'dsthost'
+            if key in ['src4', 'src6']:
+                key = 'srchost'
             if key not in allowed_opts:
                 raise argparse.ArgumentError(None,
                     'Invalid rule element: {}'.format(opt))
@@ -83,22 +86,26 @@ Rules can be given as positional arguments:
     <action> [<dsthost> [<proto> [<dstports>|<icmptype>]]]
 
 And as keyword arguments:
-    action=<action> [specialtarget=dns] [dsthost=<dsthost>]
-    [proto=<proto>] [dstports=<dstports>] [icmptype=<icmptype>]
-    [expire=<expire>]
+    action=<action> [specialtarget=dns] [dsthost=<dsthost>] 
+    [srchost=<srchost>] [proto=<proto>] [srcports=<srcports>] 
+    [dstports=<dstports>] [icmptype=<icmptype>] [expire=<expire>]
+    [comment=<comment>]
 
 Both formats, positional and keyword arguments, can be used
 interchangeably.
 
 Available matches:
-    action:        accept or drop
+    action:        accept, drop or forward
+    forwardtype    internal or external (only with action=forward)
     dst4           synonym for dsthost
     dst6           synonym for dsthost
     dsthost        IP, network or hostname
                      (e.g. 10.5.3.2, 192.168.0.0/16,
                      www.example.com, fd00::/8)
+    srchost        allowed inbound host (only with action=forward)
     dstports       port or port range
                      (e.g. 443 or 1200-1400)
+    srcports       external inbound port range (only with action=forward)
     icmptype       icmp type number (e.g. 8 for echo requests)
     proto          icmp, tcp or udp
     specialtarget  only the value dns is currently supported,
@@ -107,6 +114,8 @@ Available matches:
     expire         the rule is automatically removed at the time given as
                      seconds since 1/1/1970, or +seconds (e.g. +300 for a rule
                      to expire in 5 minutes)
+    comment        needs to be positional at the end. Free text to comment the
+                     rule, its purpose, etc
 """
 
 parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1, epilog=epilog,
@@ -146,15 +155,18 @@ def rules_list_table(vm):
     :param vm: VM object
     :return: None
     '''
-    header = ['NO', 'ACTION', 'HOST', 'PROTOCOL', 'PORT(S)',
-        'SPECIAL TARGET', 'ICMP TYPE', 'EXPIRE', 'COMMENT']
+    header = ['NO', 'ACTION', 'FWD TYPE', 'DSTHOST', 'SRCHOST', 'PROTOCOL', 'DSTPORT(S)',
+        'SRCPORT(S)', 'SPECIAL TARGET', 'ICMP TYPE', 'EXPIRE', 'COMMENT']
     rows = []
     for (rule, rule_no) in zip(vm.firewall.rules, itertools.count()):
         row = [x.pretty_value if x is not None else '-' for x in [
             rule.action,
+            rule.forwardtype,
             rule.dsthost,
+            rule.srchost,
             rule.proto,
             rule.dstports,
+            rule.srcports,
             rule.specialtarget,
             rule.icmptype,
             rule.expire,
