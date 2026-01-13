@@ -954,13 +954,13 @@ class BackupRestore(object):
         if tmpdir is None:
             # put it here, to enable qfile-unpacker even on SELinux-enabled
             # system
-            tmpdir = os.path.expanduser("~/QubesIncoming")
+            tmpdir = os.path.expanduser("~/QubesIncoming/backup#restore")
         #: temporary directory used to extract the data before moving to the
         # final location
         # due to possible location in ~/QubesIncoming, the prefix should not be
         # a valid VM name
         os.makedirs(tmpdir, exist_ok=True)
-        self.tmpdir = tempfile.mkdtemp(prefix=".backup#restore-", dir=tmpdir)
+        self.tmpdir = tempfile.mkdtemp(dir=tmpdir)
 
         #: list of processes (Popen objects) to kill on cancel
         self.processes_to_kill_on_cancel = []
