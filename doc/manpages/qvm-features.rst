@@ -449,6 +449,37 @@ feature until it is deleted.
 | **Type**: `int`
 | **Default**: `0`
 
+preload-dispvm-delay
+^^^^^^^^^^^^^^^^^^^^
+
+After a preloaded disposable is used, add an amount in seconds to delay
+preloading the next disposable. The feature is first queried from the disposable
+template, then dom0, then it uses the default if unset. The delay exists in
+order to speed up usage of disposables when multiple ones are requested in a
+short time, in other words, use the request disposable faster and wait to
+preload later. There are a few strategies that can be used with a delay:
+
+- **Positive delay**: The default strategy uses a small delay of `3` seconds. It
+  is useful when requesting 1-3 disposables in that time. Not recommended if
+  requesting more disposables than `preload-dispvm-max` in a short time.
+- **No delay**: Having `0` delay means that time to use a preloaded disposable
+  will be affected by disposables preloading in the background, but also
+  guarantees faster and consistent usage on the long run. It is indicated when
+  you plan to request more preloaded disposables than the number set in
+  `preload-dispvm-max`.
+- **Negative delay**: When a negative number is used, such as `-5`, it only
+  starts preloading again via the used event after the last preloaded disposable
+  is used. It is useful when the workflow requires exactly the number of preloaded
+  disposables, as it guarantees that requests to multiple preloaded disposables
+  in a short time are never delayed. If you'd like some of the behavior of
+  negative delay but cannot guarantee that all preloaded disposables will be
+  used, prefer a big positive delay.
+
+|
+| **Valid on**: disposable template and dom0
+| **Type**: `float`
+| **Default**: `3`
+
 preload-dispvm-threshold
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
