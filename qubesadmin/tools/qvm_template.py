@@ -61,13 +61,15 @@ from qubesadmin.templates import (
     TemplateState,
     VersionSelector,
     build_version_str,
+    clean,
+    download as templates_download,
     filter_version,
+    get_dl_list,
     get_keys_for_repos,
     get_managed_template_vm,
     is_managed_template,
     is_match_spec,
     locked,
-    qrexec_download,
     qrexec_payload,
     qrexec_popen,
     qrexec_repoquery,
@@ -268,70 +270,29 @@ def confirm_action(msg: str, affected: typing.List[str]) -> None:
             sys.exit(1)
 
 
-def get_dl_list(
-        args: argparse.Namespace,
-        app: qubesadmin.app.QubesBase,
-        version_selector: VersionSelector = VersionSelector.LATEST
-) -> typing.Dict[str, DlEntry]:
-    """Return list of templates that needs to be downloaded.
+def _make_download_progress_callback(quiet: bool):
+    """Create a progress callback for template downloads using tqdm."""
+    pbar = None
+    last_bytes = 0
 
-    :param args: Arguments received by the application.
-    :param app: Qubes application object
-    :param version_selector: Specify algorithm to select the candidate version
-        of a package.  Defaults to ``VersionSelector.LATEST``
+    def callback(spec: str, current: typing.Optional[int], total: int) -> None:
+        nonlocal pbar, last_bytes
+        if current is None:  # new download starting
+            if pbar is not None:
+                pbar.close()
+            pbar = tqdm.tqdm(desc=spec, total=total, unit_scale=True,
+                             unit_divisor=1000, unit='B', disable=quiet)
+            last_bytes = 0
+        elif pbar is not None:
+            pbar.update(current - last_bytes)
+            last_bytes = current
 
-    :return: Dictionary that maps to ``DlEntry`` the names of templates that
-        needs to be downloaded
-    """
-    full_candid: typing.Dict[str, DlEntry] = {}
-    for template in args.templates:
-        # Skip local RPMs
-        if template.endswith('.rpm'):
-            continue
+    def cleanup():
+        nonlocal pbar
+        if pbar is not None:
+            pbar.close()
 
-        query_res = qrexec_repoquery(app, args.repos, args.releasever,
-                                     args.repo_files, args.updatevm,
-                                     PACKAGE_NAME_PREFIX + template)
-
-        # We only select one package for each distinct package name
-        try:
-            query_res = filter_version(query_res, app, version_selector)
-        except (qubesadmin.exc.QubesVMNotFoundError,
-                qubesadmin.exc.QubesVMError) as e:
-            parser.error(str(e))
-        # XXX: As it's possible to include version information in `template`,
-        #      perhaps the messages can be improved
-        if len(query_res) == 0:
-            if version_selector == VersionSelector.LATEST:
-                parser.error(f"Template '{template}' not found.")
-            elif version_selector == VersionSelector.REINSTALL:
-                parser.error(f"Same version of template '{template}' "
-                             f"not found.")
-            # Copy behavior of DNF and do nothing if version not found
-            elif version_selector == VersionSelector.LATEST_LOWER:
-                print(f"Template '{template}' of lowest version already "
-                      f"installed, skipping...", file=sys.stderr)
-            elif version_selector == VersionSelector.LATEST_HIGHER:
-                print(f"Template '{template}' of highest version already "
-                      f"installed, skipping...", file=sys.stderr)
-
-        # Merge & choose the template with the highest version
-        for entry in query_res:
-            if entry.name not in full_candid \
-                    or rpm.labelCompare(full_candid[entry.name].evr,
-                                        entry.evr) < 0:
-                full_candid[entry.name] = \
-                    DlEntry(entry.evr, entry.reponame, entry.dlsize)
-
-    return full_candid
-
-
-def _make_progress_callback(pbar):
-    last_bytes = [0]
-    def callback(current, total):
-        pbar.update(current - last_bytes[0])
-        last_bytes[0] = current
-    return callback
+    return callback, cleanup
 
 
 def download(
@@ -354,67 +315,33 @@ def download(
         of a package.  Defaults to ``VersionSelector.LATEST``
     :return package headers of downloaded templates
     """
-    if dl_list is None:
-        dl_list = get_dl_list(args, app, version_selector=version_selector)
-
-    keys = get_keys_for_repos(args.repo_files, args.releasever)
-
-    package_hdrs = {}
-
     path = path_override if path_override is not None else args.downloaddir
-    with tempfile.TemporaryDirectory(dir=path) as dl_dir:
-        for name, entry in dl_list.items():
-            version_str = build_version_str(entry.evr)
-            spec = PACKAGE_NAME_PREFIX + name + '-' + version_str
-            target = os.path.join(path, f'{spec}.rpm')
-            target_temp = os.path.join(dl_dir, f'{spec}.rpm.UNTRUSTED')
-            repo_key = keys.get(entry.reponame)
-            if repo_key is None:
-                repo_key = args.keyring
-            if os.path.exists(target):
-                print(f"'{target}' already exists, skipping...",
-                      file=sys.stderr)
-                # but still verify the package
-                package_hdrs[name] = qubesadmin.templates.verify_rpm(
-                    target, repo_key, template_name=name)
-                continue
-            print(f"Downloading '{spec}'...", file=sys.stderr)
-            done = False
-            for attempt in range(args.retries):
-                try:
-                    with tqdm.tqdm(desc=spec, total=entry.dlsize,
-                                   unit_scale=True, unit_divisor=1000,
-                                   unit='B', disable=args.quiet) as pbar:
-                        qrexec_download(app, spec, target_temp, repo_key,
-                                        args.repos, args.releasever,
-                                        args.repo_files, args.updatevm,
-                                        entry.dlsize,
-                                        progress_callback=_make_progress_callback(pbar))
-                    done = True
-                    break
-                except qubesadmin.exc.QubesValueError as e:
-                    parser.error(str(e))
-                except ConnectionError:
-                    try:
-                        os.remove(target_temp)
-                    except FileNotFoundError:
-                        pass
-                    if attempt + 1 < args.retries:
-                        print(f"'{spec}' download failed, retrying...",
-                              file=sys.stderr)
-            if not done:
-                print(f"Error: '{spec}' download failed.", file=sys.stderr)
-                sys.exit(1)
-
-            if args.nogpgcheck:
-                print(
-                    'Warning: --nogpgcheck is ignored for downloaded templates',
-                    file=sys.stderr)
-            package_hdr = qubesadmin.templates.verify_rpm(target_temp, repo_key, template_name=name)
-            # after package is verified, rename to the target location
-            os.rename(target_temp, target)
-            package_hdrs[name] = package_hdr
-    return package_hdrs
+    progress_callback, cleanup = _make_download_progress_callback(args.quiet)
+    try:
+        return templates_download(
+            app=app,
+            downloaddir=path,
+            keyring=args.keyring,
+            repos=args.repos,
+            releasever=args.releasever,
+            repo_files=args.repo_files,
+            templates=args.templates if dl_list is None else None,
+            updatevm=args.updatevm,
+            dl_list=dl_list,
+            version_selector=version_selector,
+            retries=args.retries,
+            nogpgcheck=args.nogpgcheck,
+            progress_callback=progress_callback,
+        )
+    except (qubesadmin.exc.QubesVMNotFoundError,
+            qubesadmin.exc.QubesVMError,
+            qubesadmin.exc.QubesValueError) as e:
+        parser.error(str(e))
+    except ConnectionError as e:
+        print(f'Error: {e}', file=sys.stderr)
+        sys.exit(1)
+    finally:
+        cleanup()
 
 
 @locked
@@ -514,7 +441,13 @@ def install(
     os.makedirs(args.cachedir, exist_ok=True)
 
     # Get list of templates to download
-    dl_list = get_dl_list(args, app, version_selector=version_selector)
+    try:
+        dl_list = get_dl_list(app, args.templates, args.repos, args.releasever,
+                            args.repo_files, args.updatevm,
+                            version_selector=version_selector)
+    except (qubesadmin.exc.QubesVMNotFoundError,
+            qubesadmin.exc.QubesVMError) as e:
+        parser.error(str(e))
     dl_list_copy = dl_list.copy()
     for name, entry in dl_list.items():
         # Should be ensured by checks in repoquery
@@ -985,18 +918,6 @@ def remove(
     qubesadmin.tools.qvm_remove.main(['--force', '--'] + remove_list, app)
 
 
-def clean(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
-    """Command that cleans the local package cache.
-
-    :param args: Arguments received by the application.
-    :param app: Qubes application object
-    """
-    # TODO: More fine-grained options?
-    _ = app # unused
-
-    shutil.rmtree(args.cachedir)
-
-
 def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     """Command that lists configured repositories.
 
@@ -1077,56 +998,6 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         qubesadmin.tools.print_table(table)
 
 
-def migrate_from_rpmdb(app):
-    """Migrate templates stored in rpmdb, into 'features' set on the VM itself.
-    """
-
-    if os.getuid() != 0:
-        parser.error('This command needs to be run as root')
-    rpm_ts = rpm.TransactionSet()
-    pkgs_to_remove = []
-    for pkg in rpm_ts.dbMatch():
-        if not pkg[rpm.RPMTAG_NAME].startswith('qubes-template-'):
-            continue
-        try:
-            vm = app.domains[pkg[rpm.RPMTAG_NAME][len('qubes-template-'):]]
-        except KeyError:
-            # no longer present, remove from rpmdb
-            pkgs_to_remove.append(pkg)
-            continue
-        if is_managed_template(vm):
-            # already migrated, cleanup
-            pkgs_to_remove.append(pkg)
-            continue
-        try:
-            vm.features['template-name'] = vm.name
-            vm.features['template-epoch'] = pkg[rpm.RPMTAG_EPOCHNUM]
-            vm.features['template-version'] = pkg[rpm.RPMTAG_VERSION]
-            vm.features['template-release'] = pkg[rpm.RPMTAG_RELEASE]
-            vm.features['template-reponame'] = '@commandline'
-            vm.features['template-buildtime'] = \
-                datetime.datetime.fromtimestamp(
-                    pkg[rpm.RPMTAG_BUILDTIME], tz=datetime.timezone.utc).\
-                strftime(DATE_FMT)
-            vm.features['template-installtime'] = \
-                datetime.datetime.fromtimestamp(
-                    pkg[rpm.RPMTAG_INSTALLTIME], tz=datetime.timezone.utc).\
-                strftime(DATE_FMT)
-            vm.features['template-license'] = pkg[rpm.RPMTAG_LICENSE]
-            vm.features['template-url'] = pkg[rpm.RPMTAG_URL]
-            vm.features['template-summary'] = pkg[rpm.RPMTAG_SUMMARY]
-            vm.features['template-description'] = \
-                pkg[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
-            vm.installed_by_rpm = False
-        except Exception as e:  # pylint: disable=broad-except
-            print('Failed to set template {} metadata: {}'.format(vm.name, e))
-            continue
-        pkgs_to_remove.append(pkg)
-    subprocess.check_call(
-        ['rpm', '-e', '--justdb'] +
-        [p[rpm.RPMTAG_NAME] for p in pkgs_to_remove])
-
-
 def main(args: typing.Optional[typing.Sequence[str]] = None,
          app: typing.Optional[qubesadmin.app.QubesBase] = None) -> int:
     """Main routine of **qvm-template**.
@@ -1187,10 +1058,12 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
         elif p_args.command == 'purge':
             remove(p_args, app, purge=True)
         elif p_args.command == 'clean':
-            clean(p_args, app)
+            clean(p_args.cachedir)
         elif p_args.command == 'repolist':
             repolist(p_args, app)
         elif p_args.command == 'migrate-from-rpmdb':
+            if os.getuid() != 0:
+                parser.error('This command needs to be run as root')
             migrate_from_rpmdb(app)
         else:
             parser.error(f'Command \'{p_args.command}\' not supported.')
