@@ -218,6 +218,14 @@ class BackupRestoreError(QubesException):
         self.backup_log = backup_log
 
 
+class SignatureVerificationError(Exception):
+    """Package signature is invalid or missing"""
+
+
+class AlreadyRunning(Exception):
+    """Another qvm-template is already running"""
+
+
 # pylint: disable=too-many-ancestors
 class QubesDaemonAccessError(QubesDaemonCommunicationError):
     """Got empty response from qubesd. This can be lack of permission,
