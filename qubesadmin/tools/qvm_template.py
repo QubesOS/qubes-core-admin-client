@@ -20,20 +20,12 @@
 """Tool for managing VM templates."""
 
 import argparse
-import collections
-import configparser
 import datetime
-import enum
-import fcntl
-import fnmatch
-import functools
 import glob
 import itertools
 import json
 import operator
 import os
-import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -56,8 +48,8 @@ from qubesadmin.templates import (
     DATE_FMT,
     PACKAGE_NAME_PREFIX,
     PATH_PREFIX,
+    WEIGHT_TO_FIELD,
     DlEntry,
-    Template,
     TemplateState,
     VersionSelector,
     build_version_str,
@@ -66,16 +58,13 @@ from qubesadmin.templates import (
     get_dl_list,
     get_keys_for_repos,
     get_managed_template_vm,
-    is_managed_template,
     list_templates as templates_list,
     locked,
     migrate_from_rpmdb,
-    qrexec_payload,
-    qrexec_popen,
     qrexec_repoquery,
-    query_local,
     query_local_evr,
     qubes_release,
+    search_templates,
 )
 
 TEMP_DIR = '/var/tmp'
@@ -714,68 +703,15 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
     :param args: Arguments received by the application.
     :param app: Qubes application object
     """
-    # Search in both installed and available templates
-    query_res = qrexec_repoquery(app, args.repos, args.releasever,
-                                 args.repo_files, args.updatevm)
-    for vm in app.domains:
-        if is_managed_template(vm):
-            query_res.append(query_local(vm))
-
-    # Get latest version for each template
-    query_res_tmp = []
-    for _, grp in itertools.groupby(sorted(query_res), lambda x: x[0]):
-        def compare(lhs, rhs):
-            return lhs if rpm.labelCompare(lhs[1:4], rhs[1:4]) > 0 else rhs
-
-        query_res_tmp.append(functools.reduce(compare, grp))
-    query_res = query_res_tmp
-
-    # pylint: disable=invalid-name
-    WEIGHT_NAME_EXACT = 1 << 4
-    WEIGHT_NAME = 1 << 3
-    WEIGHT_SUMMARY = 1 << 2
-    WEIGHT_DESCRIPTION = 1 << 1
-    WEIGHT_URL = 1 << 0
-
-    WEIGHT_TO_FIELD = [
-        (WEIGHT_NAME_EXACT, 'Name'),
-        (WEIGHT_NAME, 'Name'),
-        (WEIGHT_SUMMARY, 'Summary'),
-        (WEIGHT_DESCRIPTION, 'Description'),
-        (WEIGHT_URL, 'URL')]
-
-    search_res_by_idx: \
-        typing.Dict[int, typing.List[typing.Tuple[int, str, bool]]] = \
-        collections.defaultdict(list)
-    for keyword in args.templates:
-        for idx, entry in enumerate(query_res):
-            needle_types = \
-                [(entry.name, WEIGHT_NAME), (entry.summary, WEIGHT_SUMMARY)]
-            if args.all:
-                needle_types += [(entry.description, WEIGHT_DESCRIPTION),
-                                 (entry.url, WEIGHT_URL)]
-            for key, weight in needle_types:
-                if fnmatch.fnmatch(key, '*' + keyword + '*'):
-                    exact = keyword == key
-                    if exact and weight == WEIGHT_NAME:
-                        weight = WEIGHT_NAME_EXACT
-                    search_res_by_idx[idx].append((weight, keyword, exact))
-
-    if not args.all:
-        keywords = set(args.templates)
-        idxs = list(search_res_by_idx.keys())
-        for idx in idxs:
-            if keywords != set(x[1] for x in search_res_by_idx[idx]):
-                del search_res_by_idx[idx]
-
-    def key_func(x):
-        # ORDER BY weight DESC, list_of_needles ASC, name ASC
-        idx, needles = x
-        weight = sum(t[0] for t in needles)
-        name = query_res[idx][0]
-        return -weight, needles, name
-
-    search_res = sorted(search_res_by_idx.items(), key=key_func)
+    query_res, search_res = search_templates(
+        app=app,
+        repos=args.repos,
+        releasever=args.releasever,
+        repo_files=args.repo_files,
+        keywords=args.templates,
+        updatevm=args.updatevm,
+        search_all=args.all,
+    )
 
     def gen_header(needles):
         fields = []
