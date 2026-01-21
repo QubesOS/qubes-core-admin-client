@@ -32,6 +32,7 @@ import itertools
 import logging
 import re
 import rpm
+import shutil
 import subprocess
 import tempfile
 import typing
@@ -39,6 +40,7 @@ import typing
 import qubesadmin.app
 import qubesadmin.exc
 import qubesadmin.vm
+import qubesadmin.utils
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -48,6 +50,7 @@ LOCK_FILE = '/run/qubes/qvm-template.lock'
 PATH_PREFIX = '/var/lib/qubes/vm-templates'
 PACKAGE_NAME_PREFIX = 'qubes-template-'
 TAR_HEADER_BYTES = 512
+TEMP_DIR = '/var/tmp'
 WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
 WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
@@ -989,11 +992,10 @@ def list_templates(
     return result
 
 
-def clean(cachedir: os.PathLike[str]) -> None:
-    """Command that cleans the local package cache.
+def clean_cache(cachedir: os.PathLike[str]) -> None:
+    """Clean the local package cache.
 
-    :param args: Arguments received by the application.
-    :param app: Qubes application object
+    :param cachedir: Path to the cache directory to remove
     """
     # TODO: More fine-grained options?
 
@@ -1123,3 +1125,152 @@ def search_templates(
     search_res = sorted(search_res_by_idx.items(), key=key_func)
 
     return query_res, search_res
+
+
+def install_template(
+        app: qubesadmin.app.QubesBase,
+        name: str,
+        rpmfile: str,
+        reponame: str,
+        package_hdr: rpm.hdr,
+        allow_pv: bool = False,
+        skip_start: bool = False,
+        pool: typing.Optional[str] = None,
+        override_existing: bool = False,
+) -> None:
+    """Install a template from an RPM file.
+
+    :param app: Qubes application object
+    :param name: Template name
+    :param rpmfile: Path to the RPM file
+    :param reponame: Repository name the template came from
+    :param package_hdr: RPM package header
+    :param allow_pv: Whether to allow PV mode
+    :param skip_start: Whether to skip starting the template
+    :param pool: Storage pool to use (only for new installs)
+    :param override_existing: Whether this is an override (reinstall/upgrade/downgrade)
+    """
+    with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
+        if not extract_rpm(name, rpmfile, target):
+            raise qubesadmin.exc.QubesException(
+                f'Failed to extract {name} template')
+        cmdline = [
+            'qvm-template-postprocess',
+            '--really',
+            '--no-installed-by-rpm',
+        ]
+        if allow_pv:
+            cmdline.append('--allow-pv')
+        if skip_start:
+            cmdline.append('--skip-start')
+        if not override_existing and pool:
+            cmdline += ['--pool', pool]
+        subprocess.check_call(cmdline + [
+            'post-install',
+            name,
+            target + PATH_PREFIX + '/' + name])
+
+        app.domains.refresh_cache(force=True)
+        tpl = app.domains[name]
+
+        tpl.features['template-name'] = name
+        tpl.features['template-epoch'] = \
+            package_hdr[rpm.RPMTAG_EPOCHNUM]
+        tpl.features['template-version'] = \
+            package_hdr[rpm.RPMTAG_VERSION]
+        tpl.features['template-release'] = \
+            package_hdr[rpm.RPMTAG_RELEASE]
+        tpl.features['template-reponame'] = reponame
+        tpl.features['template-buildtime'] = \
+            datetime.datetime.fromtimestamp(
+                    int(package_hdr[rpm.RPMTAG_BUILDTIME]),
+                    tz=datetime.timezone.utc) \
+                .strftime(DATE_FMT)
+        tpl.features['template-installtime'] = \
+            datetime.datetime.now(
+                tz=datetime.timezone.utc).strftime(DATE_FMT)
+        tpl.features['template-license'] = \
+            package_hdr[rpm.RPMTAG_LICENSE]
+        tpl.features['template-url'] = \
+            package_hdr[rpm.RPMTAG_URL]
+        tpl.features['template-summary'] = \
+            package_hdr[rpm.RPMTAG_SUMMARY]
+        tpl.features['template-description'] = \
+            package_hdr[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
+
+
+def get_dependents(
+        app: qubesadmin.app.QubesBase,
+        templates: typing.List[str],
+) -> typing.List[str]:
+    """Get all VMs that depend on the given templates, transitively.
+
+    Uses BFS to find all VMs that depend on the given templates.
+
+    :param app: Qubes application object
+    :param templates: List of template names to find dependents for
+    :return: List of dependent VM names (includes the original templates)
+    """
+    dependents = list(templates)
+    visited = set(dependents)
+    idx = 0
+    while idx < len(dependents):
+        tpl = dependents[idx]
+        idx += 1
+        vm = app.domains[tpl]
+        for holder, prop in qubesadmin.utils.vm_dependencies(app, vm):
+            if holder is not None and holder.name not in visited:
+                dependents.append(holder.name)
+                visited.add(holder.name)
+    return dependents
+
+
+def get_or_create_dummy_template(
+        app: qubesadmin.app.QubesBase,
+        dummy: str = 'dummy',
+) -> qubesadmin.vm.QubesVM:
+    """Get or create a dummy template for reassigning dependencies.
+
+    :param app: Qubes application object
+    :param dummy: Base name for the dummy template
+    :return: The dummy template VM
+    """
+    orig_dummy = dummy
+    cnt = 1
+    while dummy in app.domains and \
+            app.domains[dummy].features.get('template-dummy', '0') != '1':
+        dummy = f'{orig_dummy}-{cnt:d}'
+        cnt += 1
+    if dummy not in app.domains:
+        dummy_vm = app.add_new_vm('TemplateVM', dummy, 'red')
+        dummy_vm.features['template-dummy'] = 1
+    else:
+        dummy_vm = app.domains[dummy]
+    return dummy_vm
+
+
+def reassign_template_dependencies(
+        app: qubesadmin.app.QubesBase,
+        templates: typing.List[str],
+        dummy_vm: qubesadmin.vm.QubesVM,
+) -> typing.List[typing.Tuple[typing.Optional[str], str, str]]:
+    """Reassign VMs that depend on templates to a dummy template.
+
+    :param app: Qubes application object
+    :param templates: List of template names being removed
+    :param dummy_vm: The dummy template to reassign to
+    :return: List of (holder_name, property, dummy_name) tuples describing
+        what was changed. holder_name is None for global properties.
+    """
+    changes = []
+    for tpl in templates:
+        vm = app.domains[tpl]
+        for holder, prop in qubesadmin.utils.vm_dependencies(app, vm):
+            if holder:
+                setattr(holder, prop, dummy_vm)
+                holder.template = dummy_vm
+                changes.append((holder.name, prop, dummy_vm.name))
+            else:
+                setattr(app, prop, '')
+                changes.append((None, prop, ''))
+    return changes

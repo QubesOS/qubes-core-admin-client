@@ -20,13 +20,11 @@
 """Tool for managing VM templates."""
 
 import argparse
-import datetime
 import glob
 import itertools
 import json
 import operator
 import os
-import subprocess
 import sys
 import tempfile
 import typing
@@ -47,27 +45,28 @@ import qubesadmin.tools.qvm_remove
 from qubesadmin.templates import (
     DATE_FMT,
     PACKAGE_NAME_PREFIX,
-    PATH_PREFIX,
+    TEMP_DIR,
     WEIGHT_TO_FIELD,
     DlEntry,
     TemplateState,
     VersionSelector,
     build_version_str,
-    clean,
-    download as templates_download,
+    clean_cache,
     get_dl_list,
     get_keys_for_repos,
     get_managed_template_vm,
-    list_templates as templates_list,
+    get_dependents,
+    get_or_create_dummy_template,
+    install_template,
     locked,
     migrate_from_rpmdb,
     qrexec_repoquery,
     query_local_evr,
     qubes_release,
+    reassign_template_dependencies,
     search_templates,
 )
 
-TEMP_DIR = '/var/tmp'
 CACHE_DIR = os.path.join(xdg.BaseDirectory.xdg_cache_home, 'qvm-template')
 UNVERIFIED_SUFFIX = '.unverified'
 
@@ -307,7 +306,7 @@ def download(
     path = path_override if path_override is not None else args.downloaddir
     progress_callback, cleanup = _make_download_progress_callback(args.quiet)
     try:
-        return templates_download(
+        return qubesadmin.templates.download(
             app=app,
             downloaddir=path,
             keyring=args.keyring,
@@ -488,54 +487,18 @@ def install(
 
     # Unpack and install
     for rpmfile, reponame, name, package_hdr in verified_rpm_list:
-        with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
-            print(f'Installing template \'{name}\'...', file=sys.stderr)
-            if not qubesadmin.templates.extract_rpm(name, rpmfile, target):
-                raise qubesadmin.exc.QubesException(
-                    f'Failed to extract {name} template')
-            cmdline = [
-                'qvm-template-postprocess',
-                '--really',
-                '--no-installed-by-rpm',
-            ]
-            if args.allow_pv:
-                cmdline.append('--allow-pv')
-            if args.skip_start:
-                cmdline.append('--skip-start')
-            if not override_existing and args.pool:
-                cmdline += ['--pool', args.pool]
-            subprocess.check_call(cmdline + [
-                'post-install',
-                name,
-                target + PATH_PREFIX + '/' + name])
-
-            app.domains.refresh_cache(force=True)
-            tpl = app.domains[name]
-
-            tpl.features['template-name'] = name
-            tpl.features['template-epoch'] = \
-                package_hdr[rpm.RPMTAG_EPOCHNUM]
-            tpl.features['template-version'] = \
-                package_hdr[rpm.RPMTAG_VERSION]
-            tpl.features['template-release'] = \
-                package_hdr[rpm.RPMTAG_RELEASE]
-            tpl.features['template-reponame'] = reponame
-            tpl.features['template-buildtime'] = \
-                datetime.datetime.fromtimestamp(
-                        int(package_hdr[rpm.RPMTAG_BUILDTIME]),
-                        tz=datetime.timezone.utc) \
-                    .strftime(DATE_FMT)
-            tpl.features['template-installtime'] = \
-                datetime.datetime.now(
-                    tz=datetime.timezone.utc).strftime(DATE_FMT)
-            tpl.features['template-license'] = \
-                package_hdr[rpm.RPMTAG_LICENSE]
-            tpl.features['template-url'] = \
-                package_hdr[rpm.RPMTAG_URL]
-            tpl.features['template-summary'] = \
-                package_hdr[rpm.RPMTAG_SUMMARY]
-            tpl.features['template-description'] = \
-                package_hdr[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
+        print(f'Installing template \'{name}\'...', file=sys.stderr)
+        install_template(
+            app=app,
+            name=name,
+            rpmfile=rpmfile,
+            reponame=reponame,
+            package_hdr=package_hdr,
+            allow_pv=args.allow_pv,
+            skip_start=args.skip_start,
+            pool=args.pool,
+            override_existing=override_existing,
+        )
         if rpmfile.startswith(args.cachedir) and not args.keep_cache:
             os.remove(rpmfile)
 
@@ -644,7 +607,7 @@ def list_templates(args: argparse.Namespace,
         args.all = True
 
     try:
-        query_results = templates_list(
+        query_results = qubesadmin.templates.list_templates(
             app=app,
             repos=args.repos,
             releasever=args.releasever,
@@ -760,17 +723,7 @@ def remove(
     if purge:
         # Not disassociating first may result in dependency ordering issues
         disassoc = True
-        # Remove recursively via BFS
-        remove_set = set(remove_list)  # visited
-        idx = 0
-        while idx < len(remove_list):
-            tpl = remove_list[idx]
-            idx += 1
-            vm = app.domains[tpl]
-            for holder, prop in qubesadmin.utils.vm_dependencies(app, vm):
-                if holder is not None and holder.name not in remove_set:
-                    remove_list.append(holder.name)
-                    remove_set.add(holder.name)
+        remove_list = get_dependents(app, remove_list)
 
     if not args.yes:
         repeat = 3 if purge else 1
@@ -787,33 +740,17 @@ def remove(
         # Remove the dummy afterwards if we're purging
         # as nothing should depend on it in the end
         remove_dummy = purge
-        # Create dummy template; handle name collisions
-        orig_dummy = dummy
-        cnt = 1
-        while dummy in app.domains and \
-                app.domains[dummy].features.get('template-dummy', '0') != '1':
-            dummy = f'{orig_dummy}-{cnt:d}'
-            cnt += 1
-        if dummy not in app.domains:
-            dummy_vm = app.add_new_vm('TemplateVM', dummy, 'red')
-            dummy_vm.features['template-dummy'] = 1
-        else:
-            dummy_vm = app.domains[dummy]
-
-        for tpl in remove_list:
-            vm = app.domains[tpl]
-            for holder, prop in qubesadmin.utils.vm_dependencies(app, vm):
-                if holder:
-                    setattr(holder, prop, dummy_vm)
-                    holder.template = dummy_vm
-                    print(f"Property '{prop}' of '{holder.name}' set to "
-                          f"'{dummy}'.", file=sys.stderr)
-                else:
-                    print(f"Global property '{prop}' set to ''.",
-                          file=sys.stderr)
-                    setattr(app, prop, '')
+        dummy_vm = get_or_create_dummy_template(app, dummy)
+        changes = reassign_template_dependencies(app, remove_list, dummy_vm)
+        for holder_name, prop, new_value in changes:
+            if holder_name:
+                print(f"Property '{prop}' of '{holder_name}' set to "
+                      f"'{new_value}'.", file=sys.stderr)
+            else:
+                print(f"Global property '{prop}' set to ''.",
+                      file=sys.stderr)
         if remove_dummy:
-            remove_list.append(dummy)
+            remove_list.append(dummy_vm.name)
 
     if disassoc or purge:
         qubesadmin.tools.qvm_kill.main(['--'] + remove_list, app)
@@ -960,7 +897,7 @@ def main(args: typing.Optional[typing.Sequence[str]] = None,
         elif p_args.command == 'purge':
             remove(p_args, app, purge=True)
         elif p_args.command == 'clean':
-            clean(p_args.cachedir)
+            clean_cache(p_args.cachedir)
         elif p_args.command == 'repolist':
             repolist(p_args, app)
         elif p_args.command == 'migrate-from-rpmdb':
