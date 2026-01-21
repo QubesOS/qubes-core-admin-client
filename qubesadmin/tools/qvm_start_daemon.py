@@ -793,6 +793,26 @@ class DAEMONLauncher:
             str(self.pacat_domid(vm)),
             vm.name,
         ]
+
+        try:
+            volume = vm.features.check_with_template(
+                "audio-initial-volume",
+                self.app.domains[
+                    self.app.local_name
+                ].features.check_with_template(
+                    "audio-initial-volume",
+                    None,
+                ),
+            )
+            if volume:
+                if volume.endswith("%"):
+                    volume = volume[:-1]
+                pacat_cmd.insert(1, "-V")
+                pacat_cmd.insert(2, volume)
+        except qubesadmin.exc.QubesDaemonAccessError:
+            # Most probably within a sys-audio with older policy files
+            pass
+
         vm.log.info("Starting AUDIO")
 
         await asyncio.create_subprocess_exec(*pacat_cmd)
