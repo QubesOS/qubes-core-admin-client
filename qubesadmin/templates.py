@@ -883,6 +883,99 @@ def download(
     return package_hdrs
 
 
+def list_templates(
+        app: qubesadmin.app.QubesBase,
+        repos: typing.List[typing.Tuple[str, str]],
+        releasever: str,
+        repo_files: typing.List[str],
+        updatevm: typing.Optional[str] = None,
+        templates: typing.Optional[typing.List[str]] = None,
+        installed: bool = False,
+        available: bool = False,
+        extras: bool = False,
+        upgrades: bool = False,
+        all_versions: bool = False,
+) -> typing.Dict[TemplateState, typing.List[
+        typing.Tuple[Template, typing.Optional[str]]]]:
+    """Query templates based on filters.
+
+    :param app: Qubes application object
+    :param repos: List of (operation, repo_id) tuples for repo configuration
+    :param releasever: Qubes release version
+    :param repo_files: List of paths to repo configuration files
+    :param updatevm: VM to download updates from
+    :param templates: Optional list of template specs to filter by
+    :param installed: Include installed templates
+    :param available: Include available templates from repos
+    :param extras: Include extras (installed but not in repos)
+    :param upgrades: Include available upgrades
+    :param all_versions: Show all versions, not just latest
+
+    :return: Dict mapping TemplateState to list of (Template, install_time)
+        tuples. install_time is None for non-installed templates.
+    """
+    result: typing.Dict[TemplateState, typing.List[
+        typing.Tuple[Template, typing.Optional[str]]]] = {}
+
+    def check_append(name: str, evr: typing.Tuple[str, str, str]) -> bool:
+        return not templates or \
+            any(is_match_spec(name, *evr, spec)[0] for spec in templates)
+
+    def append_vm(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[
+            Template, typing.Optional[str]]:
+        return (query_local(vm), vm.features['template-installtime'])
+
+    query_res: typing.List[Template] = []
+    if available or extras or upgrades:
+        if templates:
+            query_res_set: typing.Set[Template] = set()
+            for spec in templates:
+                query_res_set |= set(qrexec_repoquery(
+                    app, repos, releasever, repo_files,
+                    updatevm, PACKAGE_NAME_PREFIX + spec))
+            query_res = list(query_res_set)
+        else:
+            query_res = qrexec_repoquery(app, repos, releasever,
+                                         repo_files, updatevm)
+        if not all_versions:
+            query_res = filter_version(query_res, app)
+
+    if installed:
+        for vm in app.domains:
+            if is_managed_template(vm) and \
+                    check_append(vm.name, query_local_evr(vm)):
+                result.setdefault(TemplateState.INSTALLED, []).append(append_vm(vm))
+
+    if available:
+        # Spec should already be checked by repoquery
+        for data in query_res:
+            result.setdefault(TemplateState.AVAILABLE, []).append((data, None))
+
+    if extras:
+        result[TemplateState.EXTRA] = []
+        remote = set()
+        for data in query_res:
+            remote.add(data.name)
+        for vm in app.domains:
+            if is_managed_template(vm) and vm.name not in remote and \
+                    check_append(vm.name, query_local_evr(vm)):
+                result.setdefault(TemplateState.EXTRA, []).append(append_vm(vm))
+
+    if upgrades:
+        local: typing.Dict[str, typing.Tuple[str, str, str]] = {}
+        for vm in app.domains:
+            if is_managed_template(vm):
+                local[vm.name] = query_local_evr(vm)
+        # Spec should already be checked by repoquery
+        for entry in query_res:
+            evr = (entry.epoch, entry.version, entry.release)
+            if entry.name in local:
+                if rpm.labelCompare(local[entry.name], evr) < 0:
+                    result.setdefault(TemplateState.UPGRADABLE, []).append((entry, None))
+
+    return result
+
+
 def clean(cachedir: os.PathLike[str]) -> None:
     """Command that cleans the local package cache.
 

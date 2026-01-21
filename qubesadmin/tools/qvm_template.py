@@ -63,13 +63,13 @@ from qubesadmin.templates import (
     build_version_str,
     clean,
     download as templates_download,
-    filter_version,
     get_dl_list,
     get_keys_for_repos,
     get_managed_template_vm,
     is_managed_template,
-    is_match_spec,
+    list_templates as templates_list,
     locked,
+    migrate_from_rpmdb,
     qrexec_payload,
     qrexec_popen,
     qrexec_repoquery,
@@ -277,7 +277,7 @@ def _make_download_progress_callback(quiet: bool):
 
     def callback(spec: str, current: typing.Optional[int], total: int) -> None:
         nonlocal pbar, last_bytes
-        if current is None:  # new download starting
+        if current is None:
             if pbar is not None:
                 pbar.close()
             pbar = tqdm.tqdm(desc=spec, total=total, unit_scale=True,
@@ -651,66 +651,32 @@ def list_templates(args: argparse.Namespace,
     else:
         assert False, 'Unknown command'
 
-    def append_vm(vm, status):
-        append(query_local(vm), status, vm.features['template-installtime'])
-
-    def check_append(name, evr):
-        return not args.templates or \
-            any(is_match_spec(name, *evr, spec)[0]
-                for spec in args.templates)
-
     if not (args.installed or args.available or args.extras or args.upgrades):
         args.all = True
 
-    if args.all or args.available or args.extras or args.upgrades:
-        if args.templates:
-            query_res_set: typing.Set[Template] = set()
-            for spec in args.templates:
-                query_res_set |= set(qrexec_repoquery(
-                    app, args.repos, args.releasever, args.repo_files,
-                    args.updatevm, PACKAGE_NAME_PREFIX + spec))
-            query_res = list(query_res_set)
-        else:
-            query_res = qrexec_repoquery(app, args.repos, args.releasever,
-                                         args.repo_files, args.updatevm)
-        if not args.all_versions:
-            try:
-                query_res = filter_version(query_res, app)
-            except (qubesadmin.exc.QubesVMNotFoundError,
-                    qubesadmin.exc.QubesVMError) as e:
-                parser.error(str(e))
+    try:
+        query_results = templates_list(
+            app=app,
+            repos=args.repos,
+            releasever=args.releasever,
+            repo_files=args.repo_files,
+            updatevm=args.updatevm,
+            templates=args.templates if args.templates else None,
+            installed=args.installed or args.all,
+            available=args.available or args.all,
+            extras=args.extras,
+            upgrades=args.upgrades,
+            all_versions=args.all_versions,
+        )
+    except (qubesadmin.exc.QubesVMNotFoundError,
+            qubesadmin.exc.QubesVMError) as e:
+        parser.error(str(e))
 
-    if args.installed or args.all:
-        for vm in app.domains:
-            if is_managed_template(vm) and \
-                    check_append(vm.name, query_local_evr(vm)):
-                append_vm(vm, TemplateState.INSTALLED)
-
-    if args.available or args.all:
-        # Spec should already be checked by repoquery
-        for data in query_res:
-            append(data, TemplateState.AVAILABLE)
-
-    if args.extras:
-        remote = set()
-        for data in query_res:
-            remote.add(data.name)
-        for vm in app.domains:
-            if is_managed_template(vm) and vm.name not in remote and \
-                    check_append(vm.name, query_local_evr(vm)):
-                append_vm(vm, TemplateState.EXTRA)
-
-    if args.upgrades:
-        local = {}
-        for vm in app.domains:
-            if is_managed_template(vm):
-                local[vm.name] = query_local_evr(vm)
-        # Spec should already be checked by repoquery
-        for entry in query_res:
-            evr = (entry.epoch, entry.version, entry.release)
-            if entry.name in local:
-                if rpm.labelCompare(local[entry.name], evr) < 0:
-                    append(entry, TemplateState.UPGRADABLE)
+    for status in TemplateState:
+        if status not in query_results:
+            continue
+        for data, install_time in query_results[status]:
+            append(data, status, install_time)
 
     if len(tpl_list) == 0:
         parser.error('No matching templates to list')
