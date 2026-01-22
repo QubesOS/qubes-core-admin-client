@@ -1594,7 +1594,7 @@ class BackupRestore(object):
         while (new_name in restore_info.keys() or
                new_name in [x.name for x in restore_info.values()] or
                new_name in self.app.domains):
-            new_name = str('{}{}'.format(orig_name, number))
+            new_name = str('{}-{}'.format(orig_name, number))
             number += 1
             if number == 100:
                 # give up
