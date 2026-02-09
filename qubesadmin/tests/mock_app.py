@@ -231,6 +231,7 @@ ALL_KNOWN_FEATURES = [
     "qubes-vm-update-update-if-stale",
     "restart-after-update",
     "qubes-vm-update-hide-skipped",
+    "qubes-vm-update-hide-prohibited",
     "template-name",
     "last-updates-check",
     "last-update",
