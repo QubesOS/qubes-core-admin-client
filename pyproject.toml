@@ -1,0 +1,26 @@
+[project]
+name = "qubes-core-admin-client"
+version = "4.3.27"
+requires-python = ">=3.12"
+dependencies = [
+    "lxml>=6.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.1",
+    "ty>=0.0.16",
+    "types-lxml>=2026.1.1",
+]
+
+[tool.ty.rules]
+
+[tool.ruff]
+preview = true
+
+[tool.ruff.lint]
+select = ["ANN", "RUF045"]  # Require type annotations for every function
+ignore = ["ANN003"]  # type annotation for **kwargs
+
+[tool.ruff.lint.flake8-annotations]
+mypy-init-return = true  # do not require __init__ return annotation `->None` if there's at least one typed argument
