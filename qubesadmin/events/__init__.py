@@ -29,7 +29,7 @@ import qubesadmin.exc
 from qubesadmin.device_protocol import VirtualDevice, Port, UnknownDevice
 
 
-class EventsDispatcher(object):
+class EventsDispatcher:
     ''' Events dispatcher, responsible for receiving events and calling
     appropriate handlers'''
     def __init__(self, app, api_method='admin.Events', enable_cache=True):

@@ -32,7 +32,7 @@ import qubesadmin.app
 
 QREXEC_ALLOWED_CHARS = string.ascii_letters + string.digits + "_-+."
 
-class TestVM(object):
+class TestVM:
     def __init__(self, name, **kwargs):
         self.name = name
         self.klass = 'TestVM'
@@ -61,7 +61,7 @@ class TestVMCollection(dict):
     get_blind = dict.get
 
 
-class TestProcess(object):
+class TestProcess:
     def __init__(self, input_callback=None, stdout=None, stderr=None,
             stdout_data=None):
         self.input_callback = input_callback
@@ -114,7 +114,7 @@ class TestProcess(object):
         return self.returncode
 
 
-class _AssertNotRaisesContext(object):
+class _AssertNotRaisesContext:
     """A context manager used to implement TestCase.assertNotRaises methods.
 
     Stolen from unittest and hacked. Regexp support stripped.
