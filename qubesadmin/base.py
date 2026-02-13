@@ -360,6 +360,9 @@ class PropertyHolder(object):
             for class_ in cls.__mro__:
                 for key in class_.__dict__:
                     props.add(key)
+                if hasattr(class_, "__annotations__"):
+                    for key in class_.__annotations__:
+                        props.add(key)
             cls._local_properties_set = props
 
         return cls._local_properties_set

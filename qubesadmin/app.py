@@ -173,6 +173,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     :py:class:`QubesLocal` or :py:class:`QubesRemote`.
     """
 
+    # Below: local-only properties (see PropertyHolder._local_properties)
     #: domains (VMs) collection
     domains: VMCollection
     #: labels collection
