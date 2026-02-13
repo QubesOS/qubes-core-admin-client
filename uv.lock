@@ -2,6 +2,26 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+
+[manifest.dependency-groups]
+dev = [
+    { name = "docutils", specifier = ">=0.22.4" },
+    { name = "lxml", specifier = ">=6.0.2" },
+    { name = "mock", specifier = ">=5.2.0" },
+    { name = "pylint", specifier = ">=4.0.4" },
+    { name = "python-daemon", specifier = ">=3.1.2" },
+    { name = "pyxdg", specifier = ">=0.28" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "ruff", specifier = ">=0.15.1" },
+    { name = "setuptools", specifier = ">=82.0.0" },
+    { name = "sphinx", specifier = ">=9.1.0" },
+    { name = "tqdm", specifier = ">=4.67.3" },
+    { name = "ty", specifier = ">=0.0.16" },
+    { name = "types-lxml", specifier = ">=2026.1.1" },
+    { name = "xcffib", specifier = ">=1.12.0" },
+]
+
 [[package]]
 name = "alabaster"
 version = "1.0.0"
@@ -532,51 +552,6 @@ wheels = [
 ]
 
 [[package]]
-name = "qubes-core-admin-client"
-version = "4.3.27"
-source = { virtual = "." }
-dependencies = [
-    { name = "lxml" },
-    { name = "python-daemon" },
-    { name = "pyxdg" },
-    { name = "pyyaml" },
-    { name = "tqdm" },
-    { name = "xcffib" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "docutils" },
-    { name = "mock" },
-    { name = "pylint" },
-    { name = "ruff" },
-    { name = "sphinx" },
-    { name = "ty" },
-    { name = "types-lxml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "lxml", specifier = ">=6.0.2" },
-    { name = "python-daemon", specifier = ">=3.1.2" },
-    { name = "pyxdg", specifier = ">=0.28" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "tqdm", specifier = ">=4.67.3" },
-    { name = "xcffib", specifier = ">=1.12.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "docutils", specifier = ">=0.22.4" },
-    { name = "mock", specifier = ">=5.2.0" },
-    { name = "pylint", specifier = ">=4.0.4" },
-    { name = "ruff", specifier = ">=0.15.1" },
-    { name = "sphinx", specifier = ">=9.1.0" },
-    { name = "ty", specifier = ">=0.0.16" },
-    { name = "types-lxml", specifier = ">=2026.1.1" },
-]
-
-[[package]]
 name = "requests"
 version = "2.32.5"
 source = { registry = "https://pypi.org/simple" }
@@ -623,6 +598,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/58/ac864a75067dcbd3b95be5ab4eb2b601d7fbc3d3d736a27e391a4f92a5c1/ruff-0.15.1-py3-none-win32.whl", hash = "sha256:660975d9cb49b5d5278b12b03bb9951d554543a90b74ed5d366b20e2c57c2098", size = 10462555, upload-time = "2026-02-12T23:09:29.899Z" },
     { url = "https://files.pythonhosted.org/packages/e0/5e/d4ccc8a27ecdb78116feac4935dfc39d1304536f4296168f91ed3ec00cd2/ruff-0.15.1-py3-none-win_amd64.whl", hash = "sha256:c820fef9dd5d4172a6570e5721704a96c6679b80cf7be41659ed439653f62336", size = 11599956, upload-time = "2026-02-12T23:09:01.157Z" },
     { url = "https://files.pythonhosted.org/packages/2a/07/5bda6a85b220c64c65686bc85bd0bbb23b29c62b3a9f9433fa55f17cda93/ruff-0.15.1-py3-none-win_arm64.whl", hash = "sha256:5ff7d5f0f88567850f45081fac8f4ec212be8d0b963e385c3f7d0d2eb4899416", size = 10874604, upload-time = "2026-02-12T23:09:05.515Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "82.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/f3/748f4d6f65d1756b9ae577f329c951cda23fb900e4de9f70900ced962085/setuptools-82.0.0.tar.gz", hash = "sha256:22e0a2d69474c6ae4feb01951cb69d515ed23728cf96d05513d36e42b62b37cb", size = 1144893, upload-time = "2026-02-08T15:08:40.206Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/c6/76dc613121b793286a3f91621d7b75a2b493e0390ddca50f11993eadf192/setuptools-82.0.0-py3-none-any.whl", hash = "sha256:70b18734b607bd1da571d097d236cfcfacaf01de45717d59e6e04b96877532e0", size = 1003468, upload-time = "2026-02-08T15:08:38.723Z" },
 ]
 
 [[package]]

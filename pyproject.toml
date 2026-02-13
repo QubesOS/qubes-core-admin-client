@@ -1,18 +1,17 @@
-[project]
-name = "qubes-core-admin-client"
-version = "4.3.27"
-requires-python = ">=3.12"
-dependencies = [
+
+# Note: we're not using a "standard" pyproject.toml with a [project] section to avoid
+# clashing with the old-school setup.py build (for now... hopefully will be upgraded later ?)
+[tool.uv]
+dev-dependencies = [
+    # true deps
     "lxml>=6.0.2",
     "python-daemon>=3.1.2",
     "pyxdg>=0.28",
     "pyyaml>=6.0.3",
     "tqdm>=4.67.3",
     "xcffib>=1.12.0",
-]
 
-[dependency-groups]
-dev = [
+    # dev deps
     "ruff>=0.15.1",
     "ty>=0.0.16",
     "types-lxml>=2026.1.1",
@@ -20,6 +19,7 @@ dev = [
     "mock>=5.2.0",
     "docutils>=0.22.4",
     "sphinx>=9.1.0",
+    "setuptools>=82.0.0",
 ]
 
 [tool.ty.rules]
