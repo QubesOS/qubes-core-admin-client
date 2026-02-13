@@ -361,9 +361,9 @@ class ExtractWorker3(Process):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, queue: Queue, base_dir: str, passphrase: str,
                  encrypted: bool, *,
-                 progress_callback: Callable, vmproc: Popen | None =None,
+                 progress_callback: Callable | None, vmproc: Popen | None =None,
                  compressed: bool=False,
-                 crypto_algorithm: str=DEFAULT_CRYPTO_ALGORITHM,
+                 crypto_algorithm: str | None=DEFAULT_CRYPTO_ALGORITHM,
                  compression_filter: str | None=None, verify_only: bool=False,
                  handlers: dict[str, Callable] | None=None):
         '''Start inner tar extraction worker
@@ -391,6 +391,9 @@ class ExtractWorker3(Process):
         :param bool verify_only: only verify data integrity, do not extract
         :param dict handlers: handlers for actual data
         '''
+        if encrypted:
+            assert crypto_algorithm is not None
+
         super().__init__()
         #: queue with files to extract
         self.queue = queue
@@ -519,7 +522,7 @@ class ExtractWorker3(Process):
         if terminate:
             if self.import_process is not None:
                 self.tar2_process.terminate()
-            self.import_process.terminate()
+                self.import_process.terminate()
         if wait:
             self.tar2_process.wait()
             if self.import_process is not None:
@@ -714,6 +717,7 @@ class ExtractWorker3(Process):
                 self.log.debug("Running command %s", str(tar2_cmdline))
                 # pylint: disable=consider-using-with
                 if self.encrypted:
+                    assert self.crypto_algorithm is not None
                     # Start decrypt
                     self.decryptor_process = subprocess.Popen(
                         ["openssl", "enc",
@@ -1149,6 +1153,7 @@ class BackupRestore(object):
 
             return hmac_text
         if algorithm is None:
+            assert self.header_data.hmac_algorithm is not None
             algorithm = self.header_data.hmac_algorithm
         passphrase = self.passphrase.encode('utf-8')
         self.log.debug("Verifying file %s", filename)
@@ -1177,6 +1182,8 @@ class BackupRestore(object):
 
         with open(os.path.join(self.tmpdir, filename), 'rb') as f_input:
             with subprocess.Popen(
+# TODO what guarantees that `algorithm`
+# TODO (=e.g. self.header_data.hmac_algorithm) is not None ?
                     ["openssl", "dgst", "-" + algorithm, "-hmac", passphrase],
                     stdin=f_input,
                     stdout=subprocess.PIPE,
@@ -1379,28 +1386,29 @@ class BackupRestore(object):
         # Setup worker to extract encrypted data chunks to the restore dirs
         # Create the process here to pass it options extracted from
         # backup header
-        extractor_params = {
-            'queue': queue,
-            'base_dir': self.tmpdir,
-            'passphrase': self.passphrase,
-            'encrypted': self.header_data.encrypted,
-            'compressed': self.header_data.compressed,
-            'crypto_algorithm': self.header_data.crypto_algorithm,
-            'verify_only': self.options.verify_only,
-            'progress_callback': self.progress_callback,
-            'handlers': handlers,
-        }
         self.log.debug(
             'Starting extraction worker in %s, file handlers map: %s',
             self.tmpdir, repr(handlers))
         format_version = self.header_data.version
         if format_version in [3, 4]:
-            extractor_params['compression_filter'] = \
-                self.header_data.compression_filter
+            # TODO see comment below
+            assert self.header_data.compressed is not None  # TODO same
+            encrypted = self.header_data.encrypted
             if format_version == 4:
                 # encryption already handled
-                extractor_params['encrypted'] = False
-            extract_proc = ExtractWorker3(**extractor_params)
+                encrypted=False
+            assert encrypted is not None  # TODO same
+            if encrypted:
+                assert self.header_data.crypto_algorithm is not None
+            extract_proc = ExtractWorker3(queue, self.tmpdir,
+                  self.passphrase, encrypted,
+                  progress_callback=self.progress_callback,
+                  compressed=self.header_data.compressed,
+# TODO what guarantees that crypto_algorithm is not None at this point in time ?
+# TODO ExtractWorker3 expects a non-None argument here.
+                  crypto_algorithm=self.header_data.crypto_algorithm,
+                  compression_filter=self.header_data.compression_filter,
+                  verify_only=self.options.verify_only, handlers=handlers)
         else:
             raise NotImplementedError(
                 "Backup format version %d not supported" % format_version)
