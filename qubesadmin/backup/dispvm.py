@@ -27,52 +27,59 @@ import os
 import string
 
 import subprocess
+import typing
+from argparse import Namespace
+from typing import Any
+
 #import typing
 import qubesadmin
 import qubesadmin.exc
 import qubesadmin.utils
 import qubesadmin.vm
+from qubesadmin.app import QubesLocal, QubesBase
+from qubesadmin.vm import QubesVM
 
 LOCKFILE = '/var/run/qubes/backup-paranoid-restore.lock'
 
 Option = collections.namedtuple('Option', ('opts', 'handler'))
+ValidArgValue: typing.TypeAlias = str | bool | int | list[str] | None
 
 # Convenient functions for 'handler' value of Option object
 #  (see RestoreInDisposableVM.arguments):
 
-def handle_store_true(option, value):
+def handle_store_true(option: Option, value: bool) -> list[str]:
     """Handle argument enabling an option (action="store_true")"""
     if value:
         return [option.opts[0]]
     return []
 
 
-def handle_store_false(option, value):
+def handle_store_false(option: Option, value: bool) -> list[str]:
     """Handle argument disabling an option (action="false")"""
     if not value:
         return [option.opts[0]]
     return []
 
-def handle_verbose(option, value):
+def handle_verbose(option: Option, value: int) -> list[str]:
     """Handle argument --quiet / --verbose options (action="count")"""
     if option.opts[0] == '--verbose':
         value -= 1  # verbose defaults to 1
     return [option.opts[0]] * value
 
 
-def handle_store(option, value):
+def handle_store(option: Option, value: ValidArgValue) -> list[str]:
     """Handle argument with arbitrary string value (action="store")"""
     if value:
         return [option.opts[0], str(value)]
     return []
 
 
-def handle_append(option, value):
+def handle_append(option: Option, value: list[str]) -> itertools.chain:
     """Handle argument with a list of values (action="append")"""
     return itertools.chain(*([option.opts[0], v] for v in value))
 
 
-def skip(_option, _value):
+def skip(_option: Option, _value: ValidArgValue) -> list[str]:
     """Skip argument"""
     return []
 
@@ -111,7 +118,7 @@ class RestoreInDisposableVM:
         'force_root': Option(('--force-root',), skip),
     }
 
-    def __init__(self, app, args):
+    def __init__(self, app: QubesBase, args: Namespace):
         """
 
         :param app: Qubes() instance
@@ -143,32 +150,32 @@ class RestoreInDisposableVM:
             self.terminal_app = tuple(a for a in self.terminal_app
                                       if a != '-hold')
 
-        self.dispvm = None
+        self.dispvm: QubesVM | None = None
 
         if args.appvm:
             self.backup_storage_vm = self.app.domains[args.appvm]
         else:
             self.backup_storage_vm = self.app.domains['dom0']
 
-        self.storage_access_proc = None
-        self.storage_access_id = None
+        self.storage_access_proc: subprocess.Popen | None = None
+        self.storage_access_id: str | None = None
         self.log = logging.getLogger('qubesadmin.backup.dispvm')
 
-    def clear_old_tags(self):
+    def clear_old_tags(self) -> None:
         """Remove tags from old restore operation"""
         for domain in self.app.domains:
             domain.tags.discard(self.restored_tag)
             domain.tags.discard(self.dispvm_tag)
             domain.tags.discard(self.storage_tag)
 
-    def create_dispvm(self):
+    def create_dispvm(self) -> None:
         """Create DisposableVM used to restore"""
         self.dispvm = self.app.add_new_vm('DispVM', self.dispvm_name, 'red',
                                           template=self.app.management_dispvm)
         self.dispvm.auto_cleanup = True
         self.dispvm.features['tag-created-vm-with'] = self.restored_tag
 
-    def transfer_pass_file(self, path):
+    def transfer_pass_file(self, path: str) -> str:
         """Copy passhprase file to the DisposableVM"""
         subprocess.check_call(
             ['qvm-copy-to-vm', self.dispvm_name, path],
@@ -180,7 +187,7 @@ class RestoreInDisposableVM:
             os.path.basename(path)
         )
 
-    def register_backup_source(self):
+    def register_backup_source(self) -> None:
         """Tell backup archive holding VM we want this content.
 
         This function registers a backup source, receives a token needed to
@@ -210,13 +217,13 @@ class RestoreInDisposableVM:
 
         self.backup_storage_vm.tags.add(self.storage_tag)
 
-    def invalidate_backup_access(self):
+    def invalidate_backup_access(self) -> None:
         """Revoke access to backup archive"""
         self.backup_storage_vm.tags.discard(self.storage_tag)
-        self.storage_access_proc.stdin.close()
+        typing.cast(typing.IO, self.storage_access_proc.stdin).close()
         self.storage_access_proc.wait()
 
-    def prepare_inner_args(self):
+    def prepare_inner_args(self) -> list:
         """Prepare arguments for inner (in-DispVM) qvm-backup-restore command"""
         new_options = []
         new_positional_args = []
@@ -236,7 +243,7 @@ class RestoreInDisposableVM:
 
         return new_options + new_positional_args
 
-    def finalize_tags(self):
+    def finalize_tags(self) -> None:
         """Make sure all the restored VMs are marked with
         restored-from-backup-xxx tag, then remove backup-restore-in-progress
         tag"""
@@ -255,14 +262,14 @@ class RestoreInDisposableVM:
             domain.tags.discard('backup-restore-in-progress')
 
     @staticmethod
-    def sanitize_log(untrusted_log):
+    def sanitize_log(untrusted_log: bytes) -> bytes:
         """Replace characters potentially dangerouns to terminal in
         a backup log"""
         allowed_set = set(range(0x20, 0x7e))
         allowed_set.update({0x0a})
         return bytes(c if c in allowed_set else ord('.') for c in untrusted_log)
 
-    def extract_log(self):
+    def extract_log(self) -> bytes:
         """Extract restore log from the DisposableVM"""
         untrusted_backup_log, _ = self.dispvm.run_with_args(
             'cat', self.backup_log_path,
@@ -271,7 +278,7 @@ class RestoreInDisposableVM:
         backup_log = self.sanitize_log(untrusted_backup_log)
         return backup_log
 
-    def run(self):
+    def run(self) -> bytes | None:
         """Run the backup restore operation"""
         lock = qubesadmin.utils.LockFile(LOCKFILE, True)
         lock.acquire()
