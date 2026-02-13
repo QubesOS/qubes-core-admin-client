@@ -4,6 +4,11 @@ version = "4.3.27"
 requires-python = ">=3.12"
 dependencies = [
     "lxml>=6.0.2",
+    "python-daemon>=3.1.2",
+    "pyxdg>=0.28",
+    "pyyaml>=6.0.3",
+    "tqdm>=4.67.3",
+    "xcffib>=1.12.0",
 ]
 
 [dependency-groups]
@@ -11,6 +16,10 @@ dev = [
     "ruff>=0.15.1",
     "ty>=0.0.16",
     "types-lxml>=2026.1.1",
+    "pylint>=4.0.4",
+    "mock>=5.2.0",
+    "docutils>=0.22.4",
+    "sphinx>=9.1.0",
 ]
 
 [tool.ty.rules]

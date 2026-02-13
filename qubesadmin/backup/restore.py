@@ -274,7 +274,9 @@ class BackupHeader(object):
                     continue
                 f_header.write("{!s}={!s}\n".format(key, getattr(self, attr)))
 
-def launch_proc_with_pty(args: list[str], stdin: int | None=None, stdout: int | None=None, stderr: int | None=None, echo: bool=True) -> tuple[Popen, FileIO]:
+def launch_proc_with_pty(args: list[str], stdin: int | None=None,
+                         stdout: int | None=None, stderr: int | None=None,
+                         echo: bool=True) -> tuple[Popen, FileIO]:
     """Similar to pty.fork, but handle stdin/stdout according to parameters
     instead of connecting to the pty
 
@@ -299,7 +301,8 @@ def launch_proc_with_pty(args: list[str], stdin: int | None=None, stdout: int | 
     os.close(pty_slave)
     return p, open(pty_master, 'wb+', buffering=0)
 
-def launch_scrypt(action: str, input_name: str, output_name: str, passphrase: str) -> Popen:
+def launch_scrypt(action: str, input_name: str, output_name: str,
+                  passphrase: str) -> Popen:
     '''
     Launch 'scrypt' process, pass passphrase to it and return
     subprocess.Popen object.
@@ -356,10 +359,13 @@ def _fix_threading_after_fork() -> None:
 class ExtractWorker3(Process):
     '''Process for handling inner tar layer of backup archive'''
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, queue: Queue, base_dir: str, passphrase: str, encrypted: bool, *,
+    def __init__(self, queue: Queue, base_dir: str, passphrase: str,
+                 encrypted: bool, *,
                  progress_callback: Callable, vmproc: Popen | None =None,
-                 compressed: bool=False, crypto_algorithm: str=DEFAULT_CRYPTO_ALGORITHM,
-                 compression_filter: str | None=None, verify_only: bool=False, handlers: dict[str, Callable] | None=None):
+                 compressed: bool=False,
+                 crypto_algorithm: str=DEFAULT_CRYPTO_ALGORITHM,
+                 compression_filter: str | None=None, verify_only: bool=False,
+                 handlers: dict[str, Callable] | None=None):
         '''Start inner tar extraction worker
 
         The purpose of this class is to process files extracted from outer
@@ -538,7 +544,9 @@ class ExtractWorker3(Process):
             self.tar2_current_file = None
         self.tar2_process = None
 
-    def _data_import_wrapper(self, close_fds: Iterable[int], data_func: Callable[..., T], tar2_process: Popen) -> T:
+    def _data_import_wrapper(self, close_fds: Iterable[int],
+                             data_func: Callable[..., T],
+                             tar2_process: Popen) -> T:
         '''Close not needed file descriptors, handle output size reported
         by tar (if needed) then call data_func(tar2_process.stdout).
 
@@ -598,7 +606,8 @@ class ExtractWorker3(Process):
         self.tar2_feeder = subprocess.Popen(['cat', filename],
             stdout=input_pipe)
 
-    def check_processes(self, processes: dict[str, None | Process | Popen]) -> None:
+    def check_processes(self,
+                        processes:dict[str, None | Process | Popen]) -> None:
         '''Check if any process failed.
 
         And if so, wait for other relevant processes to cleanup.
@@ -795,7 +804,8 @@ class ExtractWorker3(Process):
         self.log.debug('Finished extracting thread')
 
 
-def get_supported_hmac_algo(hmac_algorithm: str | None=None) -> Generator[str, None, None]:
+def get_supported_hmac_algo(hmac_algorithm: str | None=None)\
+        -> Generator[str, None, None]:
     '''Generate a list of supported hmac algorithms
 
     :param hmac_algorithm: default algorithm, if given, it is placed as a
@@ -819,7 +829,8 @@ def get_supported_hmac_algo(hmac_algorithm: str | None=None) -> Generator[str, N
             yield algo.strip().lower()
 
 
-def get_supported_crypto_algo(crypto_algorithm: str | None=None) -> Generator[str, None, None]:
+def get_supported_crypto_algo(crypto_algorithm: str | None=None)\
+        -> Generator[str, None, None]:
     '''Generate a list of supported hmac algorithms
 
     :param crypto_algorithm: default algorithm, if given, it is placed as a
@@ -931,8 +942,10 @@ class BackupRestore(object):
                 self.subdir = subdir
                 self.username = os.path.basename(subdir)
 
-    def __init__(self, app: QubesBase, backup_location: str, backup_vm: QubesVM, passphrase: str, *,
-                 location_is_service: bool=False, force_compression_filter: str | None=None,
+    def __init__(self, app: QubesBase, backup_location: str,
+                 backup_vm: QubesVM, passphrase: str, *,
+                 location_is_service: bool=False,
+                 force_compression_filter: str | None=None,
                  tmpdir: str | None=None):
         super().__init__()
 
@@ -1000,7 +1013,9 @@ class BackupRestore(object):
             if os.path.exists(self.tmpdir):
                 shutil.rmtree(self.tmpdir)
 
-    def _start_retrieval_process(self, filelist: list[str], limit_count: int | str, limit_bytes: int) -> tuple[Popen, IO, IO]:
+    def _start_retrieval_process(self, filelist: list[str],
+                                 limit_count: int | str,
+                                 limit_bytes: int) -> tuple[Popen, IO, IO]:
         """Retrieve backup stream and extract it to :py:attr:`tmpdir`
 
         :param filelist: list of files to extract; listing directory name
@@ -1089,7 +1104,8 @@ class BackupRestore(object):
             error_pipe = typing.cast(IO, command.stderr)
         return command, filelist_pipe, error_pipe
 
-    def _verify_hmac(self, filename: str, hmacfile: str, algorithm: str | None=None) -> bool:
+    def _verify_hmac(self, filename: str, hmacfile: str,
+                     algorithm: str | None=None) -> bool:
         '''Verify hmac of a file using given algorithm.
 
         If algorithm is not specified, use the one from backup header (
@@ -1176,7 +1192,8 @@ class BackupRestore(object):
             "Is the passphrase correct?".
             format(filename, load_hmac(hmac_stdout.decode('ascii'))))
 
-    def _verify_and_decrypt(self, filename: str, output: str | None=None) -> str:
+    def _verify_and_decrypt(self, filename: str,
+                            output: str | None=None) -> str:
         '''Handle scrypt-wrapped file
 
         Decrypt the file, and verify its integrity - both tasks handled by
@@ -1221,7 +1238,9 @@ class BackupRestore(object):
         os.unlink(fullname)
         return origname
 
-    def _retrieve_backup_header_files(self, files: list[str], allow_none: bool=False) -> list[str] | None:
+    def _retrieve_backup_header_files(self, files: list[str],
+                                      allow_none: bool=False)\
+            -> list[str] | None:
         '''Retrieve backup header.
 
         Start retrieval process (possibly involving network access from
@@ -1336,7 +1355,9 @@ class BackupRestore(object):
 
         return header_data
 
-    def _start_inner_extraction_worker(self, queue: Queue, handlers: dict[str, Callable]) -> ExtractWorker3:
+    def _start_inner_extraction_worker(self, queue: Queue,
+                                       handlers: dict[str, Callable])\
+            -> ExtractWorker3:
         """Start a worker process, extracting inner layer of bacup archive,
         extract them to :py:attr:`tmpdir`.
         End the data by pushing QUEUE_FINISHED or QUEUE_ERROR to the queue.
@@ -1423,7 +1444,8 @@ class BackupRestore(object):
         os.unlink(qubes_xml_path)
         return backup_app
 
-    def _restore_vm_data(self, vms_dirs: list[str], vms_size: int, handlers: dict[str, Callable]) -> None:
+    def _restore_vm_data(self, vms_dirs: list[str], vms_size: int,
+                         handlers: dict[str, Callable]) -> None:
         '''Restore data of VMs
 
         :param vms_dirs: list of directories to extract (skip others)
@@ -1591,7 +1613,8 @@ class BackupRestore(object):
                 "unable to extract the qubes backup. "
                 "Check extracting process errors.")
 
-    def new_name_for_conflicting_vm(self, orig_name: str, restore_info: dict) -> str | None:
+    def new_name_for_conflicting_vm(self, orig_name: str,
+                                    restore_info: dict) -> str | None:
         '''Generate new name for conflicting VM
 
         Add a number suffix, until the name is unique. If no unique name can
@@ -1906,7 +1929,9 @@ class BackupRestore(object):
             self.log.error(
                 'Failed to set application list for %s: %s', vm.name, e)
 
-    def _handle_volume_data(self, vm: QubesVM, volume: Volume, stream: BytesIO, *, file_size: int | None=None) -> None:
+    def _handle_volume_data(self, vm: QubesVM, volume: Volume,
+                            stream: BytesIO, *, file_size: int | None=None)\
+            -> None:
         '''Wrap volume data import with logging'''
         try:
             if file_size is None:
@@ -2011,7 +2036,8 @@ class BackupRestore(object):
             self.log.info("-> Please install updates for all the restored "
                           "templates.")
 
-    def _restore_property(self, vm: QubesVM, prop: str, value: typing.Any) -> None:  # noqa: ANN401
+    def _restore_property(self, vm: QubesVM, prop: str,
+                          value: typing.Any) -> None:  # noqa: ANN401
         '''Restore a single VM property, logging exceptions'''
         try:
             setattr(vm, prop, value)
