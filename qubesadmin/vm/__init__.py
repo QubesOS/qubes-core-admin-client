@@ -42,11 +42,11 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     log: Logger
 
-    tags = None
+    tags: qubesadmin.tags.Tags
 
-    features = None
+    features: qubesadmin.features.Features
 
-    devices = None
+    devices: qubesadmin.devices.DeviceManager
 
     firewall: qubesadmin.firewall.Firewall
 
