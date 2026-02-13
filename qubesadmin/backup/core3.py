@@ -19,7 +19,7 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''Parser for core3 qubes.xml'''
-
+import io
 import xml.parsers.expat
 import logging
 import lxml.etree
@@ -27,16 +27,19 @@ import lxml.etree
 import qubesadmin.backup
 import qubesadmin.firewall
 from qubesadmin import device_protocol
+from lxml.etree import _Element
+
+from qubesadmin.vm import QubesVM
 
 
 class Core3VM(qubesadmin.backup.BackupVM):
     '''VM object'''
     # pylint: disable=too-few-public-methods
     @property
-    def included_in_backup(self):
+    def included_in_backup(self) -> bool:
         return self.backup_path is not None
 
-    def handle_firewall_xml(self, vm, stream):
+    def handle_firewall_xml(self, vm: QubesVM, stream: io.BytesIO) -> None:
         '''Load new (Qubes >= 4.0) firewall XML format'''
         try:
             tree = lxml.etree.parse(stream)  # pylint: disable=no-member
@@ -52,7 +55,7 @@ class Core3VM(qubesadmin.backup.BackupVM):
         except:  # pylint: disable=bare-except
             vm.log.exception('Failed to set firewall')
 
-    def handle_notes_txt(self, vm, stream):
+    def handle_notes_txt(self, vm: QubesVM, stream: io.BytesIO) -> None:
         '''Load new (Qubes >= 4.2) notes'''
         try:
             vm.set_notes(stream.read().decode())
@@ -61,7 +64,7 @@ class Core3VM(qubesadmin.backup.BackupVM):
 
 class Core3Qubes(qubesadmin.backup.BackupApp):
     '''Parsed qubes.xml'''
-    def __init__(self, store=None):
+    def __init__(self, store: str | None=None):
         if store is None:
             raise ValueError("store path required")
         self.log = logging.getLogger('qubesadmin.backup.core3')
@@ -69,7 +72,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
         super().__init__(store)
 
     @staticmethod
-    def get_property(xml_obj, prop):
+    def get_property(xml_obj: _Element, prop: str) -> str | None:
         '''Get property of given object (XML node)
 
         Object can be any PropertyHolder serialized to XML - in practice
@@ -80,7 +83,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
             raise KeyError(prop)
         return xml_prop[0].text
 
-    def load_labels(self, labels_element):
+    def load_labels(self, labels_element: _Element) -> None:
         '''Load labels table'''
         for node in labels_element.findall('label'):
             ident = node.get('id')
@@ -89,7 +92,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
             self.labels[node.text] = node.text
 
 
-    def load_globals(self, globals_element):
+    def load_globals(self, globals_element: _Element) -> None:
         '''Load global settings
 
         :param globals_element: XML element containing global settings
@@ -99,7 +102,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
             assert name is not None
             self.globals[name] = node.text
 
-    def import_core3_vm(self, element):
+    def import_core3_vm(self, element: _Element) -> None:
         '''Parse a single VM from given XML node
 
         This method load only VM properties not depending on other VMs
@@ -155,7 +158,7 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
 
         self.domains[vm.name] = vm
 
-    def load(self):
+    def load(self) -> bool | None:
         with open(self.store, encoding='utf-8') as fh:
             try:
                 # pylint: disable=no-member
