@@ -21,12 +21,16 @@
 """ Utilities for common events-based actions """
 
 import functools
+from typing import Iterable
 
 import qubesadmin.events
 import qubesadmin.exc
+from qubesadmin.events import EventsDispatcher
+from qubesadmin.vm import QubesVM
 
 
-def interrupt_on_vm_shutdown(vms, dispatcher, subject, event):
+def interrupt_on_vm_shutdown(vms: set[QubesVM], dispatcher: EventsDispatcher,
+                             subject: QubesVM, event: str) -> None:
     """Interrupt events processing when given VM was shutdown"""
     # pylint: disable=unused-argument
     if event == 'connection-established':
@@ -39,7 +43,7 @@ def interrupt_on_vm_shutdown(vms, dispatcher, subject, event):
         dispatcher.stop()
 
 
-async def wait_for_domain_shutdown(vms):
+async def wait_for_domain_shutdown(vms: Iterable[QubesVM]) -> None:
     """ Helper function to wait for domain shutdown.
 
     This function wait for domain shutdown, but do not initiate the shutdown
