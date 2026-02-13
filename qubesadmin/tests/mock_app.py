@@ -245,6 +245,8 @@ ALL_KNOWN_FEATURES = [
     "qubes-vm-update-restart-system",
     "qubes-vm-update-restart-other",
     "qubes-vm-update-max-concurrency",
+    "supported-rpc.qubes.TemplateDownload",
+    "supported-rpc.qubes.Gpg",
 ]
 
 POSSIBLE_TAGS = ["whonix-updatevm", "anon-gateway", "anon-vm"]
@@ -971,7 +973,11 @@ class MockQubesComplete(MockQubes):
             qapp=self,
             netvm="sys-net",
             provides_network=True,
-            features={"servicevm": "1", "qubes-firewall": 1},
+            features={
+                "servicevm": "1",
+                "qubes-firewall": 1,
+                "supported-rpc.qubes.TemplateDownload": 1,
+            },
         )
 
         self._qubes["sys-usb"] = MockQube(
