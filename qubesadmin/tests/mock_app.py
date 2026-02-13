@@ -245,6 +245,8 @@ ALL_KNOWN_FEATURES = [
     "qubes-vm-update-restart-system",
     "qubes-vm-update-restart-other",
     "qubes-vm-update-max-concurrency",
+    "supported-rpc.qubes.TemplateDownload"
+    "supported-rpc.qubes.Gpg"
 ]
 
 POSSIBLE_TAGS = ["whonix-updatevm", "anon-gateway", "anon-vm"]
