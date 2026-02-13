@@ -43,7 +43,7 @@ import itertools
 CHARSET = '-\\|/'
 ENTERPRISE_CHARSET = CHARSET * 4 + '-._.-^' * 2
 
-class AbstractSpinner(object):
+class AbstractSpinner:
     '''The base class for all Spinners
 
     :param stream: file-like object with ``.write()`` method

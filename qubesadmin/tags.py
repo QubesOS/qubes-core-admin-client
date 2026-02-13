@@ -21,7 +21,7 @@
 '''VM tags interface'''
 
 
-class Tags(object):
+class Tags:
     '''Manager of the tags.
 
     Tags are simple: tag either can be present on qube or not. Tag is a

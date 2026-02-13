@@ -26,7 +26,7 @@ import sys
 import asyncio
 
 
-class StdoutBuffer(object):
+class StdoutBuffer:
     def __init__(self):
         self.orig_stdout = None
         if sys.version_info[0] >= 3:
@@ -44,7 +44,7 @@ class StdoutBuffer(object):
         return False
 
 
-class StderrBuffer(object):
+class StderrBuffer:
     def __init__(self):
         self.orig_stderr = None
         if sys.version_info[0] >= 3:
@@ -61,7 +61,7 @@ class StderrBuffer(object):
         sys.stderr = self.orig_stderr
         return False
 
-class MockEventsReader(object):
+class MockEventsReader:
     def __init__(self, events, delay=0.05):
         self.events = events
         self.delay = delay

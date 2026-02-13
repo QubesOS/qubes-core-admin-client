@@ -1,8 +1,8 @@
 class DBusException(Exception):
     pass
 
-class SystemBus(object):
+class SystemBus:
     pass
 
-class SessionBus(object):
+class SessionBus:
     pass

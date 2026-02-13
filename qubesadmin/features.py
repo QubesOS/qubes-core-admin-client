@@ -21,7 +21,7 @@
 '''VM features interface'''
 
 
-class Features(object):
+class Features:
     '''Manager of the features.
 
     Features can have three distinct values: no value (not present in mapping,

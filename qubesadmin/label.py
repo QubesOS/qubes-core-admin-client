@@ -23,7 +23,7 @@
 import qubesadmin.exc
 
 
-class Label(object):
+class Label:
     '''Label definition for virtual machines
 
     Label specifies colour of the qube icon displayed next to VM's name.

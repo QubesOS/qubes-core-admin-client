@@ -778,7 +778,7 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
         self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_v4)
 
 # backup code use multiprocessing, synchronize with main process
-class AppProxy(object):
+class AppProxy:
     def __init__(self, app, sync_queue, delay_stream=0):
         self._app = app
         self._sync_queue = sync_queue

@@ -22,7 +22,7 @@
 import qubesadmin.exc
 
 
-class Volume(object):
+class Volume:
     """Storage volume."""
     def __init__(self, app, pool=None, vid=None, vm=None, vm_name=None):
         """Construct a Volume object.
@@ -305,7 +305,7 @@ class Volume(object):
         self._qubesd_call('CloneTo', payload=token)
 
 
-class Pool(object):
+class Pool:
     """ A Pool is used to manage different kind of volumes (File
         based/LVM/Btrfs/...).
     """
