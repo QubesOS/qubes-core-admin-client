@@ -15,7 +15,7 @@ current-dev = [  # dev-depencencies
     "pylint>=4.0.4",
     "mock>=5.2.0",
     "docutils>=0.22.4",
-    "sphinx>=9.1.0",
+    "sphinx>=3.5.3",
     "setuptools>=82.0.0",
     "black>=26.1.0",
     "mypy>=1.19.1",
@@ -29,9 +29,11 @@ future-dev = [  # those tools are very efficient but not packaged for major dist
 
 [tool.ruff]
 preview = true
+line-length = 80
 
 [tool.ruff.lint]
-select = ["ANN", "RUF045"]  # Require type annotations for every function
+select = ["ANN", "RUF045", # Require type annotations for every function
+            "E501"]  # line-too-long
 ignore = ["ANN003"]  # type annotation for **kwargs
 
 [tool.ruff.lint.flake8-annotations]
