@@ -40,7 +40,7 @@ from qubesadmin.vm import QubesVM
 LOCKFILE = '/var/run/qubes/backup-paranoid-restore.lock'
 
 Option = collections.namedtuple('Option', ('opts', 'handler'))
-type ValidArgValue = str | bool | int | list[str] | None
+ValidArgValue: typing.TypeAlias = str | bool | int | list[str] | None
 
 # Convenient functions for 'handler' value of Option object
 #  (see RestoreInDisposableVM.arguments):
