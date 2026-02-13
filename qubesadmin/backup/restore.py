@@ -444,6 +444,8 @@ class ExtractWorker3(Process):
         Log errors, process file size if requested.
         This use :py:attr:`tar2_process`.
         '''
+        assert self.tar2_process is not None
+
         if not self.tar2_process.stderr:
             return
 
@@ -489,6 +491,7 @@ class ExtractWorker3(Process):
         :param dirname: directory path to handle (relative to backup root),
             without trailing slash
         '''
+        assert self.handlers is not None
         for fname, data_func in self.handlers.items():
             if not fname.startswith(dirname + '/'):
                 continue
@@ -536,6 +539,7 @@ class ExtractWorker3(Process):
             # Finished extracting the tar file
             # if that was whole-directory archive, handle
             # relocated files now
+            assert self.tar2_current_file is not None
             inner_name = self.tar2_current_file.rsplit('.', 1)[0] \
                 .replace(self.base_dir + '/', '')
             if os.path.basename(inner_name) == '.':
@@ -640,6 +644,7 @@ class ExtractWorker3(Process):
             self.cleanup_tar2(wait=True, terminate=True)
 
     def __run__(self) -> None:
+        assert self.handlers is not None
         self.log.debug("Started sending thread")
         self.log.debug("Moving to dir %s", self.base_dir)
         os.chdir(self.base_dir)
@@ -658,6 +663,7 @@ class ExtractWorker3(Process):
             if filename.endswith('.000'):
                 # next file
                 if self.tar2_process is not None:
+                    assert input_pipe is not None
                     input_pipe.close()
                     self.cleanup_tar2(wait=True, terminate=False)
 
@@ -740,6 +746,7 @@ class ExtractWorker3(Process):
                 if inner_name in self.handlers:
                     assert redirect_stdout is subprocess.PIPE
                     data_func = self.handlers[inner_name]
+                    assert input_pipe is not None
                     self.import_process = multiprocessing.Process(
                         target=self._data_import_wrapper,
                         args=([input_pipe.fileno()],
@@ -756,6 +763,7 @@ class ExtractWorker3(Process):
                 continue
             else:
                 # os.path.splitext fails to handle 'something/..000'
+                assert self.tar2_current_file is not None
                 (basename, ext) = self.tar2_current_file.rsplit('.', 1)
                 previous_chunk_number = int(ext)
                 expected_filename = basename + '.%03d' % (
@@ -769,10 +777,12 @@ class ExtractWorker3(Process):
                     continue
 
                 self.log.debug("Releasing next chunk")
+                assert input_pipe is not None
                 self.feed_tar2(filename, input_pipe)
 
             self.tar2_current_file = filename
 
+            assert self.tar2_feeder is not None
             self.tar2_feeder.wait()
             # check if any process failed
             processes = {
@@ -793,6 +803,7 @@ class ExtractWorker3(Process):
             os.remove(filename)
 
         if self.tar2_process is not None:
+            assert input_pipe is not None
             input_pipe.close()
             if filename == QUEUE_ERROR:
                 if self.decryptor_process:
@@ -1543,6 +1554,7 @@ class BackupRestore(object):
                     continue
 
                 if self.header_data.version in [2, 3]:
+                    assert hmacfile is not None
                     self._verify_hmac(filename, hmacfile)
                 else:
                     # _verify_and_decrypt will write output to a file with
