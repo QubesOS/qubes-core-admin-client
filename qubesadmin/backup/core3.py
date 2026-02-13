@@ -24,12 +24,14 @@ import xml.parsers.expat
 import logging
 import lxml.etree
 
+from lxml.etree import _Element
+
 import qubesadmin.backup
 import qubesadmin.firewall
 from qubesadmin import device_protocol
-from lxml.etree import _Element
-
 from qubesadmin.vm import QubesVM
+
+
 
 
 class Core3VM(qubesadmin.backup.BackupVM):
