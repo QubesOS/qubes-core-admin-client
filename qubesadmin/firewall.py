@@ -415,7 +415,7 @@ class Firewall(object):
     '''Firewal manager for a VM'''
     def __init__(self, vm):
         self.vm = vm
-        self._rules = []
+        self._rules: list[Rule] = []
         self._policy = None
         self._loaded = False
 
