@@ -24,7 +24,6 @@ import functools
 from typing import Iterable
 
 import qubesadmin.events
-import qubesadmin.exc
 from qubesadmin.events import EventsDispatcher
 from qubesadmin.vm import QubesVM
 
