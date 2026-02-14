@@ -25,6 +25,7 @@ import shlex
 
 import subprocess
 import warnings
+from logging import Logger
 
 import qubesadmin.base
 import qubesadmin.exc
@@ -39,15 +40,15 @@ import qubesadmin.tags
 class QubesVM(qubesadmin.base.PropertyHolder):
     """Qubes domain."""
 
-    log = None
+    log: Logger
 
-    tags = None
+    tags: qubesadmin.tags.Tags
 
-    features = None
+    features: qubesadmin.features.Features
 
-    devices = None
+    devices: qubesadmin.devices.DeviceManager
 
-    firewall = None
+    firewall: qubesadmin.firewall.Firewall
 
     def __init__(self, app, name, klass=None, power_state=None):
         super().__init__(app, "admin.vm.property.", name)
