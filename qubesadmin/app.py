@@ -32,6 +32,7 @@ import sys
 
 import logging
 from logging import Logger
+from typing import Literal
 
 import qubesadmin.base
 import qubesadmin.exc
@@ -181,7 +182,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     #: storage pools
     pools: qubesadmin.base.WrapperObjectsCollection
     #: type of qubesd connection: either 'socket' or 'qrexec'
-    qubesd_connection_type: str
+    qubesd_connection_type: Literal["socket", "qrexec"]
     #: logger
     log: Logger
     #: do not check for object (VM, label etc) existence before really needed
