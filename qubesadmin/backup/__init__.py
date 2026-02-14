@@ -20,26 +20,29 @@
 
 '''Qubes backup'''
 import collections
+import io
+
+from qubesadmin.vm import QubesVM
 
 
 class BackupApp(object):
     '''Interface for backup collection'''
     # pylint: disable=too-few-public-methods
-    def __init__(self, qubes_xml):
+    def __init__(self, qubes_xml: str | None):
         '''Initialize BackupApp object and load qubes.xml into it'''
         self.store = qubes_xml
         self.domains = {}
         self.globals = {}
         self.load()
 
-    def load(self):
+    def load(self) -> bool | None:
         '''Load qubes.xml'''
         raise NotImplementedError
 
 class BackupVM(object):
     '''Interface for a single VM in the backup'''
     # pylint: disable=too-few-public-methods
-    def __init__(self):
+    def __init__(self) -> None:
         '''Initialize empty BackupVM object'''
         #: VM class
         self.klass = 'AppVM'
@@ -64,14 +67,14 @@ class BackupVM(object):
         self.size = 0
 
     @property
-    def included_in_backup(self):
+    def included_in_backup(self) -> bool:
         '''Report whether a VM is included in the backup'''
         return False
 
-    def handle_firewall_xml(self, vm, stream):
+    def handle_firewall_xml(self, vm: QubesVM, stream: io.BytesIO) -> None:
         '''Import appropriate format of firewall.xml'''
         raise NotImplementedError
 
-    def handle_notes_txt(self, vm, stream):
+    def handle_notes_txt(self, vm: QubesVM, stream: io.BytesIO) -> None:
         '''Import qubes notes.txt'''
         raise NotImplementedError  # pragma: no cover

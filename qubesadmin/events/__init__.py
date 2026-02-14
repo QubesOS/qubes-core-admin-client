@@ -23,16 +23,24 @@
 import asyncio
 import fnmatch
 import subprocess
+import typing
+from typing import Callable, Any
+from asyncio import StreamWriter, StreamReader
 
 import qubesadmin.config
 import qubesadmin.exc
+from qubesadmin.app import QubesBase
 from qubesadmin.device_protocol import VirtualDevice, Port, UnknownDevice
+from qubesadmin.vm import QubesVM
 
+Handler: typing.TypeAlias\
+    = Callable[[QubesVM | None, str, ...], Any]  # noqa: ANN401
 
 class EventsDispatcher(object):
     ''' Events dispatcher, responsible for receiving events and calling
     appropriate handlers'''
-    def __init__(self, app, api_method='admin.Events', enable_cache=True):
+    def __init__(self, app: QubesBase, api_method: str='admin.Events',
+                 enable_cache: bool=True):
         """Initialize EventsDispatcher
 
         :param app :py:class:`qubesadmin.Qubes` object
@@ -59,7 +67,7 @@ class EventsDispatcher(object):
         if enable_cache:
             self.app.cache_enabled = True
 
-    def add_handler(self, event, handler):
+    def add_handler(self, event: str, handler: Handler) -> None:
         '''Register handler for event
 
         Use '*' as event to register a handler for all events.
@@ -73,7 +81,7 @@ class EventsDispatcher(object):
         :param handler Handler function'''
         self.handlers.setdefault(event, set()).add(handler)
 
-    def remove_handler(self, event, handler):
+    def remove_handler(self, event: str, handler: Handler) -> None:
         '''Remove previously registered event handler
 
         :param event Event name
@@ -81,8 +89,8 @@ class EventsDispatcher(object):
         '''
         self.handlers[event].remove(handler)
 
-    async def _get_events_reader(self, vm=None) -> (
-        asyncio.StreamReader, callable):
+    async def _get_events_reader(self, vm: QubesVM | None =None)\
+            -> tuple[asyncio.StreamReader, Callable]:
         '''Make connection to qubesd and return stream to read events from
 
         :param vm: Specific VM for which events should be handled, use None
@@ -102,7 +110,7 @@ class EventsDispatcher(object):
             writer.write(b'name ' + dest.encode('ascii') + b'\0')  # dest
             writer.write_eof()
 
-            def cleanup_func():
+            def cleanup_func() -> None:
                 '''Close connection to qubesd'''
                 writer.close()
         elif self.app.qubesd_connection_type == 'qrexec':
@@ -110,10 +118,10 @@ class EventsDispatcher(object):
                 'qrexec-client-vm', dest, self._api_method,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-            proc.stdin.write_eof()
-            reader = proc.stdout
+            typing.cast(StreamWriter, proc.stdin).write_eof()
+            reader = typing.cast(StreamReader, proc.stdout)
 
-            def cleanup_func():
+            def cleanup_func() -> None:
                 '''Close connection to qubesd'''
                 try:
                     proc.kill()
@@ -124,7 +132,8 @@ class EventsDispatcher(object):
                                       + self.app.qubesd_connection_type)
         return reader, cleanup_func
 
-    async def listen_for_events(self, vm=None, reconnect=True):
+    async def listen_for_events(self, vm: QubesVM | None=None,
+                                reconnect: bool=True) -> None:
         '''
         Listen for events and call appropriate handlers.
         This function do not exit until manually terminated.
@@ -156,7 +165,7 @@ class EventsDispatcher(object):
             # avoid busy-loop if qubesd is dead
             await asyncio.sleep(qubesadmin.config.QUBESD_RECONNECT_DELAY)
 
-    async def _listen_for_events(self, vm=None):
+    async def _listen_for_events(self, vm: QubesVM | None=None) -> bool:
         '''
         Listen for events and call appropriate handlers.
         This function do not exit until manually terminated.
@@ -208,19 +217,19 @@ class EventsDispatcher(object):
             cleanup_func()
         return some_event_received
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop currently running dispatcher"""
         if self._reader_task:
             self._reader_task.cancel()
 
-    def handle(self, subject, event, **kwargs):
+    def handle(self, subject_name: str | None, event: str, **kwargs) -> None:
         """Call handlers for given event"""
         # pylint: disable=protected-access
-        if subject:
+        if subject_name:
             if event in ['property-set:name']:
                 self.app.domains.clear_cache()
             try:
-                subject = self.app.domains.get_blind(subject)
+                subject = self.app.domains.get_blind(subject_name)
             except KeyError:
                 return
         else:
