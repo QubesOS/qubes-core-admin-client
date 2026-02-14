@@ -51,7 +51,7 @@ class TestVM(object):
     def __lt__(self, other):
         if isinstance(other, TestVM):
             return self.name < other.name
-        return NotImplemented
+        raise NotImplementedError
 
 
 class TestVMCollection(dict):

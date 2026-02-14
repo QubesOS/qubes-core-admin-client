@@ -85,14 +85,14 @@ class QubesVM(qubesadmin.base.PropertyHolder):
     def __lt__(self, other):
         if isinstance(other, QubesVM):
             return self.name < other.name
-        return NotImplemented
+        raise NotImplementedError
 
     def __eq__(self, other):
         if isinstance(other, QubesVM):
             return self.name == other.name
         if isinstance(other, str):
             return self.name == other
-        return NotImplemented
+        raise NotImplementedError
 
     def __hash__(self):
         return hash(self.name)

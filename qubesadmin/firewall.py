@@ -405,7 +405,7 @@ class Rule(object):
             return self.rule == other.rule
         if isinstance(other, str):
             return self.rule == str
-        return NotImplemented
+        raise NotImplementedError
 
     def __repr__(self):
         return 'Rule(\'{}\')'.format(self.rule)

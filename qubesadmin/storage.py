@@ -93,7 +93,7 @@ class Volume(object):
     def __eq__(self, other):
         if isinstance(other, Volume):
             return self.pool == other.pool and self.vid == other.vid
-        return NotImplemented
+        raise NotImplementedError
 
     def __lt__(self, other):
         # pylint: disable=protected-access
@@ -102,7 +102,7 @@ class Volume(object):
                 return (self._vm, self._vm_name) < (other._vm, other._vm_name)
             if self._vid and other._vid:
                 return (self._pool, self._vid) < (other._pool, other._vid)
-        return NotImplemented
+        raise NotImplementedError
 
     @property
     def name(self):
@@ -327,12 +327,12 @@ class Pool(object):
             return self.name == other.name
         if isinstance(other, str):
             return self.name == other
-        return NotImplemented
+        raise NotImplementedError
 
     def __lt__(self, other):
         if isinstance(other, Pool):
             return self.name < other.name
-        return NotImplemented
+        raise NotImplementedError
 
     @property
     def usage_details(self):

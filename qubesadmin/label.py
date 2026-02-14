@@ -79,7 +79,7 @@ class Label(object):
     def __eq__(self, other):
         if isinstance(other, Label):
             return self.name == other.name
-        return NotImplemented
+        raise NotImplementedError
 
     def __hash__(self):
         return hash(self.name)
