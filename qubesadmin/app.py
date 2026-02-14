@@ -181,7 +181,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     #: storage pools
     pools: qubesadmin.base.WrapperObjectsCollection
     #: type of qubesd connection: either 'socket' or 'qrexec'
-    qubesd_connection_type: str | None = None
+    qubesd_connection_type: str
     #: logger
     log: Logger
     #: do not check for object (VM, label etc) existence before really needed
