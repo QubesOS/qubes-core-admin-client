@@ -150,6 +150,9 @@ class QubesTest(qubesadmin.app.QubesBase):
     expected_calls = None
     actual_calls = None
     service_calls = None
+    # This is a special value used only for tests
+    # This is not valid / expected outside of tests
+    qubesd_connection_type: str = "none"  # type: ignore
 
     def __init__(self):
         super().__init__()
