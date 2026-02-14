@@ -246,6 +246,7 @@ class EventsDispatcher(object):
         elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
                        'domain-paused', 'domain-unpaused',
                        'domain-start-failed'):
+            assert subject is not None
             self.app._update_power_state_cache(subject, event, **kwargs)
             subject.devices.clear_cache()
         elif event == 'connection-established':
@@ -257,6 +258,7 @@ class EventsDispatcher(object):
             "device-unassign",
             "device-assignment-changed"
         ):
+            assert subject is not None
             devclass = event.split(":")[1]
             subject.devices[devclass]._assignment_cache = None
         elif event.split(":")[0] in (
@@ -264,9 +266,11 @@ class EventsDispatcher(object):
             "device-detach",
             "device-removed"
         ):
+            assert subject is not None
             devclass = event.split(":")[1]
             subject.devices[devclass]._attachment_cache = None
         elif event.split(":")[0] in ("device-removed",):
+            assert subject is not None
             devclass = event.split(":")[1]
             try:
                 subject.devices[devclass]._dev_cache[kwargs["port"]]
