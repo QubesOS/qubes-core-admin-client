@@ -236,9 +236,6 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
             msg = 'cannot import module for command'
             if log:
                 log.warning(msg)
-            else:
-                # Handle legacy
-                app.warn(msg)
 
             self.parser = None
             return
@@ -298,9 +295,6 @@ def check_man_args(app, doctree, docname):
     msg = 'Checking arguments for {!r}'.format(command)
     if log:
         log.info(msg)
-    else:
-        # Handle legacy
-        app.info(msg)
     doctree.walk(ManpageCheckVisitor(app, command, doctree))
 
 
