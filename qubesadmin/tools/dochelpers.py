@@ -256,8 +256,7 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
             if action.help == argparse.SUPPRESS:
                 continue
 
-            if issubclass(action.__class__,
-                          qubesadmin.tools.AliasedSubParsersAction):
+            if isinstance(action, qubesadmin.tools.AliasedSubParsersAction):
                 for cmd, cmd_parser in action._name_parser_map.items():
                     self.sub_commands[cmd] = set()
                     for sub_action in cmd_parser._actions:
