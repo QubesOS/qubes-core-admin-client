@@ -25,7 +25,7 @@ import qubesadmin.exc
 DEFAULT = object()
 
 
-class PropertyHolder(object):
+class PropertyHolder:
     '''A base class for object having properties retrievable using mgmt API.
 
     Warning: each (non-private) local attribute needs to be defined at class
@@ -406,7 +406,7 @@ class PropertyHolder(object):
             raise qubesadmin.exc.QubesPropertyAccessError(name)
 
 
-class WrapperObjectsCollection(object):
+class WrapperObjectsCollection:
     '''Collection of simple named objects'''
     def __init__(self, app, list_method, object_class):
         '''

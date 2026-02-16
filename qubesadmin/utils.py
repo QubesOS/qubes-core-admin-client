@@ -184,7 +184,7 @@ def encode_for_vmexec(args):
         parts.append(part)
     return b'+'.join(parts).decode('ascii')
 
-class LockFile(object):
+class LockFile:
     """Simple locking context manager. It opens a file with an advisory lock
     taken (fcntl.lockf)"""
     def __init__(self, path, nonblock=False):

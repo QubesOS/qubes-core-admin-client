@@ -124,7 +124,7 @@ def validate_compression_filter(compressor: str) -> bool:
         return True
     return False
 
-class BackupHeader(object):
+class BackupHeader:
     '''Structure describing backup-header file included as the first file in
     backup archive
     '''
@@ -854,7 +854,7 @@ def get_supported_crypto_algo(crypto_algorithm: str | None=None)\
             yield algo.strip().lower()
 
 
-class BackupRestoreOptions(object):
+class BackupRestoreOptions:
     '''Options for restore operation'''
     # pylint: disable=too-few-public-methods
     def __init__(self) -> None:
@@ -886,7 +886,7 @@ class BackupRestoreOptions(object):
         #: ignore size limit calculated from backup metadata
         self.ignore_size_limit = False
 
-class BackupRestore(object):
+class BackupRestore:
     """Usage:
 
     >>> restore_op = BackupRestore(...)
@@ -896,7 +896,7 @@ class BackupRestore(object):
     >>> restore_op.restore_do(restore_info)
     """
 
-    class VMToRestore(object):
+    class VMToRestore:
         '''Information about a single VM to be restored'''
         # pylint: disable=too-few-public-methods
         #: VM excluded from restore by user

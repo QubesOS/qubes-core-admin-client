@@ -25,7 +25,7 @@ import io
 from qubesadmin.vm import QubesVM
 
 
-class BackupApp(object):
+class BackupApp:
     '''Interface for backup collection'''
     # pylint: disable=too-few-public-methods
     def __init__(self, qubes_xml: str | None):
@@ -39,7 +39,7 @@ class BackupApp(object):
         '''Load qubes.xml'''
         raise NotImplementedError
 
-class BackupVM(object):
+class BackupVM:
     '''Interface for a single VM in the backup'''
     # pylint: disable=too-few-public-methods
     def __init__(self) -> None:

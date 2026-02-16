@@ -68,7 +68,7 @@ def prepare_table(vd_list, full=False):
     return output
 
 
-class VolumeData(object):
+class VolumeData:
     """ Wrapper object around :py:class:`qubes.storage.Volume`, mainly to track
         the domains a volume is attached to.
     """

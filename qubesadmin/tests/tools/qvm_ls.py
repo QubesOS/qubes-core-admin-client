@@ -33,7 +33,7 @@ import qubesadmin.tests.tools
 from qubesadmin.tests import TestVM, TestVMCollection
 
 
-class TestApp(object):
+class TestApp:
     def __init__(self):
         self.domains = TestVMCollection(
             [
