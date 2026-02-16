@@ -1058,7 +1058,13 @@ class MockQubesComplete(MockQubes):
         )
 
         self._qubes["test-blue"] = MockQube(
-            name="test-blue", running=True, qapp=self, label="blue"
+            name="test-blue",
+            running=True,
+            qapp=self,
+            label="blue",
+            features={
+                "supported-service.qubes-u2f-proxy": "1",
+            },
         )
 
         self._qubes["test-red"] = MockQube(
