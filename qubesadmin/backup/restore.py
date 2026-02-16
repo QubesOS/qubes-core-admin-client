@@ -1139,6 +1139,8 @@ class BackupRestore(object):
             return hmac_text
         if algorithm is None:
             algorithm = self.header_data.hmac_algorithm
+        assert algorithm is not None
+
         passphrase = self.passphrase.encode('utf-8')
         self.log.debug("Verifying file %s", filename)
 

@@ -357,16 +357,16 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             options['required'] = True
             vm.devices['pci'][('dom0', port_id)] = options
 
-    def load(self) -> bool | None:
+    def load(self) -> None:
         assert self.store is not None
         with open(self.store, encoding='utf-8') as fh:
             try:
                 # pylint: disable=no-member
                 tree = lxml.etree.parse(fh)
-            except (EnvironmentError,  # pylint: disable=broad-except
+            except (EnvironmentError,
                     xml.parsers.expat.ExpatError) as err:
                 self.log.error(err)
-                return False
+                raise err
 
         self.globals['default_kernel'] = tree.getroot().get("default_kernel")
 
