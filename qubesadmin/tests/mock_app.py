@@ -998,6 +998,23 @@ class MockQubesComplete(MockQubes):
             },
         )
 
+        self._qubes["default-mgmt-dvm"] = MockQube(
+            name="default-mgmt-dvm",
+            qapp=self,
+            klass="AppVM",
+            template_for_dispvms=True,
+            template="fedora-36",
+            features={"internal": "1"},
+        )
+
+        self._qubes["disp-mgmt"] = MockQube(
+            name="disp-mgmt",
+            qapp=self,
+            klass="DispVM",
+            template="default-mgmt-dvm",
+            features={"internal": "1"},
+        )
+
         self._qubes["default-dvm"] = MockQube(
             name="default-dvm",
             qapp=self,
