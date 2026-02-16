@@ -1,3 +1,36 @@
+qubes-core-admin-client (4.3.28-1) unstable; urgency=medium
+
+  [ Ben Grande ]
+  * Document preload-dispvm-delay
+
+  [ Rusty Bird ]
+  * restore: add hyphen before number suffix for conflicting name
+
+  [ Ali Mirjamali ]
+  * Include zstd package
+
+  [ anon ]
+  * add pyproject.toml to clarify tool used
+  * add type hints for __init__.py
+  * add type hints for core2.py
+  * add type hints for core3.py
+  * add type hints for dispvm.py
+  * add type hints for restore.py
+  * lint to pass pytest tests
+
+  [ Ben Grande ]
+  * Add internal qube to mock_app
+  * Add updatevm and GPG RPC to mock_app
+  * Add servicevm features to mock_app
+  * Add U2F feature for mocked qube
+
+  [ anon ]
+  * remove obsolete python 2.x `object` inheritance in classes
+  * remove sphinx <2 fallbacks
+  * issubclass -> isinstance
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 16 Feb 2026 22:28:25 +0100
+
 qubes-core-admin-client (4.3.27-1) unstable; urgency=medium
 
   [ Ben Grande ]
