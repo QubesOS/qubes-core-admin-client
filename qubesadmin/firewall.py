@@ -66,11 +66,21 @@ class Action(RuleChoice):
     '''Rule action'''
     accept = 'accept'
     drop = 'drop'
+    forward = 'forward'
 
     @property
     def rule(self):
         '''API representation of this rule element'''
         return 'action=' + str(self)
+
+
+class ForwardType(RuleChoice):
+    external = 'external'
+    internal = 'internal'
+
+    @property
+    def rule(self):
+        return 'forwardtype=' + str(self)
 
 
 class Proto(RuleChoice):
@@ -85,7 +95,7 @@ class Proto(RuleChoice):
         return 'proto=' + str(self)
 
 
-class DstHost(RuleOption):
+class Host(RuleOption):
     '''Represent host/network address: either IPv4, IPv6, or DNS name'''
     def __init__(self, value, prefixlen=None):
         # TODO: in python >= 3.3 ipaddress module could be used
@@ -103,7 +113,7 @@ class DstHost(RuleOption):
                     raise ValueError(
                         'netmask for IPv6 must be between 0 and 128')
                 value += '/' + str(self.prefixlen)
-                self.type = 'dst6'
+                self.type = '6'
             except socket.error:
                 try:
                     socket.inet_pton(socket.AF_INET, value)
@@ -118,9 +128,9 @@ class DstHost(RuleOption):
                         raise ValueError(
                             'netmask for IPv4 must be between 0 and 32')
                     value += '/' + str(self.prefixlen)
-                    self.type = 'dst4'
+                    self.type = '4'
                 except socket.error:
-                    self.type = 'dsthost'
+                    self.type = 'host'
                     self.prefixlen = 0
                     safe_set = string.ascii_lowercase + string.digits + '-._'
                     if not all(c in safe_set for c in value):
@@ -135,13 +145,13 @@ class DstHost(RuleOption):
                 socket.inet_pton(socket.AF_INET6, host)
                 if prefixlen > 128:
                     raise ValueError('netmask for IPv6 must be <= 128')
-                self.type = 'dst6'
+                self.type = '6'
             except socket.error:
                 try:
                     socket.inet_pton(socket.AF_INET, host)
                     if prefixlen > 32:
                         raise ValueError('netmask for IPv4 must be <= 32')
-                    self.type = 'dst4'
+                    self.type = '4'
                     if host.count('.') != 3:
                         raise ValueError(
                             'Invalid number of dots in IPv4 address')
@@ -150,17 +160,33 @@ class DstHost(RuleOption):
 
         super().__init__(value)
 
+
+class DstHost(Host):
+
     @property
     def rule(self):
         '''API representation of this rule element'''
-        if self.prefixlen == 0 and self.type != 'dsthost':
+        if self.prefixlen == 0 and self.type != 'host':
             # 0.0.0.0/0 or ::/0, doesn't limit to any particular host,
             # so skip it
             return None
-        return self.type + '=' + str(self)
+        return 'dst' + self.type + '=' + str(self)
 
 
-class DstPorts(RuleOption):
+class SrcHost(Host):
+    
+    @property
+    def rule(self):
+        '''API representation of this rule element'''
+        if self.prefixlen == 0 or self.type == 'host':
+            # drop both hostname based source verification and wildcard /0
+            # TODO: discuss wether these defaults are too limiting, however since exposing a 
+            # port/service poses a greater threat, 
+            raise ValueError("srchost cannot neither be an hostname nor contain the /0 prefix")
+        return 'src' + self.type + '=' + str(self)
+
+
+class Ports(RuleOption):
     '''Destination port(s), for TCP/UDP only'''
     def __init__(self, value):
         if isinstance(value, int):
@@ -179,11 +205,19 @@ class DstPorts(RuleOption):
             str(self.range[0]) if self.range[0] == self.range[1]
             else '{!s}-{!s}'.format(*self.range))
 
+class DstPorts(Ports):
+
     @property
     def rule(self):
         '''API representation of this rule element'''
         return 'dstports=' + '{!s}-{!s}'.format(*self.range)
 
+class SrcPorts(Ports):
+    
+    @property
+    def rule(self):
+        '''API representation of this rule element'''
+        return 'srcports=' + '{!s}-{!s}'.format(*self.range)
 
 class IcmpType(RuleOption):
     '''ICMP packet type'''
@@ -251,9 +285,12 @@ class Rule:
         :param kwargs: rule elements
         '''
         self._action = None
+        self._forwardtype = None
         self._proto = None
         self._dsthost = None
+        self._srchost = None
         self._dstports = None
+        self._srcports = None
         self._icmptype = None
         self._specialtarget = None
         self._expire = None
@@ -269,14 +306,17 @@ class Rule:
                 rule_dict['comment'] = comment
         rule_dict.update(kwargs)
 
-        rule_elements = ('action', 'proto', 'dsthost', 'dst4', 'dst6',
-            'specialtarget', 'dstports', 'icmptype', 'expire', 'comment')
+        rule_elements = ('action', 'forwardtype', 'proto', 'dsthost', 'srchost', 'dst4',
+            'dst6', 'src4', 'src6', 'specialtarget', 'srcports', 'dstports', 'icmptype',
+            'expire', 'comment')
         for rule_opt in rule_elements:
             value = rule_dict.pop(rule_opt, None)
             if value is None:
                 continue
             if rule_opt in ('dst4', 'dst6'):
                 rule_opt = 'dsthost'
+            if rule_opt in ('src4', 'src6'):
+                rule_opt = 'srchost'
             setattr(self, rule_opt, value)
 
         if rule_dict:
@@ -296,6 +336,17 @@ class Rule:
         if not isinstance(value, Action):
             value = Action(value)
         self._action = value
+
+    @property
+    def forwardtype(self):
+        '''type of forwarding (internal or external)'''
+        return self._forwardtype
+
+    @forwardtype.setter
+    def forwardtype(self, value):
+        if not isinstance(value, ForwardType):
+            value = ForwardType(value)
+        self._forwardtype = value
 
     @property
     def proto(self):
@@ -324,8 +375,19 @@ class Rule:
         self._dsthost = value
 
     @property
+    def srchost(self):
+        '''destination host/network'''
+        return self._srchost
+
+    @srchost.setter
+    def srchost(self, value):
+        if value is not None and not isinstance(value, SrcHost):
+            value = SrcHost(value)
+        self._srchost = value
+
+    @property
     def dstports(self):
-        ''''Destination port(s) (for \'tcp\' and \'udp\' protocol only)'''
+        '''Destination port(s) (for \'tcp\' and \'udp\' protocol only)'''
         return self._dstports
 
     @dstports.setter
@@ -337,6 +399,21 @@ class Rule:
             if not isinstance(value, DstPorts):
                 value = DstPorts(value)
         self._dstports = value
+
+    @property
+    def srcports(self):
+        ''''Source port(s) (for forwarding only)'''
+        return self._srcports
+
+    @srcports.setter
+    def srcports(self, value):
+        if value is not None:
+            if self.proto not in ('tcp', 'udp'):
+                raise ValueError(
+                    'srcports valid only for \'tcp\' and \'udp\' protocols')
+            if not isinstance(value, DstPorts):
+                value = SrcPorts(value)
+        self._srcports = value
 
     @property
     def icmptype(self):
@@ -390,8 +467,9 @@ class Rule:
         '''API representation of this rule'''
         values = []
         # comment must be the last one
-        for prop in ('action', 'proto', 'dsthost', 'dstports', 'icmptype',
-                'specialtarget', 'expire', 'comment'):
+        for prop in ('action', 'forwardtype', 'proto', 'dsthost', 'srchost',
+            'dstports', 'srcports', 'icmptype',  'specialtarget', 'expire',
+            'comment'):
             value = getattr(self, prop)
             if value is None:
                 continue
