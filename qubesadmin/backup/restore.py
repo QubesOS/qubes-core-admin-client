@@ -180,6 +180,7 @@ class BackupHeader:
 
         if header_data is not None:
             self.load(header_data)
+        self.validate()
 
     def load(self, untrusted_header_text: bytes) -> None:
         """Parse backup header file.
@@ -361,9 +362,9 @@ class ExtractWorker3(Process):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, queue: Queue, base_dir: str, passphrase: str,
                  encrypted: bool, *,
-                 progress_callback: Callable, vmproc: Popen | None =None,
+                 progress_callback: Callable | None, vmproc: Popen | None =None,
                  compressed: bool=False,
-                 crypto_algorithm: str=DEFAULT_CRYPTO_ALGORITHM,
+                 crypto_algorithm: str | None=DEFAULT_CRYPTO_ALGORITHM,
                  compression_filter: str | None=None, verify_only: bool=False,
                  handlers: dict[str, Callable] | None=None):
         '''Start inner tar extraction worker
@@ -391,6 +392,9 @@ class ExtractWorker3(Process):
         :param bool verify_only: only verify data integrity, do not extract
         :param dict handlers: handlers for actual data
         '''
+        if encrypted:
+            assert crypto_algorithm is not None
+
         super().__init__()
         #: queue with files to extract
         self.queue = queue
@@ -444,6 +448,8 @@ class ExtractWorker3(Process):
         Log errors, process file size if requested.
         This use :py:attr:`tar2_process`.
         '''
+        assert self.tar2_process is not None
+
         if not self.tar2_process.stderr:
             return
 
@@ -489,6 +495,7 @@ class ExtractWorker3(Process):
         :param dirname: directory path to handle (relative to backup root),
             without trailing slash
         '''
+        assert self.handlers is not None
         for fname, data_func in self.handlers.items():
             if not fname.startswith(dirname + '/'):
                 continue
@@ -515,8 +522,8 @@ class ExtractWorker3(Process):
             return
         if terminate:
             if self.import_process is not None:
-                self.tar2_process.terminate()
-            self.import_process.terminate()
+                self.import_process.terminate()
+            self.tar2_process.terminate()
         if wait:
             self.tar2_process.wait()
             if self.import_process is not None:
@@ -536,6 +543,7 @@ class ExtractWorker3(Process):
             # Finished extracting the tar file
             # if that was whole-directory archive, handle
             # relocated files now
+            assert self.tar2_current_file is not None
             inner_name = self.tar2_current_file.rsplit('.', 1)[0] \
                 .replace(self.base_dir + '/', '')
             if os.path.basename(inner_name) == '.':
@@ -640,6 +648,7 @@ class ExtractWorker3(Process):
             self.cleanup_tar2(wait=True, terminate=True)
 
     def __run__(self) -> None:
+        assert self.handlers is not None
         self.log.debug("Started sending thread")
         self.log.debug("Moving to dir %s", self.base_dir)
         os.chdir(self.base_dir)
@@ -658,6 +667,7 @@ class ExtractWorker3(Process):
             if filename.endswith('.000'):
                 # next file
                 if self.tar2_process is not None:
+                    assert input_pipe is not None
                     input_pipe.close()
                     self.cleanup_tar2(wait=True, terminate=False)
 
@@ -708,6 +718,7 @@ class ExtractWorker3(Process):
                 self.log.debug("Running command %s", str(tar2_cmdline))
                 # pylint: disable=consider-using-with
                 if self.encrypted:
+                    assert self.crypto_algorithm is not None
                     # Start decrypt
                     self.decryptor_process = subprocess.Popen(
                         ["openssl", "enc",
@@ -740,6 +751,7 @@ class ExtractWorker3(Process):
                 if inner_name in self.handlers:
                     assert redirect_stdout is subprocess.PIPE
                     data_func = self.handlers[inner_name]
+                    assert input_pipe is not None
                     self.import_process = multiprocessing.Process(
                         target=self._data_import_wrapper,
                         args=([input_pipe.fileno()],
@@ -756,6 +768,7 @@ class ExtractWorker3(Process):
                 continue
             else:
                 # os.path.splitext fails to handle 'something/..000'
+                assert self.tar2_current_file is not None
                 (basename, ext) = self.tar2_current_file.rsplit('.', 1)
                 previous_chunk_number = int(ext)
                 expected_filename = basename + '.%03d' % (
@@ -769,10 +782,12 @@ class ExtractWorker3(Process):
                     continue
 
                 self.log.debug("Releasing next chunk")
+                assert input_pipe is not None
                 self.feed_tar2(filename, input_pipe)
 
             self.tar2_current_file = filename
 
+            assert self.tar2_feeder is not None
             self.tar2_feeder.wait()
             # check if any process failed
             processes = {
@@ -793,6 +808,7 @@ class ExtractWorker3(Process):
             os.remove(filename)
 
         if self.tar2_process is not None:
+            assert input_pipe is not None
             input_pipe.close()
             if filename == QUEUE_ERROR:
                 if self.decryptor_process:
@@ -1138,7 +1154,10 @@ class BackupRestore:
 
             return hmac_text
         if algorithm is None:
+            assert self.header_data.hmac_algorithm is not None
             algorithm = self.header_data.hmac_algorithm
+        assert algorithm is not None
+
         passphrase = self.passphrase.encode('utf-8')
         self.log.debug("Verifying file %s", filename)
 
@@ -1166,6 +1185,8 @@ class BackupRestore:
 
         with open(os.path.join(self.tmpdir, filename), 'rb') as f_input:
             with subprocess.Popen(
+# TODO what guarantees that `algorithm`
+# TODO (=e.g. self.header_data.hmac_algorithm) is not None ?
                     ["openssl", "dgst", "-" + algorithm, "-hmac", passphrase],
                     stdin=f_input,
                     stdout=subprocess.PIPE,
@@ -1368,28 +1389,28 @@ class BackupRestore:
         # Setup worker to extract encrypted data chunks to the restore dirs
         # Create the process here to pass it options extracted from
         # backup header
-        extractor_params = {
-            'queue': queue,
-            'base_dir': self.tmpdir,
-            'passphrase': self.passphrase,
-            'encrypted': self.header_data.encrypted,
-            'compressed': self.header_data.compressed,
-            'crypto_algorithm': self.header_data.crypto_algorithm,
-            'verify_only': self.options.verify_only,
-            'progress_callback': self.progress_callback,
-            'handlers': handlers,
-        }
         self.log.debug(
             'Starting extraction worker in %s, file handlers map: %s',
             self.tmpdir, repr(handlers))
         format_version = self.header_data.version
         if format_version in [3, 4]:
-            extractor_params['compression_filter'] = \
-                self.header_data.compression_filter
+            # asserts Handled by BackupHeader.validate() called by .load()
+            assert self.header_data.compressed is not None
+            assert self.header_data.encrypted is not None
+
+            encrypted = self.header_data.encrypted
             if format_version == 4:
                 # encryption already handled
-                extractor_params['encrypted'] = False
-            extract_proc = ExtractWorker3(**extractor_params)
+                encrypted=False
+            if encrypted:
+                assert self.header_data.crypto_algorithm is not None
+            extract_proc = ExtractWorker3(queue, self.tmpdir,
+                  self.passphrase, encrypted,
+                  progress_callback=self.progress_callback,
+                  compressed=self.header_data.compressed,
+                  crypto_algorithm=self.header_data.crypto_algorithm,
+                  compression_filter=self.header_data.compression_filter,
+                  verify_only=self.options.verify_only, handlers=handlers)
         else:
             raise NotImplementedError(
                 "Backup format version %d not supported" % format_version)
@@ -1543,6 +1564,7 @@ class BackupRestore:
                     continue
 
                 if self.header_data.version in [2, 3]:
+                    assert hmacfile is not None
                     self._verify_hmac(filename, hmacfile)
                 else:
                     # _verify_and_decrypt will write output to a file with
