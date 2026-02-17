@@ -521,8 +521,8 @@ class ExtractWorker3(Process):
             return
         if terminate:
             if self.import_process is not None:
-                self.tar2_process.terminate()
                 self.import_process.terminate()
+            self.tar2_process.terminate()
         if wait:
             self.tar2_process.wait()
             if self.import_process is not None:
