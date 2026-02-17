@@ -160,20 +160,24 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
 
         self.domains[vm.name] = vm
 
-    def load(self) -> bool | None:
+    def load(self) -> None:
         with open(self.store, encoding='utf-8') as fh:
             try:
                 # pylint: disable=no-member
                 tree = lxml.etree.parse(fh)
-            except (EnvironmentError,  # pylint: disable=broad-except
+            except (EnvironmentError,
                     xml.parsers.expat.ExpatError) as err:
                 self.log.error(err)
-                return False
+                raise err
 
-        self.load_labels(tree.find('./labels'))
+        labels = tree.find('./labels')
+        assert labels is not None
+        self.load_labels(labels)
 
         for element in tree.findall('./domains/domain'):
             self.import_core3_vm(element)
 
         # and load other defaults (default netvm, updatevm etc)
-        self.load_globals(tree.find('./properties'))
+        properties = tree.find('./properties')
+        assert properties is not None
+        self.load_globals(properties)
