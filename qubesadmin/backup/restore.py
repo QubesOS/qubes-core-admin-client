@@ -1393,21 +1393,20 @@ class BackupRestore(object):
             self.tmpdir, repr(handlers))
         format_version = self.header_data.version
         if format_version in [3, 4]:
-            # TODO see comment below
-            assert self.header_data.compressed is not None  # TODO same
+            # asserts Handled by BackupHeader.validate() called by .load()
+            assert self.header_data.compressed is not None
+            assert self.header_data.encrypted is not None
+
             encrypted = self.header_data.encrypted
             if format_version == 4:
                 # encryption already handled
                 encrypted=False
-            assert encrypted is not None  # TODO same
             if encrypted:
                 assert self.header_data.crypto_algorithm is not None
             extract_proc = ExtractWorker3(queue, self.tmpdir,
                   self.passphrase, encrypted,
                   progress_callback=self.progress_callback,
                   compressed=self.header_data.compressed,
-# TODO what guarantees that crypto_algorithm is not None at this point in time ?
-# TODO ExtractWorker3 expects a non-None argument here.
                   crypto_algorithm=self.header_data.crypto_algorithm,
                   compression_filter=self.header_data.compression_filter,
                   verify_only=self.options.verify_only, handlers=handlers)
