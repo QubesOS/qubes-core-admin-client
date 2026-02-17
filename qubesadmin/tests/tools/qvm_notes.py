@@ -85,7 +85,7 @@ class TC_00_qvm_notes(qubesadmin.tests.QubesTestCase):
         ] = b"0\x00"
         with tempfile.NamedTemporaryFile(
             mode="w+",
-            delete_on_close=False,
+            delete=False,
         ) as temp:
             temp.write("For Your Eyes Only")
             temp.close()
@@ -235,7 +235,7 @@ class TC_00_qvm_notes(qubesadmin.tests.QubesTestCase):
         )
         with tempfile.NamedTemporaryFile(
             mode="w+",
-            delete_on_close=False,
+            delete=False,
         ) as temp:
             temp.write("New note")
             temp.close()
