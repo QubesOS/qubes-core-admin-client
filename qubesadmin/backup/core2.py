@@ -185,7 +185,6 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
                 if clockvm != "None" else None
 
         default_template = element.get("default_template")
-        # TODO or should it be `if is not None: ... ?`
         assert default_template is not None
         self.globals['default_template'] = self.qid_map[int(default_template)] \
             if default_template.lower() != "none" else None
@@ -269,7 +268,6 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             vm.klass = "AdminVM"
         else:
             template_qid = element.get('template_qid')
-            # TODO should that be a .get(..., 'none') ?
             assert template_qid is not None
             if template_qid.lower() == "none":
                 kwargs['dir_path'] = element.get('dir_path')
@@ -346,7 +344,6 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             vm.features[feature] = value
 
         pci_strictreset = element.get('pci_strictreset', True)
-        # TODO there should be some kind of XML validation
         pcidevs = element.get('pcidevs')
         pcidevs_list = []
         if pcidevs:
