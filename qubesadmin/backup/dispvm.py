@@ -286,13 +286,13 @@ class RestoreInDisposableVM:
 
     def run(self) -> bytes | None:
         """Run the backup restore operation"""
-        assert self.dispvm is not None
 
         lock = qubesadmin.utils.LockFile(LOCKFILE, True)
         lock.acquire()
         try:
             self.app.log.info("Starting restore process in a DisposableVM...")
             self.create_dispvm()
+            assert self.dispvm is not None
             self.clear_old_tags()
             self.register_backup_source()
             self.dispvm.start()
@@ -350,6 +350,7 @@ class RestoreInDisposableVM:
             return backup_log
         except subprocess.CalledProcessError as e:
             if e.returncode == 127:
+                assert self.dispvm is not None
                 raise qubesadmin.exc.QubesException(
                     '{} missing in {} template, install it there '
                     'package there'.format(self.terminal_app[0],
