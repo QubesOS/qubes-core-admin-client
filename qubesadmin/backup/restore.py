@@ -180,6 +180,7 @@ class BackupHeader(object):
 
         if header_data is not None:
             self.load(header_data)
+        self.validate()
 
     def load(self, untrusted_header_text: bytes) -> None:
         """Parse backup header file.
