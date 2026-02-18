@@ -1,0 +1,34 @@
+# Builds an image to run local tests
+# Build using e.g. `podman build -t qos-test . -f Dockerfile.run_tests`
+# Execute tests with `podman run --rm -it qos-test:latest`
+
+FROM registry.gitlab.com/qubesos/docker-images/qubesos-ci:latest
+USER root
+RUN dnf install -y \
+    openssl \
+    python3-rpm \
+    sequoia-sqv \
+    python3-xlib \
+    libnotify \
+    zstd \
+    xorg-x11-server-Xvfb \
+    && dnf clean all
+RUN dnf install -y --enablerepo=qubes-host-r4.3-current-testing scrypt
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+WORKDIR /workspace
+COPY . /workspace
+RUN chown -R gitlab-runner:gitlab-runner /workspace
+
+# PAM modified to allow tests to run (e.g. via podman) on systems (=OS outside the container) which require a root pwd
+RUN echo "gitlab-runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && echo "#%PAM-1.0"                       > /etc/pam.d/sudo \
+    && echo "auth    sufficient pam_permit.so" >> /etc/pam.d/sudo \
+    && echo "account sufficient pam_permit.so" >> /etc/pam.d/sudo \
+    && echo "session required  pam_permit.so"  >> /etc/pam.d/sudo
+
+USER gitlab-runner
+ENV USER=gitlab-runner
+ENV ENABLE_SLOW_TESTS=1
+CMD xvfb-run uv run python -m unittest discover -s qubesadmin/tests -p '*.py' -v
