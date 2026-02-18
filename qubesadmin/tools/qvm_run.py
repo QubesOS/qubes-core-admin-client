@@ -390,8 +390,10 @@ def main(args=None, app=None):
             for qube in domains:
                 gui_per_domain[qube] = has_gui(qube)
     else:
+        if len(domains) != 1:
+            parser.print_usage(sys.stderr)
+            sys.exit(2)
         if args.gui is None:
-            assert len(domains) == 1
             args.gui = has_gui(domains[0])
     if args.color_output:
         sys.stdout.write("\033[0;{}m".format(args.color_output))
