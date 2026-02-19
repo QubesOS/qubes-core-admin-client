@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -35,10 +34,7 @@ import time
 
 import contextlib
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 import re
 
 import multiprocessing
@@ -1039,11 +1035,11 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # normal AppVMs
         for vm in ('test-work', 'test-d8test', 'test-proxy',
                 'test-custom-template-appvm', 'test-net'):
-            os.mkdir(self.fullpath('appvms/{}'.format(vm)))
+            os.mkdir(self.fullpath(f'appvms/{vm}'))
             self.create_whitelisted_appmenus(self.fullpath(
-                'appvms/{}/whitelisted-appmenus.list'.format(vm)))
+                f'appvms/{vm}/whitelisted-appmenus.list'))
             self.create_private_img(self.fullpath(
-                'appvms/{}/private.img'.format(vm)))
+                f'appvms/{vm}/private.img'))
 
         # setup firewall only on one VM
         with open(self.fullpath("appvms/test-work/firewall.xml"), "wb") \
@@ -1062,16 +1058,16 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         # StandaloneVMs
         for vm in ('test-standalonevm', 'test-hvm'):
-            os.mkdir(self.fullpath('appvms/{}'.format(vm)))
+            os.mkdir(self.fullpath(f'appvms/{vm}'))
             self.create_whitelisted_appmenus(self.fullpath(
-                'appvms/{}/whitelisted-appmenus.list'.format(vm)))
+                f'appvms/{vm}/whitelisted-appmenus.list'))
             self.create_private_img(self.fullpath(
-                'appvms/{}/private.img'.format(vm)))
+                f'appvms/{vm}/private.img'))
             self.create_sparse(
-                self.fullpath('appvms/{}/root.img'.format(vm)), 10*2**30)
-            self.fill_image(self.fullpath('appvms/{}/root.img'.format(vm)),
+                self.fullpath(f'appvms/{vm}/root.img'), 10*2**30)
+            self.fill_image(self.fullpath(f'appvms/{vm}/root.img'),
                 1024*1024, True,
-                signature='{}/root'.format(vm).encode())
+                signature=f'{vm}/root'.encode())
 
         # only for Linux one
         os.mkdir(self.fullpath('appvms/test-standalonevm/apps.templates'))
@@ -1120,7 +1116,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         if f_name == 'backup-header':
             scrypt_pass = 'backup-header!' + password
         else:
-            scrypt_pass = '20161020T123455-1234!{}!{}'.format(f_name, password)
+            scrypt_pass = f'20161020T123455-1234!{f_name}!{password}'
         with subprocess.Popen(['scrypt', 'enc', '-P', '-t', '0.1',
                 os.path.join(basedir, f_name),
                 os.path.join(basedir, output_name)],
@@ -1130,7 +1126,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         return output_name
 
     def calculate_hmac(self, f_name, algorithm="sha512", password="qubes"):
-        with open(self.fullpath(f_name), "r", encoding="utf-8") as f_data:
+        with open(self.fullpath(f_name), encoding="utf-8") as f_data:
             with open(self.fullpath(f_name+".hmac"), "w",
                       encoding="utf-8") as f_hmac:
                 subprocess.check_call(
@@ -1149,7 +1145,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # create inner archive
         tar_cmdline = ["tar", "-Pc", '--sparse',
                '-C', self.fullpath(os.path.dirname(f_name)),
-               '--xform', 's:^%s:%s\\0:' % (
+               '--xform', 's:^{}:{}\\0:'.format(
                    os.path.basename(f_name),
                    subdir),
                os.path.basename(f_name)
@@ -1185,7 +1181,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         for part in sorted(os.listdir(stage1_dir)):
             if not re.match(
-                    r"^{}.[0-9][0-9][0-9]$".format(os.path.basename(f_name)),
+                    fr"^{os.path.basename(f_name)}.[0-9][0-9][0-9]$",
                     part):
                 continue
             part_with_dir = os.path.join(subdir, part)
@@ -1199,7 +1195,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # create inner archive
         tar_cmdline = ["tar", "-Pc", '--sparse',
                '-C', self.fullpath(os.path.dirname(f_name)),
-               '--xform', 's:^%s:%s\\0:' % (
+               '--xform', 's:^{}:{}\\0:'.format(
                    os.path.basename(f_name),
                    subdir),
                os.path.basename(f_name)
@@ -1224,7 +1220,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
 
         for part in sorted(os.listdir(stage1_dir)):
             if not re.match(
-                    r"^{}.[0-9][0-9][0-9]$".format(os.path.basename(f_name)),
+                    fr"^{os.path.basename(f_name)}.[0-9][0-9][0-9]$",
                     part):
                 continue
             part_with_dir = os.path.join(subdir, part)
@@ -1259,7 +1255,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 qubesxml = xml_path.read_bytes()
                 if encrypted:
                     for vmname, subdir in MANGLED_SUBDIRS_R2.items():
-                        qubesxml = re.sub(r"[a-z-]*/{}".format(vmname).encode(),
+                        qubesxml = re.sub(fr"[a-z-]*/{vmname}".encode(),
                                           subdir.encode(), qubesxml)
                     f_qubesxml.write(qubesxml)
                 else:
@@ -1327,7 +1323,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                 qubesxml = xml_path.read_bytes()
                 for vmname, subdir in MANGLED_SUBDIRS_R4.items():
                     qubesxml = re.sub(
-                        r'backup-path">[a-z-]*/{}'.format(vmname).encode(),
+                        fr'backup-path">[a-z-]*/{vmname}'.encode(),
                         ('backup-path">' + subdir).encode(),
                         qubesxml)
                 f_qubesxml.write(qubesxml)
@@ -1481,8 +1477,8 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                          f"backend_domain='{backend_domain}' mode='required' "
                          f"frontend_domain='{name}'".encode())
                     self.app.expected_calls[
-                        (name, 'admin.vm.device.{}.Assign'.format(bus),
-                        '{}+{}+_'.format(backend_domain, port_id),
+                        (name, f'admin.vm.device.{bus}.Assign',
+                        f'{backend_domain}+{port_id}+_',
                         encoded_options)] = b'0\0'
 
             for feature, value in vm['features'].items():
@@ -1533,7 +1529,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
         # pylint: disable=consider-using-with
         tmpdir = tempfile.TemporaryDirectory()
         subprocess.run(['sudo', 'mount', '-t', 'tmpfs', 'none',
-                        tmpdir.name, '-o', 'size={}'.format(size)],
+                        tmpdir.name, '-o', f'size={size}'],
                        check=True)
         self.addCleanup(self.cleanup_tmpdir, tmpdir)
         return tmpdir.name

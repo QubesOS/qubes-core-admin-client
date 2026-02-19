@@ -335,7 +335,7 @@ class RestoreInDisposableVM:
                 )
             if exit_code != 0:
                 raise qubesadmin.exc.BackupRestoreError(
-                    'qvm-backup-restore failed with {}'.format(exit_code),
+                    f'qvm-backup-restore failed with {exit_code}',
                     backup_log=backup_log)
             return backup_log
         except subprocess.CalledProcessError as e:
@@ -350,7 +350,7 @@ class RestoreInDisposableVM:
             except:  # pylint: disable=bare-except
                 backup_log = None
             raise qubesadmin.exc.BackupRestoreError(
-                'qvm-backup-restore failed with {}'.format(e.returncode),
+                f'qvm-backup-restore failed with {e.returncode}',
                 backup_log=backup_log)
         finally:
             if self.dispvm is not None:

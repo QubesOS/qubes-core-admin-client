@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -392,7 +391,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
                 e.cmd = str(args)
                 raise e
 
-        return self.run(" ".join(shlex.quote(arg) for arg in args), **kwargs)
+        return self.run(shlex.join(args), **kwargs)
 
     @property
     def appvms(self):

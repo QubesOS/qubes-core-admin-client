@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -50,7 +49,7 @@ class RuleAction(argparse.Action):
         for opt in values:
             if opt[-1] == '=':
                 raise argparse.ArgumentError(
-                    None, 'invalid rule description: {}'.format(opt))
+                    None, f'invalid rule description: {opt}')
             opt_elements = opt.split('=')
             if len(opt_elements) == 2:
                 key, value = opt_elements
@@ -58,12 +57,12 @@ class RuleAction(argparse.Action):
                 key, value = assumed_order[0], opt
             else:
                 raise argparse.ArgumentError(None,
-                    'invalid rule description: {}'.format(opt))
+                    f'invalid rule description: {opt}')
             if key in ['dst4', 'dst6']:
                 key = 'dsthost'
             if key not in allowed_opts:
                 raise argparse.ArgumentError(None,
-                    'Invalid rule element: {}'.format(opt))
+                    f'Invalid rule element: {opt}')
             if key == 'expire' and value.startswith('+'):
                 value = (datetime.datetime.now() +
                          datetime.timedelta(seconds=int(value[1:]))).\

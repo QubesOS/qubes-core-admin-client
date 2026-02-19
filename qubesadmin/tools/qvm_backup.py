@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -121,7 +120,7 @@ def print_progress(expected_profile, _subject, _event, backup_profile,
     '''Event handler for reporting backup progress'''
     if backup_profile != expected_profile:
         return
-    sys.stderr.write('\rMaking a backup... {:.02f}%'.format(float(progress)))
+    sys.stderr.write(f'\rMaking a backup... {float(progress):.02f}%')
 
 def main(args=None, app=None):
     '''Main function of qvm-backup tool'''
@@ -139,7 +138,7 @@ def main(args=None, app=None):
                 # don't care about collisions because only the user in dom0 can
                 # trigger this, and qrexec policy should not allow random VM
                 # to execute the same backup in the meantime
-                profile_name = 'backup-run-{}'.format(os.getpid())
+                profile_name = f'backup-run-{os.getpid()}'
             # first write the backup profile without passphrase, to display
             # summary
             profile_path = os.path.join(
@@ -178,7 +177,7 @@ def main(args=None, app=None):
             'dom0', 'admin.backup.Info', profile_name)
         print(backup_summary.decode())
     except QubesException as err:
-        print('\nBackup preparation error: {}'.format(err), file=sys.stderr)
+        print(f'\nBackup preparation error: {err}', file=sys.stderr)
         return 1
 
     if not args.yes:
@@ -220,7 +219,7 @@ def main(args=None, app=None):
         loop.run_until_complete(loop.run_in_executor(None,
             args.app.qubesd_call, 'dom0', 'admin.backup.Execute', profile_name))
     except QubesException as err:
-        print('\nBackup error: {}'.format(err), file=sys.stderr)
+        print(f'\nBackup error: {err}', file=sys.stderr)
         return 1
     finally:
         if have_events:
