@@ -110,7 +110,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     qubesadmin.events.utils.wait_for_domain_shutdown(
                         this_round_domains),
                     args.timeout))
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if not args.dry_run:
                     for vm in this_round_domains:
                         try:
