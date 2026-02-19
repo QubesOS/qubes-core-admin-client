@@ -233,7 +233,7 @@ def main(args=None, app=None):
         try:
             appvm = args.app.domains[args.appvm]
         except KeyError:
-            parser.error('no such domain: {!r}'.format(args.appvm))
+            parser.error(f'no such domain: {args.appvm!r}')
 
     if args.location_is_service and not args.appvm:
         parser.error('--location-is-service option requires -d')

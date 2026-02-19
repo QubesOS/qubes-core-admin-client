@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -51,7 +50,7 @@ def parse_size(size):
             size = size[:-len(unit)].strip()
             return int(size) * multiplier
 
-    raise qubesadmin.exc.QubesException("Invalid size: {0}.".format(size))
+    raise qubesadmin.exc.QubesException(f"Invalid size: {size}.")
 
 
 def mbytes_to_kmg(size):
@@ -176,7 +175,7 @@ def encode_for_vmexec(args):
     def encode(part):
         if part.group(0) == b'-':
             return b'--'
-        return '-{:02X}'.format(ord(part.group(0))).encode('ascii')
+        return f'-{ord(part.group(0)):02X}'.encode('ascii')
 
     parts = []
     for arg in args:

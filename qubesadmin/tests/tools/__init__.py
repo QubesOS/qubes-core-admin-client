@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -29,10 +28,7 @@ import asyncio
 class StdoutBuffer:
     def __init__(self):
         self.orig_stdout = None
-        if sys.version_info[0] >= 3:
-            self.stdout = io.StringIO()
-        else:
-            self.stdout = io.BytesIO()
+        self.stdout = io.StringIO()
 
     def __enter__(self):
         self.orig_stdout = sys.stdout
@@ -47,10 +43,7 @@ class StdoutBuffer:
 class StderrBuffer:
     def __init__(self):
         self.orig_stderr = None
-        if sys.version_info[0] >= 3:
-            self.stderr = io.StringIO()
-        else:
-            self.stderr = io.BytesIO()
+        self.stderr = io.StringIO()
 
     def __enter__(self):
         self.orig_stderr = sys.stderr

@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -87,7 +86,7 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
             b'0\x00test-vm class=AppVM state=Running\n' \
             b'test-vm2 class=AppVM state=Running\n'
         self.assertEqual(set(self.app.domains.keys()),
-            set(['test-vm', 'test-vm2']))
+            {'test-vm', 'test-vm2'})
         self.assertAllCalled()
 
     def test_006_values(self):
@@ -97,8 +96,8 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
         values = self.app.domains.values()
         for obj in values:
             self.assertIsInstance(obj, qubesadmin.vm.QubesVM)
-        self.assertEqual(set([vm.name for vm in values]),
-            set(['test-vm', 'test-vm2']))
+        self.assertEqual({vm.name for vm in values},
+            {'test-vm', 'test-vm2'})
         self.assertAllCalled()
 
     def test_007_getitem_blind_mode(self):

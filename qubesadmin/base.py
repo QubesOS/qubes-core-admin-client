@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -281,7 +280,7 @@ class PropertyHolder:
         prop_type = prop_type.decode('ascii')
         if not prop_type.startswith('type='):
             raise qubesadmin.exc.QubesDaemonCommunicationError(
-                'Invalid type prefix received: {}'.format(prop_type))
+                f'Invalid type prefix received: {prop_type}')
         (_, prop_type) = prop_type.split('=', 1)
         value = value.decode()
         if prop_type == 'str':
@@ -303,7 +302,7 @@ class PropertyHolder:
                 return None
             return self.app.labels.get_blind(value)
         raise qubesadmin.exc.QubesDaemonCommunicationError(
-            'Received invalid value type: {}'.format(prop_type))
+            f'Received invalid value type: {prop_type}')
 
     def _fetch_all_properties(self):
         """

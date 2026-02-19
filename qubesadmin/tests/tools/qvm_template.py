@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -3735,7 +3734,7 @@ test-vm : Qubes template for fedora-31
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
-            '{} should not exist before'.format(path))
+            f'{path} should not exist before')
         # just create an empty file
         with open(path, 'wb') as f_template:
             f_template.truncate(dlsize)
@@ -4216,7 +4215,7 @@ test-vm : Qubes template for fedora-31
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
-            '{} should not exist before'.format(path))
+            f'{path} should not exist before')
         # just create an empty file
         with open(path, 'wb') as f_pkg:
             f_pkg.truncate(dlsize // 2)

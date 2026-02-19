@@ -20,7 +20,6 @@
 
 '''Manages Qubes pools and their options'''
 
-from __future__ import print_function
 
 import argparse
 import sys
@@ -79,7 +78,7 @@ def remove_pools(args):
             errors.append('No such pool %s\n' % pool_name)
         except qubesadmin.exc.QubesException as e:
             errors.append(
-                'Failed to remove pool %s: %s\n' % (pool_name, str(e)))
+                f'Failed to remove pool {pool_name}: {str(e)}\n')
     if errors:
         raise qubesadmin.exc.QubesException('\n'.join(errors))
 
@@ -92,12 +91,12 @@ def set_pool(args):
     for opt, value in options:
         if not hasattr(type(pool), opt):
             errors.append(
-                'Setting option %s is not supported for pool %s\n' % (
+                'Setting option {} is not supported for pool {}\n'.format(
                     opt, pool.name))
         try:
             setattr(pool, opt, value)
         except qubesadmin.exc.QubesException as e:
-            errors.append('Failed to set option %s for pool %s: %s\n' % (
+            errors.append('Failed to set option {} for pool {}: {}\n'.format(
                 opt, pool.name, str(e)))
     if errors:
         raise qubesadmin.exc.QubesException('\n'.join(errors))

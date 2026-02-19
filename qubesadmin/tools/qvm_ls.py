@@ -26,7 +26,6 @@
 '''qvm-ls - List available domains'''
 
 
-from __future__ import print_function
 
 import argparse
 import collections.abc
@@ -327,7 +326,7 @@ def calc_used(vm, volume_name):
     if size == 0:
         return 0
     usage = calc_usage(vm, volume_name)
-    return '{}%'.format(usage * 100 // size)
+    return f'{usage * 100 // size}%'
 
 
 # todo maxmem
@@ -691,8 +690,8 @@ def get_parser():
         help='exclude qubes having specific tag(s)')
 
     for pwstate in DOMAIN_POWER_STATES:
-        parser_filter.add_argument('--{}'.format(pwstate), action='store_true',
-        help='show {} VMs'.format(pwstate))
+        parser_filter.add_argument(f'--{pwstate}', action='store_true',
+        help=f'show {pwstate} VMs')
 
     parser_filter.add_argument('--template-source', nargs='+',
         metavar='TEMPLATE', action='store',
@@ -876,9 +875,9 @@ def main(args=None, app=None):
             try:
                 key, value = feature.split('=', 1)
             except ValueError:
-                parser.error("Invalid argument: --features {}".format(feature))
+                parser.error(f"Invalid argument: --features {feature}")
             if not key:
-                parser.error("Invalid argument: --features {}".format(feature))
+                parser.error(f"Invalid argument: --features {feature}")
             if value == '':
                 value = None
             elif value in ['\'\'', '""']:
@@ -891,9 +890,9 @@ def main(args=None, app=None):
             try:
                 key, value = pref.split('=', 1)
             except ValueError:
-                parser.error("Invalid argument: --prefs {}".format(pref))
+                parser.error(f"Invalid argument: --prefs {pref}")
             if not key:
-                parser.error("Invalid argument: --prefs {}".format(pref))
+                parser.error(f"Invalid argument: --prefs {pref}")
             if value == '':
                 value = None
             elif value in ['\'\'', '""']:
