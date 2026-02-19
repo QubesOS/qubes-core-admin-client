@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -172,13 +171,13 @@ class QubesTest(qubesadmin.app.QubesBase):
         call_key = (dest, method, arg, payload)
         self.actual_calls.append(call_key)
         if call_key not in self.expected_calls:
-            raise AssertionError('Unexpected call {!r}'.format(call_key))
+            raise AssertionError(f'Unexpected call {call_key!r}')
         return_data = self.expected_calls[call_key]
         if isinstance(return_data, list):
             try:
                 return_data = return_data.pop(0)
             except IndexError:
-                raise AssertionError('Extra call {!r}'.format(call_key))
+                raise AssertionError(f'Extra call {call_key!r}')
         return self._parse_qubesd_response(return_data)
 
     def run_service(self, dest, service, **kwargs):

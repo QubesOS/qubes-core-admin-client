@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -286,7 +285,7 @@ class TestPool(qubesadmin.tests.QubesTestCase):
             self.assertNotIn(pool.name, seen)
             seen.add(pool.name)
 
-        self.assertEqual(seen, set(['file', 'lvm']))
+        self.assertEqual(seen, {'file', 'lvm'})
         self.assertAllCalled()
 
     def test_010_config(self):
@@ -354,7 +353,7 @@ class TestPool(qubesadmin.tests.QubesTestCase):
             self.assertNotIn(volume.vid, seen)
             seen.add(volume.vid)
 
-        self.assertEqual(seen, set(['vol1', 'vol2']))
+        self.assertEqual(seen, {'vol1', 'vol2'})
         self.assertAllCalled()
 
     def test_030_pool_drivers(self):
@@ -362,9 +361,9 @@ class TestPool(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.pool.ListDrivers', None, None)] = \
             b'0\x00file dir_path revisions_to_keep\n' \
             b'lvm volume_group thin_pool revisions_to_keep\n'
-        self.assertEqual(set(self.app.pool_drivers), set(['file', 'lvm']))
+        self.assertEqual(set(self.app.pool_drivers), {'file', 'lvm'})
         self.assertEqual(set(self.app.pool_driver_parameters('file')),
-            set(['dir_path', 'revisions_to_keep']))
+            {'dir_path', 'revisions_to_keep'})
         self.assertAllCalled()
 
     def test_040_add(self):

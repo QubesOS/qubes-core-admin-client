@@ -1,4 +1,3 @@
-# coding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -24,7 +23,6 @@
 
 '''qvm-service - Manage domain's services'''
 
-from __future__ import print_function
 
 import argparse
 import sys
@@ -80,7 +78,7 @@ def parse_bool(value):
         if lcvalue in ('1', 'yes', 'true', 'on'):
             return True
         raise qubesadmin.exc.QubesValueError(
-            'Invalid literal for boolean value: {!r}'.format(value))
+            f'Invalid literal for boolean value: {value!r}')
 
     return bool(value)
 
