@@ -64,7 +64,7 @@ import asyncio
 from unittest import mock
 from copy import deepcopy
 
-from typing import List, Optional, Dict, Tuple, Any
+from typing import Any
 
 import qubesadmin.events
 from qubesadmin.tests import QubesTest
