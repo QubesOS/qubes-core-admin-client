@@ -29,9 +29,11 @@ The same in `qubes-core-admin` and `qubes-core-admin-client`,
 should be moved to one place.
 """
 
+from __future__ import annotations
 
 import string
 import sys
+import typing
 from enum import Enum
 from typing import Optional, Any
 from collections.abc import Callable
@@ -39,15 +41,14 @@ from collections.abc import Callable
 import qubesadmin.exc
 from qubesadmin.exc import QubesValueError
 
+if typing.TYPE_CHECKING:
+    from qubesadmin.vm import QubesVM
+
 
 class ProtocolError(AssertionError):
     """
     Raised when something is wrong with data received.
     """
-
-
-QubesVM = 'qubesadmin.vm.QubesVM'
-
 
 class UnexpectedDeviceProperty(qubesadmin.exc.QubesException, ValueError):
     """
