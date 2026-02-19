@@ -639,7 +639,7 @@ def qrexec_repoquery(
             elif buildtime.isnumeric():
                 # DNF5 provides seconds since epoch
                 buildtime = datetime.datetime.fromtimestamp(int(buildtime),
-                    tz=datetime.timezone.utc)
+                    tz=datetime.UTC)
             else:
                 raise ValueError
             # XXX: Perhaps whitelist licenses directly?
@@ -1214,11 +1214,11 @@ def install(
             tpl.features['template-buildtime'] = \
                 datetime.datetime.fromtimestamp(
                         int(package_hdr[rpm.RPMTAG_BUILDTIME]),
-                        tz=datetime.timezone.utc) \
+                        tz=datetime.UTC) \
                     .strftime(DATE_FMT)
             tpl.features['template-installtime'] = \
                 datetime.datetime.now(
-                    tz=datetime.timezone.utc).strftime(DATE_FMT)
+                    tz=datetime.UTC).strftime(DATE_FMT)
             tpl.features['template-license'] = \
                 package_hdr[rpm.RPMTAG_LICENSE]
             tpl.features['template-url'] = \
@@ -1712,11 +1712,11 @@ def migrate_from_rpmdb(app):
             vm.features['template-reponame'] = '@commandline'
             vm.features['template-buildtime'] = \
                 datetime.datetime.fromtimestamp(
-                    pkg[rpm.RPMTAG_BUILDTIME], tz=datetime.timezone.utc).\
+                    pkg[rpm.RPMTAG_BUILDTIME], tz=datetime.UTC).\
                 strftime(DATE_FMT)
             vm.features['template-installtime'] = \
                 datetime.datetime.fromtimestamp(
-                    pkg[rpm.RPMTAG_INSTALLTIME], tz=datetime.timezone.utc).\
+                    pkg[rpm.RPMTAG_INSTALLTIME], tz=datetime.UTC).\
                 strftime(DATE_FMT)
             vm.features['template-license'] = pkg[rpm.RPMTAG_LICENSE]
             vm.features['template-url'] = pkg[rpm.RPMTAG_URL]

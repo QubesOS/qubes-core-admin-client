@@ -251,7 +251,7 @@ async def call_postinstall_service(vm):
                 await asyncio.wait_for(
                     qubesadmin.events.utils.wait_for_domain_shutdown([vm]),
                     qubesadmin.config.defaults['shutdown_timeout'])
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 try:
                     vm.kill()
                 except qubesadmin.exc.QubesVMNotStartedError:
