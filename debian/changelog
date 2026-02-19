@@ -1,3 +1,38 @@
+qubes-core-admin-client (4.2.18-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * tests: Account for argparse bug fix in Python 3.13
+
+  [ Marek Marczykowski-Górecki ]
+  * Restore installing qvm-console
+
+  [ Ali Mirjamali ]
+  * Improve `qvm-backup-restore --paranoid-mode`
+  * Assure backup restore/verify tmpdir is properly deleted
+
+  [ Rusty Bird ]
+  * qvm-template: don't persist lock file across system reboots
+
+  [ Ali Mirjamali ]
+  * Fix nested argparse argument groups
+  * Initialize asyncio event loop before using it
+  * Assure `multiprocess` start method is `fork`
+  * Document `servicevm` feature
+
+  [ jamke ]
+  * Remove `--just-db` option from auto-generated man of qvm-remove
+  * Fix mistake in man qvm-template: use info instead of list
+
+  [ Ali Mirjamali ]
+  * Cache GUIVM keyboard layout in `qvm-start-daemon`
+
+  [ Marek Marczykowski-Górecki ]
+  * backup: fix expat import
+  * tests: flush temporary qubes.xml file before using it via path
+  * ci: drop R4.1
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 19 Feb 2026 20:12:39 +0100
+
 qubes-core-admin-client (4.2.17-1) unstable; urgency=medium
 
   [ Ali Mirjamali ]
