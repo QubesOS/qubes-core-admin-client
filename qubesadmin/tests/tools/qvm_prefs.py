@@ -19,8 +19,6 @@
 
 # pylint: disable=missing-docstring
 
-import sys
-
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_prefs
