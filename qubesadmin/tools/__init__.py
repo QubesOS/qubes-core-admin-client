@@ -31,94 +31,107 @@ import logging
 import os
 import subprocess
 import sys
-import textwrap
+from argparse import Namespace
+from collections.abc import Sequence
 
 import qubesadmin.log
 import qubesadmin.exc
 import qubesadmin.vm
 
-#: constant returned when some action should be performed on all qubes
-VM_ALL = object()
-
 class QubesAction(argparse.Action):
-    ''' Interface providing a convinience method to be called, after
-        `namespace.app` is instantiated.
-    '''
-    # pylint: disable=too-few-public-methods
+    """
+    Custom Action for Qubes
+    """
     def parse_qubes_app(self, parser, namespace):
-        ''' This method is called by :py:class:`qubes.tools.QubesArgumentParser`
-            after the `namespace.app` is instantiated. Oerwrite this method when
-            extending :py:class:`qubes.tools.QubesAction` to initialized values
-            based on the `namespace.app`
-        '''
+        """
+        This method is called by :py:class:`qubes.tools.QubesArgumentParser`
+        after `namespace.app` is instantiated.
+
+        Used to initialize values based on `namespace.app`.
+        """
         raise NotImplementedError
 
 
 class PropertyAction(argparse.Action):
-    '''Action for argument parser that stores a property.'''
-    # pylint: disable=redefined-builtin,too-few-public-methods
+    """Action for argument parser that stores a property.
+    Format: `--<option_name> property=value`
+    """
+    # pylint: disable=redefined-builtin
     def __init__(self,
-            option_strings,
-            dest,
+            option_strings: list[str],
+            dest: str,
             *,
-            metavar='NAME=VALUE',
-            required=False,
-            help='set property to a value'):
+            metavar: str='NAME=VALUE',
+            required: bool=False,
+            help: str='set property to a value'):
         super().__init__(option_strings, 'properties',
-            metavar=metavar, default={}, help=help)
+            metavar=metavar, help=help, required=required)
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, parser: argparse.ArgumentParser, namespace: Namespace,
+                 values: str | Sequence | None,
+                 option_string: str | None=None) -> None:
+        if not isinstance(values, str):
+            parser.error(f'Invalid property token: {values!r}')
         try:
             prop, value = values.split('=', 1)
         except ValueError:
-            parser.error('invalid property token: {!r}'.format(values))
+            parser.error('Invalid property token: {!r}'.format(values))
 
         properties = getattr(namespace, self.dest)
-        # copy it, to not modify _mutable_ self.default
-        if not properties:
-            properties = properties.copy()
+        if properties is None:
+            properties = {}
         properties[prop] = value
         setattr(namespace, self.dest, properties)
 
 
 class SinglePropertyAction(argparse.Action):
-    '''Action for argument parser that stores a property.'''
+    """Action for argument parser that stores a property.
+    Format: `--property_name value` or `--property_name`
+    """
 
-    # pylint: disable=redefined-builtin,too-few-public-methods
+    # pylint: disable=redefined-builtin
     def __init__(self,
             option_strings,
             dest,
             *,
-            metavar='VALUE',
-            const=None,
-            nargs=None,
-            required=False,
-            help=None):
+            metavar: str='VALUE',
+            const: object=None,
+            nargs: int | str | None=None,
+            required: bool=False,
+            help: str | None=None):
         if help is None:
             help = 'set {!r} property to a value'.format(dest)
             if const is not None:
                 help += ' {!r}'.format(const)
 
-        if const is not None:
-            nargs = 0
+        if const is not None and nargs is None:
+            nargs = argparse.OPTIONAL
 
-        super().__init__(option_strings, 'properties',
-            metavar=metavar, help=help, default={}, const=const,
-            nargs=nargs)
+        super().__init__(option_strings, 'properties', required=required,
+            metavar=metavar, help=help, const=const, nargs=nargs)
 
         self.name = dest
 
 
-    def __call__(self, parser, namespace, values, option_string=None):
-        if values is self.default and self.default == {}:
-            return
+    def __call__(self, parser: argparse.ArgumentParser,
+                 namespace: Namespace, values: str | Sequence | None,
+                 option_string: str | None=None)\
+            -> None:
+        if not values:
+            # If we omit the argument and it's optional, __call__ will
+            #  not be called.
+            # If we omit it and it's positional, `values` will be either
+            #  `None` or `[]` depending on `nargs`.
+            # We don't want to modify `propertie` in either case, unless
+            #  `const` is set.
+            if not self.const:
+                return
+            values = self.const
 
         properties = getattr(namespace, self.dest)
-        # copy it, to not modify _mutable_ self.default
-        if not properties:
-            properties = properties.copy()
-        properties[self.name] = values \
-            if self.const is None else self.const
+        if properties is None:
+            properties = {}
+        properties[self.name] = values or self.const
         setattr(namespace, self.dest, properties)
 
 
