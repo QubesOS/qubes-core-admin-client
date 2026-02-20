@@ -1223,7 +1223,6 @@ class DeviceInfo(VirtualDevice):
 
 
 class UnknownDevice(DeviceInfo):
-    # pylint: disable=too-few-public-methods
     """Unknown device - for example, exposed by domain not running currently"""
 
     @staticmethod

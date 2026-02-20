@@ -856,7 +856,6 @@ def get_supported_crypto_algo(crypto_algorithm: str | None=None)\
 
 class BackupRestoreOptions:
     '''Options for restore operation'''
-    # pylint: disable=too-few-public-methods
     def __init__(self) -> None:
         #: use default NetVM if the one referenced in backup do not exists on
         #  the host
@@ -898,7 +897,6 @@ class BackupRestore:
 
     class VMToRestore:
         '''Information about a single VM to be restored'''
-        # pylint: disable=too-few-public-methods
         #: VM excluded from restore by user
         EXCLUDED = object()
         #: VM with such name already exists on the host
@@ -932,7 +930,6 @@ class BackupRestore:
 
     class Dom0ToRestore(VMToRestore):
         '''Information about dom0 home to restore'''
-        # pylint: disable=too-few-public-methods
         #: backup was performed on system with different dom0 username
         USERNAME_MISMATCH = object()
 

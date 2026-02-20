@@ -40,7 +40,6 @@ service_to_feature = {
 
 class Core2VM(qubesadmin.backup.BackupVM):
     '''VM object'''
-    # pylint: disable=too-few-public-methods
     def __init__(self) -> None:
         super().__init__()
         self.backup_content = False

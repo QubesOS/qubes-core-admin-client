@@ -29,7 +29,6 @@ import xcffib
 class XkbUseExtensionReply(xcffib.Reply):
     """Helper class to parse XkbUseExtensionReply
     Contains hardcoded values based on X11/XKBproto.h"""
-    # pylint: disable=too-few-public-methods
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -47,7 +46,6 @@ class XkbUseExtensionCookie(xcffib.Cookie):
 
 class XkbGetStateReply(xcffib.Reply):
     """Helper class to parse XkbGetState; copy&paste from X11/XKBproto.h"""
-    # pylint: disable=too-few-public-methods
     _typedef = """
         BYTE    type;
         BYTE    deviceID;

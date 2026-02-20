@@ -36,7 +36,6 @@ from qubesadmin.vm import QubesVM
 
 class Core3VM(qubesadmin.backup.BackupVM):
     '''VM object'''
-    # pylint: disable=too-few-public-methods
     @property
     def included_in_backup(self) -> bool:
         return self.backup_path is not None

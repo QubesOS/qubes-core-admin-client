@@ -32,7 +32,6 @@ class Features:
     described above. Be aware that assigning the number `0` (which is considered
     false in Python) will result in string `'0'`, which is considered true.
     '''
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, vm):
         super().__init__()

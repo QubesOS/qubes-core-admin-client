@@ -354,7 +354,6 @@ REGEX_OUTPUT = re.compile(
 class KeyboardLayout:
     """Class to store and parse X Keyboard layout data"""
 
-    # pylint: disable=too-few-public-methods
     def __init__(self, binary_string):
         split_string = binary_string.split(b"\0")
         self.languages = split_string[2].decode().split(",")

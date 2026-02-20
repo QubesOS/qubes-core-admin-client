@@ -118,7 +118,7 @@ class _AssertNotRaisesContext:
     """A context manager used to implement TestCase.assertNotRaises methods.
 
     Stolen from unittest and hacked. Regexp support stripped.
-    """ # pylint: disable=too-few-public-methods
+    """
 
     def __init__(self, expected, test_case, expected_regexp=None):
         if expected_regexp is not None:
