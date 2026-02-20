@@ -32,7 +32,6 @@ import qubesadmin.tools
 
 
 class RuleAction(argparse.Action):
-    # pylint: disable=too-few-public-methods
     '''Parser action for a single firewall rule. It accept syntax:
         - <action> [<dsthost> [<proto> [<dstports>|<icmptype>]]]
         - action=<action> [specialtarget=dns] [dsthost=<dsthost>]
