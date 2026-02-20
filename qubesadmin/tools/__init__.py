@@ -38,9 +38,6 @@ import qubesadmin.log
 import qubesadmin.exc
 import qubesadmin.vm
 
-#: constant returned when some action should be performed on all qubes
-VM_ALL = object()
-
 class QubesAction(argparse.Action):
     """
     Custom Action for Qubes
