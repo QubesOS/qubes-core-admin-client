@@ -44,7 +44,6 @@ class QubesAction(argparse.Action):
     ''' Interface providing a convinience method to be called, after
         `namespace.app` is instantiated.
     '''
-    # pylint: disable=too-few-public-methods
     def parse_qubes_app(self, parser, namespace):
         ''' This method is called by :py:class:`qubes.tools.QubesArgumentParser`
             after the `namespace.app` is instantiated. Oerwrite this method when
@@ -56,7 +55,7 @@ class QubesAction(argparse.Action):
 
 class PropertyAction(argparse.Action):
     '''Action for argument parser that stores a property.'''
-    # pylint: disable=redefined-builtin,too-few-public-methods
+    # pylint: disable=redefined-builtin
     def __init__(self,
             option_strings,
             dest,
@@ -84,7 +83,7 @@ class PropertyAction(argparse.Action):
 class SinglePropertyAction(argparse.Action):
     '''Action for argument parser that stores a property.'''
 
-    # pylint: disable=redefined-builtin,too-few-public-methods
+    # pylint: disable=redefined-builtin
     def __init__(self,
             option_strings,
             dest,
@@ -125,7 +124,7 @@ class SinglePropertyAction(argparse.Action):
 class VmNameAction(QubesAction):
     """ Action for parsing one or multiple domains from provided VMNAMEs """
 
-    # pylint: disable=too-few-public-methods,redefined-builtin
+    # pylint: disable=redefined-builtin
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
                  **kwargs):
         if help is None:
@@ -196,7 +195,6 @@ class VmNameAction(QubesAction):
 
 class RunningVmNameAction(VmNameAction):
     ''' Action for argument parser that gets a running domain from VMNAME '''
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
                  **kwargs):
@@ -231,7 +229,6 @@ class VolumeAction(QubesAction):
     ''' Action for argument parser that gets the
         :py:class:``qubes.storage.Volume`` from a POOL_NAME:VOLUME_ID string.
     '''
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, help='A pool & volume id combination',
                  required=True, **kwargs):
@@ -272,7 +269,6 @@ class VMVolumeAction(QubesAction):
     ''' Action for argument parser that gets the
         :py:class:``qubes.storage.Volume`` from a VM:VOLUME string.
     '''
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, help='A pool & volume id combination',
                  required=True, **kwargs):
@@ -309,7 +305,6 @@ class VMVolumeAction(QubesAction):
 
 class PoolsAction(QubesAction):
     ''' Action for argument parser to gather multiple pools '''
-    # pylint: disable=too-few-public-methods
 
     def __call__(self, parser, namespace, values, option_string=None):
         ''' Set ``namespace.vmname`` to ``values`` '''
@@ -480,7 +475,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
 class SubParsersHelpAction(argparse._HelpAction):
     ''' Print help for all options and all subparsers '''
     # source https://stackoverflow.com/a/24122778
-    # pylint: disable=protected-access,too-few-public-methods
+    # pylint: disable=protected-access
 
     @staticmethod
     def _indent(indent, text):
@@ -511,7 +506,7 @@ class SubParsersHelpAction(argparse._HelpAction):
 class AliasedSubParsersAction(argparse._SubParsersAction):
     '''SubParser with support for action aliases'''
     # source https://gist.github.com/sampsyo/471779
-    # pylint: disable=protected-access,too-few-public-methods,missing-docstring
+    # pylint: disable=protected-access,missing-docstring
     class _AliasedPseudoAction(argparse.Action):
         # pylint: disable=redefined-builtin
         def __init__(self, name, aliases, help):

@@ -72,7 +72,6 @@ class VolumeData:
     """ Wrapper object around :py:class:`qubes.storage.Volume`, mainly to track
         the domains a volume is attached to.
     """
-    # pylint: disable=too-few-public-methods
     def __init__(self, volume):
         self.pool = volume.pool
         self.vid = volume.vid
