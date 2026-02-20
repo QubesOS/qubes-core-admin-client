@@ -133,7 +133,16 @@ class TC_01_SinglePropertyAction(qubesadmin.tests.QubesTestCase):
         self.assertIn(
             ('testprop', 'testvalue'), args.properties.items())
 
-    def test_104_set_prop_positional(self):
+    def test_104_set_prop_const_override(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--testprop', '-T',
+            action=qubesadmin.tools.SinglePropertyAction,
+            const='testvalue')
+        args = parser.parse_args(['-T', 'override'])
+        self.assertIn(
+            ('testprop', 'override'), args.properties.items())
+
+    def test_105_set_prop_positional(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('testprop',
             action=qubesadmin.tools.SinglePropertyAction)
