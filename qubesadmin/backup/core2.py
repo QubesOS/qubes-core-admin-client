@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -229,7 +228,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
 
         if dispvm_netvm != self.globals['default_netvm']:
             if dispvm_netvm:
-                dispvm_tpl_name = 'disp-{}'.format(dispvm_netvm)
+                dispvm_tpl_name = f'disp-{dispvm_netvm}'
             else:
                 dispvm_tpl_name = 'disp-no-netvm'
 
@@ -303,7 +302,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             if value and value.lower() == "none":
                 value = None
             value_is_default = element.get(
-                "uses_default_{}".format(attr))
+                f"uses_default_{attr}")
             if value_is_default and value_is_default.lower() != \
                     "true":
                 vm.properties[attr] = value
@@ -354,8 +353,7 @@ class Core2Qubes(qubesadmin.backup.BackupApp):
             try:
                 # pylint: disable=no-member
                 tree = lxml.etree.parse(fh)
-            except (EnvironmentError,  # pylint: disable=broad-except
-                    xml.parsers.expat.ExpatError) as err:
+            except (OSError, xml.parsers.expat.ExpatError) as err:
                 self.log.error(err)
                 return False
 

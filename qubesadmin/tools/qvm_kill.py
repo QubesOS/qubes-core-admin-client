@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -43,7 +42,7 @@ def main(args=None, app=None):
             domain.kill()
         except qubesadmin.exc.QubesVMNotStartedError:
             pass
-        except (IOError, OSError, qubesadmin.exc.QubesException) as e:
+        except (OSError, qubesadmin.exc.QubesException) as e:
             exit_code = 1
             parser.print_error("Failed to kill '{}': {}".format(
                 domain.name, e))

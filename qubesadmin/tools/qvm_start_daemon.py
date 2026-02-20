@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -287,7 +286,7 @@ def serialize_gui_daemon_options(options):
                     )
                 continue
 
-            lines.append("  {} = {};".format(name, serialized))
+            lines.append(f"  {name} = {serialized};")
     lines.append("}")
     lines.append("")
     return "\n".join(lines)
@@ -310,7 +309,7 @@ def escape_config_string(value):
 
     assert not NON_ASCII_RE.match(
         value
-    ), "expected an ASCII string: {!r}".format(value)
+    ), f"expected an ASCII string: {value!r}"
 
     value = (
         value.replace("\\", "\\\\")
@@ -321,7 +320,7 @@ def escape_config_string(value):
         .replace("\t", r"\t")
     )
     value = UNPRINTABLE_CHARACTER_RE.sub(
-        lambda m: r"\x{:02x}".format(ord(m.group(0))), value
+        lambda m: fr"\x{ord(m.group(0)):02x}", value
     )
     return '"' + value + '"'
 
@@ -635,7 +634,7 @@ class DAEMONLauncher:
                 session_owner = line.split(b":")[2].decode()
         if session_owner is not None:
             data_dir = os.path.expanduser(
-                "~{}/.local/share".format(session_owner)
+                f"~{session_owner}/.local/share"
             )
         else:
             # fallback to current user
@@ -692,17 +691,17 @@ class DAEMONLauncher:
     @staticmethod
     def guid_pidfile(xid):
         """Helper function to construct a GUI pidfile path"""
-        return "/var/run/qubes/guid-running.{}".format(xid)
+        return f"/var/run/qubes/guid-running.{xid}"
 
     @staticmethod
     def guid_config_file(xid):
         """Helper function to construct a GUI configuration file path"""
-        return "/var/run/qubes/guid-conf.{}".format(xid)
+        return f"/var/run/qubes/guid-conf.{xid}"
 
     @staticmethod
     def pacat_pidfile(xid):
         """Helper function to construct an AUDIO pidfile path"""
-        return "/var/run/qubes/pacat.{}".format(xid)
+        return f"/var/run/qubes/pacat.{xid}"
 
     @staticmethod
     def pacat_domid(vm):
@@ -736,7 +735,7 @@ class DAEMONLauncher:
             if not vm.debug and os.path.exists(stubdom_guid_pidfile):
                 # Terminate stubdom guid once "real" gui agent connects
                 with open(
-                    stubdom_guid_pidfile, "r", encoding="ascii"
+                    stubdom_guid_pidfile, encoding="ascii"
                 ) as pidfile:
                     stubdom_guid_pid = pidfile.read().strip()
                 guid_cmd += ["-K", stubdom_guid_pid]
@@ -811,7 +810,7 @@ class DAEMONLauncher:
             return
         guivm = getattr(vm, "guivm", None)
         if guivm != vm.app.local_name:
-            vm.log.info("GUI connected to {}. Skipping.".format(guivm))
+            vm.log.info(f"GUI connected to {guivm}. Skipping.")
             return
 
         if vm.virt_mode == "hvm":
@@ -834,7 +833,7 @@ class DAEMONLauncher:
             return
         audiovm = getattr(vm, "audiovm", None)
         if audiovm != vm.app.local_name:
-            vm.log.info("AUDIO connected to {}. Skipping.".format(audiovm))
+            vm.log.info(f"AUDIO connected to {audiovm}. Skipping.")
             return
 
         if not vm.features.check_with_template("audio", True):
@@ -1178,7 +1177,7 @@ def main():
             loop.close()
     elif args.notify_monitor_layout:
         try:
-            with open(pidfile_path, "r", encoding="ascii") as pidfile:
+            with open(pidfile_path, encoding="ascii") as pidfile:
                 pid = int(pidfile.read().strip())
             os.kill(pid, signal.SIGHUP)
         except (FileNotFoundError, ValueError) as e:

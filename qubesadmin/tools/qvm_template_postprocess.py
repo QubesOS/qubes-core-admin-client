@@ -183,7 +183,7 @@ def import_appmenus(vm, source_dir, skip_generate=True):
     # name according to the FreeDesktop spec
     source_dir = pathlib.Path(source_dir)
     try:
-        with open(source_dir / 'vm-whitelisted-appmenus.list', 'r',
+        with open(source_dir / 'vm-whitelisted-appmenus.list',
                   encoding='ascii') as fd:
             vm.features['default-menu-items'] = \
                 ' '.join([x.rstrip() for x in fd])
@@ -191,14 +191,14 @@ def import_appmenus(vm, source_dir, skip_generate=True):
         vm.log.warning('Cannot set default-menu-items, %s not found',
                        e.filename)
     try:
-        with open(source_dir / 'whitelisted-appmenus.list', 'r',
+        with open(source_dir / 'whitelisted-appmenus.list',
                   encoding='ascii') as fd:
             vm.features['menu-items'] = ' '.join([x.rstrip() for x in fd])
     except FileNotFoundError as e:
         vm.log.warning('Cannot set menu-items, %s not found',
                        e.filename)
     try:
-        with open(source_dir / 'netvm-whitelisted-appmenus.list', 'r',
+        with open(source_dir / 'netvm-whitelisted-appmenus.list',
                   encoding='ascii') as fd:
             vm.features['netvm-menu-items'] = ' '.join([x.rstrip() for x in fd])
     except FileNotFoundError as e:
@@ -222,7 +222,7 @@ def import_appmenus(vm, source_dir, skip_generate=True):
 
 def parse_template_config(path):
     '''Parse template.conf from template package. (KEY=VALUE format)'''
-    with open(path, 'r', encoding='ascii') as fd:
+    with open(path, encoding='ascii') as fd:
         return dict(line.rstrip('\n').split('=', 1) for line in fd)
 
 async def call_postinstall_service(vm):
@@ -251,7 +251,7 @@ async def call_postinstall_service(vm):
                 await asyncio.wait_for(
                     qubesadmin.events.utils.wait_for_domain_shutdown([vm]),
                     qubesadmin.config.defaults['shutdown_timeout'])
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 try:
                     vm.kill()
                 except qubesadmin.exc.QubesVMNotStartedError:
@@ -416,7 +416,7 @@ def pre_remove(args):
     for appvm in tpl.appvms:
         dependant_vms = True
         app.log.error(
-            'ERROR! Qube "{}" uses this template'.format(appvm.name))
+            f'ERROR! Qube "{appvm.name}" uses this template')
     if dependant_vms:
         app.log.warning(
                 'WARNING! Do not use dnf to uninstall templates!')
@@ -437,7 +437,7 @@ def is_chroot():
         return (
             stat_root.st_dev != stat_init_root.st_dev or
             stat_root.st_ino != stat_init_root.st_ino)
-    except IOError:
+    except OSError:
         return False
 
 

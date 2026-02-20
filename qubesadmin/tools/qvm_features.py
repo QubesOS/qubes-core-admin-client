@@ -1,4 +1,3 @@
-# coding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -24,7 +23,6 @@
 
 '''qvm-features - Manage domain's features'''
 
-from __future__ import print_function
 
 import sys
 

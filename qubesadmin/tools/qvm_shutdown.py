@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -22,7 +21,6 @@
 
 ''' Shutdown a qube '''
 
-from __future__ import print_function
 
 import sys
 import time
@@ -91,7 +89,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     pass
                 except qubesadmin.exc.QubesException as e:
                     if not args.wait:
-                        vm.log.error('Shutdown error: {}'.format(e))
+                        vm.log.error(f'Shutdown error: {e}')
                     else:
                         remaining_domains.add(vm)
         if not args.wait:
@@ -112,7 +110,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     qubesadmin.events.utils.wait_for_domain_shutdown(
                         this_round_domains),
                     args.timeout))
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if not args.dry_run:
                     for vm in this_round_domains:
                         try:

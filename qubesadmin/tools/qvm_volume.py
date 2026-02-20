@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -22,7 +21,6 @@
 
 """Qubes volume management"""
 
-from __future__ import print_function
 
 import argparse
 import os
@@ -86,7 +84,7 @@ class VolumeData:
         return (self.pool, self.vid) < (other.pool, other.vid)
 
     def __str__(self):
-        return "{!s}:{!s}".format(self.pool, self.vid)
+        return f"{self.pool!s}:{self.vid!s}"
 
 
 def info_volume(args):
@@ -109,7 +107,7 @@ def info_volume(args):
             print(value)
         else:
             raise qubesadmin.exc.StoragePoolException(
-                'No such property: {}'.format(args.property))
+                f'No such property: {args.property}')
     else:
         info = collections.OrderedDict()
         for item in info_items:
@@ -136,7 +134,7 @@ def config_volume(args):
     volume = args.volume
     if args.property not in ('rw', 'revisions_to_keep', 'ephemeral'):
         raise qubesadmin.exc.QubesNoSuchPropertyError(
-            'Invalid property: {}'.format(args.property))
+            f'Invalid property: {args.property}')
     setattr(volume, args.property, args.value)
 
 

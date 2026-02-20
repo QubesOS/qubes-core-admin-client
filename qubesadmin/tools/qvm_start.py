@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -181,7 +180,7 @@ def main(args=None, app=None):
                 continue
             exit_code = 1
             parser.print_error(
-                    'domain {} is already running'.format(domain.name))
+                    f'domain {domain.name} is already running')
             return exit_code
         drive_assignment = None
         try:
@@ -198,8 +197,7 @@ def main(args=None, app=None):
             if drive_assignment:
                 # don't reconnect this device after VM reboot
                 domain.devices['block'].unassign(drive_assignment)
-        except (IOError, OSError, qubesadmin.exc.QubesException,
-                ValueError) as e:
+        except (OSError, qubesadmin.exc.QubesException, ValueError) as e:
             if drive_assignment:
                 try:
                     domain.devices['block'].detach(drive_assignment)

@@ -63,7 +63,7 @@ TAR_HEADER_BYTES = 512
 WRAPPER_PAYLOAD_BEGIN = "###!Q!BEGIN-QUBES-WRAPPER!Q!###"
 WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
-UPDATEVM = str('global UpdateVM')
+UPDATEVM = 'global UpdateVM'
 
 
 class AlreadyRunning(Exception):
@@ -77,14 +77,14 @@ class SignatureVerificationError(Exception):
 def qubes_release() -> str:
     """Return the Qubes release."""
     if os.path.exists('/usr/share/qubes/marker-vm'):
-        with open('/usr/share/qubes/marker-vm', 'r', encoding='ascii') as fd:
+        with open('/usr/share/qubes/marker-vm', encoding='ascii') as fd:
             # Get the first non-comment line
             release = [l.strip() for l in fd.readlines()
                        if l.strip() and not l.startswith('#')]
             # sanity check
             if release and release[0] and release[0][0].isdigit():
                 return release[0]
-    with open('/etc/os-release', 'r', encoding='ascii') as fd:
+    with open('/etc/os-release', encoding='ascii') as fd:
         release = None
         distro_id = None
         for line in fd:
@@ -327,7 +327,7 @@ class Template(typing.NamedTuple):
 
 class DlEntry(typing.NamedTuple):
     """Information about a template to be downloaded."""
-    evr: typing.Tuple[str, str, str]
+    evr: tuple[str, str, str]
     reponame: str
     dlsize: int
 
@@ -335,14 +335,14 @@ class DlEntry(typing.NamedTuple):
 # pylint: enable=too-few-public-methods,inherit-non-class
 
 
-def build_version_str(evr: typing.Tuple[str, str, str]) -> str:
+def build_version_str(evr: tuple[str, str, str]) -> str:
     """Return version string described by ``evr``, which is in (epoch, version,
     release) format."""
     return '%s:%s-%s' % evr
 
 
 def is_match_spec(name: str, epoch: str, version: str, release: str, spec: str
-                  ) -> typing.Tuple[bool, float]:
+                  ) -> tuple[bool, float]:
     """Check whether (name, epoch, version, release) matches the spec string.
 
     For the algorithm, refer to section "NEVRA Matching" in the DNF
@@ -393,7 +393,7 @@ def query_local(vm: qubesadmin.vm.QubesVM) -> Template:
         vm.features['template-description'].replace('|', '\n'))
 
 
-def query_local_evr(vm: qubesadmin.vm.QubesVM) -> typing.Tuple[str, str, str]:
+def query_local_evr(vm: qubesadmin.vm.QubesVM) -> tuple[str, str, str]:
     """Return the (epoch, version, release) of ``vm``.
 
     Requires the VM to be managed by qvm-template.
@@ -421,7 +421,7 @@ def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
     return vm
 
 
-def confirm_action(msg: str, affected: typing.List[str]) -> None:
+def confirm_action(msg: str, affected: list[str]) -> None:
     """Confirm user action."""
     print(msg)
     for name in affected:
@@ -439,7 +439,7 @@ def qrexec_popen(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
         service: str,
-        stdout: typing.Union[int, typing.IO] = subprocess.PIPE,
+        stdout: int | typing.IO = subprocess.PIPE,
         filter_esc: bool = True) -> subprocess.Popen:
     """Return ``Popen`` object that communicates with the given qrexec call in
     ``args.updatevm``.
@@ -557,7 +557,7 @@ def qrexec_payload(args: argparse.Namespace, app: qubesadmin.app.QubesBase,
 
     repo_config = ""
     for path in args.repo_files:
-        with open(path, 'r', encoding='utf-8') as fd:
+        with open(path, encoding='utf-8') as fd:
             repo_config += fd.read() + '\n'
     payload += repo_config
 
@@ -569,7 +569,7 @@ def qrexec_repoquery(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
         spec: str = '*',
-        refresh: bool = False) -> typing.List[Template]:
+        refresh: bool = False) -> list[Template]:
     """Query template information from repositories.
 
     :param args: Arguments received by the application. Specifically,
@@ -639,7 +639,7 @@ def qrexec_repoquery(
             elif buildtime.isnumeric():
                 # DNF5 provides seconds since epoch
                 buildtime = datetime.datetime.fromtimestamp(int(buildtime),
-                    tz=datetime.timezone.utc)
+                    tz=datetime.UTC)
             else:
                 raise ValueError
             # XXX: Perhaps whitelist licenses directly?
@@ -665,7 +665,7 @@ def qrexec_download(
         spec: str,
         path: str,
         key: str,
-        dlsize: typing.Optional[int] = None,
+        dlsize: int | None = None,
         refresh: bool = False) -> None:
     """Download a template from repositories.
 
@@ -726,8 +726,8 @@ def qrexec_download(
                 raise ConnectionError("rpmcanon failed")
 
 
-def get_keys_for_repos(repo_files: typing.List[str],
-                       releasever: str) -> typing.Dict[str, str]:
+def get_keys_for_repos(repo_files: list[str],
+                       releasever: str) -> dict[str, str]:
     """List gpg keys
 
     Returns a dict reponame -> key path
@@ -749,7 +749,7 @@ def get_keys_for_repos(repo_files: typing.List[str],
 
 
 def verify_rpm(path: str, key: str, *, nogpgcheck: bool = False,
-               template_name: typing.Optional[str] = None) -> rpm.hdr:
+               template_name: str | None = None) -> rpm.hdr:
     """Verify the digest and signature of a RPM package and return the package
     header.
 
@@ -851,7 +851,7 @@ def filter_version(
         version_selector: VersionSelector = VersionSelector.LATEST):
     """Select only one version for given template name"""
     # We only select one package for each distinct package name
-    results: typing.Dict[str, Template] = {}
+    results: dict[str, Template] = {}
 
     for entry in query_res:
         evr = (entry.epoch, entry.version, entry.release)
@@ -893,7 +893,7 @@ def get_dl_list(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
         version_selector: VersionSelector = VersionSelector.LATEST
-) -> typing.Dict[str, DlEntry]:
+) -> dict[str, DlEntry]:
     """Return list of templates that needs to be downloaded.
 
     :param args: Arguments received by the application.
@@ -904,7 +904,7 @@ def get_dl_list(
     :return: Dictionary that maps to ``DlEntry`` the names of templates that
         needs to be downloaded
     """
-    full_candid: typing.Dict[str, DlEntry] = {}
+    full_candid: dict[str, DlEntry] = {}
     for template in args.templates:
         # Skip local RPMs
         if template.endswith('.rpm'):
@@ -944,10 +944,10 @@ def get_dl_list(
 def download(
         args: argparse.Namespace,
         app: qubesadmin.app.QubesBase,
-        path_override: typing.Optional[str] = None,
-        dl_list: typing.Optional[typing.Dict[str, DlEntry]] = None,
+        path_override: str | None = None,
+        dl_list: dict[str, DlEntry] | None = None,
         version_selector: VersionSelector = VersionSelector.LATEST) \
-        -> typing.Dict[str, rpm.hdr]:
+        -> dict[str, rpm.hdr]:
     """Command that downloads template packages.
 
     :param args: Arguments received by the application.
@@ -1214,11 +1214,11 @@ def install(
             tpl.features['template-buildtime'] = \
                 datetime.datetime.fromtimestamp(
                         int(package_hdr[rpm.RPMTAG_BUILDTIME]),
-                        tz=datetime.timezone.utc) \
+                        tz=datetime.UTC) \
                     .strftime(DATE_FMT)
             tpl.features['template-installtime'] = \
                 datetime.datetime.now(
-                    tz=datetime.timezone.utc).strftime(DATE_FMT)
+                    tz=datetime.UTC).strftime(DATE_FMT)
             tpl.features['template-license'] = \
                 package_hdr[rpm.RPMTAG_LICENSE]
             tpl.features['template-url'] = \
@@ -1344,7 +1344,7 @@ def list_templates(args: argparse.Namespace,
 
     if args.all or args.available or args.extras or args.upgrades:
         if args.templates:
-            query_res_set: typing.Set[Template] = set()
+            query_res_set: set[Template] = set()
             for spec in args.templates:
                 query_res_set |= set(qrexec_repoquery(
                     args, app, PACKAGE_NAME_PREFIX + spec))
@@ -1452,7 +1452,7 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         (WEIGHT_URL, 'URL')]
 
     search_res_by_idx: \
-        typing.Dict[int, typing.List[typing.Tuple[int, str, bool]]] = \
+        dict[int, list[tuple[int, str, bool]]] = \
         collections.defaultdict(list)
     for keyword in args.templates:
         for idx, entry in enumerate(query_res):
@@ -1472,7 +1472,7 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         keywords = set(args.templates)
         idxs = list(search_res_by_idx.keys())
         for idx in idxs:
-            if keywords != set(x[1] for x in search_res_by_idx[idx]):
+            if keywords != {x[1] for x in search_res_by_idx[idx]}:
                 del search_res_by_idx[idx]
 
     def key_func(x):
@@ -1486,13 +1486,13 @@ def search(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
 
     def gen_header(needles):
         fields = []
-        weight_types = set(x[0] for x in needles)
+        weight_types = {x[0] for x in needles}
         for weight, field in WEIGHT_TO_FIELD:
             if weight in weight_types:
                 fields.append(field)
         exact = all(x[-1] for x in needles)
         match = 'Exactly Matched' if exact else 'Matched'
-        keywords = sorted(list(set(x[1] for x in needles)))
+        keywords = sorted(list({x[1] for x in needles}))
         return ' & '.join(fields) + ' ' + match + ': ' + ', '.join(keywords)
 
     last_header = ''
@@ -1640,7 +1640,7 @@ def repolist(args: argparse.Namespace, app: qubesadmin.app.QubesBase) -> None:
         # Filter (name, operation) from args.repos
         repoid = []
         enable_disable_repos = []
-        repos: typing.List[dnf.repo.Repo] = []
+        repos: list[dnf.repo.Repo] = []
         if args.repos:
             for repo in args.repos:
                 operation, name = repo
@@ -1712,11 +1712,11 @@ def migrate_from_rpmdb(app):
             vm.features['template-reponame'] = '@commandline'
             vm.features['template-buildtime'] = \
                 datetime.datetime.fromtimestamp(
-                    pkg[rpm.RPMTAG_BUILDTIME], tz=datetime.timezone.utc).\
+                    pkg[rpm.RPMTAG_BUILDTIME], tz=datetime.UTC).\
                 strftime(DATE_FMT)
             vm.features['template-installtime'] = \
                 datetime.datetime.fromtimestamp(
-                    pkg[rpm.RPMTAG_INSTALLTIME], tz=datetime.timezone.utc).\
+                    pkg[rpm.RPMTAG_INSTALLTIME], tz=datetime.UTC).\
                 strftime(DATE_FMT)
             vm.features['template-license'] = pkg[rpm.RPMTAG_LICENSE]
             vm.features['template-url'] = pkg[rpm.RPMTAG_URL]
@@ -1725,7 +1725,7 @@ def migrate_from_rpmdb(app):
                 pkg[rpm.RPMTAG_DESCRIPTION].replace('\n', '|')
             vm.installed_by_rpm = False
         except Exception as e:  # pylint: disable=broad-except
-            print('Failed to set template {} metadata: {}'.format(vm.name, e))
+            print(f'Failed to set template {vm.name} metadata: {e}')
             continue
         pkgs_to_remove.append(pkg)
     subprocess.check_call(
@@ -1733,8 +1733,8 @@ def migrate_from_rpmdb(app):
         [p[rpm.RPMTAG_NAME] for p in pkgs_to_remove])
 
 
-def main(args: typing.Optional[typing.Sequence[str]] = None,
-         app: typing.Optional[qubesadmin.app.QubesBase] = None) -> int:
+def main(args: typing.Sequence[str] | None = None,
+         app: qubesadmin.app.QubesBase | None = None) -> int:
     """Main routine of **qvm-template**.
 
     :param args: Override arguments received by the application. Optional

@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -32,7 +31,7 @@ Devices are identified by pair of (backend domain, `port_id`), where `port_id`
 is :py:class:`str`.
 """
 import itertools
-from typing import Iterable
+from collections.abc import Iterable
 
 import qubesadmin.exc
 from qubesadmin.device_protocol import (
@@ -202,7 +201,7 @@ class DeviceCollection:
             return
         new_cache = []
         assignments_str = self._vm.qubesd_call(
-            None, "admin.vm.device.{}.Attached".format(self._class)
+            None, f"admin.vm.device.{self._class}.Attached"
         ).decode()
         for assignment_str in assignments_str.splitlines():
             head, _, untrusted_rest = assignment_str.partition(" ")
@@ -234,7 +233,7 @@ class DeviceCollection:
             return
         new_cache = []
         assignments_str = self._vm.qubesd_call(
-            None, "admin.vm.device.{}.Assigned".format(self._class)
+            None, f"admin.vm.device.{self._class}.Assigned"
         ).decode()
         for assignment_str in assignments_str.splitlines():
             head, _, untrusted_rest = assignment_str.partition(" ")
@@ -257,7 +256,7 @@ class DeviceCollection:
         List devices exposed by this vm.
         """
         devices: bytes = self._vm.qubesd_call(
-            None, "admin.vm.device.{}.Available".format(self._class)
+            None, f"admin.vm.device.{self._class}.Available"
         )
         for dev_serialized in devices.splitlines():
             yield DeviceInfo.deserialize(
@@ -280,7 +279,7 @@ class DeviceCollection:
         """
         self._vm.qubesd_call(
             None,
-            "admin.vm.device.{}.Set.assignment".format(self._class),
+            f"admin.vm.device.{self._class}.Set.assignment",
             device.repr_for_qarg,
             required.value.encode("utf-8"),
         )

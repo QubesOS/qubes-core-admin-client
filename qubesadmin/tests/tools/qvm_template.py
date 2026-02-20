@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -434,7 +433,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
                         '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
@@ -549,7 +548,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
                     '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
@@ -916,7 +915,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
                     '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
@@ -1019,7 +1018,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_dl_list.return_value = dl_list
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
                     '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
@@ -1097,7 +1096,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         # Extraction error
         mock_extract.return_value = False
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
@@ -1504,7 +1503,7 @@ b'''qubes-template-debian-12-minimal|0|4.3.0|202405272135|qubes-templates-itl|22
                 'qubes-templates-itl',
                 228848654,
                 datetime.datetime(2024, 5, 27, 21, 57, 22,
-                                  tzinfo=datetime.timezone.utc),
+                                  tzinfo=datetime.UTC),
                 'GPLv3+',
                 'http://www.qubes-os.org',
                 'Qubes OS template for debian-12-minimal',
@@ -2843,7 +2842,7 @@ f'''Available Templates
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -2932,7 +2931,7 @@ f'''Available Templates
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -2946,7 +2945,7 @@ f'''Available Templates
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -2960,7 +2959,7 @@ f'''Available Templates
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -3036,7 +3035,7 @@ f'''Available Templates
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -3247,7 +3246,7 @@ r'''{"installed": [{"name": "test-vm-2", "epoch": "1", "version": "4.0", "releas
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -3261,7 +3260,7 @@ r'''{"installed": [{"name": "test-vm-2", "epoch": "1", "version": "4.0", "releas
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Older Qubes template for fedora-31',
@@ -3275,7 +3274,7 @@ r'''{"installed": [{"name": "test-vm-2", "epoch": "1", "version": "4.0", "releas
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org/test-vm',
                 'Qubes template for fedora-31',
@@ -3332,7 +3331,7 @@ test-vm-2 : Summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for test-vm :)',
@@ -3346,7 +3345,7 @@ test-vm-2 : Summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm',
@@ -3360,7 +3359,7 @@ test-vm-2 : Summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for test-vm',
@@ -3374,7 +3373,7 @@ test-vm-2 : Summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for test-vm-2',
@@ -3414,7 +3413,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm',
@@ -3428,7 +3427,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm',
@@ -3442,7 +3441,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm',
@@ -3481,7 +3480,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm',
@@ -3495,7 +3494,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm',
@@ -3509,7 +3508,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Summary',
@@ -3544,7 +3543,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'summary',
@@ -3558,7 +3557,7 @@ test-template-exact : test-vm
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm Summary',
@@ -3595,7 +3594,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org/keyword-url',
                 'summary',
@@ -3609,7 +3608,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm Summary',
@@ -3623,7 +3622,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'test-vm-exac2',
                 'test-vm Summary',
@@ -3637,7 +3636,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'test-vm Summary',
@@ -3651,7 +3650,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Summary',
@@ -3693,7 +3692,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org',
                 'Qubes template for fedora-31',
@@ -3707,7 +3706,7 @@ test-vm : summary
                 'qubes-templates-itl',
                 1048576,
                 datetime.datetime(2020, 9, 1, 14, 30,
-                    tzinfo=datetime.timezone.utc),
+                    tzinfo=datetime.UTC),
                 'GPL',
                 'https://qubes-os.org/test-vm',
                 'Qubes template for fedora-31',
@@ -3735,7 +3734,7 @@ test-vm : Qubes template for fedora-31
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
-            '{} should not exist before'.format(path))
+            f'{path} should not exist before')
         # just create an empty file
         with open(path, 'wb') as f_template:
             f_template.truncate(dlsize)
@@ -4216,7 +4215,7 @@ test-vm : Qubes template for fedora-31
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
-            '{} should not exist before'.format(path))
+            f'{path} should not exist before')
         # just create an empty file
         with open(path, 'wb') as f_pkg:
             f_pkg.truncate(dlsize // 2)
@@ -4292,7 +4291,7 @@ test-vm : Qubes template for fedora-31
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         selector = qubesadmin.tools.qvm_template.VersionSelector.REINSTALL
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
@@ -4510,7 +4509,7 @@ test-vm : Qubes template for fedora-31
         mock_call.side_effect = self.add_new_vm_side_effect
         mock_time = mock.Mock(wraps=datetime.datetime)
         mock_time.now.return_value = \
-            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.UTC)
         selector = qubesadmin.tools.qvm_template.VersionSelector.REINSTALL
         with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE', '/tmp/test.lock'), \
                 mock.patch('datetime.datetime', new=mock_time), \
@@ -5475,7 +5474,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/etc/os-release', 'r',
+            mock_open.assert_called_with('/etc/os-release',
                                          encoding='ascii')
         self.assertAllCalled()
 
@@ -5500,7 +5499,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/etc/os-release', 'r',
+            mock_open.assert_called_with('/etc/os-release',
                                          encoding='ascii')
         self.assertAllCalled()
 
@@ -5520,7 +5519,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/usr/share/qubes/marker-vm', 'r',
+            mock_open.assert_called_with('/usr/share/qubes/marker-vm',
                                          encoding='ascii')
         self.assertAllCalled()
 
