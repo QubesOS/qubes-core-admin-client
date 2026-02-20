@@ -1,38 +1,65 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
 
-# Note: we're not using a "standard" pyproject.toml with a [project] section to avoid
-# clashing with the old-school setup.py build (for now... hopefully will be upgraded later ?)
-[dependency-groups]
-current-deps = [  # project dependencies
-    "lxml>=6.0.2",
-    "python-daemon>=3.1.2",
-    "pyxdg>=0.28",
-    "pyyaml>=6.0.3",
-    "tqdm>=4.67.3",
-    "xcffib>=1.12.0",
+[project]
+name = "qubesadmin"
+dynamic = ["version"]
+authors = [
+    {name = "Invisible Things Lab", email = "marmarek@invisiblethingslab.com"}
 ]
-current-dev = [  # dev-depencencies
+description = "Qubes Admin API package"
+license = {text = "LGPL-2.1-only"}
+urls = {Homepage = "https://www.qubes-os.org/"}
+requires-python = ">=3.10"
+dependencies = [
+    "lxml>=5.3",
+    "pyxdg>=0.27",
+    "pyyaml>=6.0",
+    "tqdm>=4.67",
+    "xcffib>=1.5",
+]
+
+[dependency-groups]
+build = [
+    "build>=1.4.0",
+    "wheel>=0.46.3",
+]
+dev = [
     "types-lxml>=2026.1.1",
     "pylint>=4.0.4",
     "mock>=5.2.0",
     "docutils>=0.22.4",
-    "sphinx>=9.1.0",
+    "sphinx>=3.5.3",
     "setuptools>=82.0.0",
     "black>=26.1.0",
     "mypy>=1.19.1",
+    "python3-xlib>=0.15",
+    "rpm>=0.4.0",
 ]
 future-dev = [  # those tools are very efficient but not packaged for major distributions yet
+    {include-group = "dev"},
     "ruff>=0.15.1",
     "ty>=0.0.16",
 ]
 
-[tool.ty.rules]
+[tool.setuptools.dynamic]
+version = {file = "version"}
+
+[tool.setuptools.package-data]
+qubesadmin = ["tests/backup/*.xml"]
 
 [tool.ruff]
 preview = true
+line-length = 80
 
 [tool.ruff.lint]
-select = ["ANN", "RUF045"]  # Require type annotations for every function
-ignore = ["ANN003"]  # type annotation for **kwargs
+select = ["ANN", "RUF045", # Require type annotations for every function
+            "E501"]  # line-too-long
+ignore = ["ANN002", "ANN003"]  # type annotation for **kwargs
+
+[tool.ruff.lint.per-file-ignores]
+"qubesadmin/tests/**" = ["ANN"]  # don't force type hints for tests
 
 [tool.ruff.lint.flake8-annotations]
 mypy-init-return = true  # do not require __init__ return annotation `->None` if there's at least one typed argument

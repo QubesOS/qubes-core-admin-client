@@ -8,7 +8,7 @@ include:
 checks:pylint:
   before_script:
   - sudo dnf install -y python3-rpm python3-xlib
-  - pip3 install --quiet -r ci/requirements.txt
+  - pip3 install --quiet --group=dev .
   script:
   - export PATH="$HOME/.local/bin:$PATH"
   - PYTHONPATH=test-packages pylint --extension-pkg-whitelist=rpm,lxml qubesadmin
@@ -22,10 +22,11 @@ checks:tests:
   - sudo dnf install -y openssl python3-rpm sequoia-sqv python3-xlib libnotify
   - sudo dnf install -y zstd
   - sudo dnf install -y --enablerepo=qubes-host-r4.3-current-testing scrypt
-  - pip3 install --quiet -r ci/requirements.txt
+  - pip3 install --quiet --group=dev --group=build .
   - git config --global --add safe.directory "$PWD"
   script:
-  - python3 setup.py build
+  # --no-isolation to use distro packages instead of downloading missing ones
+  - python3 -m build --no-isolation
   # simulate "normal" qubes env for most tests
   - xvfb-run ./run-tests
   - xvfb-run python3 -m coverage xml
