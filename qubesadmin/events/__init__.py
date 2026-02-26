@@ -257,10 +257,11 @@ class EventsDispatcher:
         ):
             devclass = event.split(":")[1]
             subject.devices[devclass]._attachment_cache = None
-        elif event.split(":")[0] in ("device-removed",):
+        if event.split(":")[0] in ("device-removed",):
             devclass = event.split(":")[1]
+            port_id = kwargs.get("port", ":").split(":")[1]
             try:
-                subject.devices[devclass]._dev_cache[kwargs["port"]]
+                del subject.devices[devclass]._dev_cache[port_id]
             except KeyError:
                 pass
 
