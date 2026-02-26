@@ -139,13 +139,16 @@ def main(args=None, app=None):
 
     match args.action:
         case "edit":
+            temp_path = ""
             try:
                 with tempfile.NamedTemporaryFile(
                     mode="w+",
                     prefix=qube.name + "_qube_",
                     suffix="_notes.txt",
+                    # TODO use delete_on_close=False when min python is >=3.12
                     delete=False,
                 ) as temp:
+                    temp_path = temp.name
                     temp.write(qube.get_notes())
                     temp.close()
                     last_modified = os.path.getmtime(temp.name)
@@ -154,10 +157,12 @@ def main(args=None, app=None):
                     if last_modified != os.path.getmtime(temp.name):
                         with open(temp.name, encoding="utf-8") as notes_file:
                             qube.set_notes(notes_file.read())
-                    # os.unlink(temp.name)
             except qubesadmin.exc.QubesException as e:
                 logging.error("Failed to edit qube notes: %s", str(e))
                 exit_code = 1
+            finally: # TODO can be removed once we use delete_on_close=False
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
         case "print":
             try:
                 print(qube.get_notes())
