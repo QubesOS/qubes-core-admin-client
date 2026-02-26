@@ -9,9 +9,8 @@ build:
     # --no-isolation to use distro packages instead of downloading missing ones
 	$(PYTHON) -m build --no-isolation
 
-.PHONY: install
-install:
-	$(PYTHON) setup.py install -O1 $(PYTHON_PREFIX_ARG) --root $(DESTDIR)
+.PHONY: install-misc
+install-misc:
 	install -d $(DESTDIR)/etc/xdg/autostart
 	install -m 0644 etc/qvm-start-daemon.desktop $(DESTDIR)/etc/xdg/autostart/
 	install -m 0644 etc/qvm-start-daemon-kde.desktop $(DESTDIR)/etc/xdg/autostart/
