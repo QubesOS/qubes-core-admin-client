@@ -64,7 +64,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self.firewall = qubesadmin.firewall.Firewall(self)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Domain name"""
         return self._method_dest
 
@@ -80,7 +80,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self._volumes = None
         self.app.domains.clear_cache()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._method_dest
 
     def __lt__(self, other):
