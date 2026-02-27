@@ -20,6 +20,7 @@
 
 # pylint: disable=missing-docstring
 
+from unittest import mock
 
 import qubesadmin.tests
 import qubesadmin.device_protocol
@@ -27,7 +28,7 @@ import qubesadmin.device_protocol
 from qubesadmin.device_protocol import (
     DeviceAssignment, DeviceInfo, UnknownDevice,
     AssignmentMode)
-
+from qubesadmin.events import EventsDispatcher
 
 serialized_test_device = (
     b"0\0dev1 port_id='dev1' devclass='test' vendor='itl' product='test-device'"
@@ -414,5 +415,56 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.domains['test-vm'].devices.allow(
             qubesadmin.device_protocol.DeviceInterface("uabcdef"),
             qubesadmin.device_protocol.DeviceInterface("m******"),
+        )
+        self.assertAllCalled()
+
+    def test_100_cache_invalidate(self):
+        # this also enables caching
+        dispatcher = EventsDispatcher(self.app)
+        handler = mock.Mock()
+        dispatcher.add_handler("device-added:test", handler)
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.device.test.Available", None, None)
+        ] = (
+            serialized_test_device
+            + b"device_id='1234:5678:0123456789:?*******'\n"
+        )
+        vm = self.app.domains.get("test-vm")
+        # this also populates cache
+        dev = vm.devices["test"]["dev1"]
+        self.assertIsInstance(dev, DeviceInfo)
+        self.assertNotIsInstance(dev, UnknownDevice)
+        self.assertEqual(dev.device_id, "1234:5678:0123456789:?*******")
+        dispatcher.handle(
+            "test-vm",
+            "device-added:test",
+            device="test-vm:dev1:1234:5678:0123456789:?*******",
+        )
+        handler.assert_called_once_with(vm, "device-added:test", device=dev)
+        handler.reset_mock()
+        dispatcher.handle("test-vm", "device-removed:test", port="test-vm:dev1")
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.device.test.Available", None, None)
+        ] = (
+            serialized_test_device
+            + b"device_id='8765:4321:0123456789:?*******'\n"
+        )
+        dispatcher.handle(
+            "test-vm",
+            "device-added:test",
+            device="test-vm:dev1:8765:4321:0123456789:?*******",
+        )
+        handler.assert_called_once_with(
+            vm, "device-added:test", device=mock.ANY
+        )
+        self.assertIsInstance(
+            handler.mock_calls[0].kwargs["device"], DeviceInfo
+        )
+        self.assertNotIsInstance(
+            handler.mock_calls[0].kwargs["device"], UnknownDevice
+        )
+        self.assertEqual(
+            handler.mock_calls[0].kwargs["device"].device_id,
+            "8765:4321:0123456789:?*******",
         )
         self.assertAllCalled()
