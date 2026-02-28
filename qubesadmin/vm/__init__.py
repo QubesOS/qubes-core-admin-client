@@ -19,35 +19,38 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """Qubes VM objects."""
-
+from __future__ import annotations
 import logging
 import shlex
 
 import subprocess
+import typing
 import warnings
 from logging import Logger
+from typing import Literal
 
-import qubesadmin.base
 import qubesadmin.exc
 import qubesadmin.storage
 import qubesadmin.features
 import qubesadmin.devices
 import qubesadmin.device_protocol
 import qubesadmin.firewall
-import qubesadmin.tags
+
+if typing.TYPE_CHECKING:
+    import qubesadmin.base
+
+Klass = Literal["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
+PowerState = Literal["Transient", "Running", "Halted", "Paused",
+"Suspended", "Halting", "Dying", "Crashed", "NA"]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
     """Qubes domain."""
 
     log: Logger
-
     tags: qubesadmin.tags.Tags
-
     features: qubesadmin.features.Features
-
     devices: qubesadmin.devices.DeviceManager
-
     firewall: qubesadmin.firewall.Firewall
 
     def __init__(self, app, name, klass=None, power_state=None):
