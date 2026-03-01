@@ -20,6 +20,7 @@
 
 # pylint: disable=missing-docstring
 
+import qubesadmin.vm
 import qubesadmin.tests.vm
 
 
@@ -305,3 +306,10 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00mem=1234'
         self.assertEqual(self.vm.get_mem(), 1234)
+
+    def test_020_klass(self):
+        vm = qubesadmin.vm.QubesVM(self.app, "test-vm")
+        self.app.expected_calls[("test-vm", "admin.vm.List", None, None)] = \
+            b"0\x00test-vm class=AppVM state=Running\n"
+        self.assertEqual(vm.klass, "AppVM")
+        self.assertAllCalled()

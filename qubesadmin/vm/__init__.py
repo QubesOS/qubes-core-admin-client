@@ -445,8 +445,21 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """Qube class"""
         # use cached value if available
         if self._klass is None:
-            # pylint: disable=no-member
-            self._klass = super().klass
+            try:
+                # use List method as that should be allowed for VMs that are
+                # visible
+                vm_list_data = self.qubesd_call(
+                    self._method_dest, "admin.vm.List"
+                )
+                assert vm_list_data.count(b"\n") == 1
+                vm_name, props = vm_list_data.decode("ascii").split(" ", 1)
+                assert vm_name == self.name
+                props = props.split(" ")
+                props_dict = dict([vm_prop.split("=", 1) for vm_prop in props])
+                self._klass = props_dict["class"]
+            except qubesadmin.exc.QubesDaemonAccessError:
+                # pylint: disable=no-member
+                self._klass = super().klass
         return self._klass
 
     def get_notes(self) -> str:
