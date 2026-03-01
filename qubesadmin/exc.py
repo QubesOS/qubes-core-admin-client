@@ -26,7 +26,7 @@ Qubes OS exception hierarchy
 class QubesException(Exception):
     """Exception that can be shown to the user"""
 
-    def __init__(self, message_format, *args, **kwargs):
+    def __init__(self, message_format: str, *args, **kwargs):
         # TODO: handle translations
         super().__init__(
             message_format % tuple(int(d) if d.isdigit() else d for d in args),
@@ -37,7 +37,7 @@ class QubesException(Exception):
 class QubesVMNotFoundError(QubesException, KeyError):
     """Domain cannot be found in the system"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
@@ -139,7 +139,7 @@ class QubesMemoryError(QubesVMError, MemoryError):
 class QubesFeatureNotFoundError(QubesException, KeyError):
     """Feature not set for a given domain"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
@@ -147,7 +147,7 @@ class QubesFeatureNotFoundError(QubesException, KeyError):
 class QubesTagNotFoundError(QubesException, KeyError):
     """Tag not set for a given domain"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
@@ -155,7 +155,7 @@ class QubesTagNotFoundError(QubesException, KeyError):
 class QubesLabelNotFoundError(QubesException, KeyError):
     """Label does not exists"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         # KeyError overrides __str__ method
         return QubesException.__str__(self)
 
@@ -213,7 +213,7 @@ class QubesDaemonCommunicationError(QubesException):
 class BackupRestoreError(QubesException):
     """Restoring a backup failed"""
 
-    def __init__(self, msg, backup_log=None):
+    def __init__(self, msg: str, backup_log: bytes | None=None):
         super().__init__(msg)
         self.backup_log = backup_log
 
@@ -228,7 +228,7 @@ class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
     """Failed to read/write property value, cause is unknown (insufficient
     permissions, no such property, invalid value, other)"""
 
-    def __init__(self, prop):
+    def __init__(self, prop: str):
         super().__init__("Failed to access '%s' property" % prop)
 
 
