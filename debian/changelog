@@ -1,3 +1,23 @@
+qubes-core-admin-client (4.3.30-1) unstable; urgency=medium
+
+  [ anon ]
+  * Bump minimum python version in README.md
+  * enforce 3.10 interface
+  * ensure tempfile is deleted
+
+  [ Ben Grande ]
+  * Show usage instead of exception on missing options
+
+  [ anon ]
+  * remove legacy disable=too-few-public-methods
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix invalidating cache on device-removed event
+  * tests: check devices cache invalidation on device-removed event
+  * Use admin.vm.List method to get VM class
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 03 Mar 2026 01:46:09 +0100
+
 qubes-core-admin-client (4.3.29-1) unstable; urgency=medium
 
   * tools: fix qvm-run -u root on template imported from R4.2
