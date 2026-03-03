@@ -3,9 +3,8 @@ Section: admin
 Priority: optional
 Maintainer: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 Build-Depends:
- debhelper (>= 9),
+ debhelper-compat (= 13),
  dh-python,
- python3-all,
  python3-all,
  python3-setuptools,
  python3-sphinx,
@@ -14,6 +13,8 @@ Build-Depends:
  python3-lxml,
  python3-tqdm,
  python3-yaml,
+ python3-build,
+ python3-wheel,
 Standards-Version: 3.9.5
 Homepage: https://www.qubes-os.org/
 #Vcs-Git: git://github.com/QubesOS/qubes-core-admin-client.git
@@ -22,7 +23,7 @@ X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.8
 
 Package: qubes-core-admin-client
-Architecture: any
+Architecture: all
 Depends:
  python3-qubesadmin,
  qubes-repo-templates,
@@ -40,7 +41,7 @@ Description: Qubes administrative tools
  Tools to manage Qubes system using Admin API
 
 Package: python3-qubesadmin
-Architecture: any
+Architecture: all
 Depends:
  hwdata,
  python3-docutils,

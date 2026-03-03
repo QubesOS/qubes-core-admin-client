@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qubesadmin"
-dynamic = ["version", "scripts"]
+dynamic = ["version", "entry-points"]
 authors = [
     {name = "Invisible Things Lab", email = "marmarek@invisiblethingslab.com"}
 ]
