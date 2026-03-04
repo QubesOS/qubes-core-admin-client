@@ -885,8 +885,9 @@ class QubesLocal(QubesBase):
                 "QREXEC_REMOTE_DOMAIN=dom0",
                 "QREXEC_REQUESTED_TARGET=" + dest,
                 method_path,
-                arg,
             ]
+            if arg is not None:
+                command.append(arg)
             if os.getuid() != 0:
                 command.insert(0, "sudo")
             (_, stdout, _) = self._call_with_stream(
