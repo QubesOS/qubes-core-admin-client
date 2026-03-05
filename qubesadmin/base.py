@@ -91,9 +91,16 @@ class PropertyHolder:
             if dest.startswith("@dispvm:"):
                 dest = dest[len("@dispvm:") :]
             else:
-                dest: QubesVM | None = getattr(self.app, "default_dispvm", None)
-                if dest:
-                    dest = dest.name
+                dest: QubesVM | None = getattr(
+                    self.app.domains.get_blind(self.app.local_name),
+                    "default_dispvm",
+                    None
+                )
+                if not dest:
+                    raise qubesadmin.exc.QubesVMNotFoundError(
+                        "%s has empty 'default_dispvm' property, but it is "
+                        "required when target is @dispvm", self.app.local_name
+                    )
         # have the actual implementation at Qubes() instance
         return self.app.qubesd_call(dest, method, arg, payload,
             payload_stream)
