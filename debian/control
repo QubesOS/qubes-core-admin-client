@@ -15,6 +15,7 @@ Build-Depends:
  python3-yaml,
  python3-build,
  python3-wheel,
+ pybuild-plugin-pyproject,
 Standards-Version: 3.9.5
 Homepage: https://www.qubes-os.org/
 #Vcs-Git: git://github.com/QubesOS/qubes-core-admin-client.git

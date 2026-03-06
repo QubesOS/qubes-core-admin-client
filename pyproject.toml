@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qubesadmin"
-dynamic = ["version", "entry-points"]
+dynamic = ["version"]
 authors = [
     {name = "Invisible Things Lab", email = "marmarek@invisiblethingslab.com"}
 ]
@@ -42,6 +42,38 @@ future-dev = [  # those tools are very efficient but not packaged for major dist
     "ruff>=0.15.1",
     "ty>=0.0.16",
 ]
+
+[project.scripts]
+qubes-prefs = "qubesadmin.tools.qubes_prefs:main"
+qvm-backup = "qubesadmin.tools.qvm_backup:main"
+qvm-backup-restore = "qubesadmin.tools.qvm_backup_restore:main"
+qvm-check = "qubesadmin.tools.qvm_check:main"
+qvm-clone = "qubesadmin.tools.qvm_clone:main"
+qvm-create = "qubesadmin.tools.qvm_create:main"
+qvm-device = "qubesadmin.tools.qvm_device:main"
+qvm-features = "qubesadmin.tools.qvm_features:main"
+qvm-firewall = "qubesadmin.tools.qvm_firewall:main"
+qvm-kill = "qubesadmin.tools.qvm_kill:main"
+qvm-ls = "qubesadmin.tools.qvm_ls:main"
+qvm-notes = "qubesadmin.tools.qvm_notes:main"
+qvm-pause = "qubesadmin.tools.qvm_pause:main"
+qvm-pool = "qubesadmin.tools.qvm_pool:main"
+qvm-pool-legacy = "qubesadmin.tools.qvm_pool_legacy:main"
+qvm-prefs = "qubesadmin.tools.qvm_prefs:main"
+qvm-remove = "qubesadmin.tools.qvm_remove:main"
+qvm-run = "qubesadmin.tools.qvm_run:main"
+qvm-service = "qubesadmin.tools.qvm_service:main"
+qvm-shutdown = "qubesadmin.tools.qvm_shutdown:main"
+qvm-start = "qubesadmin.tools.qvm_start:main"
+qvm-start-daemon = "qubesadmin.tools.qvm_start_daemon:main"
+qvm-tags = "qubesadmin.tools.qvm_tags:main"
+qvm-template = "qubesadmin.tools.qvm_template:main"
+qvm-template-postprocess = "qubesadmin.tools.qvm_template_postprocess:main"
+qvm-unpause = "qubesadmin.tools.qvm_unpause:main"
+qvm-volume = "qubesadmin.tools.qvm_volume:main"
+
+[tool.setuptools.packages.find]
+include = ["qubesadmin*"]
 
 [tool.setuptools.dynamic]
 version = {file = "version"}
