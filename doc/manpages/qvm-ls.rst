@@ -8,8 +8,8 @@ Synopsis
 
 :command:`qvm-ls` [--verbose] [--quiet] [--help] [--all]
                   [--exclude *EXCLUDE*] [--spinner] [--no-spinner]
-                  [--format *FORMAT* | --fields *FIELD* [*FIELD* ...] | --disk | --network | --kernel]
-                  [--tree] [--raw-data] [--raw-list] [--help-formats]
+                  [--format *FORMAT* | --fields *FIELD*[,*FIELD* ...]]
+                  [--tree] [--raw-data] [--help-formats]
                   [--help-columns] [--class *CLASS* [*CLASS* ...]]
                   [--label *LABEL* [*LABEL* ...]] [--tags *TAG* [*TAG* ...]]
                   [--exclude-tags *TAG* [*TAG* ...]] [--running] [--paused]
@@ -75,9 +75,10 @@ Formatting options
 
 .. option:: --fields=FIELD,..., -O FIELD,...
 
-   Sets format to specified set of columns. This gives more control over
-   :option:`--format`. All columns along with short descriptions can be listed
-   with :option:`--help-columns`.
+   Sets format to a comma-separated list of columns. This gives more control
+   over :option:`--format`. All predefined columns can be listed with
+   :option:`--help-columns`. In addition, any VM property name (as shown by
+   :program:`qvm-prefs --help-properties`) may be used as a column.
 
 .. option:: --tree, -t
 
@@ -88,23 +89,6 @@ Formatting options
 
    Output data in easy to parse format. Table header is skipped and columns are
    separated by `|` character.
-
-.. option:: --raw-list
-
-   Give plain list of VM names, without header or separator. Useful in scripts.
-   Same as --raw-data --fields=name
-
-.. option:: --disk, -d
-
-   Same as --format=disk, for compatibility with Qubes 3.x
-
-.. option:: --network, -n
-
-   Same as --format=network, for compatibility with Qubes 3.x
-
-.. option:: --kernel, -k
-
-   Same as --format=kernel, for compatibility with Qubes 3.x
 
 .. option:: --help-columns
 
@@ -160,13 +144,15 @@ Filtering options
 
 .. option:: --features FEATURE=VALUE ...
 
-   Filter results to qubes that match all specified features. Omitted VALUE
-   means None (unset). Empty value means "" or '' (blank)
+   Filter results to qubes that match all specified features. ``KEY=``
+   matches qubes where the feature is unset. ``KEY=''`` or
+   ``KEY=""`` matches qubes where the feature is set to a blank string.
 
 .. option:: --prefs PREFERENCE=VALUE ...
 
-   Filter results to qubes that match all specified preferences. Omitted VALUE
-   means None (unset). Empty value means "" or '' (blank)
+   Filter results to qubes that match all specified preferences. ``KEY=``
+   matches qubes where the preference is unset. ``KEY=''`` or ``KEY=""`` matches
+   qubes where the preference is set to a blank string.
 
 Sorting options
 ---------------
