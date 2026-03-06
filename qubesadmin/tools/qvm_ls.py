@@ -717,10 +717,6 @@ def get_parser():
     parser_sort.add_argument('--ignore-case', action='store_true',
         default=False, help='ignore case distinctions when sorting')
 
-    parser.add_argument('--spinner',
-        action='store_true', dest='spinner',
-        help='reenable spinner')
-
     parser.add_argument('--no-spinner',
         action='store_false', dest='spinner',
         help='disable spinner')

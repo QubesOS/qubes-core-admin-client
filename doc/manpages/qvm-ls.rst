@@ -7,7 +7,7 @@ Synopsis
 --------
 
 :command:`qvm-ls` [--verbose] [--quiet] [--help] [--all]
-                  [--exclude *EXCLUDE*] [--spinner] [--no-spinner]
+                  [--exclude *EXCLUDE*] [--no-spinner]
                   [--format *FORMAT* | --fields *FIELD*[,*FIELD* ...]]
                   [--tree] [--raw-data] [--help-formats]
                   [--help-columns] [--class *CLASS* [*CLASS* ...]]
@@ -52,10 +52,6 @@ General options
 
    Exclude the qube from --all. You need to use --all option explicitly to use
    --exclude.
-
-.. option:: --spinner
-
-   Have a spinner spinning while the spinning mainloop spins new table cells.
 
 .. option:: --no-spinner
 
