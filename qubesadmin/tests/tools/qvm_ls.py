@@ -117,14 +117,6 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
             'test-vm  Running  TestVM  green  template  sys-net\n')
 
-    def test_102_raw_list(self):
-        app = TestApp()
-        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list'], app=app)
-        self.assertEqual(stdout.getvalue(),
-            'dom0\n'
-            'test-vm\n')
-
     def test_103_list_all(self):
         app = TestApp()
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -150,28 +142,28 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
             ]
         )
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', 'fedora*'], app=app)
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name', 'fedora*'], app=app)
         self.assertEqual(stdout.getvalue(),
         'fedora-41\nfedora-41-minimal\nfedora-41-xfce\nfedora-rawhide\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', '*minimal'], app=app)
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name', '*minimal'], app=app)
         self.assertEqual(stdout.getvalue(),
         'debian-13-minimal\nfedora-41-minimal\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', '????'], app=app)
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name', '????'], app=app)
         self.assertEqual(stdout.getvalue(),
         'dom0\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[rs]*'],
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name', '??????-[rs]*'],
                                          app=app)
         self.assertEqual(stdout.getvalue(),
         'debian-sid\nfedora-rawhide\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--raw-list', '??????-[!14s]*'],
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name', '??????-[!14s]*'],
                                          app=app)
         self.assertEqual(stdout.getvalue(),
         'fedora-rawhide\n')
