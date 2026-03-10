@@ -117,10 +117,7 @@ class VMCollection:
             props_dict = dict(vm_prop.split("=", 1)
                               for vm_prop in props.split(" "))
             klass = props_dict["class"]
-            power_state = (
-                typing.cast(PowerState, props_dict.get("state"))
-                if self.app.cache_enabled else None
-            )
+            power_state = typing.cast(PowerState, props_dict.get("state"))
             new_known_names.add(vm_name)
             existing_vm = self._vms.get(vm_name) or\
                           vms_by_current_name.get(vm_name)
