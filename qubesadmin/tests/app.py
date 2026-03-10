@@ -186,6 +186,71 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
         self.assertIsNot(vm1, vm4)
         self.assertAllCalled()
 
+    def test_013_get_blind_not_in_membership(self):
+        """Blind objects must not appear in membership operations."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.assertIn('test-vm', self.app.domains)
+        self.app.domains.get_blind('other-vm')
+        self.assertNotIn('other-vm', self.app.domains)
+        self.assertNotIn('other-vm', self.app.domains.keys())
+        self.assertEqual([vm.name for vm in self.app.domains], ['test-vm'])
+        self.assertAllCalled()
+
+    def test_014_refresh_cache_forces_reload(self):
+        """refresh_cache() must trigger a new admin.vm.List call even if
+        already initialised."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.assertIn('test-vm', self.app.domains)
+        self.assertNotIn('test-vm2', self.app.domains)
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm2 class=AppVM state=Running\n'
+        self.app.domains.refresh_cache()
+        self.assertNotIn('test-vm', self.app.domains)
+        self.assertIn('test-vm2', self.app.domains)
+        self.assertAllCalled()
+
+    def test_015_delitem_targeted_cleanup(self):
+        """del domains[name] must remove the VM immediately without a
+        further admin.vm.List call."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[('test-vm', 'admin.vm.Remove', None, None)] = \
+            b'0\x00'
+        self.assertIn('test-vm', self.app.domains)
+        del self.app.domains['test-vm']
+        self.assertNotIn('test-vm', self.app.domains)
+        self.assertAllCalled()
+
+    def test_016_rename_preserves_identity(self):
+        """After a rename, refresh_cache() must return the same object
+        under the new name."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        vm = self.app.domains['test-vm']
+        # pylint: disable=protected-access
+        vm._method_dest = 'new-name'
+        self.app.domains.clear_cache()
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00new-name class=AppVM state=Running\n'
+        vm2 = self.app.domains['new-name']
+        self.assertIs(vm, vm2)
+        self.assertAllCalled()
+
+    def test_017_clear_cache_invalidate_name(self):
+        """clear_cache(invalidate_name) must drop that VM's object from the
+        cache so a fresh one is created on next access."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00test-vm class=AppVM state=Running\n'
+        vm1 = self.app.domains['test-vm']
+        self.app.domains.clear_cache()
+        vm2 = self.app.domains['test-vm']
+        self.assertIs(vm1, vm2)
+        self.app.domains.clear_cache(invalidate_name = 'test-vm')
+        vm3 = self.app.domains['test-vm']
+        self.assertIsNot(vm1, vm3)
+        self.assertAllCalled()
 
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):

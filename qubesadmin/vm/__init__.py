@@ -208,7 +208,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         """
 
-        if self._power_state_cache is not None:
+        if self._power_state_cache is not None and self.app.cache_enabled:
             return self._power_state_cache
         try:
             power_state = self._get_current_state()["power_state"]
