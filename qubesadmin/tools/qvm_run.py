@@ -21,6 +21,7 @@
 """qvm-run tool"""
 import argparse
 import contextlib
+import io
 import os
 import shlex
 import signal
@@ -129,11 +130,16 @@ parser.add_argument(
     help="disable colouring the stderr",
 )
 
+try:
+    _stdout_isatty = os.isatty(sys.stdout.fileno())
+except io.UnsupportedOperation:
+    _stdout_isatty = False
+
 parser.add_argument(
     "--filter-escape-chars",
     action="store_true",
     dest="filter_esc",
-    default=os.isatty(sys.stdout.fileno()),
+    default=_stdout_isatty,
     help="filter terminal escape sequences (default if output is terminal)",
 )
 
@@ -348,7 +354,11 @@ def main(args=None, app=None):
         if args.color_output is None and args.filter_esc:
             args.color_output = 31
 
-        if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
+        try:
+            stderr_isatty = os.isatty(sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            stderr_isatty = False
+        if args.color_stderr is None and stderr_isatty:
             args.color_stderr = 31
 
     if len(args.domains) > 1 and args.passio and not args.localcmd:
