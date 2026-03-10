@@ -29,6 +29,7 @@ import os
 import re
 
 import qubesadmin.exc
+from qubesadmin.exc import QubesValueError
 
 
 def parse_size(size):
@@ -210,3 +211,25 @@ class LockFile:
         """Unlock the file and close the file object"""
         fcntl.lockf(self.file, fcntl.LOCK_UN)
         self.file.close()
+
+
+def qbool(value: str | int | bool) -> bool:
+    """
+    Property setter for boolean properties.
+
+    It accepts (case-insensitive) ``'0'``, ``'no'`` and ``false`` as
+    :py:obj:`False` and ``'1'``, ``'yes'`` and ``'true'`` as
+    :py:obj:`True`.
+    """
+
+    if isinstance(value, str):
+        lcvalue = value.lower()
+        if lcvalue in ("0", "no", "false", "off"):
+            return False
+        if lcvalue in ("1", "yes", "true", "on"):
+            return True
+        raise QubesValueError(
+            "Invalid literal for boolean property: {!r}".format(value)
+        )
+
+    return bool(value)

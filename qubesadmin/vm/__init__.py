@@ -19,35 +19,38 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """Qubes VM objects."""
-
+from __future__ import annotations
 import logging
 import shlex
 
 import subprocess
+import typing
 import warnings
 from logging import Logger
+from typing import Literal
 
-import qubesadmin.base
 import qubesadmin.exc
 import qubesadmin.storage
 import qubesadmin.features
 import qubesadmin.devices
 import qubesadmin.device_protocol
 import qubesadmin.firewall
-import qubesadmin.tags
+
+if typing.TYPE_CHECKING:
+    import qubesadmin.base
+
+Klass = Literal["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
+PowerState = Literal["Transient", "Running", "Halted", "Paused",
+"Suspended", "Halting", "Dying", "Crashed", "NA"]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
     """Qubes domain."""
 
     log: Logger
-
     tags: qubesadmin.tags.Tags
-
     features: qubesadmin.features.Features
-
     devices: qubesadmin.devices.DeviceManager
-
     firewall: qubesadmin.firewall.Firewall
 
     def __init__(self, app, name, klass=None, power_state=None):
@@ -64,7 +67,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self.firewall = qubesadmin.firewall.Firewall(self)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Domain name"""
         return self._method_dest
 
@@ -80,7 +83,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self._volumes = None
         self.app.domains.clear_cache()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._method_dest
 
     def __lt__(self, other):
@@ -205,7 +208,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         """
 
-        if self._power_state_cache is not None:
+        if self._power_state_cache is not None and self.app.cache_enabled:
             return self._power_state_cache
         try:
             power_state = self._get_current_state()["power_state"]
