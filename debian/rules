@@ -2,6 +2,7 @@
 
 export PYBUILD_NAME = qubesadmin
 export PYBUILD_INSTALL_ARGS = --install-layout=deb
+export DESTDIR=$(CURDIR)/debian/tmp
 
 %:
 	dh $@ --buildsystem=pybuild --with python3
@@ -14,9 +15,10 @@ override_dh_auto_build:
 
 override_dh_auto_install:
 	dh_auto_install
-	$(MAKE) install-misc DESTDIR=$(CURDIR)/debian/tmp
+	$(MAKE) install-misc
 	install -d debian/tmp/usr/share/man/man1
 	install -m 0644 doc/_build/man/* debian/tmp/usr/share/man/man1/
+	mv debian/python3-qubesadmin/usr/bin/* debian/tmp/usr/bin/
 
 override_dh_missing:
 	dh_missing --fail-missing
