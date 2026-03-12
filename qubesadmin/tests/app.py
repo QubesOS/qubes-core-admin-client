@@ -1025,7 +1025,8 @@ class TC_20_QubesLocal(unittest.TestCase):
         os.chmod(service_path, 0o755)
 
         with mock.patch('qubesadmin.config.QREXEC_SERVICES_DIR',
-                        self.tmpdir):
+                        self.tmpdir), \
+             mock.patch('os.getuid', return_value=0):
             value = self.app.qubesd_call(
                 'test-vm', 'test.service',
                 'some-arg', payload=payload, payload_stream=payload_stream)
