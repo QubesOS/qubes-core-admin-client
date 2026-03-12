@@ -91,14 +91,13 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    remaining_domains = args.domains
+    remaining_domains = set(args.domains)
     for _ in range(len(args.domains)):
-        this_round_domains = set(remaining_domains)
-        if not this_round_domains:
+        if not remaining_domains:
             break
-        remaining_domains = set()
+        shutdown_failed = set()
         if not args.dry_run:
-            for vm in this_round_domains:
+            for vm in remaining_domains:
                 try:
                     vm.shutdown(force=force)
                 except qubesadmin.exc.QubesVMNotStartedError:
@@ -106,25 +105,21 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 except qubesadmin.exc.QubesException as e:
                     if not args.wait:
                         vm.log.error('Shutdown error: {}'.format(e))
-                    else:
-                        remaining_domains.add(vm)
+                    shutdown_failed.add(vm)
         if not args.wait:
-            if remaining_domains:
-                parser.error_runtime(
-                    'Failed to shut down: ' +
-                    ', '.join(vm.name for vm in remaining_domains),
-                    len(remaining_domains))
+            assert not shutdown_failed
             return
-        this_round_domains.difference_update(remaining_domains)
-        if not this_round_domains:
-            # no VM shutdown request succeed, no sense to try again
+        awaiting = remaining_domains - shutdown_failed
+        remaining_domains = shutdown_failed
+        if not awaiting:
+            # no VM shutdown request succeeded, no sense to try again
             break
 
         if have_events:
             wait_coro = qubesadmin.events.utils.wait_for_domain_shutdown(
-                this_round_domains)
+                awaiting)
         else:
-            wait_coro = _wait_for_shutdown_polling(this_round_domains, args.app)
+            wait_coro = _wait_for_shutdown_polling(awaiting, args.app)
 
         try:
             # pylint: disable=no-member
@@ -132,7 +127,7 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 wait_coro, args.timeout))
         except (TimeoutError, asyncio.TimeoutError):
             if not args.dry_run:
-                current_vms = failed_domains(this_round_domains)
+                current_vms = failed_domains(awaiting)
                 if current_vms:
                     args.app.log.info(
                         'Killing remaining qubes: {}'
@@ -146,14 +141,13 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     except qubesadmin.exc.QubesException as e:
                         parser.error_runtime(e)
 
-    if args.wait:
-        loop.close()
-        failed = failed_domains(args.domains)
-        if failed:
-            parser.error_runtime(
-                'Failed to shut down: ' +
-                ', '.join(vm.name for vm in failed),
-                len(failed))
+    loop.close()
+    failed = failed_domains(args.domains)
+    if failed:
+        parser.error_runtime(
+            'Failed to shut down: ' +
+            ', '.join(vm.name for vm in failed),
+            len(failed))
 
 
 if __name__ == '__main__':
