@@ -8,6 +8,7 @@ License:	LGPLv2.1+
 URL:		https://www.qubes-os.org
 
 BuildRequires:	make
+BuildRequires:  python%{python3_pkgversion}-pip
 BuildRequires:	python%{python3_pkgversion}-setuptools
 BuildRequires:	python%{python3_pkgversion}-devel
 BuildRequires:	python%{python3_pkgversion}-sphinx
@@ -18,6 +19,8 @@ BuildRequires:	python%{python3_pkgversion}-tqdm
 BuildRequires:	python%{python3_pkgversion}-yaml
 BuildRequires:	python%{python3_pkgversion}-pyxdg
 BuildRequires:  python%{python3_pkgversion}-rpm
+BuildRequires:  python%{python3_pkgversion}-wheel
+BuildRequires:  python%{python3_pkgversion}-build
 Requires:   python%{python3_pkgversion}-qubesadmin
 Requires:   python%{python3_pkgversion}-yaml
 Requires:   qubes-repo-templates
@@ -25,14 +28,16 @@ Requires:   scrypt
 Requires:   zstd
 Requires:   qubes-rpm-oxide >= 0.2.3
 Requires:   xrandr
+
 BuildArch:  noarch
+
 Source0: %{name}-%{version}.tar.gz
 Conflicts:  qubes-core-agent < 4.1.9
 # qubes-guid -C option
 Conflicts:  qubes-gui-daemon < 4.1.7
 
 %description
-This package include management tools, like qvm-*.
+This package includes management tools, like qvm-*.
 
 %package -n python%{python3_pkgversion}-qubesadmin
 Summary:    Python%{python3_pkgversion} module qubesadmin
@@ -48,24 +53,23 @@ Conflicts:  qubes-core-dom0 < 4.3.39
 Conflicts:  qubes-manager < 4.3.7
 
 %description -n python%{python3_pkgversion}-qubesadmin
-Python3 module qubesadmin.
+Python%{python3_pkgversion} module qubesadmin.
 
 %prep
 %setup -q
 
-
 %build
 make -C doc PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} man
-
+%pyproject_wheel
 
 %install
-rm -rf build
-%make_install PYTHON=%{__python3}
+%pyproject_install
+make install-misc DESTDIR=%{buildroot}
 
+# Install man pages
 make -C doc DESTDIR=$RPM_BUILD_ROOT \
     PYTHON=%{__python3} SPHINXBUILD=sphinx-build-%{python3_version} \
     install
-
 
 %files
 %defattr(-,root,root,-)
@@ -78,8 +82,8 @@ make -C doc DESTDIR=$RPM_BUILD_ROOT \
 %{_mandir}/man1/qubes*.1*
 
 %files -n python%{python3_pkgversion}-qubesadmin
-%{python3_sitelib}/qubesadmin-*egg-info
-%{python3_sitelib}/qubesadmin
+%{python3_sitelib}/qubesadmin-*.dist-info
+%{python3_sitelib}/qubesadmin/
 /etc/qubes/post-install.d/30-keyboard-layout-service.sh
 
 %changelog
