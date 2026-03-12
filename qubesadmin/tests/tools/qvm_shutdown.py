@@ -195,9 +195,6 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             ('sys-net', 'admin.vm.Shutdown', 'force', None)] = \
             b'0\x00'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.Kill', None, None)] = \
-            b'2\x00QubesVMNotStartedError\x00\x00Domain is powered off\x00'
-        self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00' \
             b'sys-net class=AppVM state=Running\n' \
@@ -207,15 +204,20 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             ('some-vm', 'admin.vm.CurrentState', None, None)] = [
             b'0\x00power_state=Running',
             b'0\x00power_state=Running',
+            b'0\x00power_state=Running',
         ]
         self.app.expected_calls[
             ('other-vm', 'admin.vm.CurrentState', None, None)] = [
             b'0\x00power_state=Running',
             b'0\x00power_state=Running',
+            b'0\x00power_state=Running',
         ]
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Halted'
+            ('sys-net', 'admin.vm.CurrentState', None, None)] = [
+            b'0\x00power_state=Halted',
+            b'0\x00power_state=Halted',
+            b'0\x00power_state=Halted',
+        ]
         with self.assertRaisesRegex(SystemExit, '2'):
             qubesadmin.tools.qvm_shutdown.main(
                 ['--wait', '--all', '--timeout=1'], app=self.app)
