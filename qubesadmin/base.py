@@ -285,6 +285,9 @@ class PropertyHolder:
         Parse `type=... ...` qubesd response format. Return a value of
         appropriate type.
 
+        Returns AttributeError instead of ValueError since this is used
+        to access named field <prop_type>
+
         :param bytes prop_type: 'type=...' part of the response (including
             `type=` prefix)
         :param bytes value: 'value' part of the response
@@ -301,13 +304,10 @@ class PropertyHolder:
             return str(value)
         if prop_type == 'bool':
             if value == '':
-                # TODO shouldn't that at least be ValueError ?
-                #  but then we need to properly propagate that modification
                 return AttributeError
             return value == "True"
         if prop_type == 'int':
             if value == '':
-                # TODO same as above
                 return AttributeError
             return int(value)
         if prop_type == 'vm':
