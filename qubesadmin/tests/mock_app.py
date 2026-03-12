@@ -439,6 +439,10 @@ class MockQube:
         list_call = f"{name} class={klass} state={state}\n".encode()
         vm_list += list_call
         self.qapp.expected_calls[vm_list_call] = vm_list
+        # Also register per-VM admin.vm.List call (used by .klass property)
+        self.qapp.expected_calls[
+            (name, "admin.vm.List", None, None)
+        ] = b"0\x00" + list_call
 
     def update_calls(self):
         """
