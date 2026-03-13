@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''qvm-kill - forceful shutdown'''
+'''Immediately terminate a qube without a graceful shutdown sequence.'''
 
 
 import sys
@@ -26,7 +26,9 @@ import qubesadmin.exc
 import qubesadmin.tools
 
 parser = qubesadmin.tools.QubesArgumentParser(
-    description='forceful shutdown of a domain', vmname_nargs='+')
+    description='immediately terminate a qube without a graceful shutdown'
+                ' sequence',
+    vmname_nargs='+')
 
 def main(args=None, app=None):
     '''Main routine of :program:`qvm-kill`.
