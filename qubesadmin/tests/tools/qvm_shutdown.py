@@ -220,3 +220,32 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_shutdown.main(
                 ['--wait', '--all', '--timeout=1'], app=self.app)
         self.assertAllCalled()
+
+    def test_016_all_exclude_noforce(self):
+        '''test --all --exclude does NOT imply --force'''
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        qubesadmin.tools.qvm_shutdown.main(['--all', '--exclude', 'other-vm'],
+                                           app=self.app)
+        self.assertAllCalled()
+
+    def test_017_all_exclude_force_explicit(self):
+        '''test --all --exclude --force DOES imply --force'''
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', 'force', None)] = \
+            b'0\x00'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        qubesadmin.tools.qvm_shutdown.main(['--all', '--exclude', 'other-vm',
+                                            '--force'],
+                                           app=self.app)
+        self.assertAllCalled()
