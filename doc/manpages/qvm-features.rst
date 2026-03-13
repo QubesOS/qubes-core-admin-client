@@ -181,6 +181,23 @@ avoid calling `qubes.SetMonitorLayout` in this qube.
 
 Default: send monitor layout
 
+no-default-kernelopts
+^^^^^^^^^^^^^^^^^^^^^
+
+When set, qube starts without the default kernel options, but with options 
+provided by the ``kernelopts`` property. Be aware that the default kernel 
+options include ``root=...``.
+
+Default: start with default kernel options and ``kernelopts`` options
+
+no-nomodeset
+^^^^^^^^^^^^
+
+Omits ``nomodeset`` from default kernel options.
+
+Default: start with ``nomodeset`` kernel option unless GPU is attached to the 
+qube.
+
 internal
 ^^^^^^^^
 
