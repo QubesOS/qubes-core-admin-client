@@ -25,7 +25,8 @@ Options
 
 .. option:: --all
 
-   perform the action on all qubes; implies :option:`--force`
+   perform the action on all qubes; implies :option:`--force` unless
+   :option:`--exclude` is also specified
 
 .. option:: --exclude=EXCLUDE
 

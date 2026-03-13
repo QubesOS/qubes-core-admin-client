@@ -72,7 +72,7 @@ def failed_domains(vms):
 def main(args=None, app=None):  # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
 
-    force = args.force or bool(args.all_domains)
+    force = args.force or (args.all_domains and not args.exclude)
 
     if have_events:
         loop = asyncio.new_event_loop()
