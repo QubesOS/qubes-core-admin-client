@@ -24,6 +24,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import unittest
 
 import multiprocessing
@@ -1041,8 +1042,10 @@ class TC_20_QubesLocal(unittest.TestCase):
         with open(self.tmpdir + '/payload', 'rb') as payload_f:
             self.assertEqual(payload_f.read(), expected)
 
+    @mock.patch.object(sys, 'stderr')
     @mock.patch('os.isatty', lambda fd: fd == 2)
-    def test_010_run_service(self):
+    def test_010_run_service(self, mock_stderr):
+        mock_stderr.fileno.return_value = 2
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
             self.app.run_service('some-vm', 'service.name')
@@ -1069,8 +1072,10 @@ class TC_20_QubesLocal(unittest.TestCase):
         self.assertEqual(self.get_request(),
             b'admin.vm.Start+ dom0 name some-vm\0')
 
+    @mock.patch.object(sys, 'stderr')
     @mock.patch('os.isatty', lambda fd: fd == 2)
-    def test_012_run_service_user(self):
+    def test_012_run_service_user(self, mock_stderr):
+        mock_stderr.fileno.return_value = 2
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
             self.app.run_service('some-vm', 'service.name', user='user')
@@ -1099,6 +1104,9 @@ class TC_30_QubesRemote(unittest.TestCase):
         })
         self.proc_patch = mock.patch('subprocess.Popen', self.proc_mock)
         self.proc_patch.start()
+        self.stderr_patch = mock.patch.object(sys, 'stderr')
+        self.mock_stderr = self.stderr_patch.start()
+        self.mock_stderr.fileno.return_value = 2
         self.app = qubesadmin.app.QubesRemote()
 
     def set_proc_stdout(self, send_data):
@@ -1107,6 +1115,7 @@ class TC_30_QubesRemote(unittest.TestCase):
         })
 
     def tearDown(self):
+        self.stderr_patch.stop()
         self.proc_patch.stop()
         super().tearDown()
 

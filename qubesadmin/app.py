@@ -23,6 +23,7 @@
 Main Qubes() class and related classes.
 """
 import grp
+import io
 import os
 import shlex
 import socket
@@ -955,7 +956,11 @@ class QubesLocal(QubesBase):
         qrexec_opts = ["-d", dest]
         if filter_esc:
             qrexec_opts.extend(["-t"])
-        if filter_esc or os.isatty(sys.stderr.fileno()):
+        try:
+            stderr_isatty = os.isatty(sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            stderr_isatty = False
+        if filter_esc or stderr_isatty:
             qrexec_opts.extend(["-T"])
         if localcmd:
             qrexec_opts.extend(["-l", localcmd])
@@ -1065,9 +1070,11 @@ class QubesRemote(QubesBase):
         qrexec_opts = []
         if filter_esc:
             qrexec_opts.extend(["-t"])
-        if filter_esc or (
-            os.isatty(sys.stderr.fileno()) and "stderr" not in kwargs
-        ):
+        try:
+            stderr_isatty = os.isatty(sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            stderr_isatty = False
+        if filter_esc or (stderr_isatty and "stderr" not in kwargs):
             qrexec_opts.extend(["-T"])
         if not autostart and not self.domains.get_blind(dest).is_running():
             raise qubesadmin.exc.QubesVMNotRunningError(
