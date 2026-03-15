@@ -35,6 +35,7 @@ import qubesadmin.features
 import qubesadmin.devices
 import qubesadmin.device_protocol
 import qubesadmin.firewall
+import qubesadmin.tags
 
 if typing.TYPE_CHECKING:
     import qubesadmin.base
