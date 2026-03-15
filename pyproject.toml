@@ -18,7 +18,7 @@ dependencies = [
     "pyyaml>=6.0",
     "tqdm>=4.67",
     "xcffib>=1.5",
-    "python3-xlib>=0.15",
+    "python-xlib>=0.33",
     "rpm>=0.4.0",
 ]
 
