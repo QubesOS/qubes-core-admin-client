@@ -31,8 +31,10 @@ class is implemented by an extension.
 Devices are identified by pair of (backend domain, `port_id`), where `port_id`
 is :py:class:`str`.
 """
+from __future__ import annotations
 import itertools
-from typing import Iterable
+from typing import TYPE_CHECKING
+from collections.abc import Iterable, Iterator
 
 import qubesadmin.exc
 from qubesadmin.device_protocol import (
@@ -43,6 +45,8 @@ from qubesadmin.device_protocol import (
     VirtualDevice,
     AssignmentMode, DeviceInterface,
 )
+if TYPE_CHECKING:
+    from qubesadmin.vm import QubesVM
 
 
 class DeviceCollection:
@@ -55,7 +59,7 @@ class DeviceCollection:
 
     """
 
-    def __init__(self, vm, class_):
+    def __init__(self, vm: QubesVM, class_: str):
         self._vm = vm
         self._class = class_
         self._dev_cache = {}
@@ -268,7 +272,7 @@ class DeviceCollection:
 
     def update_assignment(
             self, device: VirtualDevice, required: AssignmentMode
-    ):
+    ) -> None:
         """
         Update assignment of already attached device.
 
@@ -288,7 +292,7 @@ class DeviceCollection:
 
     __iter__ = get_exposed_devices
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """
         Clear cache of available devices.
         """
@@ -296,7 +300,7 @@ class DeviceCollection:
         self._assignment_cache = None
         self._attachment_cache = None
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: object) -> DeviceInfo:
         """Get device object with given port_id.
 
         :returns: py:class:`DeviceInfo`
@@ -316,6 +320,8 @@ class DeviceCollection:
                 return dev
         # if still nothing, return UnknownDevice instance for the reason
         # explained in docstring, but don't cache it
+        if not isinstance(item, str | None):
+            raise NotImplementedError
         return UnknownDevice(Port(self._vm, item, devclass=self._class))
 
 
@@ -325,21 +331,22 @@ class DeviceManager(dict):
     :param vm: VM for which we manage devices
     """
 
-    def __init__(self, vm):
+    def __init__(self, vm: QubesVM):
         super().__init__()
         self._vm = vm
 
-    def __missing__(self, key):
+    def __missing__(self, key: str) -> DeviceCollection:
         self[key] = DeviceCollection(self._vm, key)
         return self[key]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._vm.app.list_deviceclass())
 
-    def keys(self):
+
+    def keys(self) -> list[str]: # type: ignore[override]
         return self._vm.app.list_deviceclass()
 
-    def deny(self, *interfaces: Iterable[DeviceInterface]):
+    def deny(self, *interfaces: Iterable[DeviceInterface]) -> None:
         """
         Deny a device with any of the given interfaces from attaching to the VM.
         """
@@ -350,7 +357,7 @@ class DeviceManager(dict):
             "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
         )
 
-    def allow(self, *interfaces: Iterable[DeviceInterface]):
+    def allow(self, *interfaces: Iterable[DeviceInterface]) -> None:
         """
         Remove given interfaces from denied list.
         """
@@ -361,7 +368,7 @@ class DeviceManager(dict):
             "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
         )
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear cache of all available device classes"""
         for devclass in self.values():
             devclass.clear_cache()

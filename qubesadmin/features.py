@@ -19,7 +19,16 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''VM features interface'''
+from __future__ import annotations
 
+import typing
+from typing import TypeVar
+from collections.abc import Iterator, Generator
+
+if typing.TYPE_CHECKING:
+    from qubesadmin.vm import QubesVM
+
+T = TypeVar('T')
 
 class Features:
     '''Manager of the features.
@@ -33,14 +42,14 @@ class Features:
     false in Python) will result in string `'0'`, which is considered true.
     '''
 
-    def __init__(self, vm):
+    def __init__(self, vm: QubesVM):
         super().__init__()
         self.vm = vm
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Remove', key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: object) -> None:
         if isinstance(value, bool):
             # False value needs to be serialized as empty string
             self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key,
@@ -49,25 +58,30 @@ class Features:
             self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key,
                 str(value).encode())
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> str:
         return self.vm.qubesd_call(
             self.vm.name, 'admin.vm.feature.Get', item).decode('utf-8')
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         qubesd_response = self.vm.qubesd_call(self.vm.name,
             'admin.vm.feature.List')
         return iter(qubesd_response.decode('utf-8').splitlines())
 
     keys = __iter__
 
-    def items(self):
+    def items(self) -> Generator[tuple[str, str]]:
         '''Return iterable of pairs (feature, value)'''
         for key in self:
             yield key, self[key]
 
     NO_DEFAULT = object()
 
-    def get(self, item, default=None):
+    @typing.overload
+    def get(self, item: str) -> str | None: ...
+    @typing.overload
+    def get(self, item: str, default: T) -> str | T: ...
+    # Overloaded to handle default None return type
+    def get(self, item: str, default: object = None) -> object:
         '''Get a feature, return default value if missing.'''
         try:
             return self[item]
@@ -76,7 +90,13 @@ class Features:
                 raise
             return default
 
-    def check_with_template(self, feature, default=None):
+    @typing.overload
+    def check_with_template(self, item: str) -> str | None: ...
+    @typing.overload
+    def check_with_template(self, item: str, default: T) -> str | T: ...
+    # Overloaded to handle default None return type
+    def check_with_template(self, feature: str,
+                            default: object = None) -> object:
         ''' Check if the vm's template has the specified feature. '''
         try:
             qubesd_response = self.vm.qubesd_call(
