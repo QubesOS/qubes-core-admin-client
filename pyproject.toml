@@ -18,6 +18,7 @@ dependencies = [
     "pyyaml>=6.0",
     "tqdm>=4.67",
     "xcffib>=1.5",
+    "python3-xlib>=0.15",
 ]
 
 [dependency-groups]
@@ -34,7 +35,6 @@ dev = [
     "setuptools>=82.0.0",
     "black>=26.1.0",
     "mypy>=1.19.1",
-    "python3-xlib>=0.15",
     "rpm>=0.4.0",
 ]
 future-dev = [  # those tools are very efficient but not packaged for major distributions yet
