@@ -30,7 +30,6 @@ import fcntl
 import os
 import re
 import typing
-from typing import Any
 from collections.abc import Iterable
 
 import qubesadmin.exc
@@ -94,21 +93,6 @@ def size_to_human(size: int) -> str:
     if size < 1024 * 1024 * 1024:
         return str(round(size / (1024.0 * 1024), 1)) + ' MiB'
     return str(round(size / (1024.0 * 1024 * 1024), 1)) + ' GiB'
-
-
-def get_entry_point_one(group: str, name: str) -> Any:  # noqa:ANN401
-    """Get a single entry point of given type,
-    raise TypeError when there are multiple.
-    """
-    import importlib.metadata
-    epoints = tuple(importlib.metadata.entry_points(group=group, name=name))
-    if not epoints:
-        raise KeyError(name)
-    if len(epoints) > 1:
-        raise TypeError('more than 1 implementation of {!r} found: {}'.format(
-            name, ', '.join('{}.{}'.format(ep.module_name, '.'.join(ep.attrs))
-                            for ep in epoints)))
-    return epoints[0].load()
 
 
 UPDATES_DEFAULT_VM_DISABLE_FLAG = \
