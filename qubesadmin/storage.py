@@ -19,12 +19,20 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """Storage subsystem."""
+from __future__ import annotations
+from typing import BinaryIO, TYPE_CHECKING, IO
+from collections.abc import Generator
+
 import qubesadmin.exc
+if TYPE_CHECKING:
+    from qubesadmin.app import QubesBase
 
 
 class Volume:
     """Storage volume."""
-    def __init__(self, app, pool=None, vid=None, vm=None, vm_name=None):
+    def __init__(self, app: QubesBase, pool: str | None=None,
+                 vid: str | None=None, vm: str | None=None,
+                 vm_name: str | None=None):
         """Construct a Volume object.
 
         Volume may be identified using pool+vid, or vm+vm_name. Either of
@@ -49,7 +57,8 @@ class Volume:
         self._vm_name = vm_name
         self._info = None
 
-    def _qubesd_call(self, func_name, payload=None, payload_stream=None):
+    def _qubesd_call(self, func_name: str, payload: bytes | None = None,
+                     payload_stream: IO | None = None) -> bytes:
         """Make a call to qubesd regarding this volume
 
         :param str func_name: API function name, like `Info` or `Resize`
@@ -69,6 +78,7 @@ class Volume:
             method = 'admin.pool.volume.' + func_name
             dest = 'dom0'
             arg = self._pool
+            assert self._vid is not None
             if payload is not None:
                 payload = self._vid.encode('ascii') + b' ' + payload
             else:
@@ -77,7 +87,7 @@ class Volume:
             dest, method, arg, payload=payload,
             payload_stream=payload_stream)
 
-    def _fetch_info(self, force=True):
+    def _fetch_info(self, force: bool = True) -> None:
         """Fetch volume properties
 
         Populate self._info dict
@@ -90,27 +100,29 @@ class Volume:
         info = info.decode('ascii')
         self._info = dict([line.split('=', 1) for line in info.splitlines()])
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Volume):
             return self.pool == other.pool and self.vid == other.vid
         return NotImplemented
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
         # pylint: disable=protected-access
         if isinstance(other, Volume):
             if self._vm and other._vm:
+                assert self._vm_name is not None and other._vm_name is not None
                 return (self._vm, self._vm_name) < (other._vm, other._vm_name)
             if self._vid and other._vid:
+                assert self._pool is not None and other._pool is not None
                 return (self._pool, self._vid) < (other._pool, other._vid)
         return NotImplemented
 
     @property
-    def name(self):
+    def name(self) -> str | None:
         """per-VM volume name, if available"""
         return self._vm_name
 
     @property
-    def pool(self):
+    def pool(self) -> str:
         """Storage volume pool name."""
         if self._pool is not None:
             return self._pool
@@ -118,10 +130,11 @@ class Volume:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('pool')
+        assert self._info is not None
         return str(self._info['pool'])
 
     @property
-    def vid(self):
+    def vid(self) -> str:
         """Storage volume id, unique within given pool."""
         if self._vid is not None:
             return self._vid
@@ -129,76 +142,83 @@ class Volume:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('vid')
+        assert self._info is not None
         return str(self._info['vid'])
 
     @property
-    def size(self):
+    def size(self) -> int:
         """Size of volume, in bytes."""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('size')
+        assert self._info is not None
         return int(self._info['size'])
 
     @property
-    def usage(self):
+    def usage(self) -> int:
         """Used volume space, in bytes."""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('usage')
+        assert self._info is not None
         return int(self._info['usage'])
 
     @property
-    def rw(self):
+    def rw(self) -> bool:
         """True if volume is read-write."""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('rw')
+        assert self._info is not None
         return self._info['rw'] == 'True'
 
     @rw.setter
-    def rw(self, value):
+    def rw(self, value: object) -> None:
         """Set rw property"""
         self._qubesd_call('Set.rw', str(value).encode('ascii'))
         self._info = None
 
     @property
-    def ephemeral(self):
+    def ephemeral(self) -> bool:
         """True if volume is read-write."""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('ephemeral')
+        assert self._info is not None
         return self._info.get('ephemeral', 'False') == 'True'
 
     @ephemeral.setter
-    def ephemeral(self, value):
+    def ephemeral(self, value: object) -> None:
         """Set rw property"""
         self._qubesd_call('Set.ephemeral', str(value).encode('ascii'))
         self._info = None
 
     @property
-    def snap_on_start(self):
+    def snap_on_start(self) -> bool:
         """Create a snapshot from source on VM start."""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('snap_on_start')
+        assert self._info is not None
         return self._info['snap_on_start'] == 'True'
 
     @property
-    def save_on_stop(self):
+    def save_on_stop(self) -> bool:
         """Commit changes to original volume on VM stop."""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('save_on_stop')
+        assert self._info is not None
         return self._info['save_on_stop'] == 'True'
 
     @property
-    def source(self):
+    def source(self) -> str | None:
         """Volume ID of source volume (for :py:attr:`snap_on_start`).
 
         If None, this volume itself will be used.
@@ -207,26 +227,28 @@ class Volume:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('source')
+        assert self._info is not None
         if self._info['source']:
             return self._info['source']
         return None
 
     @property
-    def revisions_to_keep(self):
+    def revisions_to_keep(self) -> int:
         """Number of revisions to keep around"""
         try:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('revisions_to_keep')
+        assert self._info is not None
         return int(self._info['revisions_to_keep'])
 
     @revisions_to_keep.setter
-    def revisions_to_keep(self, value):
+    def revisions_to_keep(self, value: object) -> None:
         """Set revisions_to_keep property"""
         self._qubesd_call('Set.revisions_to_keep', str(value).encode('ascii'))
         self._info = None
 
-    def is_outdated(self):
+    def is_outdated(self) -> bool:
         """Returns `True` if this snapshot of a source volume (for
         `snap_on_start`=True) is outdated.
         """
@@ -234,9 +256,10 @@ class Volume:
             self._fetch_info()
         except qubesadmin.exc.QubesDaemonAccessError:
             raise qubesadmin.exc.QubesPropertyAccessError('is_outdated')
+        assert self._info is not None
         return self._info.get('is_outdated', False) == 'True'
 
-    def resize(self, size):
+    def resize(self, size: object) -> None:
         """Resize volume.
 
         Currently only extending is supported.
@@ -246,12 +269,12 @@ class Volume:
         self._qubesd_call('Resize', str(size).encode('ascii'))
 
     @property
-    def revisions(self):
+    def revisions(self) -> list[str]:
         """ Returns iterable containing revision identifiers"""
         revisions = self._qubesd_call('ListSnapshots')
         return revisions.decode('ascii').splitlines()
 
-    def revert(self, revision):
+    def revert(self, revision: str) -> None:
         """ Revert volume to previous revision
 
         :param str revision: Revision identifier to revert to
@@ -260,7 +283,7 @@ class Volume:
             raise TypeError('revision must be a str')
         self._qubesd_call('Revert', revision.encode('ascii'))
 
-    def import_data(self, stream):
+    def import_data(self, stream: BinaryIO) -> None:
         """ Import volume data from a given file-like object.
 
         This function overrides existing volume content.
@@ -269,7 +292,7 @@ class Volume:
         """
         self._qubesd_call('Import', payload_stream=stream)
 
-    def import_data_with_size(self, stream, size):
+    def import_data_with_size(self, stream: IO, size: object) -> None:
         """ Import volume data from a given file-like object, informing qubesd
         that data has a specific size.
 
@@ -283,11 +306,11 @@ class Volume:
             'ImportWithSize', payload=size_line.encode(),
             payload_stream=stream)
 
-    def clear_data(self):
+    def clear_data(self) -> None:
         """ Clear existing volume content. """
         self._qubesd_call('Clear')
 
-    def clone(self, source):
+    def clone(self, source: Volume) -> None:
         """ Clone data from sane volume of another VM.
 
         This function override existing volume content.
@@ -309,7 +332,7 @@ class Pool:
     """ A Pool is used to manage different kind of volumes (File
         based/LVM/Btrfs/...).
     """
-    def __init__(self, app, name=None):
+    def __init__(self, app: QubesBase, name: str | None=None):
         """ Initialize storage pool wrapper
 
         :param app: Qubes() object
@@ -319,23 +342,25 @@ class Pool:
         self.name = name
         self._config = None
 
-    def __str__(self):
+    def __str__(self) -> str:
+        assert self.name is not None
         return self.name
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Pool):
             return self.name == other.name
         if isinstance(other, str):
             return self.name == other
         return NotImplemented
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
         if isinstance(other, Pool):
+            assert self.name is not None and other.name is not None
             return self.name < other.name
         return NotImplemented
 
     @property
-    def usage_details(self):
+    def usage_details(self) -> dict[str, int]:
         """ Storage pool usage details (current - not cached) """
         try:
             pool_usage_data = self.app.qubesd_call(
@@ -346,14 +371,14 @@ class Pool:
         assert pool_usage_data.endswith('\n') or pool_usage_data == ''
         pool_usage_data = pool_usage_data[:-1]
 
-        def _int_split(text):  # pylint: disable=missing-docstring
+        def _int_split(text: str) -> tuple[str, int]:  # pylint: disable=missing-docstring
             key, value = text.split("=", 1)
             return key, int(value)
 
         return dict(_int_split(l) for l in pool_usage_data.splitlines())
 
     @property
-    def config(self):
+    def config(self) -> dict[str, str]:
         """ Storage pool config """
         if self._config is None:
             try:
@@ -369,7 +394,7 @@ class Pool:
         return self._config
 
     @property
-    def size(self):
+    def size(self) -> int | None:
         """ Storage pool size, in bytes"""
         try:
             return int(self.usage_details['data_size'])
@@ -378,7 +403,7 @@ class Pool:
             return None
 
     @property
-    def usage(self):
+    def usage(self) -> int | None:
         """ Space used in the pool, in bytes """
         try:
             return int(self.usage_details['data_usage'])
@@ -387,17 +412,17 @@ class Pool:
             return None
 
     @property
-    def driver(self):
+    def driver(self) -> str:
         """ Storage pool driver """
         return self.config['driver']
 
     @property
-    def revisions_to_keep(self):
+    def revisions_to_keep(self) -> int:
         """Number of revisions to keep around"""
         return int(self.config['revisions_to_keep'])
 
     @revisions_to_keep.setter
-    def revisions_to_keep(self, value):
+    def revisions_to_keep(self, value: object) -> None:
         """Set revisions_to_keep property"""
         self.app.qubesd_call(
             'dom0',
@@ -407,13 +432,13 @@ class Pool:
         self._config = None
 
     @property
-    def ephemeral_volatile(self):
+    def ephemeral_volatile(self) -> bool:
         """Whether volatile volumes in this pool should be encrypted with an
            ephemeral key in dom0"""
         return bool(self.config['ephemeral_volatile'])
 
     @ephemeral_volatile.setter
-    def ephemeral_volatile(self, value):
+    def ephemeral_volatile(self, value: object) -> None:
         """Set ephemeral_volatile property"""
         self.app.qubesd_call(
             'dom0',
@@ -423,7 +448,7 @@ class Pool:
         self._config = None
 
     @property
-    def volumes(self):
+    def volumes(self) -> Generator[Volume]:
         """ Volumes managed by this pool """
         try:
             volumes_data = self.app.qubesd_call(
