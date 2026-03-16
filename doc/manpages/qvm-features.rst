@@ -404,6 +404,14 @@ device instead of audio agent installed in the qube itself. The value is audio
 model to be emulated, supported values are `ich6`, `sb16`, `ac97`, `es1370`.
 Recommended is `ich6`. This is useful to get audio in a Windows qube.
 
+
+audio-initial-volume
+^^^^^^^^^^^^^^^^^^^^
+
+Optionally sets the audio volume of the qube at every launch. Valid values are
+from 0 to 150; or `mute`. Default for `untrusted` and Whonix workstation based
+qubes is mute.
+
 uefi
 ^^^^
 
