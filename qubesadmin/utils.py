@@ -24,15 +24,23 @@
 
 """Various utility functions."""
 
+from __future__ import annotations
+
 import fcntl
 import os
 import re
+import typing
+from collections.abc import Iterable
 
 import qubesadmin.exc
 from qubesadmin.exc import QubesValueError
 
+if typing.TYPE_CHECKING:
+    from qubesadmin.app import QubesBase
+    from qubesadmin.vm import QubesVM
 
-def parse_size(size):
+
+def parse_size(size: str) -> int:
     """Parse human readable size into bytes."""
     units = [
         ('K', 1000), ('KB', 1000),
@@ -55,28 +63,28 @@ def parse_size(size):
     raise qubesadmin.exc.QubesException("Invalid size: {0}.".format(size))
 
 
-def mbytes_to_kmg(size):
+def mbytes_to_kmg(size: float | int) -> str:
     """Convert mbytes to human readable format."""
     if size > 1024:
         return "%d GiB" % (size / 1024)
     return "%d MiB" % size
 
 
-def kbytes_to_kmg(size):
+def kbytes_to_kmg(size: float | int) -> str:
     """Convert kbytes to human readable format."""
     if size > 1024:
         return mbytes_to_kmg(size / 1024)
     return "%d KiB" % size
 
 
-def bytes_to_kmg(size):
+def bytes_to_kmg(size: int) -> str:
     """Convert bytes to human readable format."""
     if size > 1024:
         return kbytes_to_kmg(size / 1024)
     return "%d B" % size
 
 
-def size_to_human(size):
+def size_to_human(size: int) -> str:
     """Humane readable size, with 1/10 precision"""
     if size < 1024:
         return str(size)
@@ -87,26 +95,11 @@ def size_to_human(size):
     return str(round(size / (1024.0 * 1024 * 1024), 1)) + ' GiB'
 
 
-def get_entry_point_one(group, name):
-    """Get a single entry point of given type,
-    raise TypeError when there are multiple.
-    """
-    import importlib.metadata
-    epoints = tuple(importlib.metadata.entry_points(group=group, name=name))
-    if not epoints:
-        raise KeyError(name)
-    if len(epoints) > 1:
-        raise TypeError('more than 1 implementation of {!r} found: {}'.format(
-            name, ', '.join('{}.{}'.format(ep.module_name, '.'.join(ep.attrs))
-                            for ep in epoints)))
-    return epoints[0].load()
-
-
 UPDATES_DEFAULT_VM_DISABLE_FLAG = \
     '/var/lib/qubes/updates/vm-default-disable-updates'
 
 
-def updates_vms_status(qvm_collection):
+def updates_vms_status(qvm_collection: QubesBase) -> bool | None:
     """Check whether all VMs have the same check-updates value;
     if yes, return it; otherwise, return None
     """
@@ -122,7 +115,8 @@ def updates_vms_status(qvm_collection):
     return status
 
 
-def vm_dependencies(app, reference_vm):
+def vm_dependencies(app: QubesBase, reference_vm: QubesVM)\
+        -> list[tuple[QubesVM | None, str]]:
     """Helper function that returns a list of all the places a given VM is used
     in. Output is a list of tuples (property_holder, property_name), with None
     as property_holder for global properties
@@ -169,12 +163,12 @@ def vm_dependencies(app, reference_vm):
     return result
 
 
-def encode_for_vmexec(args):
+def encode_for_vmexec(args: Iterable[str]) -> str:
     """
     Encode an argument list for qubes.VMExec call.
     """
 
-    def encode(part):
+    def encode(part: re.Match) -> bytes:
         if part.group(0) == b'-':
             return b'--'
         return '-{:02X}'.format(ord(part.group(0))).encode('ascii')
@@ -188,26 +182,28 @@ def encode_for_vmexec(args):
 class LockFile:
     """Simple locking context manager. It opens a file with an advisory lock
     taken (fcntl.lockf)"""
-    def __init__(self, path, nonblock=False):
+    def __init__(self, path: str, nonblock: bool=False):
         """Open the file. Call *acquire* or enter the context to lock
         the file"""
         # pylint: disable=consider-using-with
         self.file = open(path, "w", encoding='ascii')
         self.nonblock = nonblock
 
-    def __enter__(self, *args, **kwargs):
+    def __enter__(self, *args, **kwargs) -> LockFile:
         self.acquire()
         return self
 
-    def acquire(self):
+    def acquire(self) -> None:
         """Lock the opened file"""
         fcntl.lockf(self.file,
                     fcntl.LOCK_EX | (fcntl.LOCK_NB if self.nonblock else 0))
 
-    def __exit__(self, exc_type=None, exc_value=None, traceback=None):
+    def __exit__(self, exc_type: object | None = None,
+                 exc_value: object | None = None,
+                 traceback: object | None = None) -> None:
         self.release()
 
-    def release(self):
+    def release(self) -> None:
         """Unlock the file and close the file object"""
         fcntl.lockf(self.file, fcntl.LOCK_UN)
         self.file.close()
