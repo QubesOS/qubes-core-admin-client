@@ -725,6 +725,14 @@ class DAEMONLauncher:
         """
         if getattr(vm, "is_preload", False):
             return
+
+        if vm.xid < 0:
+            vm.log.warning(
+                "Skipping GUI start: invalid XID (%s)",
+                vm.xid,
+            )
+            return
+
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(["-d", str(vm.xid)])
 
@@ -753,6 +761,15 @@ class DAEMONLauncher:
         """
         if getattr(vm, "is_preload", False):
             return
+
+        stubdom_xid = getattr(vm, "stubdom_xid", -1)
+        if stubdom_xid < 0:
+            vm.log.warning(
+                "Skipping stubdomain GUI start: invalid stubdom XID (%s)",
+                stubdom_xid,
+            )
+            return
+
         want_stubdom = force
         if not want_stubdom and vm.features.check_with_template(
             "gui-emulated", False
@@ -786,10 +803,19 @@ class DAEMONLauncher:
         """
         if getattr(vm, "is_preload", False):
             return
+
+        xid = self.pacat_domid(vm)
+        if xid < 0:
+            vm.log.warning(
+                "Skipping AUDIO start: invalid XID (%s)",
+                xid,
+            )
+            return
+
         pacat_cmd = [
             PACAT_DAEMON_PATH,
             "-l",
-            str(self.pacat_domid(vm)),
+            str(xid),
             vm.name,
         ]
         vm.log.info("Starting AUDIO")
