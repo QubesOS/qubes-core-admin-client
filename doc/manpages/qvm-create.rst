@@ -76,7 +76,7 @@ Options
     Pool to use for the new domain. All volumes besides snapshots volumes are
     imported in to the specified POOL. THIS IS WHAT YOU WANT TO USE NORMALLY.
 
-.. option:: --pool=POOL:VOLUME, -p POOL:VOLUME
+.. option:: --pool=VOLUME=POOL, -p VOLUME=POOL
 
     Specify the pool to use for the specific volume
 
