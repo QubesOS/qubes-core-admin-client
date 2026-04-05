@@ -379,6 +379,36 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 app=self.app)
             self.assertIn('Assigned.', buf.getvalue())
             self.assertIn('now restart domain', buf.getvalue())
+            self.assertIn('-o read-only=yes', buf.getvalue())
+        self.assertAllCalled()
+
+    def test_032b_assign_option_in_hint(self):
+        """ Test that -o options are copied to the suggested attach command """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1+dead+beef+babe+u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2' "
+            b"_frontend-dev='xvdl'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
+        with qubesadmin.tests.tools.StdoutBuffer() as buf:
+            qubesadmin.tools.qvm_device.main(
+                ['testclass', 'assign', '-o', 'frontend-dev=xvdl',
+                 'test-vm2', 'test-vm1:dev1'],
+                app=self.app)
+            self.assertIn('Assigned.', buf.getvalue())
+            self.assertIn('-o frontend-dev=xvdl', buf.getvalue())
         self.assertAllCalled()
 
     def test_033_assign_invalid(self):
