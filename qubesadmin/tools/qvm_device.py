@@ -356,11 +356,18 @@ def assign_device(args):
         _print_attach_hint(assignment, vm)
 
 
+def _build_options_str(options):
+    """Build CLI option flags string from assignment options dict."""
+    parts = [f"-o {key}={value}" for key, value in options.items()]
+    return (" " + " ".join(parts)) if parts else ""
+
+
 def _print_attach_hint(assignment, vm):
     # pylint: disable=missing-function-docstring
     attached = vm.devices[assignment.devclass].get_attached_devices()
+    options_str = _build_options_str(assignment.options)
     ports = [
-        f"\tqvm-{assignment.devclass} attach {vm} "
+        f"\tqvm-{assignment.devclass} attach{options_str} {vm} "
         f"{assignment.backend_domain}:{dev.port_id}"
         for dev in assignment.devices
         if dev not in attached and not isinstance(dev, UnknownDevice)
