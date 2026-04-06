@@ -111,8 +111,8 @@ class Volume:
             if self._vm and other._vm:
                 assert self._vm_name is not None and other._vm_name is not None
                 return (self._vm, self._vm_name) < (other._vm, other._vm_name)
-            if self._vid and other._vid:
-                assert self._pool is not None and other._pool is not None
+            if self._pool and other._pool:
+                assert self._vid is not None and other._vid is not None
                 return (self._pool, self._vid) < (other._pool, other._vid)
         return NotImplemented
 
@@ -279,8 +279,6 @@ class Volume:
 
         :param str revision: Revision identifier to revert to
         """
-        if not isinstance(revision, str):
-            raise TypeError('revision must be a str')
         self._qubesd_call('Revert', revision.encode('ascii'))
 
     def import_data(self, stream: BinaryIO) -> None:
@@ -332,7 +330,7 @@ class Pool:
     """ A Pool is used to manage different kind of volumes (File
         based/LVM/Btrfs/...).
     """
-    def __init__(self, app: QubesBase, name: str | None=None):
+    def __init__(self, app: QubesBase, name: str):
         """ Initialize storage pool wrapper
 
         :param app: Qubes() object
@@ -343,7 +341,6 @@ class Pool:
         self._config = None
 
     def __str__(self) -> str:
-        assert self.name is not None
         return self.name
 
     def __eq__(self, other: object) -> bool:
