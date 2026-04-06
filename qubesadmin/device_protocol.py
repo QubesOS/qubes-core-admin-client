@@ -513,7 +513,8 @@ class VirtualDevice:
                 other.port, AnyPort
             ):
                 return False
-            reprs = {self: [self.port], other: [other.port]}
+            reprs: dict[VirtualDevice | DeviceAssignment, list[Port | str]] \
+                = {self: [self.port], other: [other.port]}
             for obj, obj_repr in reprs.items():
                 if obj.device_id != "*":
                     obj_repr.append(obj.device_id)
