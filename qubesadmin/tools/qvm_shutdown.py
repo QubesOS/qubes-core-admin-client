@@ -48,7 +48,9 @@ parser.add_argument('--timeout',
 parser.add_argument(
     '--force',
     action='store_true', default=False,
-    help='force shutdown regardless of connected domains; use with caution')
+    help='shut down even if other qubes depend on this one (e.g. as NetVM'
+         ' or AudioVM); does not affect how the qube itself is shut down;'
+         ' use with caution')
 
 parser.add_argument(
     '--dry-run',
