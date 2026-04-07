@@ -1,4 +1,4 @@
-#
+
 # The Qubes OS Project, http://www.qubes-os.org
 #
 # Copyright (C) 2016 Marek Marczykowski-Górecki
@@ -108,7 +108,12 @@ parser.add_argument('backup_location', action='store',
 
 parser.add_argument('vms', nargs='*', action='store', default=[],
     help='Restore only those VMs')
-
+parser.add_argument(
+    '--pool', '-P',
+    action='store',
+    dest='pool',
+    help='Specify the destination storage pool for the restored VMs'
+)
 
 def handle_broken(app, args, restore_info):
     '''Display information about problems with VMs selected for resetore'''
@@ -275,7 +280,7 @@ def main(args=None, app=None):
     try:
         backup = BackupRestore(args.app, args.backup_location,
             appvm, passphrase, location_is_service=args.location_is_service,
-            force_compression_filter=args.compression)
+            force_compression_filter=args.compression,pool=args.pool)
     except qubesadmin.exc.QubesException as e:
         parser.error_runtime(str(e))
         # unreachable - error_runtime will raise SystemExit

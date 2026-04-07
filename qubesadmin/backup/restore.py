@@ -104,7 +104,7 @@ class BackupCanceledError(QubesException):
     def __init__(self, msg: str, tmpdir: str | None=None):
         super().__init__(msg)
         self.tmpdir = tmpdir
-
+        self.pool = pool
 def init_supported_hmac_and_crypto() -> None:
     """Collect supported hmac and crypto algorithms.
 
@@ -957,11 +957,12 @@ class BackupRestore:
                  backup_vm: QubesVM, passphrase: str, *,
                  location_is_service: bool=False,
                  force_compression_filter: str | None=None,
-                 tmpdir: str | None=None):
+                 tmpdir: str | None=None,
+                 pool:str | None=None ):
         super().__init__()
 
         #: qubes.Qubes instance
-        self.app = app
+        self.pool = pool
 
         #: options how the backup should be restored
         self.options = BackupRestoreOptions()
@@ -969,7 +970,7 @@ class BackupRestore:
         #: VM from which backup should be retrieved
         self.backup_vm = backup_vm
         if backup_vm and backup_vm.name == 'dom0':
-            self.backup_vm = None
+         self.backup_vm = None
 
         #: backup path, inside VM pointed by :py:attr:`backup_vm`
         self.backup_location = backup_location
@@ -1987,7 +1988,7 @@ class BackupRestore:
         :param restore_info:
         :return:
         '''
-
+        
         if self.header_data.version == 1:
             raise NotImplementedError('Backup format version 1 not supported')
 
@@ -1996,8 +1997,12 @@ class BackupRestore:
         restore_info = self.restore_info_verify(restore_info)
 
         self._restore_vms_metadata(restore_info)
-
-        # Perform VM restoration in backup order
+        # Apply the pool override to all VMs being restored
+        if self.pool:
+            for vm_name in restore_info:
+                vm = self.app.domains[vm_name]
+                vm.pool = self.pool
+         # Perform VM restoration in backup order
         vms_dirs = []
         handlers = {}
         vms_size = 0
