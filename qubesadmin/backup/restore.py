@@ -1438,7 +1438,7 @@ class BackupRestore:
         queue.put(QUEUE_FINISHED)
 
         qubes_xml_path = os.path.join(self.tmpdir, 'qubes-restored.xml')
-        handlers = {
+        handlers: dict[str, Callable] = {
             'qubes.xml': functools.partial(self._save_qubes_xml, qubes_xml_path)
             }
         extract_proc = self._start_inner_extraction_worker(queue, handlers)
