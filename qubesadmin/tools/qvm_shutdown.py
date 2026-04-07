@@ -25,15 +25,10 @@
 from __future__ import print_function
 
 import sys
-import time
 
 import asyncio
 
-try:
-    import qubesadmin.events.utils
-    have_events = True
-except ImportError:
-    have_events = False
+import qubesadmin.events.utils
 import qubesadmin.tools
 import qubesadmin.exc
 
@@ -74,17 +69,15 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
 
     force = args.force or (args.all_domains and not args.exclude)
 
-    if have_events:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    remaining_domains = args.domains
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    remaining_domains = set(args.domains)
     for _ in range(len(args.domains)):
-        this_round_domains = set(remaining_domains)
-        if not this_round_domains:
+        if not remaining_domains:
             break
-        remaining_domains = set()
+        shutdown_failed = set()
         if not args.dry_run:
-            for vm in this_round_domains:
+            for vm in remaining_domains:
                 try:
                     vm.shutdown(force=force)
                 except qubesadmin.exc.QubesVMNotStartedError:
@@ -92,48 +85,28 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                 except qubesadmin.exc.QubesException as e:
                     if not args.wait:
                         vm.log.error('Shutdown error: {}'.format(e))
-                    else:
-                        remaining_domains.add(vm)
+                    shutdown_failed.add(vm)
         if not args.wait:
-            if remaining_domains:
+            if shutdown_failed:
                 parser.error_runtime(
                     'Failed to shut down: ' +
-                    ', '.join(vm.name for vm in remaining_domains),
-                    len(remaining_domains))
+                    ', '.join(vm.name for vm in shutdown_failed),
+                    len(shutdown_failed))
             return
-        this_round_domains.difference_update(remaining_domains)
-        if not this_round_domains:
-            # no VM shutdown request succeed, no sense to try again
+        awaiting = remaining_domains - shutdown_failed
+        remaining_domains = shutdown_failed
+        if not awaiting:
+            # no VM shutdown request succeeded, no sense to try again
             break
-        if have_events:
-            try:
-                # pylint: disable=no-member
-                loop.run_until_complete(asyncio.wait_for(
-                    qubesadmin.events.utils.wait_for_domain_shutdown(
-                        this_round_domains),
-                    args.timeout))
-            except asyncio.TimeoutError:
-                if not args.dry_run:
-                    for vm in this_round_domains:
-                        try:
-                            vm.kill()
-                        except qubesadmin.exc.QubesVMNotStartedError:
-                            # already shut down
-                            pass
-                        except qubesadmin.exc.QubesException as e:
-                            parser.error_runtime(e)
-        else:
-            timeout = args.timeout
-            current_vms = list(sorted(this_round_domains))
-            while timeout >= 0:
-                current_vms = failed_domains(current_vms)
-                if not current_vms:
-                    break
-                args.app.log.info('Waiting for shutdown ({}): {}'.format(
-                    timeout, ', '.join([str(vm) for vm in current_vms])))
-                time.sleep(1)
-                timeout -= 1
+
+        try:
+            # pylint: disable=no-member
+            loop.run_until_complete(asyncio.wait_for(
+                qubesadmin.events.utils.wait_for_domain_shutdown(
+                    awaiting), args.timeout))
+        except (TimeoutError, asyncio.TimeoutError):
             if not args.dry_run:
+                current_vms = failed_domains(awaiting)
                 if current_vms:
                     args.app.log.info(
                         'Killing remaining qubes: {}'
@@ -147,15 +120,13 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     except qubesadmin.exc.QubesException as e:
                         parser.error_runtime(e)
 
-    if args.wait:
-        if have_events:
-            loop.close()
-        failed = failed_domains(args.domains)
-        if failed:
-            parser.error_runtime(
-                'Failed to shut down: ' +
-                ', '.join(vm.name for vm in failed),
-                len(failed))
+    loop.close()
+    failed = failed_domains(args.domains)
+    if failed:
+        parser.error_runtime(
+            'Failed to shut down: ' +
+            ', '.join(vm.name for vm in failed),
+            len(failed))
 
 
 if __name__ == '__main__':
