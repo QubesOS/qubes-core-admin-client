@@ -346,6 +346,8 @@ async def post_install(args):
             subprocess.call(['sync', '-f', os.path.dirname(args.dir)])
             subprocess.call(['fstrim', os.path.dirname(args.dir)])
 
+    vm.log.info("Template '%s' installation complete", vm.name)
+
     return 0
 
 
