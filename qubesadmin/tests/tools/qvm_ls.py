@@ -21,8 +21,6 @@
 
 # pylint: disable=missing-docstring
 
-import unittest
-
 import qubesadmin
 import qubesadmin.vm
 import qubesadmin.tools.qvm_ls
@@ -44,34 +42,13 @@ class TestApp:
 
 class TC_00_Column(qubesadmin.tests.QubesTestCase):
     def test_100_init(self):
+        '''Column registers itself in Column.columns on init.'''
         try:
-            testcolumn = qubesadmin.tools.qvm_ls.Column('TESTCOLUMN')
-            self.assertEqual(testcolumn.ls_head, 'TESTCOLUMN')
+            testcolumn = qubesadmin.tools.qvm_ls.Column(
+                'TESTCOLUMN', attr=lambda vm: None)
+            self.assertEqual(testcolumn.head, 'TESTCOLUMN')
         finally:
-            try:
-                qubesadmin.tools.qvm_ls.Column.columns['TESTCOLUMN']
-            except KeyError:
-                pass
-
-
-class TC_10_globals(qubesadmin.tests.QubesTestCase):
-    def test_100_simple_flag(self):
-        flag = qubesadmin.tools.qvm_ls.simple_flag(1, 'T', 'internal')
-
-        # TODO after serious testing of QubesVM and Qubes app, this should be
-        #      using normal components
-        vm = TestVM('test-vm', internal=False)
-
-        self.assertFalse(flag(None, vm))
-        vm.internal = True
-        self.assertTrue(flag(None, vm))
-
-    @unittest.skip('column list generated dynamically')
-    def test_900_formats_columns(self):
-        for cols in qubesadmin.tools.qvm_ls.formats.values():
-            for col in cols:
-                self.assertIn(col.upper(),
-                              qubesadmin.tools.qvm_ls.Column.columns)
+            del qubesadmin.tools.qvm_ls.Column.columns['TESTCOLUMN']
 
 
 class TC_50_List(qubesadmin.tests.QubesTestCase):
@@ -227,6 +204,37 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         '  └─test-vm-2    Running  TestVM  -      -         test-vm-proxy\n'
         '  └─test-vm-3    Running  TestVM  -      -         test-vm-proxy\n'
         '└─test-vm-4      Running  TestVM  -      -         test-vm-net-2\n')
+
+    def test_105_flags(self):
+        '''FLAGS column encodes type, power state and boolean attributes.'''
+        app = TestApp()
+        vm = app.domains['test-vm']
+        vm.klass = 'AppVM'
+        vm.updateable = True
+        vm.provides_network = False
+        vm.installed_by_rpm = False
+        vm.internal = False
+        vm.debug = True
+        vm.autostart = False
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--fields', 'name,flags',
+                                          'test-vm'], app=app)
+        # arU---D-: AppVM, running, updateable, debug
+        self.assertEqual(stdout.getvalue(),
+            'NAME     FLAGS\n'
+            'test-vm  arU---D-\n')
+
+    def test_106_raw_data(self):
+        '''--raw-data produces pipe-separated values with no header.'''
+        app = TestApp()
+        app.domains['test-vm'].klass = 'AppVM'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name,class',
+                                          'dom0', 'test-vm'], app=app)
+        self.assertEqual(stdout.getvalue(),
+            'dom0|TestVM\n'
+            'test-vm|AppVM\n')
+
 
 class TC_70_Tags(qubesadmin.tests.QubesTestCase):
     def setUp(self):
@@ -427,6 +435,7 @@ class TC_100_Sort(qubesadmin.tests.QubesTestCase):
         )
 
     def test_101_sort_string(self):
+        '''--sort with --reverse and --ignore-case sorts case-insensitively.'''
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(
                 ['--sort', 'NAME', '--reverse', '--ignore-case'], app=self.app)
@@ -438,6 +447,7 @@ class TC_100_Sort(qubesadmin.tests.QubesTestCase):
             'a     Running  TestVM  red    -         -\n')
 
     def test_102_sort_numeric(self):
+        '''Numeric columns are sorted by value, not lexicographically.'''
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(
                 ['--field', 'NAME,MAXMEM', '--sort', 'MAXMEM'], app=self.app)
@@ -447,6 +457,18 @@ class TC_100_Sort(qubesadmin.tests.QubesTestCase):
             'a     100\n'
             'c     300\n'
             'B     1000\n')
+
+    def test_103_sort_column_not_in_output(self):
+        '''--sort on a column absent from output leaves order unchanged.'''
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(
+                ['--fields', 'NAME,CLASS', '--sort', 'STATE'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  CLASS\n'
+            'B     TestVM\n'
+            'a     TestVM\n'
+            'c     TestVM\n'
+            'dom0  TestVM\n')
 
 
 class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
