@@ -364,13 +364,20 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         # pylint: disable=redefined-builtin
         try:
             service = "qubes.VMShell"
-            if kwargs.get("user", None) == "root":
+            # intentionally check for qubes.VMRootExec, as this is when
+            # qubes.VMRootShell got force-user='root' in its config
+            if kwargs.get(
+                "user", None
+            ) == "root" and self.features.check_with_template(
+                "supported-rpc.qubes.VMRootExec", False
+            ):
+
                 kwargs.pop("user")
                 service = "qubes.VMRootShell"
             return self.run_service_for_stdio(
                 service,
                 input=self.prepare_input_for_vmshell(command, input),
-                **kwargs
+                **kwargs,
             )
         except subprocess.CalledProcessError as e:
             e.cmd = command
