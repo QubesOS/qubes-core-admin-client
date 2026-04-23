@@ -28,10 +28,6 @@ import signal
 import subprocess
 import sys
 
-import multiprocessing
-
-import select
-
 import qubesadmin.tools
 import qubesadmin.exc
 import qubesadmin.utils
@@ -201,24 +197,6 @@ parser.add_argument(
 )
 
 
-def copy_stdin(stream):
-    """Copy stdin to *stream*"""
-    # multiprocessing.Process have sys.stdin connected to /dev/null, use fd 0
-    #  directly
-    while True:
-        try:
-            # select so this code works even if fd 0 is non-blocking
-            select.select([0], [], [])
-            data = os.read(0, 65536)
-            if data is None or data == b"":
-                break
-            stream.write(data)
-            stream.flush()
-        except KeyboardInterrupt:
-            break
-    stream.close()
-
-
 def print_no_color(msg, file, color):
     """Print a *msg* to *file* without coloring it.
     Namely reset to base color first, print a message, then restore color.
@@ -233,6 +211,7 @@ def run_command_single(args, vm):
     """Handle a single VM to run the command in"""
     run_kwargs = {}
     if not args.passio:
+        run_kwargs["stdin"] = subprocess.DEVNULL
         run_kwargs["stdout"] = subprocess.DEVNULL
         run_kwargs["stderr"] = subprocess.DEVNULL
     elif args.localcmd:
@@ -240,7 +219,9 @@ def run_command_single(args, vm):
         run_kwargs["stdout"] = subprocess.PIPE
         run_kwargs["stderr"] = None
     else:
-        # connect process output to stdout/err directly if --pass-io is given
+        # connect process output to stdin/stdout/err directly if --pass-io is
+        # given
+        run_kwargs["stdin"] = None
         run_kwargs["stdout"] = None
         run_kwargs["stderr"] = None
         if args.filter_esc:
@@ -269,7 +250,6 @@ def run_command_single(args, vm):
 
     use_exec = len(args.cmd_args) > 0 or args.no_shell
 
-    copy_proc = None
     local_proc = None
     shell_cmd = None
     if args.service:
@@ -307,25 +287,19 @@ def run_command_single(args, vm):
             args.user = None
         shell_cmd = args.cmd
 
-    proc = vm.run_service(service, user=args.user, **run_kwargs)
     if shell_cmd:
-        proc.stdin.write(vm.prepare_input_for_vmshell(shell_cmd))
-        proc.stdin.flush()
+        run_kwargs["prefix_data"] = vm.prepare_input_for_vmshell(shell_cmd)
+    proc = vm.run_service(service, user=args.user, **run_kwargs)
     if args.localcmd:
         # pylint: disable=consider-using-with
         local_proc = subprocess.Popen(
             args.localcmd, shell=True, stdout=proc.stdin, stdin=proc.stdout
         )
-        # stdin is closed below
+        proc.stdin.close()
         proc.stdout.close()
-    elif args.passio:
-        copy_proc = multiprocessing.Process(
-            target=copy_stdin, args=(proc.stdin,)
-        )
-        copy_proc.start()
-        # keep the copying process running
-    proc.stdin.close()
-    return proc, copy_proc, local_proc
+    else:
+        assert proc.stdin is None, repr(proc.stdin)
+    return proc, local_proc
 
 
 def has_gui(qube) -> bool:
@@ -415,7 +389,6 @@ def main(args=None, app=None):
     if args.color_stderr:
         sys.stderr.write("\033[0;{}m".format(args.color_stderr))
         sys.stderr.flush()
-    copy_proc = None
     try:
         procs = []
         for vm in domains:
@@ -470,7 +443,7 @@ def main(args=None, app=None):
                         with contextlib.suppress(ProcessLookupError):
                             wait_session.send_signal(signal.SIGINT)
                         break
-                proc, copy_proc, local_proc = run_command_single(args, vm)
+                proc, local_proc = run_command_single(args, vm)
                 procs.append((vm, proc))
                 if local_proc:
                     procs.append((vm, local_proc))
@@ -507,8 +480,6 @@ def main(args=None, app=None):
         if args.color_stderr:
             sys.stderr.write("\033[0m")
             sys.stderr.flush()
-        if copy_proc is not None:
-            copy_proc.terminate()
 
     return retcode
 
