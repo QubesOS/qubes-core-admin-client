@@ -101,6 +101,8 @@ class PropertyHolder:
                         "%s has empty 'default_dispvm' property, but it is "
                         "required when target is @dispvm", self.app.local_name
                     )
+                dest = dest.name
+
         # have the actual implementation at Qubes() instance
         return self.app.qubesd_call(dest, method, arg, payload,
             payload_stream)
