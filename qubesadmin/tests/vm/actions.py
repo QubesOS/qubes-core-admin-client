@@ -20,6 +20,8 @@
 
 # pylint: disable=missing-docstring
 
+from subprocess import PIPE
+
 import qubesadmin.tests.vm
 
 
@@ -79,7 +81,9 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         self.vm.run('some command')
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', {
+                'stdin': PIPE, 'stdout': PIPE, 'stderr': PIPE
+            }),
             ('test-vm', 'qubes.VMShell', b'some command; exit\n'),
         ])
 
@@ -89,7 +93,9 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             b'0\x00Windows'
         self.vm.run('some command')
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', {
+                'stdin': PIPE, 'stdout': PIPE, 'stderr': PIPE
+            }),
             ('test-vm', 'qubes.VMShell', b'some command& exit\n'),
         ])
 
@@ -112,7 +118,12 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.assertEqual(
             self.app.service_calls,
             [
-                ("test-vm", "qubes.VMShell", {"user": "root"}),
+                ("test-vm", "qubes.VMShell", {
+                    "user": "root",
+                    "stdin": PIPE,
+                    "stdout": PIPE,
+                    "stderr": PIPE
+                }),
                 ("test-vm", "qubes.VMShell", b"some command; exit\n"),
             ],
         )
@@ -133,7 +144,9 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.assertEqual(
             self.app.service_calls,
             [
-                ("test-vm", "qubes.VMRootShell", {}),
+                ("test-vm", "qubes.VMRootShell", {
+                    "stdin": PIPE, "stdout": PIPE, "stderr": PIPE
+                }),
                 ("test-vm", "qubes.VMRootShell", b"some command; exit\n"),
             ],
         )
@@ -150,7 +163,9 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.run_with_args('some', 'argument with spaces',
             'and $pecial; chars')
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', {
+                "stdin": PIPE, "stdout": PIPE, "stderr": PIPE
+            }),
             ('test-vm', 'qubes.VMShell',
                 b'some \'argument with spaces\' \'and $pecial; chars\'; '
                 b'exit\n'),
@@ -167,7 +182,7 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             ('test-vm',
              'qubes.VMExec+some+argument-20with-20spaces+and-20-24'
              'pecial-3B-20chars',
-             {}),
+             {"stdin": PIPE, "stdout": PIPE, "stderr": PIPE}),
             ('test-vm',
              'qubes.VMExec+some+argument-20with-20spaces+and-20-24'
              'pecial-3B-20chars',

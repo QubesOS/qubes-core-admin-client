@@ -1475,7 +1475,7 @@ qubes-template-fedora-32|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020
         ])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1513,7 +1513,7 @@ b'''qubes-template-debian-12-minimal|0|4.3.0|202405272135|qubes-templates-itl|22
         ])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1564,7 +1564,7 @@ qubes-template-fedora-32|1|4.2|20200201|qubes-templates-itl-testing|2048576|2020
         ])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1602,7 +1602,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         ])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1640,7 +1640,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
         ])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1662,7 +1662,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                     'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1687,7 +1687,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1712,7 +1712,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1737,7 +1737,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1762,7 +1762,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1787,7 +1787,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1812,7 +1812,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1837,7 +1837,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [
@@ -1862,7 +1862,7 @@ qubes-template-fedora-32|0|4.1|20200101|qubes-templates-itl|1048576|2020-01-23 0
                 'qubes-template-fedora-32')
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.TemplateSearch',
-                {'filter_esc': True, 'stdout': subprocess.PIPE}),
+                {'filter_esc': True, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}),
             ('test-vm', 'qubes.TemplateSearch', b'str1\nstr2')
         ])
         self.assertEqual(mock_payload.mock_calls, [

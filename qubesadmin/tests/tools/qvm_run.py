@@ -61,6 +61,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -97,6 +98,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -131,6 +133,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -168,6 +171,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -231,6 +235,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -241,6 +246,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm2",
                     "qubes.WaitForSession",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                     },
@@ -250,6 +256,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm2",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -298,6 +305,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": True,
+                        "stdin": subprocess.PIPE,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
@@ -343,6 +351,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test.service",
                     {
                         "filter_esc": True,
+                        "stdin": subprocess.PIPE,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
@@ -393,6 +402,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": True,
+                        "stdin": subprocess.PIPE,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
@@ -441,6 +451,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": self.default_filter_esc(),
+                        "stdin": subprocess.PIPE,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
@@ -492,6 +503,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": False,
+                        "stdin": subprocess.PIPE,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
@@ -584,6 +596,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.WaitForSession",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                     },
@@ -593,6 +606,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -631,6 +645,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.WaitForSession",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                     },
@@ -640,6 +655,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "service.name",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -671,6 +687,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "test.service",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -699,6 +716,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "test.service",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -740,6 +758,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "test.service",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -776,6 +795,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "test.service",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -824,6 +844,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -884,6 +905,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "qubes.VMShell+WaitForSession",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -924,6 +946,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -966,6 +989,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -998,6 +1022,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1035,6 +1060,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1066,6 +1092,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1100,6 +1127,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1131,6 +1159,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1162,6 +1191,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+command",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1194,6 +1224,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1226,6 +1257,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+----+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1258,6 +1290,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+----+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1289,6 +1322,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+command+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1320,6 +1354,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+command+----",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1351,6 +1386,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+----",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1380,6 +1416,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "qubes.VMExec+test--vm+command+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1409,6 +1446,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "qubes.VMExec+test--vm+command+----",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1435,6 +1473,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "qubes.VMExec+test--vm+command+----",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1474,6 +1513,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMRootShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1513,6 +1553,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": "root",
@@ -1553,6 +1594,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMRootExec+command+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
@@ -1593,6 +1635,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+arg",
                     {
+                        "stdin": subprocess.PIPE,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": "root",

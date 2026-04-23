@@ -428,7 +428,11 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             mock_domain_shutdown.assert_called_once_with([self.app.domains[
                 'test-vm']])
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.PostInstall', {}),
+            ('test-vm', 'qubes.PostInstall', {
+                'stdin': subprocess.PIPE,
+                'stdout': subprocess.PIPE,
+                'stderr': subprocess.PIPE
+            }),
             ('test-vm', 'qubes.PostInstall', b''),
         ])
         self.assertAllCalled()
@@ -483,7 +487,11 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             mock_domain_shutdown.assert_called_once_with([self.app.domains[
                 'test-vm']])
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.PostInstall', {}),
+            ('test-vm', 'qubes.PostInstall', {
+                'stdin': subprocess.PIPE,
+                'stdout': subprocess.PIPE,
+                'stderr': subprocess.PIPE
+            }),
             ('test-vm', 'qubes.PostInstall', b''),
         ])
         self.assertAllCalled()
