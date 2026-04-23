@@ -62,23 +62,34 @@ class TestVMCollection(dict):
 
 
 class TestProcess:
-    def __init__(self, input_callback=None, stdout=None, stderr=None,
-            stdout_data=None):
+    def __init__(
+        self,
+        input_callback=None,
+        stdin=None,
+        stdout=None,
+        stderr=None,
+        stdout_data=None,
+    ):
         self.input_callback = input_callback
         self.got_any_input = False
-        self.stdin = io.BytesIO()
-        # don't let anyone close it, before we get the value
-        self.stdin_close = self.stdin.close
-        self.stdin.close = self.store_input
-        self.stdin.flush = self.store_input
-        if stdout == subprocess.PIPE or stdout == subprocess.DEVNULL \
-                or stdout is None:
+        if stdin == subprocess.PIPE:
+            self.stdin = io.BytesIO()
+            # don't let anyone close it, before we get the value
+            self.stdin_close = self.stdin.close
+            self.stdin.close = self.store_input
+            self.stdin.flush = self.store_input
+        else:
+            self.stdin = None
+        if stdout == subprocess.PIPE:
             self.stdout = io.BytesIO()
+        elif stdout == subprocess.DEVNULL:
+            self.stdout = None
         else:
             self.stdout = stdout
-        if stderr == subprocess.PIPE or stderr == subprocess.DEVNULL \
-                or stderr is None:
+        if stderr == subprocess.PIPE:
             self.stderr = io.BytesIO()
+        elif stderr == subprocess.DEVNULL:
+            self.stderr = None
         else:
             self.stderr = stderr
         if stdout_data:
@@ -102,12 +113,22 @@ class TestProcess:
         # pylint: disable=redefined-builtin,unused-argument
         if input is not None:
             self.stdin.write(input)
-        self.stdin.close()
-        self.stdin_close()
-        return self.stdout.read(), self.stderr.read()
+        if self.stdin:
+            self.stdin.close()
+            self.stdin_close()
+        if self.stdout:
+            stdout = self.stdout.read()
+        else:
+            stdout = None
+        if self.stderr:
+            stderr = self.stderr.read()
+        else:
+            stderr = None
+        return stdout, stderr
 
     def wait(self):
-        self.stdin_close()
+        if self.stdin:
+            self.stdin_close()
         return 0
 
     def poll(self):
@@ -188,6 +209,9 @@ class QubesTest(qubesadmin.app.QubesBase):
         # pylint: disable=arguments-differ
         assert all(c in QREXEC_ALLOWED_CHARS for c in service), \
             f"forbidden char in service '{service}"
+        kwargs.setdefault("stdin", subprocess.PIPE)
+        kwargs.setdefault("stdout", subprocess.PIPE)
+        kwargs.setdefault("stderr", subprocess.PIPE)
         self.service_calls.append((dest, service, kwargs))
         call_key = (dest, service)
         # TODO: consider it as a future extension, as a replacement for
@@ -200,8 +224,9 @@ class QubesTest(qubesadmin.app.QubesBase):
             kwargs['stdout_data'] = self.expected_service_calls[call_key]
         return TestProcess(lambda input: self.service_calls.append((dest,
             service, input)),
-            stdout=kwargs.get('stdout', None),
-            stderr=kwargs.get('stderr', None),
+            stdin=kwargs.get('stdin'),
+            stdout=kwargs.get('stdout'),
+            stderr=kwargs.get('stderr'),
             stdout_data=kwargs.get('stdout_data', None),
         )
 
