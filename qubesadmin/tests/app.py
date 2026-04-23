@@ -188,7 +188,6 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
 
-
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super().setUp()
@@ -1094,6 +1093,32 @@ class TC_20_QubesLocal(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.app.run_service('', 'service.name')
 
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_014_run_service_prefix_data(self):
+        self.listen_and_send(b'0\0')
+        with mock.patch("subprocess.Popen") as mock_proc:
+            self.app.run_service(
+                "some-vm", "service.name", prefix_data=b"prefix data"
+            )
+            mock_proc.assert_called_once_with(
+                [
+                    qubesadmin.config.QREXEC_CLIENT,
+                    "-d",
+                    "some-vm",
+                    "-T",
+                    "-p",
+                    b"prefix data",
+                    "DEFAULT:QUBESRPC service.name+ dom0",
+                ],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertEqual(
+            self.get_request(), b"admin.vm.Start+ dom0 name some-vm\0"
+        )
+
 
 class TC_30_QubesRemote(unittest.TestCase):
     def setUp(self):
@@ -1276,3 +1301,15 @@ class TC_30_QubesRemote(unittest.TestCase):
             'some-vm', 'admin.vm.CurrentState'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
+
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_016_run_service_prefix_data(self):
+        self.app.run_service(
+            "some-vm", "service.name", prefix_data=b"prefix data"
+        )
+        self.proc_mock.assert_called_once_with(
+            [qubesadmin.config.QREXEC_CLIENT_VM,
+              "-T", "-p", b"prefix data", "some-vm", "service.name"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )

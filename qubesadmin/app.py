@@ -688,6 +688,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         localcmd: str | None=None,
         wait: bool=True,
         autostart: bool=True,
+        prefix_data: bytes | None=None,
         **kwargs,
     ) -> Popen:
         """Run qrexec service in a given destination
@@ -930,6 +931,7 @@ class QubesLocal(QubesBase):
         localcmd: str | None=None,
         wait: bool=True,
         autostart: bool=True,
+        prefix_data: bytes | None=None,
         **kwargs,
     ) -> Popen:
         """Run qrexec service in a given destination
@@ -949,6 +951,8 @@ class QubesLocal(QubesBase):
             raise ValueError("Empty destination name allowed only from a VM")
         if not wait and localcmd:
             raise ValueError("wait=False incompatible with localcmd")
+        if prefix_data and b"\0" in prefix_data:
+            raise ValueError("prefix_data cannot contain NUL character")
         if autostart:
             try:
                 self.qubesd_call(dest, "admin.vm.Start")
@@ -973,6 +977,10 @@ class QubesLocal(QubesBase):
                 raise NotImplementedError(
                     "wait=False not implemented in dom0->dom0 calls"
                 )
+            if prefix_data and kwargs.get("stdin", None) != subprocess.PIPE:
+                raise NotImplementedError(
+                    "prefix_data for dom0->dom0 calls requires stdin=PIPE"
+                )
             if user is None:
                 user = grp.getgrnam("qubes").gr_mem[0]
 
@@ -992,6 +1000,8 @@ class QubesLocal(QubesBase):
                 **kwargs,
                 env=env,
             )
+            if prefix_data:
+                p.stdin.write(prefix_data)
             return p
         qrexec_opts = ["-d", dest]
         if filter_esc:
@@ -1008,6 +1018,8 @@ class QubesLocal(QubesBase):
             user = "DEFAULT"
         if not wait:
             qrexec_opts.extend(["-e"])
+        if prefix_data:
+            qrexec_opts.extend(["-p", prefix_data])
         if "connect_timeout" in kwargs:
             qrexec_opts.extend(["-w", str(kwargs.pop("connect_timeout"))])
         kwargs.setdefault("stdin", subprocess.PIPE)
@@ -1087,6 +1099,7 @@ class QubesRemote(QubesBase):
         localcmd: str | None=None,
         wait: bool=True,
         autostart: bool=True,
+        prefix_data: bytes | None=None,
         **kwargs,
     ) -> Popen:
         """Run qrexec service in a given destination
@@ -1109,6 +1122,8 @@ class QubesRemote(QubesBase):
             raise ValueError("non-default user not possible for calls from VM")
         if not wait and localcmd:
             raise ValueError("wait=False incompatible with localcmd")
+        if prefix_data and b"\0" in prefix_data:
+            raise ValueError("prefix_data cannot contain NUL character")
         qrexec_opts = []
         if filter_esc:
             qrexec_opts.extend(["-t"])
@@ -1122,6 +1137,8 @@ class QubesRemote(QubesBase):
             raise qubesadmin.exc.QubesVMNotRunningError(
                 "%s is not running", dest
             )
+        if prefix_data:
+            qrexec_opts.extend(["-p", prefix_data])
         if not wait:
             # qrexec-client-vm can only request service calls, which are
             # started using MSG_EXEC_CMDLINE qrexec protocol message; this
