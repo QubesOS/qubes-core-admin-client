@@ -61,13 +61,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -98,13 +98,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -133,13 +133,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -171,13 +171,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -235,13 +235,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
                 (
                     "test-vm2",
                     "qubes.WaitForSession",
@@ -256,13 +256,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm2",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm2", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -305,15 +305,15 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": True,
-                        "stdin": subprocess.PIPE,
+                        "stdin": None,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
                 # TODO: find a way to compare b'some-data\n' sent from another
                 # proces
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -351,7 +351,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test.service",
                     {
                         "filter_esc": True,
-                        "stdin": subprocess.PIPE,
+                        "stdin": None,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
@@ -359,7 +359,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                 ),
                 # TODO: find a way to compare b'some-data\n' sent from another
                 # proces
-                ("test-vm", "test.service", b""),
             ],
         )
         self.assertAllCalled()
@@ -376,22 +375,17 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
-        with subprocess.Popen(
-            ["echo", "some-data"], stdout=subprocess.PIPE
-        ) as echo:
-            with unittest.mock.patch("sys.stdin", echo.stdout):
-                with unittest.mock.patch("sys.stdout", stdout):
-                    ret = qubesadmin.tools.qvm_run.main(
-                        [
-                            "--no-gui",
-                            "--filter-esc",
-                            "--pass-io",
-                            "test-vm",
-                            "command",
-                        ],
-                        app=self.app,
-                    )
-            echo.stdout.close()
+        with unittest.mock.patch("sys.stdout", stdout):
+            ret = qubesadmin.tools.qvm_run.main(
+                [
+                    "--no-gui",
+                    "--filter-esc",
+                    "--pass-io",
+                    "test-vm",
+                    "command",
+                ],
+                app=self.app,
+            )
 
         self.assertEqual(ret, 0)
         self.assertEqual(
@@ -402,13 +396,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": True,
-                        "stdin": subprocess.PIPE,
+                        "stdin": None,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\nsome-data\n"),
             ],
         )
         self.assertEqual(stdout.getvalue(), "\033[0;31m\033[0m")
@@ -424,23 +418,17 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
-        with subprocess.Popen(
-            ["echo", "some-data"], stdout=subprocess.PIPE
-        ) as echo:
-            with unittest.mock.patch("sys.stdin", echo.stdout):
-                with unittest.mock.patch("sys.stdout", stdout):
-                    ret = qubesadmin.tools.qvm_run.main(
-                        [
-                            "--no-gui",
-                            "--pass-io",
-                            "--no-color-output",
-                            "test-vm",
-                            "command",
-                        ],
-                        app=self.app,
-                    )
-
-            echo.stdout.close()
+        with unittest.mock.patch("sys.stdout", stdout):
+            ret = qubesadmin.tools.qvm_run.main(
+                [
+                    "--no-gui",
+                    "--pass-io",
+                    "--no-color-output",
+                    "test-vm",
+                    "command",
+                ],
+                app=self.app,
+            )
 
         self.assertEqual(ret, 0)
         self.assertEqual(
@@ -451,13 +439,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": self.default_filter_esc(),
-                        "stdin": subprocess.PIPE,
+                        "stdin": None,
                         "stdout": None,
                         "stderr": None,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\nsome-data\n"),
             ],
         )
         self.assertEqual(stdout.getvalue(), "")
@@ -476,23 +464,17 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         #     ('test-vm', 'admin.vm.List', None, None)] = \
         #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
-        with subprocess.Popen(
-            ["echo", "some-data"], stdout=subprocess.PIPE
-        ) as echo:
-            with unittest.mock.patch("sys.stdin", echo.stdout):
-                with unittest.mock.patch("sys.stdout", stdout):
-                    ret = qubesadmin.tools.qvm_run.main(
-                        [
-                            "--no-gui",
-                            "--pass-io",
-                            "--no-filter-esc",
-                            "test-vm",
-                            "command",
-                        ],
-                        app=self.app,
-                    )
-
-            echo.stdout.close()
+        with unittest.mock.patch("sys.stdout", stdout):
+            ret = qubesadmin.tools.qvm_run.main(
+                [
+                    "--no-gui",
+                    "--pass-io",
+                    "--no-filter-esc",
+                    "test-vm",
+                    "command",
+                ],
+                app=self.app,
+            )
 
         self.assertEqual(ret, 0)
         self.assertEqual(
@@ -503,13 +485,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "qubes.VMShell",
                     {
                         "filter_esc": False,
-                        "stdin": subprocess.PIPE,
-                        "stdout": None,
+                        "stdin": None,
                         "stderr": None,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\nsome-data\n"),
             ],
         )
         self.assertEqual(stdout.getvalue(), "")
@@ -551,9 +532,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                         "stdin": subprocess.PIPE,
                         "stderr": None,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
+                ("test-vm", "qubes.VMShell", b""),
             ],
         )
         mock_popen.assert_called_once_with(
@@ -606,13 +588,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -655,13 +637,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "service.name",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "service.name", b""),
             ],
         )
         self.assertAllCalled()
@@ -687,13 +668,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "test.service",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm", "test.service", b""),
             ],
         )
         self.assertAllCalled()
@@ -716,13 +696,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "test.service",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "test.service", b""),
             ],
         )
         self.assertAllCalled()
@@ -758,14 +737,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "test.service",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                         "connect_timeout": 30,
                     },
                 ),
-                ("disp123", "test.service", b""),
             ],
         )
         self.assertAllCalled()
@@ -795,14 +773,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "test.service",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                         "connect_timeout": 30,
                     },
                 ),
-                ("disp123", "test.service", b""),
             ],
         )
         self.assertAllCalled()
@@ -844,13 +821,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -892,7 +869,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
         ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
-            ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
+            ("default-dvm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--dispvm", "--", "test.command"], app=self.app
@@ -905,17 +882,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "qubes.VMShell+WaitForSession",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                         "connect_timeout": 30,
+                        "prefix_data": b"test.command; exit\n",
                     },
-                ),
-                (
-                    "disp123",
-                    "qubes.VMShell+WaitForSession",
-                    b"test.command; exit\n",
                 ),
             ],
         )
@@ -930,10 +903,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             b"0\x00"
         )
         self.app.expected_calls[
+            ("testvm", "admin.vm.property.Get", "default_dispvm", None)
+        ] = b"0\x00default=True type=vm default-dvm"
+        self.app.expected_calls[
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
         ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
-            ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
+            ("default-dvm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm", "--", "test.command"], app=self.app
@@ -946,14 +922,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                         "connect_timeout": 30,
+                        "prefix_data": b"test.command; exit\n",
                     },
                 ),
-                ("disp123", "qubes.VMShell", b"test.command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -976,7 +952,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             ("disp123", "admin.vm.property.Get", "qrexec_timeout", None)
         ] = b"0\x00default=yes type=int 30"
         self.app.expected_calls[
-            ("disp123", "admin.vm.feature.CheckWithTemplate", "os", None)
+            ("default-dvm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--dispvm", "--", "test.command"], app=self.app
@@ -989,14 +965,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "disp123",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                         "connect_timeout": 30,
+                        "prefix_data": b"test.command; exit\n",
                     },
                 ),
-                ("disp123", "qubes.VMShell", b"test.command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -1022,13 +998,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command& exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command& exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -1060,13 +1036,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command arg; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command arg; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -1092,13 +1068,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "qubes.VMExec+command+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1127,13 +1102,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -1159,13 +1134,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "qubes.VMExec+command", b""),
             ],
         )
         self.assertAllCalled()
@@ -1191,13 +1165,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+command",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "qubes.VMExec+command", b""),
             ],
         )
         self.assertAllCalled()
@@ -1224,13 +1197,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "qubes.VMExec+command+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1257,13 +1229,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+----+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "qubes.VMExec+command+----+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1290,13 +1261,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+----+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "qubes.VMExec+command+----+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1322,13 +1292,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+command+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "qubes.VMExec+command+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1354,13 +1323,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+command+----",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "qubes.VMExec+command+----", b""),
             ],
         )
         self.assertAllCalled()
@@ -1386,13 +1354,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm:test-vm",
                     "qubes.VMExec+----",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm:test-vm", "qubes.VMExec+----", b""),
             ],
         )
         self.assertAllCalled()
@@ -1416,13 +1383,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "qubes.VMExec+test--vm+command+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm", "qubes.VMExec+test--vm+command+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1446,13 +1412,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "qubes.VMExec+test--vm+command+----",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm", "qubes.VMExec+test--vm+command+----", b""),
             ],
         )
         self.assertAllCalled()
@@ -1473,13 +1438,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "@dispvm",
                     "qubes.VMExec+test--vm+command+----",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("@dispvm", "qubes.VMExec+test--vm+command+----", b""),
             ],
         )
         self.assertAllCalled()
@@ -1513,13 +1477,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMRootShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"shell command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMRootShell", b"shell command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -1553,13 +1517,13 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": "root",
+                        "prefix_data": b"shell command; exit\n",
                     },
                 ),
-                ("test-vm", "qubes.VMShell", b"shell command; exit\n"),
             ],
         )
         self.assertAllCalled()
@@ -1594,13 +1558,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMRootExec+command+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
                     },
                 ),
-                ("test-vm", "qubes.VMRootExec+command+arg", b""),
             ],
         )
         self.assertAllCalled()
@@ -1635,13 +1598,12 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMExec+command+arg",
                     {
-                        "stdin": subprocess.PIPE,
+                        "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": "root",
                     },
                 ),
-                ("test-vm", "qubes.VMExec+command+arg", b""),
             ],
         )
         self.assertAllCalled()
