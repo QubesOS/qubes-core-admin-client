@@ -1,9 +1,9 @@
 include:
-- file: /r4.3/gitlab-base.yml
+- file: /devel/gitlab-base.yml
   project: QubesOS/qubes-continuous-integration
-- file: /r4.3/gitlab-host.yml
+- file: /devel/gitlab-host.yml
   project: QubesOS/qubes-continuous-integration
-- file: /r4.3/gitlab-vm.yml
+- file: /devel/gitlab-vm.yml
   project: QubesOS/qubes-continuous-integration
 checks:pylint:
   before_script:
