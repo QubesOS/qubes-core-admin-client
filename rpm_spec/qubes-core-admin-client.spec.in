@@ -25,6 +25,7 @@ Requires:   scrypt
 Requires:   zstd
 Requires:   qubes-rpm-oxide >= 0.2.3
 Requires:   xrandr
+Requires:   qubes-core-qrexec >= 4.3.13
 BuildArch:  noarch
 Source0: %{name}-%{version}.tar.gz
 Conflicts:  qubes-core-agent < 4.1.9
