@@ -456,6 +456,9 @@ def main(args=None, app=None):
         try:
             for vm, proc in procs:
                 this_retcode = proc.wait()
+                if this_retcode < 0:
+                    this_retcode = 128 + abs(this_retcode)
+
                 if this_retcode and verbose > 0:
                     print_no_color(
                         "{}: command failed with code: {}".format(
@@ -464,7 +467,7 @@ def main(args=None, app=None):
                         file=sys.stderr,
                         color=args.color_stderr,
                     )
-                retcode = max(retcode, proc.wait())
+                retcode = max(retcode, this_retcode)
         except KeyboardInterrupt:
             for vm, proc in procs:
                 with contextlib.suppress(ProcessLookupError):
