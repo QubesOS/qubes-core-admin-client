@@ -40,6 +40,27 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.shutdown()
         self.assertAllCalled()
 
+    def test_001_shutdown_force(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Shutdown', 'force', None)] = \
+            b'0\x00'
+        self.vm.shutdown(force=True)
+        self.assertAllCalled()
+
+    def test_001_shutdown_wait(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Shutdown', 'wait', None)] = \
+            b'0\x00'
+        self.vm.shutdown(wait=True)
+        self.assertAllCalled()
+
+    def test_001_shutdown_force_wait(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Shutdown', 'force+wait', None)] = \
+            b'0\x00'
+        self.vm.shutdown(force=True, wait=True)
+        self.assertAllCalled()
+
     def test_002_kill(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Kill', None, None)] = \
