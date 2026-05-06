@@ -105,17 +105,22 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """
         self.qubesd_call(self._method_dest, "admin.vm.Start")
 
-    def shutdown(self, force=False):
+    def shutdown(self, force=False, wait=False):
         """
         Shutdown domain.
 
         :return:
         """
-        # TODO: wait parameter (using event?)
+        arg_list = []
         if force:
-            self.qubesd_call(self._method_dest, "admin.vm.Shutdown", "force")
-        else:
-            self.qubesd_call(self._method_dest, "admin.vm.Shutdown")
+            arg_list.append("force")
+        if wait:
+            arg_list.append("wait")
+        args = "+".join(arg_list)
+        params = [self._method_dest, "admin.vm.Shutdown"]
+        if args:
+            params.append(args)
+        self.qubesd_call(*params)
 
     def kill(self):
         """
