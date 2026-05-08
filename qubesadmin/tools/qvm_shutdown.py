@@ -24,9 +24,9 @@
 
 from __future__ import print_function
 
-import sys
-
 import asyncio
+import sys
+from warnings import warn
 
 import qubesadmin.events.utils
 import qubesadmin.tools
@@ -46,10 +46,8 @@ parser.add_argument(
 parser.add_argument(
     "--timeout",
     action="store",
-    type=float,
-    default=60,
-    help="timeout after which domains are killed when using --wait"
-    " (default: %(default)d)",
+    help="Deprecated, use --wait instead. Setting this option will enable "
+    "--wait",
 )
 
 parser.add_argument(
@@ -70,89 +68,164 @@ parser.add_argument(
 )
 
 
-def failed_domains(vms):
-    """Find the domains that have not successfully been shut down"""
-
-    # DispVM might have been deleted before we check them, so NA is acceptable.
-    return [
-        vm
-        for vm in vms
-        if not (
-            vm.get_power_state() == "Halted"
-            or (vm.klass == "DispVM" and vm.get_power_state() == "NA")
-        )
+def shutdown(
+    args,
+    loop: asyncio.AbstractEventLoop,
+    domains: list[qubesadmin.vm.QubesVM],
+    force: bool,
+):
+    """
+    Asynchronously shutdown qubes and return qubes that failed to shutdown
+    because and the client can't handle, as well as qubes that were in use
+    while --force was not provided, as well as timed out.
+    """
+    # pylint: disable=missing-docstring
+    unhandled, used, timedout = [], [], []
+    tasks = [
+        asyncio.to_thread(qube.shutdown, force=force, wait=args.wait)
+        for qube in domains
     ]
+    results = loop.run_until_complete(
+        asyncio.gather(*tasks, return_exceptions=True)
+    )
+    for qube, res in zip(domains, results):
+        if not isinstance(res, BaseException):
+            qube.log.info("Shutdown succeeded")
+            continue
+        try:
+            raise res
+        except qubesadmin.exc.QubesVMNotStartedError:
+            pass
+        except qubesadmin.exc.QubesVMInUseError as e:
+            if args.wait:
+                qube.log.error("Shutdown error: {}".format(e))
+            else:
+                qube.log.error("Shutdown error: (try --force): {}".format(e))
+            used.append(qube)
+        except qubesadmin.exc.QubesVMShutdownTimeoutError as e:
+            if args.wait:
+                qube.log.error("Shutdown error: {}".format(e))
+            else:
+                qube.log.error("Shutdown error: (try qvm-kill): {}".format(e))
+            timedout.append(qube)
+        except qubesadmin.exc.QubesException as e:
+            qube.log.error("Shutdown error: {}".format(e))
+            unhandled.append(qube)
+    return unhandled, used, timedout
 
 
-def main(args=None, app=None):  # pylint: disable=missing-docstring
+def kill(loop: asyncio.AbstractEventLoop, domains: list[qubesadmin.vm.QubesVM]):
+    """
+    Asynchronously kill qubes and return qubes that failed to shutdown.
+    """
+    # pylint: disable=missing-docstring
+    unhandled = domains.copy()
+    tasks = [asyncio.to_thread(qube.kill) for qube in domains]
+    results = loop.run_until_complete(
+        asyncio.gather(*tasks, return_exceptions=True)
+    )
+    for qube, res in zip(domains, results):
+        if not isinstance(res, BaseException):
+            qube.log.info("Killing succeeded")
+            unhandled.remove(qube)
+            continue
+        try:
+            raise res
+        except qubesadmin.exc.QubesVMNotStartedError:
+            unhandled.remove(qube)
+        except qubesadmin.exc.QubesException as e:
+            qube.log.error("Kill error: {}".format(e))
+    return unhandled
+
+
+def main(args=None, app=None):
+    # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
-
     force = args.force or (args.all_domains and not args.exclude)
+    if args.dry_run:
+        return
+    if args.timeout:
+        warn(
+            "Call to deprecated --timeout option, use --wait instead",
+            FutureWarning,
+        )
+        args.wait = True
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    remaining_domains = set(args.domains)
-    for _ in range(len(args.domains)):
-        if not remaining_domains:
-            break
-        shutdown_failed = set()
-        if not args.dry_run:
-            for vm in remaining_domains:
-                try:
-                    vm.shutdown(force=force)
-                except qubesadmin.exc.QubesVMNotStartedError:
-                    pass
-                except qubesadmin.exc.QubesException as e:
-                    if not args.wait:
-                        vm.log.error("Shutdown error: {}".format(e))
-                    shutdown_failed.add(vm)
-        if not args.wait:
-            if shutdown_failed:
-                parser.error_runtime(
-                    "Failed to shut down: "
-                    + ", ".join(vm.name for vm in shutdown_failed),
-                    len(shutdown_failed),
-                )
-            return
-        awaiting = remaining_domains - shutdown_failed
-        remaining_domains = shutdown_failed
-        if not awaiting:
-            # no VM shutdown request succeeded, no sense to try again
-            break
-
-        try:
-            # pylint: disable=no-member
-            loop.run_until_complete(
-                asyncio.wait_for(
-                    qubesadmin.events.utils.wait_for_domain_shutdown(awaiting),
-                    args.timeout,
-                )
+    unhandled, used, timedout = shutdown(
+        args=args, force=force, loop=loop, domains=args.domains
+    )
+    unhandled_retry = []
+    timedout_retry = []
+    if used:
+        old_failed = unhandled, used, timedout
+        parser.print_error(
+            "Retrying shutdown of qubes that were in use for {} time(s)".format(
+                len(used)
             )
-        except (TimeoutError, asyncio.TimeoutError):
-            if not args.dry_run:
-                current_vms = failed_domains(awaiting)
-                if current_vms:
-                    args.app.log.info(
-                        "Killing remaining qubes: {}".format(
-                            ", ".join([str(vm) for vm in current_vms])
-                        )
-                    )
-                for vm in current_vms:
-                    try:
-                        vm.kill()
-                    except qubesadmin.exc.QubesVMNotStartedError:
-                        # already shut down
-                        pass
-                    except qubesadmin.exc.QubesException as e:
-                        parser.error_runtime(e)
-
-    loop.close()
-    failed = failed_domains(args.domains)
-    if failed:
-        parser.error_runtime(
-            "Failed to shut down: " + ", ".join(vm.name for vm in failed),
-            len(failed),
         )
+    for _ in range(len(used)):
+        parser.print_error(
+            "Retrying shutdown of qubes that were in use: {}".format(
+                ", ".join(qube.name for qube in used)
+            )
+        )
+        failed = shutdown(args=args, force=force, loop=loop, domains=used)
+        unhandled_retry, used, timedout_retry = failed
+        if not failed:
+            break
+        if old_failed:
+            len_failed = sum(len(item) for item in failed)
+            len_old_failed = sum(len(item) for item in old_failed)
+            if len_failed == len_old_failed:
+                break
+        old_failed = failed
+
+    unhandled.extend(qube for qube in unhandled_retry if qube not in unhandled)
+    timedout.extend(qube for qube in timedout_retry if qube not in timedout)
+
+    # Retry timed out only once, as it can take a long time, 60s by default.
+    if timedout:
+        parser.print_error(
+            "Retrying shutdown of qubes that timed out: {}".format(
+                ", ".join(qube.name for qube in timedout)
+            )
+        )
+        unhandled, used, timedout = shutdown(
+            args=args, force=force, loop=loop, domains=timedout
+        )
+
+    if timedout:
+        parser.print_error(
+            "Killing timed out qubes: {}".format(
+                ", ".join(qube.name for qube in timedout)
+            )
+        )
+        unhandled = kill(loop=loop, domains=timedout)
+
+    if not unhandled and not used and not timedout:
+        return
+
+    if unhandled:
+        parser.print_error(
+            "Failed to shut down for unknown reason: {}".format(
+                ", ".join(qube.name for qube in unhandled)
+            )
+        )
+    if used:
+        parser.print_error(
+            "Failed to shut down because it's in use: {}".format(
+                ", ".join(qube.name for qube in used)
+            )
+        )
+    if timedout:
+        parser.print_error(
+            "Failed to shut down because of time out: {}".format(
+                ", ".join(qube.name for qube in timedout)
+            )
+        )
+    raise SystemExit(len(unhandled + used + timedout))
 
 
 if __name__ == "__main__":

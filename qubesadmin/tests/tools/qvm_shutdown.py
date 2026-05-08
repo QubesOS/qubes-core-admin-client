@@ -21,7 +21,6 @@
 # pylint: disable=missing-docstring
 
 import asyncio
-import unittest.mock
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
@@ -88,27 +87,12 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = unittest.mock.AsyncMock()
-        patch = unittest.mock.patch(
-            'qubesadmin.events.EventsDispatcher._get_events_reader',
-            mock_events)
-        patch.start()
-        self.addCleanup(patch.stop)
-        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
-            b'1\0\0connection-established\0\0',
-            b'1\0some-vm\0domain-shutdown\0\0',
-            ])
-
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = \
             b'0\x00'
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
-            [b'0\x00power_state=Running'] + \
-            [b'0\x00power_state=Halted']
         qubesadmin.tools.qvm_shutdown.main(['--wait', 'some-vm'], app=self.app)
         self.assertAllCalled()
 
@@ -117,27 +101,14 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = unittest.mock.AsyncMock()
-        patch = unittest.mock.patch(
-            'qubesadmin.events.EventsDispatcher._get_events_reader',
-            mock_events)
-        patch.start()
-        self.addCleanup(patch.stop)
-        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
-            b'1\0\0connection-established\0\0',
-            b'1\0sys-net\0domain-shutdown\0\0',
-            b'1\0some-vm\0domain-shutdown\0\0',
-            b'1\0other-vm\0domain-shutdown\0\0',
-            ])
-
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.Shutdown', 'force', None)] = \
+            ('some-vm', 'admin.vm.Shutdown', 'force+wait', None)] = \
             b'0\x00'
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.Shutdown', 'force', None)] = \
+            ('other-vm', 'admin.vm.Shutdown', 'force+wait', None)] = \
             b'0\x00'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.Shutdown', 'force', None)] = \
+            ('sys-net', 'admin.vm.Shutdown', 'force+wait', None)] = \
             b'0\x00'
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -145,15 +116,6 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'sys-net class=AppVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Halted'
-        self.app.expected_calls[
-            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Halted'
-        self.app.expected_calls[
-            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Halted'
         qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
         self.assertAllCalled()
 
@@ -162,31 +124,20 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = unittest.mock.AsyncMock()
-        patch = unittest.mock.patch(
-            'qubesadmin.events.EventsDispatcher._get_events_reader',
-            mock_events)
-        patch.start()
-        self.addCleanup(patch.stop)
-        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
-            b'1\0\0connection-established\0\0',
-            b'1\0sys-net\0domain-shutdown\0\0',
-            ])
-
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.Shutdown', 'force', None)] = \
-            b'0\x00'
+            ('some-vm', 'admin.vm.Shutdown', 'force+wait', None)] = \
+            b'2\x00QubesVMShutdownTimeoutError\x00\x00Shutdown timed out\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Kill', None, None)] = \
             b'2\x00QubesVMNotStartedError\x00\x00Domain is powered off\x00'
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.Shutdown', 'force', None)] = \
-            b'0\x00'
+            ('other-vm', 'admin.vm.Shutdown', 'force+wait', None)] = \
+            b'2\x00QubesVMShutdownTimeoutError\x00\x00Shutdown timed out\x00'
         self.app.expected_calls[
             ('other-vm', 'admin.vm.Kill', None, None)] = \
             b'0\x00'
         self.app.expected_calls[
-            ('sys-net', 'admin.vm.Shutdown', 'force', None)] = \
+            ('sys-net', 'admin.vm.Shutdown', 'force+wait', None)] = \
             b'0\x00'
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -194,27 +145,9 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'sys-net class=AppVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Running',
-        ]
-        self.app.expected_calls[
-            ('other-vm', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Running',
-        ]
-        self.app.expected_calls[
-            ('sys-net', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Halted',
-            b'0\x00power_state=Halted',
-            b'0\x00power_state=Halted',
-        ]
         with self.assertRaisesRegex(SystemExit, '2'):
             qubesadmin.tools.qvm_shutdown.main(
-                ['--wait', '--all', '--timeout=1'], app=self.app)
+                ['--wait', '--all'], app=self.app)
         self.assertAllCalled()
 
     def test_016_all_exclude_noforce(self):
@@ -266,25 +199,10 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             ['--dry-run', 'some-vm'], app=self.app)
         self.assertAllCalled()
 
-    def test_011_wait_retry(self):
+    def test_011_wait_retry_simple(self):
         '''test --wait retries VMs whose shutdown request failed'''
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-
-        mock_events = unittest.mock.AsyncMock()
-        patch = unittest.mock.patch(
-            'qubesadmin.events.EventsDispatcher._get_events_reader',
-            mock_events)
-        patch.start()
-        self.addCleanup(patch.stop)
-        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
-            # round 1: wait for some-vm
-            b'1\0\0connection-established\0\0',
-            b'1\0some-vm\0domain-shutdown\0\0',
-            # round 2: wait for other-vm
-            b'1\0\0connection-established\0\0',
-            b'1\0other-vm\0domain-shutdown\0\0',
-            ])
 
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
@@ -292,23 +210,103 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = \
             b'0\x00'
         # other-vm fails first attempt, succeeds on retry
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.Shutdown', None, None)] = [
-            b'2\x00QubesException\x00\x00Shutdown refused\x00',
+            ('other-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'0\x00',
+        ]
+        qubesadmin.tools.qvm_shutdown.main(
+            ['--wait', 'some-vm', 'other-vm'], app=self.app)
+        self.assertAllCalled()
+
+    def test_011_wait_retry_once_succeed(self):
+        '''test --wait retry quits early if none fail'''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00'
+            b'some-vm class=AppVM state=Running\n'
+            b'other-vm class=AppVM state=Running\n'
+            b'another-vm class=AppVM state=Running\n'
+        )
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'0\x00'
+        ]
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
             b'0\x00',
         ]
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Halted',
+            ('another-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'0\x00',
+        ]
+        qubesadmin.tools.qvm_shutdown.main(
+            ['--wait', 'some-vm', 'other-vm', 'another-vm'], app=self.app)
+        self.assertAllCalled()
+
+    def test_011_wait_retry_once_fail(self):
+        '''test --wait retry quits early if none succeed'''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00'
+            b'some-vm class=AppVM state=Running\n'
+            b'other-vm class=AppVM state=Running\n'
+            b'another-vm class=AppVM state=Running\n'
+        )
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
         ]
         self.app.expected_calls[
-            ('other-vm', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Halted',
+            ('other-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+        ]
+        self.app.expected_calls[
+            ('another-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+        ]
+        with self.assertRaises(SystemExit) as cm:
+            qubesadmin.tools.qvm_shutdown.main(
+                ['--wait', 'some-vm', 'other-vm', 'another-vm'], app=self.app)
+        self.assertEqual(cm.exception.code, 3)
+        self.assertAllCalled()
+
+    def test_011_wait_retry_as_many_as_in_use(self):
+        '''test --wait retries VMs whose shutdown request failed as many as
+        there were used qubes'''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        # some-vm fails first attempt, succeeds on retry
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00', \
+            b'0\x00'
+        ]
+        # other-vm fails first and second attempt, succeeds on retry
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Shutdown', 'wait', None)] = [
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00', \
+            b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
+            b'0\x00',
         ]
         qubesadmin.tools.qvm_shutdown.main(
             ['--wait', 'some-vm', 'other-vm'], app=self.app)
@@ -320,14 +318,29 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = \
             b'2\x00QubesException\x00\x00Shutdown refused\x00'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Running'
         with self.assertRaises(SystemExit):
             qubesadmin.tools.qvm_shutdown.main(
                 ['--wait', 'some-vm'], app=self.app)
+        self.assertAllCalled()
+
+    def test_014_timeout_deprecated_means_wait(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = \
+            b'2\x00QubesVMShutdownTimeoutError\x00\x00Shutdown timed out\x00'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Kill', None, None)] = \
+            b'2\x00QubesException\x00\x00Kill failed\x00'
+        with self.assertRaises(SystemExit):
+            qubesadmin.tools.qvm_shutdown.main(
+                ['--timeout=3', 'some-vm'], app=self.app)
         self.assertAllCalled()
 
     def test_016_wait_kill_exception(self):
@@ -335,65 +348,16 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        mock_events = unittest.mock.AsyncMock()
-        patch = unittest.mock.patch(
-            'qubesadmin.events.EventsDispatcher._get_events_reader',
-            mock_events)
-        patch.start()
-        self.addCleanup(patch.stop)
-        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
-            b'1\0\0connection-established\0\0',
-            ])
-
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         self.app.expected_calls[
-            ('some-vm', 'admin.vm.Shutdown', None, None)] = \
-            b'0\x00'
+            ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = \
+            b'2\x00QubesVMShutdownTimeoutError\x00\x00Shutdown timed out\x00'
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Kill', None, None)] = \
             b'2\x00QubesException\x00\x00Kill failed\x00'
-        self.app.expected_calls[
-            ('some-vm', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Running',
-            b'0\x00power_state=Running',
-        ]
         with self.assertRaises(SystemExit):
             qubesadmin.tools.qvm_shutdown.main(
-                ['--wait', '--timeout=1', 'some-vm'], app=self.app)
-        self.assertAllCalled()
-
-    def test_017_wait_dispvm_na(self):
-        '''test --wait treats DispVM with NA power state as shut down'''
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        mock_events = unittest.mock.AsyncMock()
-        patch = unittest.mock.patch(
-            'qubesadmin.events.EventsDispatcher._get_events_reader',
-            mock_events)
-        patch.start()
-        self.addCleanup(patch.stop)
-        mock_events.side_effect = qubesadmin.tests.tools.MockEventsReader([
-            b'1\0\0connection-established\0\0',
-            b'1\0disp123\0domain-shutdown\0\0',
-            ])
-
-        self.app.expected_calls[
-            ('dom0', 'admin.vm.List', None, None)] = \
-            b'0\x00disp123 class=DispVM state=Running\n'
-        self.app.expected_calls[
-            ('disp123', 'admin.vm.Shutdown', None, None)] = \
-            b'0\x00'
-        self.app.expected_calls[
-            ('disp123', 'admin.vm.CurrentState', None, None)] = [
-            b'0\x00power_state=Running',
-            # failed_domains: first get_power_state() != 'Halted',
-            # then klass == 'DispVM' triggers second get_power_state()
-            b'0\x00power_state=NA',
-            b'0\x00power_state=NA',
-        ]
-        qubesadmin.tools.qvm_shutdown.main(
-            ['--wait', 'disp123'], app=self.app)
+                ['--wait', 'some-vm'], app=self.app)
         self.assertAllCalled()
