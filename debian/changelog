@@ -1,3 +1,39 @@
+qubes-core-admin-client (4.3.31-1) unstable; urgency=medium
+
+  [ Sahil_Kumar ]
+  * tests: mock_app: register per-VM admin.vm.List call
+
+  [ anon ]
+  * Update docstring to better reflect diffeence between qvm-kill and
+    qvm-shutdown --force
+
+  [ ahriman ]
+  * Document kernel option-related features
+
+  [ anon ]
+  * fix utest when running without sudo
+  * do not --force if --all --exclude
+
+  [ Ben Grande ]
+  * Use caller's default_dispvm as target for @dispvm
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix resolving calls for a dispvm to be created
+
+  [ Rohit Yadav ]
+  * qvm-start-daemon: skip GUI/AUDIO for dead domain
+
+  [ Rusty Bird ]
+  * Fix --pool syntax in manpages for qvm-create and qvm-clone
+
+  [ Jayant-Kernel ]
+  * qvm_device: copy assign options to suggested attach command
+
+  [ Marek Marczykowski-Górecki ]
+  * tools: fix vm.run(user="root") on template imported from R4.2 (cont)
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 11 May 2026 14:21:14 +0200
+
 qubes-core-admin-client (4.3.30-1) unstable; urgency=medium
 
   [ anon ]
