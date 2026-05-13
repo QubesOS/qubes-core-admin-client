@@ -35,12 +35,6 @@ import grp
 import qubesadmin
 import qubesadmin.exc
 import qubesadmin.tools
-try:
-    # pylint: disable=wrong-import-position
-    import qubesadmin.events.utils
-    have_events = True
-except ImportError:
-    have_events = False
 
 parser = qubesadmin.tools.QubesArgumentParser(
     description='Postprocess template package')
@@ -244,30 +238,12 @@ async def call_postinstall_service(vm):
             vm.run_service_for_stdio('qubes.PostInstall')
         except subprocess.CalledProcessError:
             vm.log.error('qubes.PostInstall service failed')
-        vm.shutdown()
-        if have_events:
-            try:
-                # pylint: disable=no-member
-                await asyncio.wait_for(
-                    qubesadmin.events.utils.wait_for_domain_shutdown([vm]),
-                    qubesadmin.config.defaults['shutdown_timeout'])
-            except asyncio.TimeoutError:
-                try:
-                    vm.kill()
-                except qubesadmin.exc.QubesVMNotStartedError:
-                    pass
-        else:
-            timeout = qubesadmin.config.defaults['shutdown_timeout']
-            while timeout >= 0:
-                if vm.is_halted():
-                    break
-                await asyncio.sleep(1)
-                timeout -= 1
-            if not vm.is_halted():
-                try:
-                    vm.kill()
-                except qubesadmin.exc.QubesVMNotStartedError:
-                    pass
+        timeout = qubesadmin.config.defaults['shutdown_timeout']
+        # TODO: ben: Fix RuntimeError()
+        await qubesadmin.tools.qvm_shutdown.main(
+            args=["--timeout={}".format(timeout), "--", vm.name],
+            app=vm.app,
+        )
     finally:
         vm.netvm = qubesadmin.DEFAULT
 

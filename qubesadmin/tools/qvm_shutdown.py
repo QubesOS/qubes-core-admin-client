@@ -71,9 +71,8 @@ parser.add_argument(
 )
 
 
-def shutdown(
+async def shutdown(
     args,
-    loop: asyncio.AbstractEventLoop,
     domains: list[qubesadmin.vm.QubesVM],
     force: bool,
 ):
@@ -90,9 +89,7 @@ def shutdown(
         )
         for qube in domains
     ]
-    results = loop.run_until_complete(
-        asyncio.gather(*tasks, return_exceptions=True)
-    )
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     for qube, res in zip(domains, results):
         if not isinstance(res, BaseException):
             qube.log.info("Shutdown succeeded")
@@ -121,16 +118,14 @@ def shutdown(
     return remnants, timedout
 
 
-def kill(loop: asyncio.AbstractEventLoop, domains: list[qubesadmin.vm.QubesVM]):
+async def kill(domains: list[qubesadmin.vm.QubesVM]):
     """
     Asynchronously kill qubes and return qubes that failed to shutdown.
     """
     # pylint: disable=missing-docstring
     remnants = domains.copy()
     tasks = [async_thread(qube.kill) for qube in domains]
-    results = loop.run_until_complete(
-        asyncio.gather(*tasks, return_exceptions=True)
-    )
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     for qube, res in zip(domains, results):
         if not isinstance(res, BaseException):
             qube.log.info("Killing succeeded")
@@ -145,7 +140,7 @@ def kill(loop: asyncio.AbstractEventLoop, domains: list[qubesadmin.vm.QubesVM]):
     return remnants
 
 
-def main(args=None, app=None):
+async def main(args=None, app=None):
     # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
     force = args.force or (args.all_domains and not args.exclude)
@@ -153,19 +148,15 @@ def main(args=None, app=None):
         return
     domains = set(args.domains)
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    remnants, timedout = shutdown(
-        args=args, force=force, loop=loop, domains=domains
-    )
+    remnants, timedout = await shutdown(args=args, force=force, domains=domains)
     if timedout:
         args.app.log.info(
             "Retrying shutdown of qubes that timed out: {}".format(
                 ", ".join(qube.name for qube in timedout)
             )
         )
-        remnants, timedout = shutdown(
-            args=args, force=force, loop=loop, domains=timedout
+        remnants, timedout = await shutdown(
+            args=args, force=force, domains=timedout
         )
 
     if timedout:
@@ -174,7 +165,7 @@ def main(args=None, app=None):
                 ", ".join(qube.name for qube in timedout)
             )
         )
-        remnants = kill(loop=loop, domains=timedout)
+        remnants = await kill(domains=timedout)
 
     if not remnants:
         return
@@ -187,4 +178,4 @@ def main(args=None, app=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

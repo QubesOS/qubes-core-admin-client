@@ -402,17 +402,6 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Shutdown', None, None)] = b'0\0'
 
-        if qubesadmin.tools.qvm_template_postprocess.have_events:
-            patch_domain_shutdown = mock.patch(
-                'qubesadmin.events.utils.wait_for_domain_shutdown')
-            self.addCleanup(patch_domain_shutdown.stop)
-            mock_domain_shutdown = patch_domain_shutdown.start()
-            mock_domain_shutdown.side_effect = self.wait_for_shutdown
-        else:
-            self.app.expected_calls[
-                ('test-vm', 'admin.vm.List', None, None)] = \
-                b'0\0test-vm class=TemplateVM state=Halted\n'
-
         asyncio.set_event_loop(asyncio.new_event_loop())
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', 'post-install', 'test-vm', self.source_dir.name],
@@ -424,9 +413,6 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             'test-vm'], self.source_dir.name)
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name, skip_generate=True)
-        if qubesadmin.tools.qvm_template_postprocess.have_events:
-            mock_domain_shutdown.assert_called_once_with([self.app.domains[
-                'test-vm']])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.PostInstall', {
                 'stdin': subprocess.PIPE,
@@ -460,17 +446,6 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.Shutdown', None, None)] = b'0\0'
 
-        if qubesadmin.tools.qvm_template_postprocess.have_events:
-            patch_domain_shutdown = mock.patch(
-                'qubesadmin.events.utils.wait_for_domain_shutdown')
-            self.addCleanup(patch_domain_shutdown.stop)
-            mock_domain_shutdown = patch_domain_shutdown.start()
-            mock_domain_shutdown.side_effect = self.wait_for_shutdown
-        else:
-            self.app.expected_calls[
-                ('test-vm', 'admin.vm.List', None, None)] = \
-                b'0\0test-vm class=TemplateVM state=Halted\n'
-
         asyncio.set_event_loop(asyncio.new_event_loop())
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', 'post-install', 'test-vm', self.source_dir.name],
@@ -483,9 +458,6 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             'test-vm'])
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name, skip_generate=True)
-        if qubesadmin.tools.qvm_template_postprocess.have_events:
-            mock_domain_shutdown.assert_called_once_with([self.app.domains[
-                'test-vm']])
         self.assertEqual(self.app.service_calls, [
             ('test-vm', 'qubes.PostInstall', {
                 'stdin': subprocess.PIPE,
@@ -508,13 +480,6 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             = b'0\0'
         self.app.add_new_vm = mock.Mock()
 
-        if qubesadmin.tools.qvm_template_postprocess.have_events:
-            patch_domain_shutdown = mock.patch(
-                'qubesadmin.events.utils.wait_for_domain_shutdown')
-            self.addCleanup(patch_domain_shutdown.stop)
-            mock_domain_shutdown = patch_domain_shutdown.start()
-            mock_domain_shutdown.side_effect = self.wait_for_shutdown
-
         asyncio.set_event_loop(asyncio.new_event_loop())
         ret = qubesadmin.tools.qvm_template_postprocess.main([
             '--really', '--skip-start', 'post-install', 'test-vm',
@@ -528,8 +493,6 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
             'test-vm'])
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name, skip_generate=False)
-        if qubesadmin.tools.qvm_template_postprocess.have_events:
-            self.assertFalse(mock_domain_shutdown.called)
         self.assertEqual(self.app.service_calls, [])
         self.assertAllCalled()
 
