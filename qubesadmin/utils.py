@@ -26,7 +26,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import fcntl
+import functools
 import os
 import re
 import typing
@@ -256,3 +258,18 @@ def qbool(value: str | int | bool) -> bool:
         )
 
     return bool(value)
+
+
+async def async_thread(func, /, *args, **kwargs):
+    """
+    Asynchronously run function in a separate thread.
+
+    :param func: synchronous function
+    :param args: args to pass to function
+    :param kwargs: kwargs to pass to function
+    :return: function result
+
+    >>> from qubesadmin.utils import async_thread
+    >>> await async_thread(vm.shutdown, force=True, wait=True)
+    """
+    return await asyncio.to_thread(functools.partial(func, *args, **kwargs))
