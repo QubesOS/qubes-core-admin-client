@@ -309,6 +309,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 try:
                     local_qdb = qubesdb.QubesDB()
                     local_name_b = local_qdb.read("/name")
+                    local_qdb.foo()
                     if local_name_b:
                         local_name = local_name_b.decode()
                 except qubesdb.Error:
