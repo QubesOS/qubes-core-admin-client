@@ -115,6 +115,7 @@ GUI_DAEMON_OPTIONS = [
     ("allow_utf8_titles", "bool", (lambda x: isinstance(x, bool))),
     ("secure_copy_sequence", "str", validator_key_sequence),
     ("secure_paste_sequence", "str", validator_key_sequence),
+    ("keyboard_grab_sequence", "str", validator_key_sequence),
     ("windows_count_limit", "int", (lambda x: isinstance(x, int) and x > 0)),
     ("trayicon_mode", "str", validator_trayicon_mode),
     ("window_background_color", "str", validator_color),
