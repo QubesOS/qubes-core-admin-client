@@ -2,10 +2,6 @@
 
 : "${PYTHON:=python3}"
 : "${ROOTDIR:=.}"
-: "${TESTPYTHONPATH:=$ROOTDIR/test-packages}"
-
-PYTHONPATH="${TESTPYTHONPATH}:${PYTHONPATH}"
-export PYTHONPATH
 
 [ -r version ] || ln -s ${ROOTDIR}/version ./
 "${PYTHON}" -m pip install -e . --no-deps
