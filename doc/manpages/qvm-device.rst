@@ -93,6 +93,11 @@ The *DEVICE_ID* equals to `*` is ignored.
 
    Short version for `attach` & `assign --required` for backward compatibility.
 
+.. option:: --force, -f
+
+   Skip the interactive confirmation prompt when attaching a device to dom0.
+   Use with caution, as attaching devices directly to dom0 may pose a security risk.
+
 aliases: a, at
 
 detach

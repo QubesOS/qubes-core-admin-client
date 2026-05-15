@@ -25,6 +25,8 @@
 
 """ Tests for the `qvm-device` tool. """
 
+from unittest import mock
+
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.device_protocol
@@ -271,6 +273,74 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                     app=self.app)
             self.assertIn('no such backend vm!',
                 stderr.getvalue())
+        self.assertAllCalled()
+
+    def _setup_dom0_vm_list(self):
+        """Override the VM list to include dom0 with AdminVM class."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\0dom0 class=AdminVM state=Running\n'
+            b'test-vm1 class=AppVM state=Running\n'
+            b'test-vm2 class=AppVM state=Running\n'
+            b'test-vm3 class=AppVM state=Running\n')
+        # setUp already populated _vm_dict without dom0; force a reload
+        self.app.domains.clear_cache()
+
+    def test_015_attach_dom0_with_force(self):
+        """ Test attaching to dom0 with --force skips the prompt """
+        self._setup_dom0_vm_list()
+        self.app.expected_calls[(
+            'dom0', 'admin.vm.device.testclass.Attach',
+            'test-vm1+dev1+dead+beef+babe+u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' mode='manual' "
+            b"frontend_domain='dom0' _force='yes'")] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'attach', '--force', 'dom0', 'test-vm1:dev1'],
+            app=self.app)
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_device.input', create=True,
+                return_value='y')
+    def test_016_attach_dom0_confirm_yes(self, _mock_input):
+        """ Test attaching to dom0 without --force prompts; 'y' proceeds """
+        self._setup_dom0_vm_list()
+        self.app.expected_calls[(
+            'dom0', 'admin.vm.device.testclass.Attach',
+            'test-vm1+dev1+dead+beef+babe+u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' mode='manual' "
+            b"frontend_domain='dom0' _force='yes'")] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'attach', 'dom0', 'test-vm1:dev1'],
+            app=self.app)
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_device.input', create=True,
+                return_value='n')
+    def test_017_attach_dom0_cancel(self, _mock_input):
+        """ Test attaching to dom0 without --force prompts; 'n' cancels """
+        self._setup_dom0_vm_list()
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            with self.assertRaises(SystemExit) as exc:
+                qubesadmin.tools.qvm_device.main(
+                    ['testclass', 'attach', 'dom0', 'test-vm1:dev1'],
+                    app=self.app)
+            self.assertEqual(exc.exception.code, 1)
+            self.assertIn('Attachment cancelled', stderr.getvalue())
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_device.input', create=True,
+                side_effect=EOFError)
+    def test_018_attach_dom0_eof_cancels(self, _mock_input):
+        """ Test attaching to dom0 with closed stdin (EOFError) cancels """
+        self._setup_dom0_vm_list()
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            with self.assertRaises(SystemExit) as exc:
+                qubesadmin.tools.qvm_device.main(
+                    ['testclass', 'attach', 'dom0', 'test-vm1:dev1'],
+                    app=self.app)
+            self.assertEqual(exc.exception.code, 1)
+            self.assertIn('Attachment cancelled', stderr.getvalue())
         self.assertAllCalled()
 
     def test_020_detach(self):

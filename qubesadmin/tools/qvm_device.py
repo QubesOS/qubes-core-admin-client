@@ -229,6 +229,19 @@ def attach_device(args):
     options = dict(opt.split("=", 1) for opt in args.option or [])
     if args.ro:
         options["read-only"] = "yes"
+    if args.force:
+        options["force"] = "yes"
+    elif vm.klass == 'AdminVM':
+        print('Attaching a device to dom0 can be a security risk ',
+              file=sys.stderr)
+        try:
+            confirmed = input('Are you sure? [y/N] ')
+        except EOFError:
+            confirmed = ''
+        if confirmed.lower() != 'y':
+            print('Attachment cancelled.', file=sys.stderr)
+            sys.exit(1)
+        options["force"] = "yes"
     parse_ro_option_as_read_only(options)
     assignment.options = options
 
@@ -684,6 +697,15 @@ def get_parser(device_class=None):
         action="store_true",
         default=False,
         help="Alias to `assign --required` for backward " "compatibility",
+    )
+
+    attach_parser.add_argument(
+        "--force",
+        "-f",
+        dest="force",
+        action="store_true",
+        default=False,
+        help="Skip the interactive confirmation prompt when attaching to dom0",
     )
 
     mode_parser = assign_parser.add_mutually_exclusive_group()
