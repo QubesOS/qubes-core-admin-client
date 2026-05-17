@@ -1,3 +1,69 @@
+qubes-core-admin-client (4.3.999-1) unstable; urgency=medium
+
+  [ anon ]
+  * remove legacy disable=too-few-public-methods
+  * Bump minimum python version in README.md
+  * enforce implicit `is not None`
+  * remove unnecessary return types
+  * upgrade deprecated datetime calls in firewall.py
+  * refine logic in SinglePropertyAction
+  * add utest
+  * removed legacy VM_ALL
+
+  [ Ben Grande ]
+  * Show usage instead of exception on missing options
+
+  [ anon ]
+  * fix typing issues in core3.py core2.py dispvm.py
+  * fix typing issues in restore.py
+  * add __annotations__ to _local_properties
+  * fix order of checks in cleanup_tar2
+  * remove redundant validate call
+  * removed unused VolumeAction
+  * add typing hints to events/
+  * enforce 3.10 interface
+  * ensure tempfile is deleted
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix invalidating cache on device-removed event
+  * tests: check devices cache invalidation on device-removed event
+  * Use admin.vm.List method to get VM class
+
+  [ anon ]
+  * fix typing warnings
+  * initialize qubesd_connection_type in QubesTest
+  * transition to modern pyproject.toml build
+  * remove CustomInstall
+  * update rpm install script
+  * Use Makefile in debian install
+  * move entry points in pyproject.toml
+
+  [ Marek Marczykowski-Górecki ]
+  * debian: Remove explicit SOURCE_DATE_EPOCH
+  * debian: fix split between packages
+
+  [ anon ]
+  * type-hint base.py
+  * update docstring
+
+  [ Sahil_Kumar ]
+  * tests: mock_app: register per-VM admin.vm.List call
+
+  [ anon ]
+  * escape unsafe fileno()
+
+  [ Ben Grande ]
+  * Use caller's default_dispvm as target for @dispvm
+
+  [ anon ]
+  * do not --force if --all --exclude
+  * type-hint device_protocol.py
+  * add tests Dockerfile
+  * fix utest when running without sudo
+  * update run_tests packages
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 15 Mar 2026 04:49:08 +0100
+
 qubes-core-admin-client (4.3.29-1) unstable; urgency=medium
 
   * tools: fix qvm-run -u root on template imported from R4.2
