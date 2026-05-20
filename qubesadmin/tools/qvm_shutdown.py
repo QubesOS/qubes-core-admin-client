@@ -28,7 +28,6 @@ import asyncio
 import sys
 from warnings import warn
 
-import qubesadmin.events.utils
 import qubesadmin.tools
 import qubesadmin.exc
 
@@ -68,12 +67,7 @@ parser.add_argument(
 )
 
 
-def shutdown(
-    args,
-    loop: asyncio.AbstractEventLoop,
-    domains: list[qubesadmin.vm.QubesVM],
-    force: bool,
-):
+async def shutdown(args, domains: list[qubesadmin.vm.QubesVM]):
     """
     Asynchronously shutdown qubes and return qubes that failed to shutdown
     because and the client can't handle, as well as qubes that were in use
@@ -82,12 +76,10 @@ def shutdown(
     # pylint: disable=missing-docstring
     unhandled, used, timedout = [], [], []
     tasks = [
-        asyncio.to_thread(qube.shutdown, force=force, wait=args.wait)
+        asyncio.to_thread(qube.shutdown, force=args.force, wait=args.wait)
         for qube in domains
     ]
-    results = loop.run_until_complete(
-        asyncio.gather(*tasks, return_exceptions=True)
-    )
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     for qube, res in zip(domains, results):
         if not isinstance(res, BaseException):
             qube.log.info("Shutdown succeeded")
@@ -114,16 +106,14 @@ def shutdown(
     return unhandled, used, timedout
 
 
-def kill(loop: asyncio.AbstractEventLoop, domains: list[qubesadmin.vm.QubesVM]):
+async def kill(domains: list[qubesadmin.vm.QubesVM]):
     """
     Asynchronously kill qubes and return qubes that failed to shutdown.
     """
     # pylint: disable=missing-docstring
     unhandled = domains.copy()
     tasks = [asyncio.to_thread(qube.kill) for qube in domains]
-    results = loop.run_until_complete(
-        asyncio.gather(*tasks, return_exceptions=True)
-    )
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     for qube, res in zip(domains, results):
         if not isinstance(res, BaseException):
             qube.log.info("Killing succeeded")
@@ -138,10 +128,9 @@ def kill(loop: asyncio.AbstractEventLoop, domains: list[qubesadmin.vm.QubesVM]):
     return unhandled
 
 
-def main(args=None, app=None):
+async def run_async(args=None, app=None):
     # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
-    force = args.force or (args.all_domains and not args.exclude)
     if args.dry_run:
         return
     if args.timeout:
@@ -150,12 +139,9 @@ def main(args=None, app=None):
             FutureWarning,
         )
         args.wait = True
+    args.force = args.force or (args.all_domains and not args.exclude)
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    unhandled, used, timedout = shutdown(
-        args=args, force=force, loop=loop, domains=args.domains
-    )
+    unhandled, used, timedout = await shutdown(args=args, domains=args.domains)
     unhandled_retry = []
     timedout_retry = []
     if used:
@@ -171,7 +157,7 @@ def main(args=None, app=None):
                 ", ".join(qube.name for qube in used)
             )
         )
-        failed = shutdown(args=args, force=force, loop=loop, domains=used)
+        failed = await shutdown(args=args, domains=used)
         unhandled_retry, used, timedout_retry = failed
         if not failed:
             break
@@ -192,9 +178,7 @@ def main(args=None, app=None):
                 ", ".join(qube.name for qube in timedout)
             )
         )
-        unhandled, used, timedout = shutdown(
-            args=args, force=force, loop=loop, domains=timedout
-        )
+        unhandled, used, timedout = await shutdown(args=args, domains=timedout)
 
     if timedout:
         parser.print_error(
@@ -202,7 +186,7 @@ def main(args=None, app=None):
                 ", ".join(qube.name for qube in timedout)
             )
         )
-        unhandled = kill(loop=loop, domains=timedout)
+        unhandled = await kill(domains=timedout)
 
     if not unhandled and not used and not timedout:
         return
@@ -226,6 +210,11 @@ def main(args=None, app=None):
             )
         )
     raise SystemExit(len(unhandled + used + timedout))
+
+
+def main(args=None, app=None):
+    # pylint: disable=missing-docstring
+    asyncio.run(run_async(args=args, app=app))
 
 
 if __name__ == "__main__":

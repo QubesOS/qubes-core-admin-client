@@ -74,9 +74,9 @@ class TC_00_qvm_kill(qubesadmin.tests.QubesTestCase):
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00some-vm class=AppVM state=Running\n'
         with qubesadmin.tests.tools.StderrBuffer() as stderr:
-            self.assertEqual(
-                qubesadmin.tools.qvm_kill.main(['some-vm'], app=self.app),
-                1)
+            with self.assertRaises(SystemExit):
+                self.assertEqual(
+                    qubesadmin.tools.qvm_kill.main(['some-vm'], app=self.app),
+                    1)
         self.assertAllCalled()
-        self.assertIn("Failed to kill 'some-vm': Error message",
-                      stderr.getvalue())
+        self.assertIn("Failed to kill: some-vm", stderr.getvalue())
