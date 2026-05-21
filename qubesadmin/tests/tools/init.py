@@ -149,3 +149,26 @@ class TC_01_SinglePropertyAction(qubesadmin.tests.QubesTestCase):
         args = parser.parse_args(['testvalue'])
         self.assertIn(
             ('testprop', 'testvalue'), args.properties.items())
+
+
+class TC_02_QubesArgumentParser(qubesadmin.tests.QubesTestCase):
+    def test_000_domain_preserve_order(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00some-vm class=AppVM state=Running\n'
+            b'some-a class=AppVM state=Halted\n'
+            b'some-b class=AppVM state=Paused\n'
+        )
+
+        parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs="+")
+        wanted_args = ["some-vm", "some-a", "some-vm"]
+        args = parser.parse_args(wanted_args, app=self.app)
+        self.assertEqual(
+            ["some-a", "some-b", "some-vm"],
+            [qube.name for qube in self.app.domains],
+            "app namespace must have domains in alphabetical order",
+        )
+        self.assertEqual(
+            ["some-vm", "some-a"],
+            [qube.name for qube in args.domains],
+            "args namespace must have domains in input order",
+        )

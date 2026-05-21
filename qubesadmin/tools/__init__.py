@@ -191,14 +191,18 @@ class VmNameAction(QubesAction):
                     except KeyError:
                         parser.error('no such domain: {!r}'.format(vm_name))
             else:
-                destinations = set()
+                destinations = []
                 for destination in getattr(namespace, self.dest):
                     if any(wildcard in destination for wildcard in '*?[!]'):
-                        for domain in app.domains:
+                        for domain in [
+                            qube
+                            for qube in app.domains
+                            if qube.name not in destinations
+                        ]:
                             if fnmatch.fnmatch(domain.name, destination):
-                                destinations.add(domain.name)
-                    else:
-                        destinations.add(destination)
+                                destinations.append(domain.name)
+                    elif destination not in destinations:
+                        destinations.append(destination)
 
                 for vm_name in destinations:
                     try:
