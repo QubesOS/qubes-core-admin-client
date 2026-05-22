@@ -37,15 +37,12 @@ parser = qubesadmin.tools.QubesArgumentParser(
 async def run_async(args=None, app=None):
     # pylint: disable=missing-docstring
     args = parser.parse_args(args, app=app)
-    remnants = await qubesadmin.tools.qvm_shutdown.kill(domains=args.domains)
-    if not remnants:
+    failed = await qubesadmin.utils.kill(domains=args.domains)
+    if not failed:
         return 0
-    parser.error_runtime(
-        "Failed to kill: {}".format(
-            ", ".join(qube.name for qube in remnants)
-        ),
-        len(remnants)
-    )
+    for qube, exc in failed.items():
+        parser.print_error("Failed to kill: {}: {}".format(qube, exc))
+    raise SystemExit(len(failed))
 
 
 def main(args=None, app=None):

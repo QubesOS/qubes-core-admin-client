@@ -145,9 +145,7 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'sys-net class=AppVM state=Running\n' \
             b'some-vm class=AppVM state=Running\n' \
             b'other-vm class=AppVM state=Running\n'
-        with self.assertRaisesRegex(SystemExit, '2'):
-            qubesadmin.tools.qvm_shutdown.main(
-                ['--wait', '--all'], app=self.app)
+        qubesadmin.tools.qvm_shutdown.main(['--wait', '--all'], app=self.app)
         self.assertAllCalled()
 
     def test_016_all_exclude_noforce(self):
@@ -278,10 +276,10 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
             b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
             b'2\x00QubesVMInUseError\x00\x00Denied as qube is in use\x00',
         ]
-        with self.assertRaises(SystemExit) as cm:
+        with self.assertRaises(SystemExit) as cmg:
             qubesadmin.tools.qvm_shutdown.main(
                 ['--wait', 'some-vm', 'other-vm', 'another-vm'], app=self.app)
-        self.assertEqual(cm.exception.code, 3)
+        self.assertEqual(cmg.exception.code, 3)
         self.assertAllCalled()
 
     def test_011_wait_retry_as_many_as_in_use(self):
@@ -320,9 +318,10 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Shutdown', 'wait', None)] = \
             b'2\x00QubesException\x00\x00Shutdown refused\x00'
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as cmg:
             qubesadmin.tools.qvm_shutdown.main(
                 ['--wait', 'some-vm'], app=self.app)
+        self.assertEqual(cmg.exception.code, 1)
         self.assertAllCalled()
 
     def test_014_timeout_deprecated_means_wait(self):
@@ -338,9 +337,10 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Kill', None, None)] = \
             b'2\x00QubesException\x00\x00Kill failed\x00'
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as cmg:
             qubesadmin.tools.qvm_shutdown.main(
                 ['--timeout=3', 'some-vm'], app=self.app)
+        self.assertEqual(cmg.exception.code, 1)
         self.assertAllCalled()
 
     def test_016_wait_kill_exception(self):
@@ -357,7 +357,8 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('some-vm', 'admin.vm.Kill', None, None)] = \
             b'2\x00QubesException\x00\x00Kill failed\x00'
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as cmg:
             qubesadmin.tools.qvm_shutdown.main(
                 ['--wait', 'some-vm'], app=self.app)
+        self.assertEqual(cmg.exception.code, 1)
         self.assertAllCalled()

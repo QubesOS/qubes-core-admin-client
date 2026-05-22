@@ -19,6 +19,7 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''qvm-start - start a domain'''
+import asyncio
 import argparse
 import string
 import sys
@@ -165,50 +166,65 @@ def get_drive_assignment(app, drive_str):
     return assignment
 
 
+class QubesVMAlreadyRunningError(qubesadmin.exc.QubesVMError):
+    """Requested qube to start, but it's already running"""
+
+
+def startup(domain, args=None):
+    # pylint: disable=missing-function-docstring
+    if domain.is_running():
+        if args.skip_if_running:
+            return
+        raise QubesVMAlreadyRunningError("Domain is already running")
+    drive_assignment = None
+    try:
+        if args.drive:
+            drive_assignment = get_drive_assignment(args.app, args.drive)
+            try:
+                domain.devices['block'].assign(drive_assignment)
+            except Exception:
+                drive_assignment = None
+                raise
+
+        domain.start()
+
+        if drive_assignment:
+            # don't reconnect this device after VM reboot
+            domain.devices['block'].unassign(drive_assignment)
+    except (IOError, OSError, qubesadmin.exc.QubesException, ValueError) as e:
+        if drive_assignment:
+            try:
+                domain.devices['block'].detach(drive_assignment)
+            except qubesadmin.exc.QubesException:
+                pass
+        raise e
+
+
+async def run_async(args=None, app=None):
+    # pylint: disable=missing-function-docstring
+    args = parser.parse_args(args, app=app)
+    tasks = [
+        asyncio.to_thread(startup, domain=qube, args=args)
+        for qube in args.domains
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    exit_code = 0
+    for qube, res in zip(args.domains, results):
+        if isinstance(res, BaseException):
+            exit_code = 1
+            parser.print_error(
+                'Starting qube failed: {}: {}'.format(qube.name, str(res))
+            )
+    return exit_code
+
+
 def main(args=None, app=None):
     '''Main routine of :program:`qvm-start`.
 
     :param list args: Optional arguments to override those delivered from \
         command line.
     '''
-
-    args = parser.parse_args(args, app=app)
-
-    exit_code = 0
-    for domain in args.domains:
-        if domain.is_running():
-            if args.skip_if_running:
-                continue
-            exit_code = 1
-            parser.print_error(
-                    'domain {} is already running'.format(domain.name))
-            return exit_code
-        drive_assignment = None
-        try:
-            if args.drive:
-                drive_assignment = get_drive_assignment(args.app, args.drive)
-                try:
-                    domain.devices['block'].assign(drive_assignment)
-                except Exception:
-                    drive_assignment = None
-                    raise
-
-            domain.start()
-
-            if drive_assignment:
-                # don't reconnect this device after VM reboot
-                domain.devices['block'].unassign(drive_assignment)
-        except (IOError, OSError, qubesadmin.exc.QubesException,
-                ValueError) as e:
-            if drive_assignment:
-                try:
-                    domain.devices['block'].detach(drive_assignment)
-                except qubesadmin.exc.QubesException:
-                    pass
-            exit_code = 1
-            parser.print_error(str(e))
-
-    return exit_code
+    return asyncio.run(run_async(args=args, app=app))
 
 
 if __name__ == '__main__':

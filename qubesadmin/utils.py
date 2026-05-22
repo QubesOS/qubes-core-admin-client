@@ -26,6 +26,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import fcntl
 import os
 import re
@@ -256,3 +257,106 @@ def qbool(value: str | int | bool) -> bool:
         )
 
     return bool(value)
+
+
+async def start(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously start qubes and return ones that failed.
+    """
+    return await generic_action(domains, action="start", **kwargs)
+
+
+async def pause(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously pause qubes and return ones that failed.
+    """
+    return await generic_action(domains, action="pause", **kwargs)
+
+
+async def unpause(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously unpause qubes and return ones that failed.
+    """
+    return await generic_action(
+        domains,
+        action=lambda qube: "resume" if qube.is_suspended() else "unpause",
+        **kwargs,
+    )
+
+
+async def suspend(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously suspend qubes and return ones that failed.
+    """
+    return await generic_action(domains, action="suspend", **kwargs)
+
+
+async def resume(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously resume qubes and return ones that failed.
+    """
+    return await generic_action(domains, action="resume", **kwargs)
+
+
+async def shutdown(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously resume shutdown and return ones that failed.
+    """
+    return await generic_action(
+        domains,
+        action="shutdown",
+        ignored_exceptions=(qubesadmin.exc.QubesVMNotStartedError),
+        **kwargs,
+    )
+
+
+async def kill(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously kill qubes and return ones that failed.
+    """
+    return await generic_action(
+        domains,
+        action="kill",
+        ignored_exceptions=(qubesadmin.exc.QubesVMNotStartedError),
+        **kwargs,
+    )
+
+
+async def generic_action(
+    domains: list[qubesadmin.vm.QubesVM],
+    action: str | typing.Callable,
+    *args,
+    **kwargs,
+):
+    """
+    Asynchronously run action on qubes and return ones that failed.
+    """
+
+    def wrapper(qube, action):
+        func = None
+        if isinstance(action, str):
+            func = getattr(qube, action)
+        elif callable(action):
+            method = action(qube)
+            func = getattr(qube, method)
+        if not func:
+            raise ValueError("Invalid action provided")
+        return func
+
+    ignored_exceptions: tuple = tuple()
+    if "ignored_exceptions" in kwargs:
+        ignored_exceptions = kwargs.pop("ignored_exceptions")
+
+    tasks = [
+        asyncio.to_thread(wrapper(qube, action), *args, **kwargs)
+        for qube in domains
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    failed: dict[qubesadmin.vm.QubesVM, BaseException] = {}
+    for qube, res in zip(domains, results):
+        if not isinstance(res, BaseException):
+            continue
+        if isinstance(res, ignored_exceptions):
+            continue
+        failed[qube] = res
+    return failed
