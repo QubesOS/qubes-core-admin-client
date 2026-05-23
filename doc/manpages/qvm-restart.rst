@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-restart` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--timeout *TIMEOUT*] [*VMNAME*]
+:command:`qvm-restart` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--force] [--timeout *TIMEOUT*] [*VMNAME*]
 
 Options
 -------
@@ -31,10 +31,13 @@ Options
 
    exclude the qube from :option:`--all`
 
-.. option:: --timeout
+.. option:: --force, -f
 
-   timeout after which domains are killed. The default is decided by global
-   `default_shutdown_timeout` property and qube `shutdown_timeout` property
+   force restart if other qubes depend on selected qubes, e.g. as NetVM or AudioVM; does not affect how the qube itself is shut down. Use with caution.
+
+.. option:: --start, -s
+
+   start selected domains if they are down initially. By default skips halted domains.
 
 .. option:: --version
 
