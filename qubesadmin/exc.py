@@ -101,6 +101,10 @@ class QubesNoTemplateError(QubesVMError):
     """Cannot start domain, because there is no template"""
 
 
+class QubesVMAlreadyStartedError(QubesVMError):
+    """Requested qube to start, but it's already running"""
+
+
 class QubesPoolInUseError(QubesException):
     """VM is in use, cannot remove."""
 
@@ -235,6 +239,7 @@ class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
 
 class QubesNotesError(QubesException):
     """Some problem with qube notes."""
+
 
 # legacy name
 QubesDaemonNoResponseError = QubesDaemonAccessError

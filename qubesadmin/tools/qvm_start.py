@@ -20,39 +20,11 @@
 
 """qvm-start - start a domain"""
 import asyncio
-import argparse
-import string
 import sys
 
-import subprocess
-
-import time
-
-from qubesadmin.device_protocol import DeviceAssignment, UnknownDevice
 import qubesadmin.exc
 import qubesadmin.tools
-
-
-class DriveAction(argparse.Action):
-    """Action for argument parser that stores drive image path."""
-
-    # pylint: disable=redefined-builtin
-    def __init__(
-        self,
-        option_strings,
-        dest="drive",
-        *,
-        prefix="cdrom:",
-        metavar="IMAGE",
-        required=False,
-        help="Attach drive",
-    ):
-        super().__init__(option_strings, dest, metavar=metavar, help=help)
-        self.prefix = prefix
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        # pylint: disable=redefined-outer-name
-        setattr(namespace, self.dest, self.prefix + values)
+import qubesadmin.utils
 
 
 parser = qubesadmin.tools.QubesArgumentParser(
@@ -77,7 +49,7 @@ parser_drive.add_argument(
 
 parser_drive.add_argument(
     "--hddisk",
-    action=DriveAction,
+    action=qubesadmin.utils.DriveAction,
     dest="drive",
     prefix="hd:",
     help="temporarily attach specified drive as hard disk",
@@ -86,7 +58,7 @@ parser_drive.add_argument(
 parser_drive.add_argument(
     "--cdrom",
     metavar="IMAGE",
-    action=DriveAction,
+    action=qubesadmin.utils.DriveAction,
     dest="drive",
     prefix="cdrom:",
     help="temporarily attach specified drive as CD/DVD",
@@ -102,142 +74,16 @@ parser_drive.add_argument(
 )
 
 
-def get_drive_assignment(app, drive_str):
-    """
-    Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for a
-    given drive.
-
-    If running in dom0, it will also take care about creating the appropriate
-    loop device (if necessary). Otherwise, only existing block devices are
-    supported.
-
-    :param app: Qubes() instance
-    :param drive_str: drive argument
-    :return: DeviceAssignment matching *drive_str*
-    """
-    devtype = "cdrom"
-    if drive_str.startswith("cdrom:"):
-        devtype = "cdrom"
-        drive_str = drive_str[len("cdrom:") :]
-    elif drive_str.startswith("hd:"):
-        devtype = "disk"
-        drive_str = drive_str[len("hd:") :]
-
-    try:
-        backend_domain_name, port_id = drive_str.split(":", 1)
-    except ValueError:
-        raise ValueError(
-            "Incorrect image name: image must be in the format "
-            "of VMNAME:full_path, for example "
-            "dom0:/home/user/test.iso"
-        )
-    try:
-        backend_domain = app.domains[backend_domain_name]
-    except KeyError:
-        raise qubesadmin.exc.QubesVMNotFoundError(
-            "No such VM: %s", backend_domain_name
-        )
-    if port_id.startswith("/"):
-        # it is a path - if we're running in dom0, try to call losetup to
-        # export the device, otherwise reject
-        if app.qubesd_connection_type == "qrexec":
-            raise qubesadmin.exc.QubesException(
-                "Existing block device identifier needed when running from "
-                "outside of dom0 (see qvm-block)"
-            )
-        try:
-            if backend_domain.klass == "AdminVM":
-                loop_name = subprocess.check_output(
-                    ["sudo", "losetup", "-f", "--show", port_id]
-                )
-                loop_name = loop_name.strip()
-            else:
-                untrusted_loop_name, _ = backend_domain.run_with_args(
-                    "losetup", "-f", "--show", port_id, user="root"
-                )
-                untrusted_loop_name = untrusted_loop_name.strip()
-                allowed_chars = string.ascii_lowercase + string.digits + "/"
-                allowed_chars = allowed_chars.encode("ascii")
-                if not all(c in allowed_chars for c in untrusted_loop_name):
-                    raise qubesadmin.exc.QubesException(
-                        "Invalid loop device name received from {}".format(
-                            backend_domain.name
-                        )
-                    )
-                loop_name = untrusted_loop_name
-                del untrusted_loop_name
-        except subprocess.CalledProcessError:
-            raise qubesadmin.exc.QubesException(
-                "Failed to setup loop device for %s", port_id
-            )
-        assert loop_name.startswith(b"/dev/loop")
-        port_id = loop_name.decode().split("/")[2]
-        # wait for device to appear
-        # FIXME: convert this to waiting for event
-        timeout = 10
-        while isinstance(
-            backend_domain.devices["block"][port_id], UnknownDevice
-        ):
-            if timeout == 0:
-                raise qubesadmin.exc.QubesException(
-                    "Timeout waiting for {}:{} device to appear".format(
-                        backend_domain.name, port_id
-                    )
-                )
-            timeout -= 1
-            time.sleep(1)
-
-    options = {"devtype": devtype, "read-only": devtype == "cdrom"}
-    assignment = DeviceAssignment.new(
-        backend_domain=backend_domain,
-        port_id=port_id,
-        devclass="block",
-        options=options,
-        mode="required",
-    )
-
-    return assignment
-
-
-class QubesVMAlreadyRunningError(qubesadmin.exc.QubesVMError):
-    """Requested qube to start, but it's already running"""
-
-
-def startup(domain, args=None):
-    # pylint: disable=missing-function-docstring
-    if domain.is_running():
-        if args.skip_if_running:
-            return
-        raise QubesVMAlreadyRunningError("Domain is already running")
-    drive_assignment = None
-    try:
-        if args.drive:
-            drive_assignment = get_drive_assignment(args.app, args.drive)
-            try:
-                domain.devices["block"].assign(drive_assignment)
-            except Exception:
-                drive_assignment = None
-                raise
-
-        domain.start()
-
-        if drive_assignment:
-            # don't reconnect this device after VM reboot
-            domain.devices["block"].unassign(drive_assignment)
-    except (IOError, OSError, qubesadmin.exc.QubesException, ValueError) as e:
-        if drive_assignment:
-            try:
-                domain.devices["block"].detach(drive_assignment)
-            except qubesadmin.exc.QubesException:
-                pass
-        raise e
-
-
 async def run_async(args=None, app=None):
     # pylint: disable=missing-function-docstring
     args = parser.parse_args(args, app=app)
     tasks = [
-        asyncio.to_thread(startup, domain=qube, args=args)
+        asyncio.to_thread(
+            qubesadmin.utils.start_expert,
+            domain=qube,
+            skip_if_running=args.skip_if_running,
+            drive=args.drive,
+        )
         for qube in args.domains
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
