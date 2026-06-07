@@ -1,3 +1,145 @@
+qubes-core-admin-client (4.4.0-1) unstable; urgency=medium
+
+  [ anon ]
+  * remove legacy disable=too-few-public-methods
+  * Bump minimum python version in README.md
+  * enforce implicit `is not None`
+  * remove unnecessary return types
+  * upgrade deprecated datetime calls in firewall.py
+  * refine logic in SinglePropertyAction
+  * add utest
+  * removed legacy VM_ALL
+
+  [ Ben Grande ]
+  * Show usage instead of exception on missing options
+
+  [ anon ]
+  * fix typing issues in core3.py core2.py dispvm.py
+  * fix typing issues in restore.py
+  * add __annotations__ to _local_properties
+  * fix order of checks in cleanup_tar2
+  * remove redundant validate call
+  * removed unused VolumeAction
+  * add typing hints to events/
+  * enforce 3.10 interface
+  * ensure tempfile is deleted
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix invalidating cache on device-removed event
+  * tests: check devices cache invalidation on device-removed event
+  * Use admin.vm.List method to get VM class
+
+  [ anon ]
+  * fix typing warnings
+  * initialize qubesd_connection_type in QubesTest
+  * transition to modern pyproject.toml build
+  * remove CustomInstall
+  * update rpm install script
+  * Use Makefile in debian install
+  * move entry points in pyproject.toml
+
+  [ Marek Marczykowski-Górecki ]
+  * debian: Remove explicit SOURCE_DATE_EPOCH
+  * debian: fix split between packages
+
+  [ anon ]
+  * type-hint base.py
+  * update docstring
+
+  [ Sahil_Kumar ]
+  * tests: mock_app: register per-VM admin.vm.List call
+
+  [ anon ]
+  * escape unsafe fileno()
+
+  [ Ben Grande ]
+  * Use caller's default_dispvm as target for @dispvm
+
+  [ anon ]
+  * do not --force if --all --exclude
+  * type-hint device_protocol.py
+  * add tests Dockerfile
+  * fix utest when running without sudo
+  * update run_tests packages
+  * add type hints for app.py
+  * handle case where arg is None
+
+  [ Marek Marczykowski-Górecki ]
+  * rtd: use pyproject instead of ci/requirements.txt for dependencies
+  * pyproject: Add Xlib to dependencies
+  * pyproject: rpm is needed not only for dev group
+  * pyproject: fix xlib reference
+  * re-add qubesadmin.tags import
+
+  [ anon ]
+  * type-check devices.py exc.py features.py
+  * type-check firewall.py
+  * Harmonize behavior between has/hasnt_event, and remove deprecated
+    hasnt_event branch
+  * remove dead code around args.wait
+  * add utests
+  * type-hint label.py
+  * type-hint log.py
+  * type-hint spinner.py
+  * type-hint storage.py
+  * misc. typing fixes
+
+  [ Rohit Yadav ]
+  * qvm-start-daemon: skip GUI/AUDIO for dead domain
+
+  [ anon ]
+  * type-hint tags.py
+  * type-hint utils.py
+  * remove unused get_entry_point_one
+
+  [ Rusty Bird ]
+  * Fix --pool syntax in manpages for qvm-create and qvm-clone
+
+  [ Jayant-Kernel ]
+  * qvm_device: copy assign options to suggested attach command
+
+  [ anon ]
+  * Update docstring to better reflect diffeence between qvm-kill and
+    qvm-shutdown --force
+  * make flags a standard column
+  * update utests
+
+  [ Marek Marczykowski-Górecki ]
+  * tools: fix vm.run(user="root") on template imported from R4.2 (cont)
+
+  [ ahriman ]
+  * Document kernel option-related features
+
+  [ Marek Marczykowski-Górecki ]
+  * Add 'prefix_data' support to run_service() function
+  * Fix resolving calls for a dispvm to be created
+  * tests: make stdin/stdout/stderr arguments for run_service more
+    realistic
+  * tools/qvm-run: use prefix_data feature instead of copy_stdin
+    subprocess
+  * Require qrexec new enough to have --prefix-data option
+  * ci: switch to devel version
+
+  [ Piotr Bartman-Szwarc ]
+  * add new feature: qubes-vm-update-hide-prohibited
+
+  [ Marta Marczykowska-Górecka ]
+  * Return UnknownDevice for assignments where device is unknown
+
+  [ Ben Grande ]
+  * Format utils with black
+  * Stop conversion of domains list to set
+  * Add option to wait for domain shutdown
+  * Format qvm-shutdown with black
+  * Wait for multiple shutdowns without events
+  * Make qvm_shutdown reusable for other tools
+  * Move qube actions to utils for reusability
+  * Blacken qvm-start
+  * Make qvm-start drive assignment reusable
+  * Move utils to its own module
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 07 Jun 2026 16:04:55 +0200
+
 qubes-core-admin-client (4.3.29-1) unstable; urgency=medium
 
   * tools: fix qvm-run -u root on template imported from R4.2
