@@ -243,7 +243,7 @@ class VMVolumeAction(QubesAction):
         :py:class:``qubes.storage.Volume`` from a VM:VOLUME string.
     '''
 
-    def __init__(self, help='A pool & volume id combination',
+    def __init__(self, help='A VM & volume id combination',
                  required=True, **kwargs):
         # pylint: disable=redefined-builtin
         super().__init__(help=help, required=required,
