@@ -169,11 +169,28 @@ def import_volume(args):
             input_file.close()
 
 
+def clone_volume(args):
+    """ Clone source volume data into destination volume. """
+
+    if not args.src_volume.save_on_stop or not args.dst_volume.save_on_stop:
+        raise qubesadmin.exc.StoragePoolException(
+            'Volumes must be save_on_stop for cloning')
+    if not args.force:
+        src_str = args.src_volume.vm + ':' + args.src_volume.name
+        dst_str = args.dst_volume.vm + ':' + args.dst_volume.name
+        print(f'This will clone the data from {src_str} into {dst_str}!\n'
+              f'(Data in {dst_str} may be preserved in a revision.)')
+        if input('Are you sure? [y/N] ').lower() != 'y':
+            print('Clone cancelled.')
+            return
+    args.dst_volume.clone(args.src_volume)
+
+
 def clear_volume(args):
     """ Clear the volume data. """
 
     if not args.force:
-        print('This will empty the volume! '
+        print('This will empty the volume!\n'
               '(Data may be preserved in a revision.)')
         if input('Are you sure? [y/N] ').lower() != 'y':
             print('Clear cancelled.')
@@ -346,6 +363,21 @@ def init_import_parser(sub_parsers):
     import_parser.set_defaults(func=import_volume)
 
 
+def init_clone_parser(sub_parsers):
+    """ Add 'clone' action related options """
+    clone_parser = sub_parsers.add_parser(
+        'clone', help='clone volume data')
+    clone_parser.add_argument(metavar='SOURCE_VM:SOURCE_VOLUME',
+                              dest='src_volume',
+                              action=qubesadmin.tools.VMVolumeAction)
+    clone_parser.add_argument(metavar='DESTINATION_VM:DESTINATION_VOLUME',
+                              dest='dst_volume',
+                              action=qubesadmin.tools.VMVolumeAction)
+    clone_parser.add_argument('--force', '-f', action='store_true',
+        help='Do not prompt for confirmation')
+    clone_parser.set_defaults(func=clone_volume)
+
+
 def init_clear_parser(sub_parsers):
     """ Add 'clear' action related options """
     clear_parser = sub_parsers.add_parser(
@@ -375,6 +407,7 @@ def get_parser():
     init_list_parser(sub_parsers)
     init_revert_parser(sub_parsers)
     init_import_parser(sub_parsers)
+    init_clone_parser(sub_parsers)
     init_clear_parser(sub_parsers)
     # default action
     parser.set_defaults(func=list_volumes)

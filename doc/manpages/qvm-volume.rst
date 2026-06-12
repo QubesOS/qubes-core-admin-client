@@ -161,6 +161,20 @@ configuration.
 
    Do not resize volume before the import.
 
+clone
+^^^^^
+| :command:`qvm-volume clone` [--force|-f] *SOURCE_VM:SOURCE_VOLUME* *DESTINATION_VM:DESTINATION_VOLUME*
+
+Clone the data from volume *SOURCE_VM:SOURCE_VOLUME* into volume
+*DESTINATION_VM:DESTINATION_VOLUME*.
+
+Old data in *DESTINATION_VM:DESTINATION_VOLUME* may be stored as a revision,
+subject to `revisions_to_keep` configuration.
+
+.. option:: --force, -f
+
+   Do not prompt for confirmation.
+
 clear
 ^^^^^
 | :command:`qvm-volume clear` [--force|-f] *VMNAME:VOLUME*

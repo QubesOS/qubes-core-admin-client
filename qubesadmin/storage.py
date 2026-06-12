@@ -117,6 +117,11 @@ class Volume:
         return NotImplemented
 
     @property
+    def vm(self) -> str | None:
+        """Name of the VM the volume belongs to, if available"""
+        return self._vm
+
+    @property
     def name(self) -> str | None:
         """per-VM volume name, if available"""
         return self._vm_name
