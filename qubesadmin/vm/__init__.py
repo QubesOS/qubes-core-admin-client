@@ -45,7 +45,7 @@ if typing.TYPE_CHECKING:
 # but can be extended
 Klass = str
 PowerState = Literal["Transient", "Running", "Halted", "Paused",
-"Suspended", "Halting", "Dying", "Crashed", "NA"]
+"Suspended", "Halting", "Crashed", "NA"]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
@@ -202,7 +202,6 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         ``'Paused'``    Machine is paused.
         ``'Suspended'`` Machine is S3-suspended.
         ``'Halting'``   Machine is in process of shutting down (OS shutdown).
-        ``'Dying'``     Machine is in process of shutting down (cleanup).
         ``'Crashed'``   Machine crashed and is unusable.
         ``'NA'``        Machine is in unknown state.
         =============== ========================================================
