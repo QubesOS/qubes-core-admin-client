@@ -21,7 +21,7 @@ BuildRequires:	python%{python3_pkgversion}-pyxdg
 BuildRequires:  python%{python3_pkgversion}-rpm
 BuildRequires:  python%{python3_pkgversion}-wheel
 BuildRequires:  python%{python3_pkgversion}-build
-Requires:   python%{python3_pkgversion}-qubesadmin
+Requires:   python%{python3_pkgversion}-qubesadmin = %{version}
 Requires:   python%{python3_pkgversion}-yaml
 Requires:   qubes-repo-templates
 Requires:   scrypt

@@ -26,7 +26,7 @@ X-Python3-Version: >= 3.8
 Package: qubes-core-admin-client
 Architecture: all
 Depends:
- python3-qubesadmin,
+ python3-qubesadmin (= ${binary:Version}),
  qubes-repo-templates,
  scrypt,
  zstd,
