@@ -225,7 +225,12 @@ def is_independent(app,*domains):
         arguments). Domain is qubesadmin.vm.QubesVM
     """
 
-    dependencies = vm_dependencies(app,*domains)
+    dependencies = vm_dependencies(
+        app,
+        *domains,
+        global_properties=[],
+        vm_properties=['netvm','guivm','audiovm']
+    )
 
     for vm in dependencies:
         for dependency in dependencies[vm]:
