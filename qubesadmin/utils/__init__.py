@@ -166,7 +166,10 @@ def vm_dependencies(
 
     for prop in global_properties:
         if getattr(app, prop, None) in domains:
-            result[getattr(app,prop,None)] = [(None, prop)]
+            if getattr(app, prop, None) in result.keys():
+                result[getattr(app,prop,None)].append((None, prop))
+            else:
+                result[getattr(app,prop,None)] = [(None, prop)]
 
     if vm_properties is None:
         vm_properties = [
@@ -201,7 +204,11 @@ def vm_dependencies(
                     )
                 )
             ):
-                result[getattr(vm, prop, None)].append((vm, prop))
+                if getattr(vm, prop, None) in result.keys():
+                    result[getattr(vm, prop, None)].append((vm, prop))
+                else:
+                    result[getattr(vm, prop, None)] = [(vm, prop)]
+                    
 
     return result
 
