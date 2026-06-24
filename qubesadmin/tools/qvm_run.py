@@ -19,7 +19,6 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """qvm-run tool"""
-import argparse
 import contextlib
 import io
 import os
@@ -191,7 +190,7 @@ parser.add_argument("cmd", metavar="COMMAND", help="command or service to run")
 # use argparse.REMAINDER here, not '*' ― the latter swallows a leading "--".
 parser.add_argument(
     "cmd_args",
-    nargs=argparse.REMAINDER,
+    nargs="*",
     metavar="ARG",
     help="command arguments (implies --no-shell)",
 )
@@ -314,16 +313,18 @@ def has_gui(qube) -> bool:
 # pylint: disable=too-many-statements
 def main(args=None, app=None):
     """Main function of qvm-run tool"""
+    last_is_dashdash = args[-1] == "--"
     args = parser.parse_args(args, app=app)
-    # pylint: disable=unidiomatic-typecheck
-    if type(args.cmd) is not str:
-        # pylint: disable=unidiomatic-typecheck
-        if type(args.cmd) is list and not args.cmd:
-            # Work around an argparse bug: if COMMAND is literally "--", it is
-            # misparsed as an empty list!
-            args.cmd = "--"
-        else:
-            raise AssertionError("args.cmd misparsed somehow?  (this is a bug)")
+    if (
+        args.cmd
+        and isinstance(args.cmd_args, list)
+        and not args.cmd_args
+        and last_is_dashdash
+    ):
+        # Work around an argparse bug: if COMMAND is literally "--", it is
+        # misparsed as an empty list!
+        args.cmd_args = ["--"]
+
     if args.passio:
         if args.color_output is None and args.filter_esc:
             args.color_output = 31
