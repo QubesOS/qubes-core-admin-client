@@ -151,6 +151,8 @@ def vm_dependencies(
     """
 
     result = {}
+    for domain in domains:
+        result[domain] = []
 
     if global_properties is None:
         global_properties = [
@@ -170,6 +172,7 @@ def vm_dependencies(
                 result[getattr(app,prop,None)].append((None, prop))
             else:
                 result[getattr(app,prop,None)] = [(None, prop)]
+
 
     if vm_properties is None:
         vm_properties = [
@@ -208,8 +211,6 @@ def vm_dependencies(
                     result[getattr(vm, prop, None)].append((vm, prop))
                 else:
                     result[getattr(vm, prop, None)] = [(vm, prop)]
-                    
-
     return result
 
 
@@ -243,7 +244,7 @@ def is_independent(app,*domains):
         for dependency in dependencies[vm]:
             if (
                 dependency[0] is not None
-                and dependency[0].get_power_state() == "Running"
+                and dependency[0].is_running()
                 and dependency[0] not in dependencies
             ):
                 return False
