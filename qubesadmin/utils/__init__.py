@@ -129,42 +129,64 @@ def updates_vms_status(qvm_collection: QubesBase) -> bool | None:
 
 
 def vm_dependencies(
-    app: QubesBase, reference_vm: QubesVM
-) -> list[tuple[QubesVM | None, str]]:
+        app,
+        *domains,
+        global_properties:list=None,
+        vm_properties:list=None
+    ):
     """Helper function that returns a list of all the places a given VM is used
-    in. Output is a list of tuples (property_holder, property_name), with None
-    as property_holder for global properties
+    in. Output is a dictionary of:
+    {
+        supplier:[
+            (dependant, property_name),
+            ...
+        ],
+        ...
+    }
+
+    with qubesadmin.vm.QubesVM as supplier and dependant, and None as dependant
+    for global properties
+
+    :param domains: domains to return dependencies for
     """
 
-    result = []
+    result = {}
+    for domain in domains:
+        result[domain] = []
 
-    global_properties = [
-        "default_dispvm",
-        "default_netvm",
-        "default_guivm",
-        "default_audiovm",
-        "default_template",
-        "clockvm",
-        "updatevm",
-        "management_dispvm",
-    ]
+    if global_properties is None:
+        global_properties = [
+            "default_dispvm",
+            "default_netvm",
+            "default_guivm",
+            "default_audiovm",
+            "default_template",
+            "clockvm",
+            "updatevm",
+            "management_dispvm",
+        ]
 
     for prop in global_properties:
-        if reference_vm == getattr(app, prop, None):
-            result.append((None, prop))
+        if getattr(app, prop, None) in domains:
+            if getattr(app, prop, None) in result.keys():
+                result[getattr(app,prop,None)].append((None, prop))
+            else:
+                result[getattr(app,prop,None)] = [(None, prop)]
 
-    vm_properties = [
-        "template",
-        "netvm",
-        "guivm",
-        "audiovm",
-        "default_dispvm",
-        "management_dispvm",
-    ]
+
+    if vm_properties is None:
+        vm_properties = [
+            "template",
+            "netvm",
+            "guivm",
+            "audiovm",
+            "default_dispvm",
+            "management_dispvm",
+        ]
 
     for vm in app.domains:
-        if vm == reference_vm:
-            continue
+        #if vm == reference_vm:
+        #    continue
         is_preload = getattr(vm, "is_preload", False)
         for prop in vm_properties:
             if not hasattr(vm, prop):
@@ -174,7 +196,7 @@ def vm_dependencies(
             except qubesadmin.exc.QubesPropertyAccessError:
                 is_prop_default = False
             if (
-                reference_vm == getattr(vm, prop, None)
+                getattr(vm, prop, None) in domains
                 and not is_prop_default
                 and not (
                     is_preload
@@ -185,9 +207,49 @@ def vm_dependencies(
                     )
                 )
             ):
-                result.append((vm, prop))
-
+                if getattr(vm, prop, None) in result.keys():
+                    result[getattr(vm, prop, None)].append((vm, prop))
+                else:
+                    result[getattr(vm, prop, None)] = [(vm, prop)]
     return result
+
+
+def is_independent(app,*domains):
+    """Return True if provided set of domains is independent i.e. has no
+    dependants external to it. For example, if these domains are running:
+
+    sys-net
+    └─sys-firewall
+      └─disp1
+    sys-net2
+    └─sys-vpn
+      └─my_favourite_standalone
+    vault_cube_pictures
+
+    is_independent(sys-net,sys-firewall) returns False and
+    is_independent(sys-net,sys-firewall,disp1) returns True.
+
+    :param domains: set of domains to check (not object of type set, just
+        arguments). Domain is qubesadmin.vm.QubesVM
+    """
+
+    dependencies = vm_dependencies(
+        app,
+        *domains,
+        global_properties=[],
+        vm_properties=['netvm','guivm','audiovm']
+    )
+
+    for vm in dependencies:
+        for dependency in dependencies[vm]:
+            if (
+                dependency[0] is not None
+                and dependency[0].is_running()
+                and dependency[0] not in dependencies
+            ):
+                return False
+
+    return True
 
 
 def encode_for_vmexec(args: Iterable[str]) -> str:
