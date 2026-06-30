@@ -31,9 +31,9 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00some-vm class=AppVM state=Running\n"
         )
-        self.app.expected_calls[("some-vm","admin.vm.CurrentState",None,None)] = (
-            b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=1337 power_state=Running\n"
-        )
+        self.app.expected_calls[
+            ("some-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=1337 power_state=Running\n"
         self.app.expected_calls[
             ("some-vm", "admin.vm.Shutdown", "wait", None)
         ] = b"0\x00"
@@ -48,9 +48,9 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00some-vm class=AppVM state=Halted\n"
         )
-        self.app.expected_calls[("some-vm", "admin.vm.CurrentState", None, None)] = (
-            b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=0 power_state=Halted\n"
-        )
+        self.app.expected_calls[
+            ("some-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=0 power_state=Halted\n"
         qubesadmin.tools.qvm_restart.main(["some-vm"], app=self.app)
         self.assertAllCalled()
 
@@ -59,9 +59,9 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00some-vm class=AppVM state=Halted\n"
         )
-        self.app.expected_calls[("some-vm", "admin.vm.Shutdown", "wait", None)] = (
-            b"0\x00"
-        )
+        self.app.expected_calls[
+            ("some-vm", "admin.vm.Shutdown", "wait", None)
+        ] = b"0\x00"
         self.app.expected_calls[("some-vm", "admin.vm.Start", None, None)] = (
             b"0\x00"
         )
@@ -86,18 +86,18 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ("dormant-vm", "admin.vm.property.Get", "auto_cleanup", None)
         ] = b"0\x00default=True type=bool False"
-        self.app.expected_calls[("some-vm", "admin.vm.CurrentState", None, None)] = (
-            b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=1337 power_state=Running\n"
-        )
-        self.app.expected_calls[("dormant-vm", "admin.vm.CurrentState", None, None)] = (
-            b"0\x00dormant-vm mem=0 mem_static_max=42069 cputime=0 power_state=Halted\n"
-        )
+        self.app.expected_calls[
+            ("some-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=1337 power_state=Running\n"
+        self.app.expected_calls[
+            ("dormant-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00dormant-vm mem=0 mem_static_max=42069 cputime=0 power_state=Halted\n"
         self.app.expected_calls[
             ("some-vm", "admin.vm.Shutdown", "force+wait", None)
         ] = b"0\x00"
-        self.app.expected_calls[
-            ("some-vm", "admin.vm.Start", None, None)
-        ] = b"0\x00"
+        self.app.expected_calls[("some-vm", "admin.vm.Start", None, None)] = (
+            b"0\x00"
+        )
         # sys-usb should not be restarted because it's a DispVM with auto_cleanup=False
         qubesadmin.tools.qvm_restart.main(["--all"], app=self.app)
         self.assertAllCalled()
@@ -125,9 +125,9 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ("some-vm", "admin.vm.Shutdown", "force+wait", None)
         ] = b"0\x00"
-        self.app.expected_calls[
-            ("some-vm", "admin.vm.Start", None, None)
-        ] = b"0\x00"
+        self.app.expected_calls[("some-vm", "admin.vm.Start", None, None)] = (
+            b"0\x00"
+        )
         self.app.expected_calls[
             ("dormant-vm", "admin.vm.Shutdown", "force+wait", None)
         ] = b"0\x00"
@@ -135,7 +135,7 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
             ("dormant-vm", "admin.vm.Start", None, None)
         ] = b"0\x00"
         # sys-usb should not be restarted because it's a DispVM with auto_cleanup=False
-        qubesadmin.tools.qvm_restart.main(["--all","--start"], app=self.app)
+        qubesadmin.tools.qvm_restart.main(["--all", "--start"], app=self.app)
         self.assertAllCalled()
 
     def test_005_restart_dispvm(self):
@@ -157,9 +157,9 @@ class TC_00_qvm_restart(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00some-vm class=AppVM state=Running\n"
         )
-        self.app.expected_calls[("some-vm", "admin.vm.CurrentState", None, None)] = (
-            b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=1337 power_state=Running\n"
-        )
+        self.app.expected_calls[
+            ("some-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00some-vm mem=42069 mem_static_max=42069 cputime=1337 power_state=Running\n"
         self.app.expected_calls[
             ("some-vm", "admin.vm.Shutdown", "force+wait", None)
         ] = b"0\x00"
