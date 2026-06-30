@@ -354,6 +354,8 @@ man_pages = [
         u'List/set various per-VM properties', _man_pages_author, 1),
     ('manpages/qvm-remove', 'qvm-remove',
         u'Remove a VM', _man_pages_author, 1),
+    ('manpages/qvm-restart', 'qvm-restart',
+        u'Restart a qube', _man_pages_author, 1),
     ('manpages/qvm-run', 'qvm-run',
         u'Run a command on a specified VM', _man_pages_author, 1),
     ('manpages/qvm-service', 'qvm-service',

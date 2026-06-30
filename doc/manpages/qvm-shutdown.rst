@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-shutdown` [-h] [--verbose] [--quiet] [--all] [--exclude *EXCLUDE*] [--wait] [--timeout *TIMEOUT*] [*VMNAME*]
+:command:`qvm-shutdown` [-h] [--verbose] [--quiet] [--all] [--force] [--exclude *EXCLUDE*] [--wait] [--timeout *TIMEOUT*] [*VMNAME*]
 
 Options
 -------
