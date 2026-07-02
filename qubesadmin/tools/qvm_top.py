@@ -1947,22 +1947,25 @@ class _HelpColumnsAction(Action):
     def __call__(self, _parser, _namespace, _values, option_string=None):
         width = max(len(column.header) for column in Column.columns.values())
         wrapper = TextWrapper(
-            width=80, initial_indent="  ", subsequent_indent=" " * (width + 6)
+            width=800, initial_indent="  ", subsequent_indent=" " * (width + 6)
         )
 
-        text = "Available columns:\n" + "\n".join(
-            wrapper.fill(
-                "{header:{width}s}  {doc}".format(
-                    header="{} -> {}".format(
-                        column.machine_header, column.header.strip()
-                    ),
-                    doc=column.__doc__ or "",
-                    width=width,
+        text = (
+            "Available columns (machine_header -> header   Description):\n"
+            + "\n".join(
+                wrapper.fill(
+                    "{header:{width}s}  {doc}".format(
+                        header="{} -> {}".format(
+                            column.machine_header, column.header.strip()
+                        ),
+                        doc=column.__doc__ or "",
+                        width=width,
+                    )
                 )
+                for column in Column.columns.values()
             )
-            for column in Column.columns.values()
         )
-        print(text + "\n")
+        print(text)
         sys_exit(0)
 
 
@@ -1997,123 +2000,146 @@ class _HelpFormatsAction(Action):
         sys_exit(0)
 
 
+UNTRUSTED_COLUMN = (
+    "This value or part of it is broadcast by the qube, it can be a lie."
+)
+
 Column(
     header="NAME",
     machine_header="name",
     width=31,
-    doc="Qube name",
+    doc="Qube's name.",
     right_justify=False,
 )
 Column(
     header="STATE",
     machine_header="state",
     width=max(len(state) for state in POWER_STATES),
-    doc="Current power state",
+    doc="Qube's power state.",
     right_justify=False,
 )
+
 Column(
     header="MU",
     machine_header="memory_used",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is using",
+    doc="How much memory the qube alleges to use. " + UNTRUSTED_COLUMN,
 )
 Column(
     header="MSU",
     machine_header="memory_used_with_swap",
     width=lambda header: max(len(header), 6),
-    doc="How much memory including swap the domain is using",
+    doc="How much memory including swap the qube alleges to use. "
+    + UNTRUSTED_COLUMN,
 )
 Column(
     header="MS",
     machine_header="memory_assigned",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is allowed to claim at any time",
+    doc="How much memory has been assigned to the qube, including videoram. A "
+    "qube is allowed to claim this amount at any time, and it cannot use more "
+    "memory than what has been assigned to it. When the system is under no "
+    "memory pressure, this value is close to ``MM``, while when the system is"
+    "under memory pressure, the value can be as low as enough for the qube to "
+    "survive."
 )
 Column(
     header="MM",
     machine_header="memory_max",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain can try to scale up to",
+    doc="How much memory the qube can use from the system. Part of this value "
+    "is reserved to videoram, while the rest is up to qmemman to balloon up "
+    "this qube when there is enough free memory on the host."
 )
 Column(
     header="MU/MM",
     machine_header="memory_usage_used",
     width=lambda header: max(len(header), 4),
-    doc="How much memory the domain is using in percentage",
+    doc="How much memory the qube alleges to use compared to the maximum it can"
+    "use from the system, in percentage.",
     percentage=True,
-)
-Column(
-    header="MSU/MU",
-    machine_header="memory_usage_used_with_swap",
-    width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is swaping over what it is using",
-    percentage=True,
-    percentage_intensity=[30, 10],
 )
 Column(
     header="MS/MM",
     machine_header="memory_usage_assigned",
     width=lambda header: max(len(header), 4),
-    doc="How much memory the domain has assigned in percentage",
+    doc="How much memory the qube has assigned compared to the maximum it can "
+    "use from the system, in percentage. A high percentage means the system is "
+    "not pressuring the qube to release memory.",
     percentage=True,
 )
 Column(
     header="MU/MS",
     machine_header="memory_usage_used_assigned",
     width=lambda header: max(len(header), 4),
-    doc="How much memory the is using from the assigned amount, in percentage",
+    doc="How much memory the qube alleges to use from the assigned amount, in "
+    "percentage. A high percentage on non-memory-balanced qubes is irrelevant. "
+    "On memory balanced qubes, a higher value indicates the qube is using a lot"
+    " of the memory it has assigned, which might be near exhaustion, if ``MS`` "
+    "can't be ballooned up anymore.",
     percentage=True,
 )
+Column(
+    header="MSU/MU",
+    machine_header="memory_usage_used_with_swap",
+    width=lambda header: max(len(header), 6),
+    doc="How much memory the qube alleges to be swaping from what it alleges to"
+    "use, in percentage. When it is over 10%, the qube might be swaping too "
+    "much.",
+    percentage=True,
+    percentage_intensity=[30, 10],
+)
+
 Column(
     header="CPUsec",
     machine_header="cpu_time",
     width=lambda header: max(len(header), 8),
-    doc="How many seconds the domain has used from the CPU",
+    doc="How many seconds the qube has used from the CPU.",
 )
 Column(
     header="CPU%",
     machine_header="cpu_usage",
     width=lambda header: max(len(header), 4),
-    doc="How much CPU the domain is using in percentage",
+    doc="How much CPU the qube is using, in percentage.",
     percentage=True,
 )
 Column(
     header="VC",
     machine_header="online_vcpus",
     width=lambda header: max(len(header), 3),
-    doc="How many VCPUs are online",
+    doc="How many Virtual CPUs are online.",
 )
 
 Column(
     header="MUi",
     machine_header="memory_used_internal",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is using indirectly",
+    doc="Same as MU, but internal usage.",
 )
 Column(
     header="MSi",
     machine_header="memory_assigned_internal",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is allowed to claim at any time",
+    doc="Same as ``MS``, but internal usage.",
 )
 Column(
     header="CPUisec",
     machine_header="cpu_time_internal",
     width=lambda header: max(len(header), 8),
-    doc="How many seconds the domain has used indirectly from the CPU",
+    doc="Same as ``CPUsec``, but internal usage.",
 )
 Column(
     header="CPUi%",
     machine_header="cpu_usage_internal",
     width=lambda header: max(len(header), 4),
-    doc="How much CPU the domain is using indirectly in percentage",
+    doc="Same as ``CPU%``, but internal usage.",
     percentage=True,
 )
 Column(
     header="VCi",
     machine_header="online_vcpus_internal",
     width=lambda header: max(len(header), 3),
-    doc="How many VCPUs are online indirectly",
+    doc="Same as ``VC``, but internal usage.",
 )
 
 
@@ -2121,25 +2147,25 @@ Column(
     header="MUT",
     machine_header="memory_used_total",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is using in total",
+    doc="``MU`` + ``MUi``.",
 )
 Column(
     header="MST",
     machine_header="memory_assigned_total",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the domain is allowed to claim at any time",
+    doc="``MS`` + ``MSi``.",
 )
 Column(
-    header="CPU(s)T",
+    header="CPUsecT",
     machine_header="cpu_time_total",
     width=lambda header: max(len(header), 8),
-    doc="How many seconds the domain has used in total from the CPU",
+    doc="``CPUsec`` + ``CPUisec``.",
 )
 Column(
-    header="VCT",
+    header="``VCT``",
     machine_header="online_vcpus_total",
     width=lambda header: max(len(header), 3),
-    doc="How many VCPUs are online in total",
+    doc="``VC`` + ``VCi``.",
 )
 
 
