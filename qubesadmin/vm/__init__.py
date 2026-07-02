@@ -44,8 +44,9 @@ if typing.TYPE_CHECKING:
 # ["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
 # but can be extended
 Klass = str
-PowerState = Literal["Transient", "Running", "Halted", "Paused",
-"Suspended", "Halting", "Dying", "Crashed", "NA"]
+POWER_STATES = ["Running", "Transient", "Paused", "Suspended", "Halting",
+                "Halted", "Crashed", "NA"]
+PowerState = Literal[POWER_STATES]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
@@ -202,7 +203,6 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         ``'Paused'``    Machine is paused.
         ``'Suspended'`` Machine is S3-suspended.
         ``'Halting'``   Machine is in process of shutting down (OS shutdown).
-        ``'Dying'``     Machine is in process of shutting down (cleanup).
         ``'Crashed'``   Machine crashed and is unusable.
         ``'NA'``        Machine is in unknown state.
         =============== ========================================================
@@ -444,7 +444,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         at any level of inheritance.
         """
         result = set(vm.appvms)
-        for appvm in vm.appvms:
+        for appvm in result.copy():
             result.update(QubesVM._get_derived_vms(appvm))
         return result
 

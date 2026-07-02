@@ -785,12 +785,17 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         """Update cached VM power state.
 
         This method is designed to be hooked as an event handler for:
+
         - domain-pre-start
+        - domain-start-failed
         - domain-start
-        - domain-shutdown
         - domain-paused
         - domain-unpaused
-        - domain-start-failed
+        - domain-suspended
+        - domain-resumed
+        - domain-pre-shutdown
+        - domain-shutdown-failed
+        - domain-shutdown
 
         This is done in :py:class:`qubesadmin.events.EventsDispatcher` class
         directly, before calling other handlers.
@@ -806,15 +811,23 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
         if event == "domain-pre-start":
             power_state = "Transient"
+        elif event == "domain-start-failed":
+            power_state = "Halted"
         elif event == "domain-start":
             power_state = "Running"
-        elif event == "domain-shutdown":
-            power_state = "Halted"
         elif event == "domain-paused":
             power_state = "Paused"
         elif event == "domain-unpaused":
             power_state = "Running"
-        elif event == "domain-start-failed":
+        elif event == "domain-suspended":
+            power_state = "Suspended"
+        elif event == "domain-resumed":
+            power_state = "Running"
+        elif event == "domain-pre-shutdown":
+            power_state = "Halting"
+        elif event == "domain-shutdown-failed":
+            power_state = "Running"
+        elif event == "domain-shutdown":
             power_state = "Halted"
         else:
             # unknown power state change, drop cached power state

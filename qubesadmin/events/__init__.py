@@ -36,6 +36,20 @@ from qubesadmin.vm import QubesVM
 Handler: typing.TypeAlias\
     = Callable[[QubesVM | None, str, ...], Any]  # noqa: ANN401
 
+POWER_EVENTS = [
+    "domain-pre-start",
+    "domain-start-failed",
+    "domain-start",
+    "domain-paused",
+    "domain-unpaused",
+    "domain-suspended",
+    "domain-resumed",
+    "domain-pre-shutdown",
+    "domain-shutdown-failed",
+    "domain-shutdown",
+]
+
+
 class EventsDispatcher:
     ''' Events dispatcher, responsible for receiving events and calling
     appropriate handlers'''
@@ -243,9 +257,7 @@ class EventsDispatcher:
         if event.startswith('property-set:') or \
                 event.startswith('property-reset:'):
             self.app._invalidate_cache(subject, event, **kwargs)
-        elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
-                       'domain-paused', 'domain-unpaused',
-                       'domain-start-failed'):
+        elif event in POWER_EVENTS:
             assert subject is not None
             self.app._update_power_state_cache(subject, event, **kwargs)
             subject.devices.clear_cache()

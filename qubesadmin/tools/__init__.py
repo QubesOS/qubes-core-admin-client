@@ -170,14 +170,21 @@ class VmNameAction(QubesAction):
         assert hasattr(namespace, 'app')
         setattr(namespace, 'domains', [])
         app = namespace.app
-        if hasattr(namespace, 'all_domains') and namespace.all_domains:
+        if (
+            hasattr(namespace, 'all_domains')
+            and namespace.all_domains
+            and not getattr(namespace, 'VMNAME')
+        ):
             namespace.domains = [
                 vm
                 for vm in app.domains
-                if not vm.klass == 'AdminVM' and
-                   vm.name not in namespace.exclude
+                if (
+                    namespace.all_domains == "global"
+                    or not vm.klass == 'AdminVM'
+                ) and vm.name not in namespace.exclude
             ]
         else:
+            setattr(namespace, 'all_domains', False)
             if hasattr(namespace, 'exclude') and namespace.exclude:
                 parser.error('--exclude can only be used with --all')
 
@@ -333,7 +340,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
     '''
 
     def __init__(self, vmname_nargs=None, show_forceroot=False, version=None, \
-            **kwargs):
+            all_default=False, all_include_adminvm=False, **kwargs):
 
         super().__init__(add_help=False, **kwargs)
 
@@ -370,7 +377,8 @@ class QubesArgumentParser(argparse.ArgumentParser):
             self.add_argument('--version', action='version')
 
         if self._vmname_nargs in [argparse.ZERO_OR_MORE, argparse.ONE_OR_MORE]:
-            vm_name_group = VmNameGroup(self,
+            vm_name_group = VmNameGroup(self, all_default=all_default,
+                all_include_adminvm=all_include_adminvm,
                 required=(self._vmname_nargs
                           not in [argparse.ZERO_OR_MORE, argparse.OPTIONAL]))
             self._mutually_exclusive_groups.append(vm_name_group)
@@ -546,13 +554,16 @@ class VmNameGroup(argparse._MutuallyExclusiveGroup):
         :py:class:``argparse.ArgumentParser```.
     '''
 
-    def __init__(self, container, required, vm_action=VmNameAction, help=None):
+    def __init__(self, container, required, vm_action=VmNameAction,\
+            all_default=False, all_include_adminvm=False, help=None):
         # pylint: disable=redefined-builtin
         super().__init__(container, required=required)
         if not help:
             help = 'perform the action on all qubes'
+        if all_default and all_include_adminvm:
+            all_default = "global"
         self.add_argument('--all', action='store_true', dest='all_domains',
-                          help=help)
+                          default=all_default, help=help)
         container.add_argument('--exclude', action='append', default=[],
                                help='exclude the qube from --all')
 
