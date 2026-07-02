@@ -130,21 +130,28 @@ Interaction - Visualization
 
    Reverse sorting order.
 
-.. option:: /
-
-   Filter by qube name, CSV.
-
 .. option:: S
 
    Toggle showing halted qubes.
 
-.. option:: Enter
-
-   Apply filter and return to main screen.
-
 .. option:: ^L
 
    Redraw the screen on the next refresh.
+
+.. option:: q, Q, ESC, ^C
+
+   Quit the application.
+
+Interaction - Filter
+--------------------
+
+.. option:: /
+
+   Filter by qube name, CSV.
+
+.. option:: Enter
+
+   Apply filter and return to main screen.
 
 .. option:: q, Q, ESC, ^C
 
@@ -160,7 +167,7 @@ Interaction - Execution
 
 .. option:: T
 
-   Toggle tag all visible rows.
+   Toggle tag all visible rows. Great when used with filter.
 
 .. option:: U
 
@@ -192,102 +199,97 @@ necessary.
 
 .. option:: name - NAME
 
-   Qube name.
+   Qube's name.
 
 .. option:: state - STATE
 
-   Current power state.
+   Qube's power state.
 
-.. option:: memory_used - MU
+.. option:: memory_used -> MU
 
-   How much memory the domain is using.
+   How much memory the qube alleges to use. This value or part of it is broadcast by the qube, it can be a lie.
 
-.. option:: memory_used_with_swap - MSU
+.. option:: memory_used_with_swap -> MSU
 
-   How much memory including swap the domain is using.
+   How much memory including swap the qube alleges to use. This value or part of it is broadcast by the qube, it can be a lie.
 
-.. option:: memory_assigned - MS
+.. option:: memory_assigned -> MS
 
-   How much memory the domain is allowed to claim at any time.
+   How much memory has been assigned to the qube, including videoram. A qube is allowed to claim this amount at any time, and it cannot use more memory than what has been assigned to it. When the system is under no memory pressure, this value is close to ``MM``, while when the system isunder memory pressure, the value can be as low as enough for the qube to survive.
 
-.. option:: memory_max - MM
+.. option:: memory_max -> MM
 
-   How much memory the domain can try to scale up to.
+   How much memory the qube can use from the system. Part of this value is reserved to videoram, while the rest is up to qmemman to balloon up this qube when there is enough free memory on the host.
 
-.. option:: memory_usage_used - MU/MM
+.. option:: memory_usage_used -> MU/MM
 
-   How much memory the domain is using in percentage.
+   How much memory the qube alleges to use compared to the maximum it canuse from the system, in percentage.
 
-.. option:: memory_usage_used_with_swap - MSU/MU
+.. option:: memory_usage_assigned -> MS/MM
 
-   How much memory the domain is swapping over what it is using.
+   How much memory the qube has assigned compared to the maximum it can use from the system, in percentage. A high percentage means the system is not pressuring the qube to release memory.
 
-.. option:: memory_usage_assigned - MS/MM
+.. option:: memory_usage_used_assigned -> MU/MS
 
-   How much memory the domain has assigned in percentage.
+   How much memory the qube alleges to use from the assigned amount, in percentage. A high percentage on non-memory-balanced qubes is irrelevant. On memory balanced qubes, a higher value indicates the qube is using a lot of the memory it has assigned, which might be near exhaustion, if ``MS`` can't be ballooned up anymore.
 
-.. option:: memory_usage_used_assigned - MU/MS
+.. option:: memory_usage_used_with_swap -> MSU/MU
 
-   How much memory the domain is using from the assigned amount, in percentage.
+   How much memory the qube alleges to be swaping from what it alleges touse, in percentage. When it is over 10%, the qube might be swaping too much.
 
-.. option:: cpu_time - CPUsec
+.. option:: cpu_time -> CPUsec
 
-   How many seconds the domain has used from the CPU.
+   How many seconds the qube has used from the CPU.
 
-.. option:: cpu_usage - CPU%
+.. option:: cpu_usage -> CPU%
 
-   How much CPU the domain is using in percentage.
+   How much CPU the qube is using, in percentage.
 
-.. option:: online_vcpus - VC
+.. option:: online_vcpus -> VC
 
-   How many VCPUs are online.
+   How many Virtual CPUs are online.
 
-.. option:: memory_used_internal - MUi
+.. option:: memory_used_internal -> MUi
 
-   How much memory the domain is using indirectly.
+   Same as MU, but internal usage.
 
-.. option:: memory_assigned_internal - MSi
+.. option:: memory_assigned_internal -> MSi
 
-   How much memory the domain is allowed to claim at any time.
+   Same as ``MS``, but internal usage.
 
-.. option:: cpu_time_internal - CPUisec
+.. option:: cpu_time_internal -> CPUisec
 
-   How many seconds the domain has used indirectly from the CPU.
+   Same as ``CPUsec``, but internal usage.
 
-.. option:: cpu_usage_internal - CPUi%
+.. option:: cpu_usage_internal -> CPUi%
 
-   How much CPU the domain is using indirectly in percentage.
+   Same as ``CPU%``, but internal usage.
 
-.. option:: online_vcpus_internal - VCi
+.. option:: online_vcpus_internal -> VCi
 
-   How many VCPUs are online indirectly.
+   Same as ``VC``, but internal usage.
 
-.. option:: memory_used_total - MUT
+.. option:: memory_used_total -> MUT
 
-   How much memory the domain is using in total.
+   ``MU`` + ``MUi``.
 
-.. option:: memory_assigned_total - MST
+.. option:: memory_assigned_total -> MST
 
-   How much memory the domain is allowed to claim at any time.
+   ``MS`` + ``MSi``.
 
-.. option:: cpu_time_total - CPU(s)T
+.. option:: cpu_time_total -> CPUsecT
 
-   How many seconds the domain has used in total from the CPU.
+   ``CPUsec`` + ``CPUisec``.
 
-.. option:: online_vcpus_total - VCT
+.. option:: online_vcpus_total -> VCT
 
-   How many VCPUs are online in total.
+   ``VC`` + ``VCi``.
 
 Notes
 -----
 
-Time printed represents the last moment the screen was refreshed. It only
-happens when information is outdated.
-
-Values for HVMs are aggregated with its companion device model stub domain,
-therefore a HVM such as `sys-net` which has 2 VCPUs, with it's device model
-having 1 VCPU, will show 3 VCPUs. Same process is done for other properties when
-applicable.
+The clock shows the last time the screen was refreshed. It only happens when
+information is outdated.
 
 Authors
 -------
