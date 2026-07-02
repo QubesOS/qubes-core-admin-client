@@ -443,7 +443,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         at any level of inheritance.
         """
         result = set(vm.appvms)
-        for appvm in vm.appvms:
+        for appvm in result.copy():
             result.update(QubesVM._get_derived_vms(appvm))
         return result
 
