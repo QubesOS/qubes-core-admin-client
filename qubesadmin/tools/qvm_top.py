@@ -100,6 +100,7 @@ async def exec_and_check(*args):
             returncode=proc.returncode, cmd=[*args], output=outerr
         )
 
+
 async def console(qubes: list[QubesVM]) -> None:
     """
     Get debug console for provided qubes.
@@ -268,7 +269,7 @@ class Stats:
 
         self.features_default = {"gui": True, "internal": False}
         self.state: str = "NA"
-        self.label: Label | None = None
+        self.label: Label | str = ""
         self.is_preload: bool = False
         self.gui: bool = True
         self.internal: bool = False
@@ -547,53 +548,48 @@ class Stats:
         self.set_verbose({name: value})
 
 
-class Monitor:
+class Screen:
     """
-    Logic responsible for monitoring events and showing statistics on the
-    screen.
+    Organize the screen for drawing, scrolling, typing.
     """
 
     # pylint: disable=too-many-instance-attributes
-
     def __init__(
         self,
         app: QubesBase,
-        domains: list[QubesVM],
-        dispatcher: EventsDispatcher,
-        stats_dispatcher: EventsDispatcher,
         show_halted: bool,
-        all_domains: bool,
         allow_color: bool,
+        filter_query: str,
+        sort_reverse: bool,
+        sort_col_index: int | None,
         columns: dict[str, "Column"],
-        sort_reverse: bool = False,
-        sort_column: str | None = None,
-        filter_query: str = "",
-    ) -> None:
+    ):
         # pylint: disable=too-many-positional-arguments
-        self.app = app
-        self.domains = domains
-        self.dispatcher = dispatcher
-        self.stats_dispatcher = stats_dispatcher
-        self.all_domains = all_domains
-        self.show_halted = show_halted
         self.allow_color = allow_color
-        self.columns = columns
-        self.sort_reverse = sort_reverse
-        if sort_column is None:
-            self.sort_col_index: int | None = None
-        else:
-            self.sort_col_index = list(self.columns.keys()).index(sort_column)
+        self.app = app
+        self.show_halted = show_halted
         self.filter_query = filter_query
+        self.filter = False
+        self.sort_reverse = sort_reverse
+        self.sort_col_index = sort_col_index
+        self.columns = columns
 
         self.log = gen_logger(f"{self.__class__.__qualname__}")
-        root_logger = getLogger()
-        root_logger.setLevel(LOGGING_LEVEL)
-        root_logger.handlers.clear()
-        root_logger.addHandler(self.log.handlers[0])
-
-        self.headers = " ".join(col.header for col in self.columns.values())
+        self.getch_timeout = 1000
         self.version: str = metadata("qubesadmin")["version"]
-        self.entries: dict[QubesVM, Stats] = {}
+        self.headers = " ".join(col.header for col in self.columns.values())
+
+        self.selected_stats: list[Stats] = []
+        self._stats: list[Stats] | None = None
+
+        self.header_row = 3
+        self.old_cursor_row = 0
+        self.visible_stats: dict[int, Stats] = {}
+        self.visible_actions: dict[int, str] = {}
+        self.act = False
+        self.actions: list[str] = []
+        self.label_index = 0
+
         self.scroll_offset = 0
         self.max_offset = 0
         self.action_scroll_offset = 0
@@ -604,36 +600,33 @@ class Monitor:
         self.cursor_row = 0
         self.outdated_sleep = 0.010
         self.uptodate_sleep = 0.1
-        self.getch_timeout = 1000
-        self._stats: list[Stats] | None = None
         self._old_cursor_visibility = 0
-        self.selected_stats: list[Stats] = []
+
         self.last_selected_stat: Stats | None = None
         self.last_selected_row: int | None = None
-        self.header_row = 3
-        self.old_cursor_row = 0
-        self.visible_stats: dict[int, Stats] = {}
-        self.visible_actions: dict[int, str] = {}
-        self.filter = False
-        self.act = False
-        self.actions: list[str] = []
-        self.label_index = 0
 
-    def init_label(self, label) -> None:
+    def init_label(self, label: Label | str) -> Label | None:
         """
         Initialize colors from qube labels.
         """
+        if not curses.can_change_color():
+            return None
+        if isinstance(label, str):
+            label = self.app.labels[label]
         name: str = label.name
         color: str = label.color
+        if name in self.label_colors:
+            return label
         index = self.label_index
         if name == "black":
             self.label_colors[name] = self.colors["FG_DEFAULT"]
-            return
+            return label
         r1000, g1000, b1000 = convert_html_color_to_curses(color)
         curses.init_color(index, r1000, g1000, b1000)
         curses.init_pair(index, index, -1)
         self.label_colors[name] = curses.color_pair(index)
         self.label_index += 1
+        return label
 
     def init_screen(self) -> None:
         """
@@ -768,178 +761,6 @@ class Monitor:
             pass
         curses.endwin()
 
-    def init_entries(self) -> None:
-        """
-        Initialize statistics holder for all qubes.
-        """
-        for vm in sorted(
-            [vm for vm in self.app.domains if vm.klass == "AdminVM"]
-        ):
-            self.add_domain(submitter=None, vm=vm, event=None)
-        for vm in sorted(
-            [vm for vm in self.app.domains if vm not in self.entries]
-        ):
-            self.add_domain(submitter=None, vm=vm, event=None)
-
-    def update_stats(self, vm: QubesVM, _event: str, **kwargs: Any) -> None:
-        """
-        Rpead vm-stats and update qube statistics.
-        """
-        # pylint: disable=missing-function-docstring
-        if vm not in self.entries:
-            return
-        self.entries[vm].update_stats(**kwargs)
-
-    def refresh_all_items(
-        self, submitter: QubesVM | None, _event: str, **_kwargs: Any
-    ) -> None:
-        """
-        Reconnected to the API, check if all entries are up to date.
-        """
-        # pylint: disable= unused-argument
-        items_to_delete = [
-            vm for vm in self.entries if vm not in self.app.domains
-        ]
-        for vm in items_to_delete:
-            self.remove_domain(submitter=None, vm=vm, event=None)
-        for vm in self.app.domains:
-            self.update_domain_item(vm=vm, event=None)
-
-    def add_domain(
-        self,
-        submitter: QubesVM | None,
-        event: str | None,
-        vm: QubesVM,
-        **kwargs: Any,
-    ) -> None:
-        """
-        Add qube to the statistics holder.
-        """
-        # pylint: disable= unused-argument
-        if str(vm) in self.entries:
-            return
-        try:
-            vm = self.app.domains[str(vm)]
-        except KeyError:
-            return
-
-        self.log.debug("add=%s", str(vm))
-        try:
-            self.entries[vm] = Stats(vm)
-        except QubesVMNotFoundError:
-            self.log.debug("Qube removed while adding its entry: %s", str(vm))
-            self.remove_domain(submitter=None, vm=vm, event=event)
-        if self.all_domains:
-            self.domains.append(vm)
-
-    def remove_domain(
-        self,
-        submitter: QubesVM | None,
-        event: str | None,
-        vm: QubesVM,
-        **kwargs: Any,
-    ) -> None:
-        """
-        Remove qube from the statistics holder.
-        """
-        # pylint: disable=unused-argument
-        if str(vm) not in self.entries:
-            return
-        self.log.debug("remove=%s", str(vm))
-        if vm in self.domains:
-            Stats.outdated_by_removal.append(str(vm))
-        if self.entries[vm] in self.selected_stats:
-            self.selected_stats.remove(self.entries[vm])
-        del self.entries[vm]
-
-    def get_entry(self, vm: QubesVM, event: str | None) -> Stats | None:
-        """
-        Safely get ``Stats`` if qube can be accessed, else, remove the entry and
-        return ``None``.
-        """
-        try:
-            item = self.entries[vm]
-        except QubesPropertyAccessError as e:
-            self.log.exception(e)
-            self.remove_domain(submitter=None, vm=vm, event=event)
-            return None
-        return item
-
-    def update_domain_item(
-        self, vm: QubesVM, event: str | None, **kwargs: Any
-    ) -> None:
-        """
-        Fully update the statistics holder of the qube.
-        """
-        # pylint: disable=unused-argument
-        try:
-            item = self.get_entry(vm=vm, event=event)
-            if item is None:
-                return
-        except KeyError:
-            self.add_domain(submitter=None, vm=vm, event=event)
-            if not vm in self.entries:
-                return
-            item = self.entries[vm]
-        try:
-            item.update_cache()
-        except QubesVMNotFoundError:
-            self.log.debug("Qube removed while updating cache: %s", str(vm))
-            self.remove_domain(submitter=None, vm=vm, event=event)
-
-    def set_generic(
-        self, vm, event, name, newvalue=None, oldvalue=None
-    ) -> None:
-        """
-        Update attributes of the qube's statistics holder.
-        """
-        # pylint: disable=unused-argument
-        if not (item := self.get_entry(vm=vm, event=event)):
-            return
-        self.log.debug("update -> %s=%s(%s)", name, vm.name, newvalue)
-        if name == "maxmem":
-            item.update_memory_max(value=newvalue)
-        elif name == "label":
-            if (
-                newvalue.name not in self.label_colors
-                and curses.can_change_color()
-            ):
-                self.init_label(label=newvalue)
-            else:
-                newvalue = "@invalid"
-        else:
-            item.update_generic(name=name, value=newvalue)
-
-    def set_feat_generic(
-        self, vm, event, feature, value, oldvalue=None
-    ) -> None:
-        """
-        Update feature attributes of the qube's statistics holder.
-        """
-        # pylint: disable=unused-argument
-        if not (item := self.get_entry(vm=vm, event=event)):
-            return
-        self.log.debug("update -> %s=%s(%s)", feature, vm.name, value)
-        item.update_generic(name=feature, value=value)
-        for qube in vm.derived_vms:
-            if qube not in self.entries:
-                continue
-            self.entries[qube].update_feat_from_template(name=feature)
-
-    def del_feat_generic(self, vm, event, feature) -> None:
-        """
-        Update feature attributes of the qube's statistics holder.
-        """
-        # pylint: disable=unused-argument
-        if not (item := self.get_entry(vm=vm, event=event)):
-            return
-        self.log.debug("update del -> %s=%s", feature, vm.name)
-        item.update_feat_from_template(name=feature)
-        for qube in vm.derived_vms:
-            if qube not in self.entries:
-                continue
-            self.entries[qube].update_feat_from_template(name=feature)
-
     def write(self, *args: Any, **kwargs: Any) -> None:
         """
         Set screen text and attributes and deal with errors without panic.
@@ -960,6 +781,36 @@ class Monitor:
             if attr is not None:
                 self.stdscr.attroff(attr)
 
+    def get_selection(self) -> list[Stats]:
+        """
+        Get selected qube. If none is selected, consider the last one the
+        cursor was in.
+        """
+        stats = self.selected_stats
+        if not stats and self.last_selected_stat:
+            stats = [self.last_selected_stat]
+        if not stats:
+            stats = []
+        return stats
+
+    def get_action_from_selection(self) -> list[str]:
+        """
+        List common actions that is valid for all selected qubes.
+        """
+        stats = self.get_selection()
+        if not stats:
+            return []
+        actions = []
+        all_actions = []
+        for stat in stats:
+            if not (stat_actions := stat.get_actions()):
+                return []
+            all_actions.append(stat_actions)
+        actions = list(set.intersection(*(set(x) for x in all_actions)))
+        actions = sorted(actions, key=lambda k: int(ACTIONS[k]["identity"]))
+        self.log.debug("available-actions=%s", actions)
+        return actions
+
     def get_stats(self):
         """
         Qubes that can be shown.
@@ -970,9 +821,9 @@ class Monitor:
         self._stats = sorted(
             [
                 stats
-                for stats in self.entries.values()
+                for stats in Monitor.entries.values()
                 if (self.show_halted or stats.state != "Halted")
-                and stats.vm in self.domains
+                and stats.vm in Monitor.domains
                 and (
                     (not self.filter_query and not self.filter)
                     or any(
@@ -1026,36 +877,6 @@ class Monitor:
             outdated,
         )
         return uptodate
-
-    def get_selection(self) -> list[Stats]:
-        """
-        Get selected qube. If none is selected, consider the last one the
-        cursor was in.
-        """
-        stats = self.selected_stats
-        if not stats and self.last_selected_stat:
-            stats = [self.last_selected_stat]
-        if not stats:
-            stats = []
-        return stats
-
-    def get_action_from_selection(self) -> list[str]:
-        """
-        List common actions that is valid for all selected qubes.
-        """
-        stats = self.get_selection()
-        if not stats:
-            return []
-        actions = []
-        all_actions = []
-        for stat in stats:
-            if not (stat_actions := stat.get_actions()):
-                return []
-            all_actions.append(stat_actions)
-        actions = list(set.intersection(*(set(x) for x in all_actions)))
-        actions = sorted(actions, key=lambda k: int(ACTIONS[k]["identity"]))
-        self.log.debug("available-actions=%s", actions)
-        return actions
 
     def draw_table(self) -> None:
         """
@@ -1598,7 +1419,6 @@ class Monitor:
                 return True
 
         if char in (ord("q"), ord("Q"), ESC):
-            self.unregister_events()
             raise KeyboardInterrupt
 
         old_sort_col_index = self.sort_col_index
@@ -1798,6 +1618,218 @@ class Monitor:
                     continue
                 break
 
+
+class Monitor:
+    """
+    Monitor and react to events.
+    """
+
+    entries: dict[QubesVM, Stats] = {}
+    domains: list[QubesVM]
+
+    def __init__(
+        self,
+        app: QubesBase,
+        domains: list[QubesVM],
+        dispatcher: EventsDispatcher,
+        stats_dispatcher: EventsDispatcher,
+        show_halted: bool,
+        all_domains: bool,
+        allow_color: bool,
+        columns: dict[str, "Column"],
+        sort_reverse: bool = False,
+        sort_column: str | None = None,
+        filter_query: str = "",
+    ) -> None:
+        # pylint: disable=too-many-positional-arguments
+        self.app = app
+        self.__class__.domains = domains
+        self.dispatcher = dispatcher
+        self.stats_dispatcher = stats_dispatcher
+        self.all_domains = all_domains
+        sort_col_index: int | None = None
+        if sort_column is not None:
+            sort_col_index = list(columns.keys()).index(sort_column)
+        self.screen = Screen(
+            app=self.app,
+            show_halted=show_halted,
+            allow_color=allow_color,
+            filter_query=filter_query,
+            sort_reverse=sort_reverse,
+            sort_col_index=sort_col_index,
+            columns=columns,
+        )
+        self.log = gen_logger(f"{self.__class__.__qualname__}")
+        root_logger = getLogger()
+        root_logger.setLevel(LOGGING_LEVEL)
+        root_logger.handlers.clear()
+        root_logger.addHandler(self.log.handlers[0])
+
+    def init_entries(self) -> None:
+        """
+        Initialize statistics holder for all qubes.
+        """
+        for vm in sorted(
+            [vm for vm in self.app.domains if vm.klass == "AdminVM"]
+        ):
+            self.add_domain(submitter=None, vm=vm, event=None)
+        for vm in sorted(
+            [vm for vm in self.app.domains if vm not in self.__class__.entries]
+        ):
+            self.add_domain(submitter=None, vm=vm, event=None)
+
+    def update_stats(self, vm: QubesVM, _event: str, **kwargs: Any) -> None:
+        """
+        Read vm-stats and update qube statistics.
+        """
+        if vm not in self.__class__.entries:
+            return
+        self.__class__.entries[vm].update_stats(**kwargs)
+
+    def refresh_all_items(
+        self, submitter: QubesVM | None, _event: str, **_kwargs: Any
+    ) -> None:
+        """
+        Reconnected to the API, check if all entries are up to date.
+        """
+        # pylint: disable=unused-argument
+        items_to_delete = [
+            vm for vm in self.__class__.entries if vm not in self.app.domains
+        ]
+        for vm in items_to_delete:
+            self.remove_domain(submitter=None, vm=vm, event=None)
+        for vm in self.app.domains:
+            self.update_domain_item(vm=vm, event=None)
+
+    def add_domain(
+        self,
+        submitter: QubesVM | None,
+        event: str | None,
+        vm: QubesVM,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Add qube to the statistics holder.
+        """
+        # pylint: disable=unused-argument
+        if str(vm) in self.__class__.entries:
+            return
+        try:
+            vm = self.app.domains[str(vm)]
+        except KeyError:
+            return
+
+        self.log.debug("add=%s", str(vm))
+        try:
+            self.__class__.entries[vm] = Stats(vm)
+        except QubesVMNotFoundError:
+            self.log.debug("Qube removed while adding its entry: %s", str(vm))
+            self.remove_domain(submitter=None, vm=vm, event=event)
+        if self.all_domains:
+            self.__class__.domains.append(vm)
+
+    def remove_domain(
+        self,
+        submitter: QubesVM | None,
+        event: str | None,
+        vm: QubesVM,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Remove qube from the statistics holder.
+        """
+        # pylint: disable=unused-argument
+        if str(vm) not in self.__class__.entries:
+            return
+        self.log.debug("remove=%s", str(vm))
+        if vm in self.__class__.domains:
+            Stats.outdated_by_removal.append(str(vm))
+        if self.__class__.entries[vm] in self.screen.selected_stats:
+            self.screen.selected_stats.remove(self.__class__.entries[vm])
+        del self.__class__.entries[vm]
+
+    def get_entry(self, vm: QubesVM, event: str | None) -> Stats | None:
+        """
+        Safely get ``Stats`` if qube can be accessed, else, remove the entry and
+        return ``None``.
+        """
+        try:
+            item = self.__class__.entries[vm]
+        except QubesPropertyAccessError as e:
+            self.log.exception(e)
+            self.remove_domain(submitter=None, vm=vm, event=event)
+            return None
+        return item
+
+    def update_domain_item(
+        self, vm: QubesVM, event: str | None, **kwargs: Any
+    ) -> None:
+        """
+        Fully update the statistics holder of the qube.
+        """
+        # pylint: disable=unused-argument
+        try:
+            item = self.get_entry(vm=vm, event=event)
+            if item is None:
+                return
+        except KeyError:
+            self.add_domain(submitter=None, vm=vm, event=event)
+            if not vm in self.__class__.entries:
+                return
+            item = self.__class__.entries[vm]
+        try:
+            item.update_cache()
+        except QubesVMNotFoundError:
+            self.log.debug("Qube removed while updating cache: %s", str(vm))
+            self.remove_domain(submitter=None, vm=vm, event=event)
+
+    def set_generic(
+        self, vm, event, name, newvalue=None, oldvalue=None
+    ) -> None:
+        """
+        Update attributes of the qube's statistics holder.
+        """
+        # pylint: disable=unused-argument
+        if not (item := self.get_entry(vm=vm, event=event)):
+            return
+        self.log.debug("update -> %s=%s(%s)", name, vm.name, newvalue)
+        if name == "maxmem":
+            item.update_memory_max(value=newvalue)
+            return
+        if name == "label":
+            newvalue = self.screen.init_label(label=newvalue)
+        item.update_generic(name=name, value=newvalue)
+
+    def set_feat_generic(
+        self, vm, event, feature, value, oldvalue=None
+    ) -> None:
+        """
+        Update feature attributes of the qube's statistics holder.
+        """
+        # pylint: disable=unused-argument
+        if not (item := self.get_entry(vm=vm, event=event)):
+            return
+        self.log.debug("update -> %s=%s(%s)", feature, vm.name, value)
+        item.update_generic(name=feature, value=value)
+        for qube in vm.derived_vms:
+            if qube not in self.__class__.entries:
+                continue
+            self.__class__.entries[qube].update_feat_from_template(name=feature)
+
+    def del_feat_generic(self, vm, event, feature) -> None:
+        """
+        Update feature attributes of the qube's statistics holder.
+        """
+        # pylint: disable=unused-argument
+        if not (item := self.get_entry(vm=vm, event=event)):
+            return
+        self.log.debug("update del -> %s=%s", feature, vm.name)
+        item.update_feat_from_template(name=feature)
+        for qube in vm.derived_vms:
+            if qube not in self.__class__.entries:
+                continue
+            self.__class__.entries[qube].update_feat_from_template(name=feature)
+
     async def run(self) -> None:
         """
         Run initial setup.
@@ -1808,13 +1840,14 @@ class Monitor:
         try:
             # Allow registering events.
             await sleep(0)
-            self.init_screen()
-            await self.paint()
+            self.screen.init_screen()
+            await self.screen.paint()
         except BaseException as e:
             exc_data = exc_info()
             self.log.exception(e)
         finally:
-            self.restore_screen()
+            self.unregister_events()
+            self.screen.restore_screen()
             if exc_data:
                 print_exception(*exc_data, file=stderr)
 
@@ -1867,11 +1900,14 @@ class Column:
         doc: str | None = None,
         right_justify: bool = True,
         percentage: bool = False,
-        percentage_intensity: list[int] = [75, 50],
+        percentage_intensity: list[int] | None = None,
     ):
         # pylint: disable=too-many-positional-arguments
         self.percentage = percentage
-        self.percentage_intensity = percentage_intensity
+        if percentage_intensity is None:
+            self.percentage_intensity = [75, 50]
+        else:
+            self.percentage_intensity = percentage_intensity
         self.__doc__ = doc
         if isinstance(width, int):
             self.width = width
