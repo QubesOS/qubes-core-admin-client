@@ -66,7 +66,7 @@ Formatting Options
 
 .. option:: --format, -F FORMAT
 
-   Show only columns declared by format: `min`, `default, `max-no-internal`,
+   Show only columns declared by format: `min`, `default`, `max-no-internal`,
    `max`.
 
 .. option:: --help-columns
