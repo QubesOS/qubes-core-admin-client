@@ -242,7 +242,7 @@ def revert_volume(args):
     volume.revert(revision)
 
 
-def resize_volumes(args):
+def resize_volume(args):
     """ Called by the parser to execute the :program:`qvm-volume resize`
         subcommand
     """
@@ -295,7 +295,7 @@ def init_resize_parser(sub_parsers):
         '--force', '-f', action='store_true',
         help='Force operation, even if new size is smaller than the current '
              'one')
-    resize_parser.set_defaults(func=resize_volumes)
+    resize_parser.set_defaults(func=resize_volume)
 
 
 def init_info_parser(sub_parsers):
