@@ -267,8 +267,6 @@ class Volume:
     def resize(self, size: object) -> None:
         """Resize volume.
 
-        Currently only extending is supported.
-
         :param int size: new size in bytes.
         """
         self._qubesd_call('Resize', str(size).encode('ascii'))
