@@ -279,26 +279,31 @@ class Stats:
         self.management_dispvm: QubesVM | None = None
         self.auto_cleanup: bool = False
         self.memory_max: int | str = "NA"
+        self.memory_init: int | str = "NA"
         self.update_cache()
 
-        self.memory_assigned: int | str = "NA"
+        self.memory_assigned_max: int | str = "NA"
+        self.memory_assigned_usable: int | str = "NA"
         self.memory_usage_assigned: float | str = "NA"
-        self.memory_used: int | str = "NA"
-        self.memory_used_with_swap: int | str = "NA"
+        self.memory_used_noswap: int | str = "NA"
+        self.memory_used_swap: int | str = "NA"
         self.memory_usage_used: float | str = "NA"
-        self.memory_usage_used_with_swap: float | str = "NA"
-        self.memory_usage_used_assigned: float | str = "NA"
+        self.memory_usage_swap_over_used: float | str = "NA"
         self.cpu_time: int | str = "NA"
         self.cpu_usage: int | str = "NA"
         self.online_vcpus: int | str = "NA"
 
-        self.memory_assigned_internal: int | str = "NA"
-        self.memory_used_internal: int | str = "NA"
+        self.memory_assigned_max_internal: int | str = "NA"
+        self.memory_assigned_usable_internal: int | str = "NA"
+        self.memory_used_noswap_internal: int | str = "NA"
         self.cpu_time_internal: int | str = "NA"
         self.cpu_usage_internal: float | str = "NA"
         self.online_vcpus_internal: int | str = "NA"
 
-        self.memory_assigned_total: int | str = "NA"
+        self.memory_assigned_max_total: int | str = "NA"
+        self.memory_assigned_usable_total: int | str = "NA"
+        self.memory_used_noswap_total: int | str = "NA"
+        self.memory_used_swap_total: int | str = "NA"
         self.memory_used_total: int | str = "NA"
         self.cpu_time_total: int | str = "NA"
         self.cpu_usage_total: float | str = "NA"
@@ -390,6 +395,7 @@ class Stats:
         data = {
             "state": self.vm.get_power_state(),
             "label": self.vm.label,
+            "memory_init": getattr(self.vm, "memory", "NA"),
             "memory_max": getattr(self.vm, "maxmem", "NA"),
             "auto_cleanup": getattr(self.vm, "auto_cleanup", False),
             "is_preload": getattr(self.vm, "is_preload", False),
@@ -416,47 +422,70 @@ class Stats:
         """
         Update memory and CPU statistics.
         """
-        memory_assigned = int(kwargs["memory_assigned_KiB"]) // 1024
-        memory_assigned_internal = kwargs.get("memory_assigned_KiB_internal")
-        if memory_assigned_internal is None:
-            memory_assigned_internal = "NA"
-            memory_assigned_total = memory_assigned
+        memory_assigned_max = int(kwargs["memory_assigned_max_KiB"]) // 1024
+        memory_assigned_usable = (
+            int(kwargs["memory_assigned_usable_KiB"]) // 1024
+        )
+        memory_assigned_max_internal = kwargs.get(
+            "memory_assigned_max_KiB_internal"
+        )
+        memory_assigned_usable_internal = kwargs.get(
+            "memory_assigned_usable_KiB_internal"
+        )
+        if memory_assigned_max_internal is None:
+            memory_assigned_max_internal = "NA"
+            memory_assigned_max_total = memory_assigned_max
         else:
-            memory_assigned_internal = int(memory_assigned_internal) // 1024
-            memory_assigned_total = memory_assigned + memory_assigned_internal
+            memory_assigned_max_internal = (
+                int(memory_assigned_max_internal) // 1024
+            )
+            memory_assigned_max_total = (
+                memory_assigned_max + memory_assigned_max_internal
+            )
+        if memory_assigned_usable_internal is None:
+            memory_assigned_usable_internal = "NA"
+            memory_assigned_usable_total = memory_assigned_usable
+        else:
+            memory_assigned_usable_internal = (
+                int(memory_assigned_usable_internal) // 1024
+            )
+            memory_assigned_usable_total = (
+                memory_assigned_usable + memory_assigned_usable_internal
+            )
 
-        memory_used_with_swap = int(kwargs["memory_used_with_swap_KiB"]) // 1024
-        memory_used = int(kwargs["memory_used_KiB"]) // 1024
-        memory_used_internal = kwargs.get("memory_used_KiB_internal")
-        if memory_used_internal is None:
-            memory_used_internal = "NA"
-            memory_used_total = memory_used
+        memory_used_swap = int(kwargs["memory_used_swap_KiB"]) // 1024
+        memory_used_noswap = int(kwargs["memory_used_noswap_KiB"]) // 1024
+        memory_used_noswap_internal = kwargs.get(
+            "memory_used_noswap_KiB_internal"
+        )
+        if memory_used_noswap_internal is None:
+            memory_used_noswap_internal = "NA"
+            memory_used_noswap_total = memory_used_noswap
         else:
-            memory_used_internal = int(memory_used_internal) // 1024
-            memory_used_total = memory_used + memory_used_internal
+            memory_used_noswap_internal = (
+                int(memory_used_noswap_internal) // 1024
+            )
+            memory_used_noswap_total = (
+                memory_used_noswap + memory_used_noswap_internal
+            )
+        memory_used_swap_total = memory_used_swap
+        memory_used_total = memory_used_swap_total + memory_used_noswap_total
 
         if isinstance(self.memory_max, int) and self.memory_max > 0:
             memory_usage_assigned: float | str = round(
-                float(memory_assigned / self.memory_max) * 100, 1
-            )
-            memory_usage_used: float | str = round(
-                float(memory_used / self.memory_max) * 100, 1
+                float(memory_assigned_max / self.memory_max) * 100, 1
             )
         else:
             memory_usage_assigned = "NA"
-            memory_usage_used = "NA"
-        if memory_assigned > 0:
-            memory_usage_used_assigned = round(
-                float(memory_used / memory_assigned) * 100, 1
+        memory_usage_used: float | str = round(
+            float(memory_used_noswap / memory_assigned_usable) * 100, 1
+        )
+        if memory_used_noswap > 0:
+            memory_usage_swap_over_used: float | str = round(
+                float(memory_used_swap / memory_used_noswap) * 100, 1
             )
         else:
-            memory_usage_used_assigned = 0.0
-        if memory_used > 0:
-            memory_usage_used_with_swap: float | str = round(
-                float(memory_used_with_swap / memory_used) * 100 - 100, 1
-            )
-        else:
-            memory_usage_used_with_swap = 0
+            memory_usage_swap_over_used = 0.0
 
         cpu_time = int(kwargs["cpu_time"]) // 10**3
         cpu_time_internal = kwargs.get("cpu_time_internal")
@@ -484,27 +513,37 @@ class Stats:
             online_vcpus_total = online_vcpus + online_vcpus_internal
 
         data = {
-            "memory_assigned": memory_assigned,
-            "memory_used": memory_used,
-            "memory_used_with_swap": memory_used_with_swap,
+            "memory_assigned_max": memory_assigned_max,
+            "memory_assigned_usable": memory_assigned_usable,
+            "memory_used_noswap": memory_used_noswap,
+            "memory_used_swap": memory_used_swap,
             "memory_usage_used": memory_usage_used,
             "memory_usage_assigned": memory_usage_assigned,
-            "memory_usage_used_assigned": memory_usage_used_assigned,
-            "memory_usage_used_with_swap": memory_usage_used_with_swap,
+            "memory_usage_swap_over_used": memory_usage_swap_over_used,
             "cpu_time": cpu_time,
             "cpu_usage": cpu_usage,
             "online_vcpus": online_vcpus,
-            "memory_assigned_internal": memory_assigned_internal,
-            "memory_used_internal": memory_used_internal,
+            "memory_assigned_usable_internal": memory_assigned_usable_internal,
+            "memory_assigned_max_internal": memory_assigned_max_internal,
+            "memory_used_noswap_internal": memory_used_noswap_internal,
             "cpu_time_internal": cpu_time_internal,
             "cpu_usage_internal": cpu_usage_internal,
             "online_vcpus_internal": online_vcpus_internal,
-            "memory_assigned_total": memory_assigned_total,
+            "memory_assigned_usable_total": memory_assigned_usable_total,
+            "memory_assigned_max_total": memory_assigned_max_total,
+            "memory_used_noswap_total": memory_used_noswap_total,
+            "memory_used_swap_total": memory_used_swap_total,
             "memory_used_total": memory_used_total,
             "cpu_time_total": cpu_time_total,
             "online_vcpus_total": online_vcpus_total,
         }
         self.set_verbose(data)
+
+    def update_memory_init(self, value: int) -> None:
+        """
+        Update initial memory.
+        """
+        self.set_verbose({"memory_init": value})
 
     def update_memory_max(self, value: int) -> None:
         """
@@ -513,21 +552,14 @@ class Stats:
         memory_max = int(value)
         if memory_max > 0:
             memory_usage_assigned: float | str = "NA"
-            if isinstance(self.memory_assigned, int):
+            if isinstance(self.memory_assigned_max, int):
                 memory_usage_assigned = round(
-                    float(self.memory_assigned / memory_max) * 100, 1
-                )
-            memory_usage_used: float | str = "NA"
-            if isinstance(self.memory_used, int):
-                memory_usage_used = round(
-                    float(self.memory_used / memory_max) * 100, 1
+                    float(self.memory_assigned_max / memory_max) * 100, 1
                 )
         else:
-            memory_usage_used = "NA"
             memory_usage_assigned = "NA"
         data = {
             "memory_max": memory_max,
-            "memory_usage_used": memory_usage_used,
             "memory_usage_assigned": memory_usage_assigned,
         }
         self.set_verbose(data)
@@ -916,15 +948,20 @@ class Screen:
         )
         action_visible = self.actions[action_scroll_start:action_scroll_end]
 
-        memory_used: list[int] = [
-            stats.memory_used_total
+        memory_used_noswap_total: list[int] = [
+            stats.memory_used_noswap_total
             for stats in wanted
-            if isinstance(stats.memory_used_total, int)
+            if isinstance(stats.memory_used_noswap_total, int)
         ]
-        memory_assigned: list[int] = [
-            stats.memory_assigned_total
+        memory_used_swap_total: list[int] = [
+            stats.memory_used_swap_total
             for stats in wanted
-            if isinstance(stats.memory_assigned_total, int)
+            if isinstance(stats.memory_used_swap_total, int)
+        ]
+        memory_assigned_max_total: list[int] = [
+            stats.memory_assigned_max_total
+            for stats in wanted
+            if isinstance(stats.memory_assigned_max_total, int)
         ]
         states = [stats.state for stats in wanted]
 
@@ -1015,7 +1052,11 @@ class Screen:
                             color_attr = self.colors["FG_YELLOW"]
                         elif stats.state != "Running":
                             color_attr = self.colors["FG_RED"]
-                    elif column.percentage and data != "NA":
+                    elif (
+                        column.percentage
+                        and data != "NA"
+                        and column.percentage_intensity
+                    ):
                         if data > max(column.percentage_intensity):
                             color_attr = self.colors["FG_RED"]
                         elif data > min(column.percentage_intensity):
@@ -1044,29 +1085,45 @@ class Screen:
                 line_start += len(content)
 
         memory_total = Stats.host_memory_max
-        sum_memory_used = sum(memory_used)
-        sum_memory_assigned = sum(memory_assigned)
-        pct_memory_used: float | str = "NA"
-        pct_memory_assigned: float | str = "NA"
+        sum_memory_used_noswap = sum(memory_used_noswap_total)
+        sum_memory_used_swap = sum(memory_used_swap_total)
+        sum_memory_assigned_max_total = sum(memory_assigned_max_total)
+        pct_memory_used_noswap: float | str = "NA"
+        pct_memory_used_swap: float | str = "NA"
+        pct_memory_assigned_max_total: float | str = "NA"
         if isinstance(memory_total, int):
-            pct_memory_used = round(sum_memory_used / memory_total * 100, 1)
-            pct_memory_assigned = round(
-                sum_memory_assigned / memory_total * 100, 1
+            pct_memory_used_noswap = round(
+                sum_memory_used_noswap / memory_total * 100, 1
             )
-        header_mem_prefix = "MEM(MiB)"
+            pct_memory_used_swap = round(
+                sum_memory_used_swap / memory_total * 100, 1
+            )
+            pct_memory_assigned_max_total = round(
+                sum_memory_assigned_max_total / memory_total * 100, 1
+            )
+        header_mem_prefix = "Memory"
         total_mem_len = len(str(memory_total))
-        header_mem_total = "{} total".format(memory_total)
-        header_mem_used = "{}({}%) used".format(
-            str(sum_memory_used).rjust(total_mem_len), pct_memory_used
+        header_mem_total = "{}".format(memory_total)
+        header_mem_assigned_max_total = "{}({}%) assigned".format(
+            str(sum_memory_assigned_max_total).rjust(total_mem_len),
+            pct_memory_assigned_max_total,
         )
-        header_mem_assigned = "{}({}%) assigned".format(
-            str(sum_memory_assigned).rjust(total_mem_len), pct_memory_assigned
+        header_mem_used_noswap = "{}({}%) used".format(
+            str(sum_memory_used_noswap).rjust(total_mem_len),
+            pct_memory_used_noswap,
         )
-        header_mem_suffix = ": {}, {}, {}".format(
+        header_mem_used_swap = "{}({}%) swap".format(
+            str(sum_memory_used_swap).rjust(total_mem_len),
+            pct_memory_used_swap,
+        )
+        header_mem_suffix = ": "
+        header_mem_values = [
             header_mem_total,
-            header_mem_assigned,
-            header_mem_used,
-        )
+            header_mem_assigned_max_total,
+            header_mem_used_noswap,
+            header_mem_used_swap,
+        ]
+        header_mem_suffix += ", ".join(header_mem_values)
 
         state_counts = Counter(states)
         total_states = len(states)
@@ -1168,9 +1225,9 @@ class Screen:
         )
         if post_headers:
             post_headers += " "
-        self.log.debug("draw-header-pre=%s", pre_headers)
-        self.log.debug("draw-header-sorted=%s", sorted_header)
-        self.log.debug("draw-header-post=%s", post_headers)
+        self.log.debug("draw-header-pre=%r", pre_headers)
+        self.log.debug("draw-header-sorted=%r", sorted_header)
+        self.log.debug("draw-header-post=%r", post_headers)
         header_start = 0
         if action_headers:
             self.write(
@@ -1805,6 +1862,9 @@ class Monitor:
         if name == "maxmem":
             item.update_memory_max(value=newvalue)
             return
+        if name == "memory":
+            item.update_memory_init(value=newvalue)
+            return
         if name == "label":
             newvalue = self.screen.init_label(label=newvalue)
         item.update_generic(name=name, value=newvalue)
@@ -1870,6 +1930,7 @@ class Monitor:
             ("domain-add", self.add_domain),
             ("domain-delete", self.remove_domain),
             ("property-set:maxmem", self.set_generic),
+            ("property-set:memory", self.set_generic),
             ("property-set:label", self.set_generic),
             ("property-set:auto_cleanup", self.set_generic),
             ("property-reset:is_preload", self.set_generic),
@@ -1905,6 +1966,8 @@ class Column:
         self,
         width: int | Callable,
         header: str,
+        internal: bool = False,
+        total: bool = False,
         machine_header: str = "",
         doc: str | None = None,
         right_justify: bool = True,
@@ -1912,6 +1975,8 @@ class Column:
         percentage_intensity: list[int] | None = None,
     ):
         # pylint: disable=too-many-positional-arguments
+        self.internal = internal
+        self.total = total
         self.percentage = percentage
         if percentage_intensity is None:
             self.percentage_intensity = [75, 50]
@@ -2005,7 +2070,7 @@ class _HelpFormatsAction(Action):
             )
             for fmt, columns in FORMATS.items()
         )
-        print(text)
+        print(text, end="")
         sys_exit(0)
 
 
@@ -2013,6 +2078,7 @@ UNTRUSTED_COLUMN = (
     "This value or part of it is broadcast by the qube, it can be a lie."
 )
 
+# Basic
 Column(
     header="NAME",
     machine_header="name",
@@ -2028,29 +2094,14 @@ Column(
     right_justify=False,
 )
 
+# Totals
 Column(
-    header="MU",
-    machine_header="memory_used",
+    header="MI",
+    machine_header="memory_init",
     width=lambda header: max(len(header), 6),
-    doc="How much memory the qube alleges to use. " + UNTRUSTED_COLUMN,
-)
-Column(
-    header="MSU",
-    machine_header="memory_used_with_swap",
-    width=lambda header: max(len(header), 6),
-    doc="How much memory including swap the qube alleges to use. "
-    + UNTRUSTED_COLUMN,
-)
-Column(
-    header="MS",
-    machine_header="memory_assigned",
-    width=lambda header: max(len(header), 6),
-    doc="How much memory has been assigned to the qube, including videoram. A "
-    "qube is allowed to claim this amount at any time, and it cannot use more "
-    "memory than what has been assigned to it. When the system is under no "
-    "memory pressure, this value is close to ``MM``, while when the system is"
-    "under memory pressure, the value can be as low as enough for the qube to "
-    "survive.",
+    doc="How much memory the system must reserve for the qube to be able to "
+    "initialize. On non-memory-balanced qubes, this is the maximum amount of "
+    "memory a domain will ever have while it is running.",
 )
 Column(
     header="MM",
@@ -2060,37 +2111,97 @@ Column(
     "is reserved to videoram, while the rest is up to qmemman to balloon up "
     "this qube when there is enough free memory on the host.",
 )
+
 Column(
-    header="MU/MM",
-    machine_header="memory_usage_used",
-    width=lambda header: max(len(header), 4),
-    doc="How much memory the qube alleges to use compared to the maximum it can"
-    "use from the system, in percentage.",
-    percentage=True,
+    header="MAMT",
+    machine_header="memory_assigned_max_total",
+    width=lambda header: max(len(header), 6),
+    doc="``MAM`` + ``MAMi``.",
+    total=True,
 )
 Column(
-    header="MS/MM",
+    header="MAUT",
+    machine_header="memory_assigned_usable_total",
+    width=lambda header: max(len(header), 6),
+    doc="``MAU`` + ``MAUi``.",
+    total=True,
+)
+Column(
+    header="MUT",
+    machine_header="memory_used_total",
+    width=lambda header: max(len(header), 6),
+    doc="``MU`` + ``MUi``.",
+    total=True,
+)
+Column(
+    header="CPUsecT",
+    machine_header="cpu_time_total",
+    width=lambda header: max(len(header), 10),
+    doc="``CPUsec`` + ``CPUisec``.",
+    total=True,
+)
+Column(
+    header="VCT",
+    machine_header="online_vcpus_total",
+    width=lambda header: max(len(header), 3),
+    doc="``VC`` + ``VCi``.",
+    total=True,
+)
+
+# Standard
+Column(
+    header="MAM",
+    machine_header="memory_assigned_max",
+    width=lambda header: max(len(header), 6),
+    doc="How much memory has been assigned to the qube, including overhead.",
+)
+Column(
+    header="MAU",
+    machine_header="memory_assigned_usable",
+    width=lambda header: max(len(header), 6),
+    doc="How much memory has been assigned to the qube and can be used. A qube "
+    "is allowed to claim this amount at any time, and it cannot use more memory"
+    " than what has been assigned to it. When the system is under no memory "
+    "pressure, this value is close to ``MM``, while when the system is under "
+    "memory pressure, the value can be as low as enough for the qube to "
+    "survive.",
+)
+Column(
+    header="MU",
+    machine_header="memory_used_noswap",
+    width=lambda header: max(len(header), 6),
+    doc="How much memory the qube alleges to use. " + UNTRUSTED_COLUMN,
+)
+Column(
+    header="MUS",
+    machine_header="memory_used_swap",
+    width=lambda header: max(len(header), 6),
+    doc="How much memory the qube alleges to use for swap. " + UNTRUSTED_COLUMN,
+)
+Column(
+    header="MAM/MM",
     machine_header="memory_usage_assigned",
     width=lambda header: max(len(header), 4),
     doc="How much memory the qube has assigned compared to the maximum it can "
-    "use from the system, in percentage. A high percentage means the system is "
-    "not pressuring the qube to release memory.",
+    "have assigned, in percentage. A high percentage means the system is not "
+    "pressuring the qube to release memory.",
     percentage=True,
+    percentage_intensity=[],
 )
 Column(
-    header="MU/MS",
-    machine_header="memory_usage_used_assigned",
+    header="MU/MAU",
+    machine_header="memory_usage_used",
     width=lambda header: max(len(header), 4),
     doc="How much memory the qube alleges to use from the assigned amount, in "
     "percentage. A high percentage on non-memory-balanced qubes is irrelevant. "
     "On memory balanced qubes, a higher value indicates the qube is using a lot"
-    " of the memory it has assigned, which might be near exhaustion, if ``MS`` "
-    "can't be ballooned up anymore.",
+    " of the memory it has assigned, which might be near exhaustion, if ``MAU``"
+    " can't be ballooned up anymore.",
     percentage=True,
 )
 Column(
-    header="MSU/MU",
-    machine_header="memory_usage_used_with_swap",
+    header="MUS/MU",
+    machine_header="memory_usage_swap_over_used",
     width=lambda header: max(len(header), 6),
     doc="How much memory the qube alleges to be swaping from what it alleges to"
     "use, in percentage. When it is over 10%, the qube might be swaping too "
@@ -2098,11 +2209,10 @@ Column(
     percentage=True,
     percentage_intensity=[30, 10],
 )
-
 Column(
     header="CPUsec",
     machine_header="cpu_time",
-    width=lambda header: max(len(header), 8),
+    width=lambda header: max(len(header), 10),
     doc="How many seconds the qube has used from the CPU.",
 )
 Column(
@@ -2119,23 +2229,34 @@ Column(
     doc="How many Virtual CPUs are online.",
 )
 
+# Internal
 Column(
-    header="MUi",
-    machine_header="memory_used_internal",
+    header="MAMi",
+    machine_header="memory_assigned_max_internal",
     width=lambda header: max(len(header), 6),
-    doc="Same as MU, but internal usage.",
+    doc="Same as ``MAM``, but internal usage.",
+    internal=True,
 )
 Column(
-    header="MSi",
-    machine_header="memory_assigned_internal",
+    header="MAUi",
+    machine_header="memory_assigned_usable_internal",
     width=lambda header: max(len(header), 6),
-    doc="Same as ``MS``, but internal usage.",
+    doc="Same as ``MAU``, but internal usage.",
+    internal=True,
+)
+Column(
+    header="MUi",
+    machine_header="memory_used_noswap_internal",
+    width=lambda header: max(len(header), 6),
+    doc="Same as ``MU``, but internal usage.",
+    internal=True,
 )
 Column(
     header="CPUisec",
     machine_header="cpu_time_internal",
-    width=lambda header: max(len(header), 8),
+    width=lambda header: max(len(header), 10),
     doc="Same as ``CPUsec``, but internal usage.",
+    internal=True,
 )
 Column(
     header="CPUi%",
@@ -2143,54 +2264,43 @@ Column(
     width=lambda header: max(len(header), 4),
     doc="Same as ``CPU%``, but internal usage.",
     percentage=True,
+    internal=True,
 )
 Column(
     header="VCi",
     machine_header="online_vcpus_internal",
     width=lambda header: max(len(header), 3),
     doc="Same as ``VC``, but internal usage.",
+    internal=True,
 )
 
 
-Column(
-    header="MUT",
-    machine_header="memory_used_total",
-    width=lambda header: max(len(header), 6),
-    doc="``MU`` + ``MUi``.",
-)
-Column(
-    header="MST",
-    machine_header="memory_assigned_total",
-    width=lambda header: max(len(header), 6),
-    doc="``MS`` + ``MSi``.",
-)
-Column(
-    header="CPUsecT",
-    machine_header="cpu_time_total",
-    width=lambda header: max(len(header), 8),
-    doc="``CPUsec`` + ``CPUisec``.",
-)
-Column(
-    header="``VCT``",
-    machine_header="online_vcpus_total",
-    width=lambda header: max(len(header), 3),
-    doc="``VC`` + ``VCi``.",
-)
-
-
-FORMATS = {
-    "min": ("name", "state", "memory_usage_used", "cpu_usage"),
-    "default": (
+FORMATS: dict[str, list[str]] = {
+    "min": ["name", "state", "memory_usage_used", "cpu_usage"],
+    "default": [
         "name",
         "state",
-        "memory_used",
-        "memory_max",
+        "memory_assigned_usable",
+        "memory_used_noswap",
+        "memory_used_swap",
         "memory_usage_used",
-        "cpu_usage",
         "online_vcpus",
-    ),
+        "cpu_usage",
+    ],
     "max-no-internal": [
-        k for k in list(Column.columns.keys()) if not k.endswith("_internal")
+        machine_header
+        for machine_header, column in list(Column.columns.items())
+        if not column.internal
+    ],
+    "max-no-total": [
+        machine_header
+        for machine_header, column in list(Column.columns.items())
+        if not column.total
+    ],
+    "max-no-total-no-internal": [
+        machine_header
+        for machine_header, column in list(Column.columns.items())
+        if not column.internal and not column.total
     ],
     "max": list(Column.columns.keys()),
 }
@@ -2277,14 +2387,11 @@ async def run_async(args) -> int:
     """
     if args.columns:
         user_columns = [col.strip() for col in args.columns.split(",")]
-        columns = {col: Column.columns[col] for col in user_columns}
+    elif args.format:
+        user_columns = [col.strip() for col in FORMATS[args.format]]
     else:
-        columns = {
-            machine_header: col
-            for machine_header, col in Column.columns.items()
-            if (not args.format and machine_header in FORMATS["default"])
-            or (args.format and machine_header in FORMATS[args.format])
-        }
+        user_columns = [col.strip() for col in FORMATS["default"]]
+    columns = {col: Column.columns[col] for col in user_columns}
     sort_column = args.sort_column or None
 
     app = args.app
