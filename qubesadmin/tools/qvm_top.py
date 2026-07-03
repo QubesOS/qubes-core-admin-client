@@ -734,14 +734,14 @@ class Screen:
             )
             self.sel_and_cursor_attr = self.cursor_attr | curses.A_DIM
         else:
-            self.header_summary_attr = curses.A_REVERSE
+            self.header_summary_attr = None
             self.header_attr = curses.A_REVERSE
-            self.header_sel_attr = curses.A_REVERSE
+            self.header_sel_attr = curses.A_REVERSE | curses.A_DIM
             self.footer_attr = curses.A_REVERSE
-            self.footer_sel_attr = curses.A_REVERSE
-            self.sel_attr = curses.A_REVERSE
+            self.footer_sel_attr = curses.A_REVERSE | curses.A_DIM
+            self.sel_attr = curses.A_DIM
             self.cursor_attr = curses.A_REVERSE
-            self.sel_and_cursor_attr = curses.A_REVERSE
+            self.sel_and_cursor_attr = curses.A_REVERSE | curses.A_DIM
         curses.noecho()
         curses.cbreak()
         curses.nonl()
