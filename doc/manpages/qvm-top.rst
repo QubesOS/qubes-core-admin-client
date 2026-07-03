@@ -191,6 +191,31 @@ Interaction - Execution
 
    Quit action mode.
 
+Headers
+-------
+
+.. option:: qvm-top
+
+   The clock shows the last time the screen was refreshed.
+
+.. option:: Domains
+
+   Indicates the state of all filtered qubes, and if there are any selected
+   qube.
+
+.. option:: Memory
+
+   - Host indicators:
+
+      - ``total``: How much memory the host has.
+      - ``assigned``: How much memory is made available from the host to the
+        domains.
+
+   - Domain indicators (qubes can lie):
+
+      - ``used``: How much memory the domains allege to use.
+      - ``swap``: How much swap the the domains allege to do.
+
 Columns
 -------
 
@@ -205,37 +230,78 @@ necessary.
 
    Qube's power state.
 
-.. option:: memory_used -> MU
+.. option:: memory_init -> MI
 
-   How much memory the qube alleges to use. This value or part of it is broadcast by the qube, it can be a lie.
-
-.. option:: memory_used_with_swap -> MSU
-
-   How much memory including swap the qube alleges to use. This value or part of it is broadcast by the qube, it can be a lie.
-
-.. option:: memory_assigned -> MS
-
-   How much memory has been assigned to the qube, including videoram. A qube is allowed to claim this amount at any time, and it cannot use more memory than what has been assigned to it. When the system is under no memory pressure, this value is close to ``MM``, while when the system isunder memory pressure, the value can be as low as enough for the qube to survive.
+   How much memory the system must reserve for the qube to be able to
+   initialize. On non-memory-balanced qubes, this is the maximum amount of
+   memory a domain will ever have while it is running.
 
 .. option:: memory_max -> MM
 
-   How much memory the qube can use from the system. Part of this value is reserved to videoram, while the rest is up to qmemman to balloon up this qube when there is enough free memory on the host.
+   How much memory the qube can use from the system. Part of this value is
+   reserved to videoram, while the rest is up to qmemman to balloon up this qube
+   when there is enough free memory on the host.
 
-.. option:: memory_usage_used -> MU/MM
+.. option:: memory_assigned_max_total -> MAMT
 
-   How much memory the qube alleges to use compared to the maximum it canuse from the system, in percentage.
+   ``MAM`` + ``MAMi``.
 
-.. option:: memory_usage_assigned -> MS/MM
+.. option:: memory_assigned_usable_total -> MAUT
 
-   How much memory the qube has assigned compared to the maximum it can use from the system, in percentage. A high percentage means the system is not pressuring the qube to release memory.
+   ``MAU`` + ``MAUi``.
 
-.. option:: memory_usage_used_assigned -> MU/MS
+.. option:: memory_used_total -> MUT
 
-   How much memory the qube alleges to use from the assigned amount, in percentage. A high percentage on non-memory-balanced qubes is irrelevant. On memory balanced qubes, a higher value indicates the qube is using a lot of the memory it has assigned, which might be near exhaustion, if ``MS`` can't be ballooned up anymore.
+   ``MU`` + ``MUi``.
 
-.. option:: memory_usage_used_with_swap -> MSU/MU
+.. option:: cpu_time_total -> CPUsecT
 
-   How much memory the qube alleges to be swaping from what it alleges touse, in percentage. When it is over 10%, the qube might be swaping too much.
+   ``CPUsec`` + ``CPUisec``.
+
+.. option:: online_vcpus_total -> VCT
+
+   ``VC`` + ``VCi``.
+
+.. option:: memory_assigned_max -> MAM
+
+   How much memory has been assigned to the qube, including overhead.
+
+.. option:: memory_assigned_usable -> MAU
+
+   How much memory has been assigned to the qube and can be used. A qube is
+   allowed to claim this amount at any time, and it cannot use more memory than
+   what has been assigned to it. When the system is under no memory pressure,
+   this value is close to ``MM``, while when the system is under memory
+   pressure, the value can be as low as enough for the qube to survive.
+
+.. option:: memory_used_noswap -> MU
+
+   How much memory the qube alleges to use. This value or part of it is
+   broadcast by the qube, it can be a lie.
+
+.. option:: memory_used_swap -> MUS
+
+   How much memory the qube alleges to use for swap. This value or part of it is
+   broadcast by the qube, it can be a lie.
+
+.. option:: memory_usage_assigned -> MAM/MM
+
+   How much memory the qube has assigned compared to the maximum it can have
+   assigned, in percentage. A high percentage means the system is not pressuring
+   the qube to release memory.
+
+.. option:: memory_usage_used -> MU/MAU
+
+   How much memory the qube alleges to use from the assigned amount, in
+   percentage. A high percentage on non-memory-balanced qubes is irrelevant. On
+   memory balanced qubes, a higher value indicates the qube is using a lot of
+   the memory it has assigned, which might be near exhaustion, if ``MAU`` can't
+   be ballooned up anymore.
+
+.. option:: memory_usage_swap_over_used -> MUS/MU
+
+   How much memory the qube alleges to be swaping from what it alleges touse, in
+   percentage. When it is over 10%, the qube might be swaping too much.
 
 .. option:: cpu_time -> CPUsec
 
@@ -249,13 +315,17 @@ necessary.
 
    How many Virtual CPUs are online.
 
-.. option:: memory_used_internal -> MUi
+.. option:: memory_assigned_max_internal -> MAMi
 
-   Same as MU, but internal usage.
+   Same as ``MAM``, but internal usage.
 
-.. option:: memory_assigned_internal -> MSi
+.. option:: memory_assigned_usable_internal -> MAUi
 
-   Same as ``MS``, but internal usage.
+   Same as ``MAU``, but internal usage.
+
+.. option:: memory_used_noswap_internal -> MUi
+
+   Same as ``MU``, but internal usage.
 
 .. option:: cpu_time_internal -> CPUisec
 
@@ -268,28 +338,6 @@ necessary.
 .. option:: online_vcpus_internal -> VCi
 
    Same as ``VC``, but internal usage.
-
-.. option:: memory_used_total -> MUT
-
-   ``MU`` + ``MUi``.
-
-.. option:: memory_assigned_total -> MST
-
-   ``MS`` + ``MSi``.
-
-.. option:: cpu_time_total -> CPUsecT
-
-   ``CPUsec`` + ``CPUisec``.
-
-.. option:: online_vcpus_total -> VCT
-
-   ``VC`` + ``VCi``.
-
-Notes
------
-
-The clock shows the last time the screen was refreshed. It only happens when
-information is outdated.
 
 Authors
 -------
