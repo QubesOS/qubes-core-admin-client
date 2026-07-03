@@ -211,9 +211,11 @@ UNICODE = bool("utf-8" in environ.get("LC_ALL", "").lower())
 if UNICODE:
     SORT_SIGN_UP = "\u2193"
     SORT_SIGN_DOWN = "\u2191"
+    ELLIPSIS = "\u2026"
 else:
     SORT_SIGN_UP = "^"
     SORT_SIGN_DOWN = "v"
+    ELLIPSIS = "..."
 
 
 def convert_html_color_to_curses(hexadecimal: str):
@@ -1021,9 +1023,16 @@ class Screen:
                     elif data == "NA":
                         color_attr = self.label_colors["gray"]
                 if column.right_justify:
-                    content = str(data).rjust(column.width)
+                    if len(str(data)) > column.width:
+                        # Either a programming error when setting column width
+                        # or the domain is lying about this value and it's
+                        # better to not show it, as it exceeded our
+                        # expectations.
+                        content = ELLIPSIS.rjust(column.width)
+                    else:
+                        content = str(data).rjust(column.width)
                 else:
-                    content = data.ljust(column.width)
+                    content = data.ljust(column.width)[: column.width]
                 content += " "
                 self.write(
                     curr_height,
@@ -2041,7 +2050,7 @@ Column(
     "memory than what has been assigned to it. When the system is under no "
     "memory pressure, this value is close to ``MM``, while when the system is"
     "under memory pressure, the value can be as low as enough for the qube to "
-    "survive."
+    "survive.",
 )
 Column(
     header="MM",
@@ -2049,7 +2058,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="How much memory the qube can use from the system. Part of this value "
     "is reserved to videoram, while the rest is up to qmemman to balloon up "
-    "this qube when there is enough free memory on the host."
+    "this qube when there is enough free memory on the host.",
 )
 Column(
     header="MU/MM",
