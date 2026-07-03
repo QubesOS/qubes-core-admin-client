@@ -134,6 +134,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_030_resize(self):
+        self.expect_info()
         self.app.expected_calls[
             ('test-vm', 'admin.vm.volume.Resize', 'volname', b'2048')] = \
             b'0\x00'

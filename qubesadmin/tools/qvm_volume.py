@@ -248,14 +248,7 @@ def resize_volumes(args):
     """
     volume = args.volume
     size = qubesadmin.utils.parse_size(args.size)
-    if not args.force and size < volume.size:
-        raise qubesadmin.exc.StoragePoolException(
-            'For your own safety, shrinking of %s is'
-            ' disabled (%d < %d). If you really know what you'
-            ' are doing, resize filesystem manually first, then use `-f` '
-            'option.' %
-            (volume.name, size, volume.size))
-    volume.resize(size)
+    volume.resize(size, allow_shrink=args.force)
 
 
 def init_list_parser(sub_parsers):

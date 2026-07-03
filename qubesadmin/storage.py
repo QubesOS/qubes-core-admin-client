@@ -264,11 +264,24 @@ class Volume:
         assert self._info is not None
         return self._info.get('is_outdated', False) == 'True'
 
-    def resize(self, size: object) -> None:
+    def resize(self, size: object, *, allow_shrink: bool=False) -> None:
         """Resize volume.
 
         :param int size: new size in bytes.
         """
+
+        if not allow_shrink:
+            current_size = self.size
+            if size < current_size:
+                vol_str = self.vm + ":" + self.name
+                raise qubesadmin.exc.StoragePoolException(
+                    f"Refusing to shrink volume {vol_str}"
+                    f" from {current_size} to {size} bytes.\n"
+                    f"If you really know what you are doing:"
+                    f" Manually shrink the filesystem on the volume first,"
+                    f" and repartition the volume if it is partitioned."
+                    f" Do this in a VM, not in dom0."
+                    f" Then use 'qvm-volume resize --force {vol_str} {size}'")
         self._qubesd_call('Resize', str(size).encode('ascii'))
 
     @property
