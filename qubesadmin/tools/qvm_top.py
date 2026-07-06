@@ -216,6 +216,7 @@ else:
     SORT_SIGN_UP = "^"
     SORT_SIGN_DOWN = "v"
     ELLIPSIS = "..."
+UNTRUSTED_NUMBER_MAX_LEN = 20
 
 
 def convert_html_color_to_curses(hexadecimal: str):
@@ -618,7 +619,6 @@ class Screen:
         self.log = gen_logger(f"{self.__class__.__qualname__}")
         self.getch_timeout = 1000
         self.version: str = metadata("qubesadmin")["version"]
-        self.headers = " ".join(col.header for col in self.columns.values())
 
         self.selected_stats: list[Stats] = []
         self._stats: list[Stats] | None = None
@@ -627,6 +627,7 @@ class Screen:
         self.old_cursor_row = 0
         self.visible_stats: dict[int, Stats] = {}
         self.visible_actions: dict[int, str] = {}
+        self.column_width: dict[str, int] = {}
         self.act = False
         self.actions: list[str] = []
         self.label_index = 0
@@ -1003,6 +1004,9 @@ class Screen:
         ):
             self.cursor_row = self.body_top
 
+        line_content: dict[str, dict[int, tuple]] = {}
+        line_start_after_action = 0
+
         for row_index in range(self.body_height):
             line_start = 0
             curr_height = self.body_top + row_index
@@ -1033,7 +1037,16 @@ class Screen:
                     max_width=width - line_start,
                 )
                 line_start += 1
+                line_start_after_action = line_start
             if row_index >= len(visible):
+                if row_index not in wanted:
+                    continue
+                for column in self.columns.values():
+                    stats = wanted[row_index]
+                    data = getattr(stats, column.machine_header.lower())
+                    line_content.setdefault(
+                        column.machine_header, {}
+                    ).setdefault(curr_height, (data, None))
                 continue
             stats = self.visible_stats[curr_height]
             sel_attr = None
@@ -1082,41 +1095,75 @@ class Screen:
                             color_attr = self.colors["FG_YELLOW"]
                     elif data == "NA":
                         color_attr = self.label_colors["gray"]
-                if column.right_justify:
-                    if len(str(data)) > column.width:
-                        # Either a programming error when setting column width
-                        # or the domain is lying about this value and it's
-                        # better to not show it, as it exceeded our
-                        # expectations.
-                        content = ELLIPSIS.rjust(column.width)
-                    else:
-                        content = str(data).rjust(column.width)
-                else:
-                    content = data.ljust(column.width)[: column.width]
+
+                line_content.setdefault(column.machine_header, {}).setdefault(
+                    curr_height, (data, sel_attr or color_attr)
+                )
+
+        del column
+
+        self.column_width = {}
+        col_line_start: dict[int, int] = {}
+        for machine_header, column in self.columns.items():
+            self.column_width[machine_header] = 0
+            header_sum = 0
+            if machine_header in sums:
+                header_sum = sum(sums[machine_header])
+                header_sum_len = len(str(header_sum))
+                if not column.untrusted or (
+                    column.untrusted
+                    and header_sum_len <= UNTRUSTED_NUMBER_MAX_LEN
+                ):
+                    self.column_width[machine_header] = header_sum_len
+
+            if machine_header not in line_content:
+                continue
+
+            for curr_height, height_data in line_content[
+                machine_header
+            ].items():
+                col_line_start.setdefault(curr_height, line_start_after_action)
+                col_width = len(str(height_data[0]))
+                if col_width > self.column_width[machine_header]:
+                    self.column_width[machine_header] = col_width
+
+            for curr_height, height_data in line_content[
+                machine_header
+            ].items():
+                data, data_attr = height_data
+
+                content_str = str(data)
+                curr_width = self.column_width[machine_header]
+                content = column.justify(content_str, curr_width)
+                if (
+                    column.untrusted
+                    and len(content_str) > UNTRUSTED_NUMBER_MAX_LEN
+                ):
+                    content = column.justify(ELLIPSIS, curr_width)
+
                 if column.summable_for_overall:
-                    header_sum = sum(sums[column.machine_header])
-                    if len(str(header_sum)) > column.width:
-                        sum_content = ELLIPSIS.rjust(column.width)
-                    else:
-                        sum_content = str(header_sum).rjust(column.width)
+                    sum_content = column.justify(str(header_sum), curr_width)
                 else:
                     sum_content = " " * len(content)
+
                 content += " "
                 sum_content += " "
                 self.write(
                     sums_row,
-                    line_start,
+                    col_line_start[curr_height],
                     sum_content,
-                    max_width=width - line_start,
+                    max_width=width - col_line_start[curr_height],
                 )
                 self.write(
                     curr_height,
-                    line_start,
+                    col_line_start[curr_height],
                     content,
-                    attr=sel_attr or color_attr,
-                    max_width=width - line_start,
+                    attr=data_attr,
+                    max_width=width - col_line_start[curr_height],
                 )
-                line_start += len(content)
+                col_line_start[curr_height] += (
+                    max(curr_width, column.min_width) + 1
+                )
 
         memory_total = Stats.host_memory_max
         sum_memory_used_noswap = sum(memory_used_noswap_total)
@@ -1196,7 +1243,12 @@ class Screen:
             sort_col_index = self.sort_col_index
         else:
             sort_col_index = 0
-        sorted_header = str(list(self.columns.values())[sort_col_index].header)
+        sorted_col = list(self.columns.values())[sort_col_index]
+        sorted_header = str(
+            sorted_col.justify(
+                sorted_col.header, self.column_width[sorted_col.machine_header]
+            )
+        )
         sorted_header += sort_sign
 
         header_desc_prefix = "qvm-top"
@@ -1270,12 +1322,13 @@ class Screen:
         if self.act and self.actions:
             action_headers = "ACTION".ljust(ACTION_ALL_WIDTHS)
         pre_headers = " ".join(
-            col.header for col in list(self.columns.values())[:sort_col_index]
+            col.justify(col.header, self.column_width[col.machine_header])
+            for col in list(self.columns.values())[:sort_col_index]
         )
         if sort_col_index > 0:
             pre_headers += " "
         post_headers = " ".join(
-            col.header
+            col.justify(col.header, self.column_width[col.machine_header])
             for col in list(self.columns.values())[sort_col_index + 1 :]
         )
         if post_headers:
@@ -1327,8 +1380,11 @@ class Screen:
                 max_width=width - header_start,
                 attr=self.header_attr,
             )
+            header_end = header_start + len(post_headers)
+        else:
+            header_end = header_start
 
-        current_headers_len = len(self.headers) + len(sort_sign)
+        current_headers_len = header_end
         if self.actions:
             current_headers_len += len(action_headers)
         filter_prefix = "Filter: "
@@ -1691,7 +1747,8 @@ class Screen:
         pos = 0
         # The +1 is to consider space between columns.
         for i, width in enumerate(
-            col.width + 1 for col in self.columns.values()
+            max(column.min_width, self.column_width[machine_header]) + 1
+            for machine_header, column in self.columns.items()
         ):
             if pos <= col < pos + width:
                 return i
@@ -2019,8 +2076,8 @@ class Column:
 
     def __init__(
         self,
-        width: int | Callable,
         header: str,
+        min_width: int | Callable = 0,
         internal: bool = False,
         total: bool = False,
         machine_header: str = "",
@@ -2029,30 +2086,34 @@ class Column:
         percentage: bool = False,
         percentage_intensity: list[int] | None = None,
         summable_for_overall: bool = False,
+        untrusted: bool = False,
     ):
         # pylint: disable=too-many-positional-arguments
         self.internal = internal
         self.total = total
         self.percentage = percentage
         self.summable_for_overall = summable_for_overall
+        self.untrusted = untrusted
         if percentage_intensity is None:
             self.percentage_intensity = [75, 50]
         else:
             self.percentage_intensity = percentage_intensity
         self.__doc__ = doc
-        if isinstance(width, int):
-            self.width = width
-        else:
-            self.width = width(header)
-        self.right_justify = right_justify
-        if self.right_justify:
-            self.header = header.rjust(self.width)
-        else:
-            self.header = header.ljust(self.width)
+
+        self.header = header
         if machine_header:
             self.machine_header = machine_header
         else:
             self.machine_header = self.header.strip()
+        if isinstance(min_width, int):
+            self.min_width = min_width
+        else:
+            self.min_width = min_width(header)
+        self.min_width = max(self.min_width, len(header))
+        if right_justify:
+            self.justify = lambda x, w: x.rjust(max(w, self.min_width))
+        else:
+            self.justify = lambda x, w: x.ljust(max(w, self.min_width))
         self.columns[self.machine_header] = self
 
 
@@ -2139,14 +2200,14 @@ UNTRUSTED_COLUMN = (
 Column(
     header="NAME",
     machine_header="name",
-    width=31,
+    min_width=31,
     doc="Qube's name.",
     right_justify=False,
 )
 Column(
     header="STATE",
     machine_header="state",
-    width=max(len(state) for state in POWER_STATES),
+    min_width=max(len(state) for state in POWER_STATES),
     doc="Qube's power state.",
     right_justify=False,
 )
@@ -2155,7 +2216,7 @@ Column(
 Column(
     header="MI",
     machine_header="memory_init",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the system must reserve for the qube to be able to "
     "initialize. On non-memory-balanced qubes, this is the maximum amount of "
     "memory a domain will ever have while it is running.",
@@ -2163,7 +2224,7 @@ Column(
 Column(
     header="MM",
     machine_header="memory_max",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the qube can use from the system. Part of this value "
     "is reserved to videoram, while the rest is up to qmemman to balloon up "
     "this qube when there is enough free memory on the host.",
@@ -2172,7 +2233,7 @@ Column(
 Column(
     header="MAMT",
     machine_header="memory_assigned_max_total",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="``MAM`` + ``MAMi``.",
     total=True,
     summable_for_overall=True,
@@ -2180,7 +2241,7 @@ Column(
 Column(
     header="MAUT",
     machine_header="memory_assigned_usable_total",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="``MAU`` + ``MAUi``.",
     total=True,
     summable_for_overall=True,
@@ -2188,7 +2249,7 @@ Column(
 Column(
     header="MUT",
     machine_header="memory_used_total",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="``MU`` + ``MUi``.",
     total=True,
     summable_for_overall=True,
@@ -2196,7 +2257,6 @@ Column(
 Column(
     header="CPUsecT",
     machine_header="cpu_time_total",
-    width=lambda header: max(len(header), 10),
     doc="``CPUsec`` + ``CPUisec``.",
     total=True,
     summable_for_overall=True,
@@ -2204,7 +2264,7 @@ Column(
 Column(
     header="VCT",
     machine_header="online_vcpus_total",
-    width=lambda header: max(len(header), 3),
+    min_width=lambda header: max(len(header), 3),
     doc="``VC`` + ``VCi``.",
     total=True,
     summable_for_overall=True,
@@ -2214,14 +2274,14 @@ Column(
 Column(
     header="MAM",
     machine_header="memory_assigned_max",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory has been assigned to the qube, including overhead.",
     summable_for_overall=True,
 )
 Column(
     header="MAU",
     machine_header="memory_assigned_usable",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory has been assigned to the qube and can be used. A qube "
     "is allowed to claim this amount at any time, and it cannot use more memory"
     " than what has been assigned to it. When the system is under no memory "
@@ -2233,21 +2293,23 @@ Column(
 Column(
     header="MU",
     machine_header="memory_used_noswap",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the qube alleges to use. " + UNTRUSTED_COLUMN,
     summable_for_overall=True,
+    untrusted=True,
 )
 Column(
     header="MUS",
     machine_header="memory_used_swap",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the qube alleges to use for swap. " + UNTRUSTED_COLUMN,
     summable_for_overall=True,
+    untrusted=True,
 )
 Column(
     header="MAM/MM",
     machine_header="memory_usage_assigned",
-    width=lambda header: max(len(header), 4),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the qube has assigned compared to the maximum it can "
     "have assigned, in percentage. A high percentage means the system is not "
     "pressuring the qube to release memory.",
@@ -2257,42 +2319,43 @@ Column(
 Column(
     header="MU/MAU",
     machine_header="memory_usage_used",
-    width=lambda header: max(len(header), 4),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the qube alleges to use from the assigned amount, in "
     "percentage. A high percentage on non-memory-balanced qubes is irrelevant. "
     "On memory balanced qubes, a higher value indicates the qube is using a lot"
     " of the memory it has assigned, which might be near exhaustion, if ``MAU``"
     " can't be ballooned up anymore.",
     percentage=True,
+    untrusted=True,
 )
 Column(
     header="MUS/MU",
     machine_header="memory_usage_swap_over_used",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="How much memory the qube alleges to be swaping from what it alleges to"
     "use, in percentage. When it is over 10%, the qube might be swaping too "
     "much.",
     percentage=True,
     percentage_intensity=[30, 10],
+    untrusted=True,
 )
 Column(
     header="CPUsec",
     machine_header="cpu_time",
-    width=lambda header: max(len(header), 10),
     doc="How many seconds the qube has used from the CPU.",
     summable_for_overall=True,
 )
 Column(
     header="CPU%",
     machine_header="cpu_usage",
-    width=lambda header: max(len(header), 4),
+    min_width=lambda header: max(len(header), 5),
     doc="How much CPU the qube is using, in percentage.",
     percentage=True,
 )
 Column(
     header="VC",
     machine_header="online_vcpus",
-    width=lambda header: max(len(header), 3),
+    min_width=lambda header: max(len(header), 3),
     doc="How many Virtual CPUs are online.",
     summable_for_overall=True,
 )
@@ -2301,7 +2364,7 @@ Column(
 Column(
     header="MAMi",
     machine_header="memory_assigned_max_internal",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="Same as ``MAM``, but internal usage.",
     internal=True,
     summable_for_overall=True,
@@ -2309,7 +2372,7 @@ Column(
 Column(
     header="MAUi",
     machine_header="memory_assigned_usable_internal",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="Same as ``MAU``, but internal usage.",
     internal=True,
     summable_for_overall=True,
@@ -2317,7 +2380,7 @@ Column(
 Column(
     header="MUi",
     machine_header="memory_used_noswap_internal",
-    width=lambda header: max(len(header), 6),
+    min_width=lambda header: max(len(header), 5),
     doc="Same as ``MU``, but internal usage.",
     internal=True,
     summable_for_overall=True,
@@ -2325,7 +2388,6 @@ Column(
 Column(
     header="CPUisec",
     machine_header="cpu_time_internal",
-    width=lambda header: max(len(header), 10),
     doc="Same as ``CPUsec``, but internal usage.",
     internal=True,
     summable_for_overall=True,
@@ -2333,7 +2395,7 @@ Column(
 Column(
     header="CPUi%",
     machine_header="cpu_usage_internal",
-    width=lambda header: max(len(header), 4),
+    min_width=lambda header: max(len(header), 5),
     doc="Same as ``CPU%``, but internal usage.",
     percentage=True,
     internal=True,
@@ -2341,7 +2403,7 @@ Column(
 Column(
     header="VCi",
     machine_header="online_vcpus_internal",
-    width=lambda header: max(len(header), 3),
+    min_width=lambda header: max(len(header), 3),
     doc="Same as ``VC``, but internal usage.",
     internal=True,
     summable_for_overall=True,
