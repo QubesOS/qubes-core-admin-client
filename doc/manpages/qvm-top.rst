@@ -107,11 +107,11 @@ Interaction - Navigation
 
    Scroll half page up or down.
 
-.. option:: Home, ^A
+.. option:: Home, ^A, g
 
    Scroll to the first page.
 
-.. option:: End, ^E
+.. option:: End, ^E, G
 
    Scroll to the last page.
 

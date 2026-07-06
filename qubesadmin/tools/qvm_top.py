@@ -1504,10 +1504,10 @@ class Screen:
         elif char in (curses.KEY_NPAGE, ACK, EOT):
             self.page_scroll(upward=False, half=char == EOT)
 
-        elif char in (curses.KEY_HOME, SOH):
+        elif char in (curses.KEY_HOME, SOH, ord("g")):
             self.scroll_offset = 0
 
-        elif char in (curses.KEY_END, ENQ):
+        elif char in (curses.KEY_END, ENQ, ord("G")):
             self.scroll_offset = self.max_offset
 
         elif char in (FF,):
