@@ -623,7 +623,7 @@ class Screen:
         self.selected_stats: list[Stats] = []
         self._stats: list[Stats] | None = None
 
-        self.header_row = 3
+        self.header_row = 4
         self.old_cursor_row = 0
         self.visible_stats: dict[int, Stats] = {}
         self.visible_actions: dict[int, str] = {}
@@ -926,6 +926,8 @@ class Screen:
         # pylint: disable=too-many-locals,too-many-statements,too-many-branches
         self.stdscr.erase()
         height, width = self.stdscr.getmaxyx()
+        sums_row = self.header_row - 1
+        self.body_top = self.header_row + 1
         self.body_top = self.header_row + 1
         self.body_bottom = height - 1
         self.body_height = max(0, self.body_bottom - self.body_top)
@@ -971,6 +973,16 @@ class Screen:
             if isinstance(stats.memory_assigned_max_total, int)
         ]
         states = [stats.state for stats in wanted]
+        sums: dict[str, list[int]] = {}
+        for machine_header, column in self.columns.items():
+            if not column.summable_for_overall:
+                continue
+            sums[machine_header] = [
+                val
+                for stats in wanted
+                if (val := getattr(stats, machine_header, "NA"))
+                and isinstance(val, int)
+            ]
 
         if self.sort_reverse:
             sort_sign = SORT_SIGN_UP
@@ -1081,7 +1093,22 @@ class Screen:
                         content = str(data).rjust(column.width)
                 else:
                     content = data.ljust(column.width)[: column.width]
+                if column.summable_for_overall:
+                    header_sum = sum(sums[column.machine_header])
+                    if len(str(header_sum)) > column.width:
+                        sum_content = ELLIPSIS.rjust(column.width)
+                    else:
+                        sum_content = str(header_sum).rjust(column.width)
+                else:
+                    sum_content = " " * len(content)
                 content += " "
+                sum_content += " "
+                self.write(
+                    sums_row,
+                    line_start,
+                    sum_content,
+                    max_width=width - line_start,
+                )
                 self.write(
                     curr_height,
                     line_start,
@@ -1259,7 +1286,7 @@ class Screen:
         header_start = 0
         if action_headers:
             self.write(
-                3,
+                self.header_row,
                 0,
                 action_headers,
                 max_width=width - header_start,
@@ -1267,14 +1294,14 @@ class Screen:
             )
             header_start += len(action_headers)
             self.write(
-                3,
+                self.header_row,
                 header_start,
                 " ",
                 max_width=width - header_start,
             )
             header_start += 1
         self.write(
-            3,
+            self.header_row,
             header_start,
             pre_headers,
             max_width=width - header_start,
@@ -1284,7 +1311,7 @@ class Screen:
         self.log.debug("pre-sort-start=%s", header_start)
         if header_start < width:
             self.write(
-                3,
+                self.header_row,
                 header_start,
                 sorted_header,
                 max_width=width - header_start,
@@ -1294,7 +1321,7 @@ class Screen:
         self.log.debug("post-sort-start=%s", header_start)
         if len(post_headers.strip()) > 0 and header_start < width:
             self.write(
-                3,
+                self.header_row,
                 header_start,
                 post_headers,
                 max_width=width - header_start,
@@ -2001,11 +2028,13 @@ class Column:
         right_justify: bool = True,
         percentage: bool = False,
         percentage_intensity: list[int] | None = None,
+        summable_for_overall: bool = False,
     ):
         # pylint: disable=too-many-positional-arguments
         self.internal = internal
         self.total = total
         self.percentage = percentage
+        self.summable_for_overall = summable_for_overall
         if percentage_intensity is None:
             self.percentage_intensity = [75, 50]
         else:
@@ -2146,6 +2175,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="``MAM`` + ``MAMi``.",
     total=True,
+    summable_for_overall=True,
 )
 Column(
     header="MAUT",
@@ -2153,6 +2183,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="``MAU`` + ``MAUi``.",
     total=True,
+    summable_for_overall=True,
 )
 Column(
     header="MUT",
@@ -2160,6 +2191,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="``MU`` + ``MUi``.",
     total=True,
+    summable_for_overall=True,
 )
 Column(
     header="CPUsecT",
@@ -2167,6 +2199,7 @@ Column(
     width=lambda header: max(len(header), 10),
     doc="``CPUsec`` + ``CPUisec``.",
     total=True,
+    summable_for_overall=True,
 )
 Column(
     header="VCT",
@@ -2174,6 +2207,7 @@ Column(
     width=lambda header: max(len(header), 3),
     doc="``VC`` + ``VCi``.",
     total=True,
+    summable_for_overall=True,
 )
 
 # Standard
@@ -2182,6 +2216,7 @@ Column(
     machine_header="memory_assigned_max",
     width=lambda header: max(len(header), 6),
     doc="How much memory has been assigned to the qube, including overhead.",
+    summable_for_overall=True,
 )
 Column(
     header="MAU",
@@ -2193,18 +2228,21 @@ Column(
     "pressure, this value is close to ``MM``, while when the system is under "
     "memory pressure, the value can be as low as enough for the qube to "
     "survive.",
+    summable_for_overall=True,
 )
 Column(
     header="MU",
     machine_header="memory_used_noswap",
     width=lambda header: max(len(header), 6),
     doc="How much memory the qube alleges to use. " + UNTRUSTED_COLUMN,
+    summable_for_overall=True,
 )
 Column(
     header="MUS",
     machine_header="memory_used_swap",
     width=lambda header: max(len(header), 6),
     doc="How much memory the qube alleges to use for swap. " + UNTRUSTED_COLUMN,
+    summable_for_overall=True,
 )
 Column(
     header="MAM/MM",
@@ -2242,6 +2280,7 @@ Column(
     machine_header="cpu_time",
     width=lambda header: max(len(header), 10),
     doc="How many seconds the qube has used from the CPU.",
+    summable_for_overall=True,
 )
 Column(
     header="CPU%",
@@ -2255,6 +2294,7 @@ Column(
     machine_header="online_vcpus",
     width=lambda header: max(len(header), 3),
     doc="How many Virtual CPUs are online.",
+    summable_for_overall=True,
 )
 
 # Internal
@@ -2264,6 +2304,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="Same as ``MAM``, but internal usage.",
     internal=True,
+    summable_for_overall=True,
 )
 Column(
     header="MAUi",
@@ -2271,6 +2312,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="Same as ``MAU``, but internal usage.",
     internal=True,
+    summable_for_overall=True,
 )
 Column(
     header="MUi",
@@ -2278,6 +2320,7 @@ Column(
     width=lambda header: max(len(header), 6),
     doc="Same as ``MU``, but internal usage.",
     internal=True,
+    summable_for_overall=True,
 )
 Column(
     header="CPUisec",
@@ -2285,6 +2328,7 @@ Column(
     width=lambda header: max(len(header), 10),
     doc="Same as ``CPUsec``, but internal usage.",
     internal=True,
+    summable_for_overall=True,
 )
 Column(
     header="CPUi%",
@@ -2300,6 +2344,7 @@ Column(
     width=lambda header: max(len(header), 3),
     doc="Same as ``VC``, but internal usage.",
     internal=True,
+    summable_for_overall=True,
 )
 
 
