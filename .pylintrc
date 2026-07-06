@@ -61,10 +61,10 @@ method-rgx=([a-z_][a-z0-9_]{2,60}|assert([A-Z][a-z0-9]*)*)$
 attr-rgx=([a-z_][a-z0-9_]{2,40}|maxDiff)$
 
 # Regular expression which should only match correct argument names
-argument-rgx=[a-z_][a-z0-9_]{2,30}$
+argument-rgx=[a-z_][a-z0-9_]{2,40}$
 
 # Regular expression which should only match correct variable names
-variable-rgx=[a-z_][a-z0-9_]{2,30}$
+variable-rgx=[a-z_][a-z0-9_]{2,40}$
 
 # Regular expression which should only match correct list comprehension /
 # generator expression variable names
