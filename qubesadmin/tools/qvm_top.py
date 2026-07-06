@@ -1093,7 +1093,11 @@ class Screen:
                             color_attr = self.colors["FG_RED"]
                         elif data > min(column.percentage_intensity):
                             color_attr = self.colors["FG_YELLOW"]
-                    elif data == "NA":
+                        elif isinstance(data, (int, float)) and data == 0:
+                            color_attr = self.label_colors["gray"]
+                    elif data == "NA" or (
+                        isinstance(data, (int, float)) and data == 0
+                    ):
                         color_attr = self.label_colors["gray"]
 
                 line_content.setdefault(column.machine_header, {}).setdefault(
