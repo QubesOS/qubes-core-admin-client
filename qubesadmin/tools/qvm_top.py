@@ -259,7 +259,9 @@ class Stats:
     # pylint: disable=too-many-instance-attributes
 
     outdated_by_removal: list[str] = []
+    host_checked: bool = False
     host_memory_max: int | str = "NA"
+    host_no_cpus: int | str = "NA"
 
     def __init__(self, vm: QubesVM) -> None:
         super().__init__()
@@ -309,8 +311,13 @@ class Stats:
         self.cpu_usage_total: float | str = "NA"
         self.online_vcpus_total: int | str = "NA"
 
-        if self.__class__.host_memory_max == "NA":
-            self.__class__.host_memory_max = int(self.vm.app.maxmem) // 1024
+        if self.__class__.host_checked is False:
+            self.__class__.host_checked = True
+            host_memory_max = getattr(self.vm.app, "maxmem", "NA")
+            if isinstance(host_memory_max, int):
+                host_memory_max = int(host_memory_max) // 1024
+            self.__class__.host_memory_max = host_memory_max
+            self.__class__.host_no_cpus = getattr(self.vm.app, "no_cpus", "NA")
 
     def can_gui(self) -> bool:
         """
@@ -1101,7 +1108,11 @@ class Screen:
             pct_memory_assigned_max_total = round(
                 sum_memory_assigned_max_total / memory_total * 100, 1
             )
-        header_mem_prefix = "Memory"
+
+        no_cpus = Stats.host_no_cpus
+        header_cpu_prefix = "  CPUs"
+        header_cpu_suffix = ": {}".format(no_cpus)
+        header_mem_prefix = "Mem"
         total_mem_len = len(str(memory_total))
         header_mem_total = "{}".format(memory_total)
         header_mem_assigned_max_total = "{}({}%) assigned".format(
@@ -1197,6 +1208,7 @@ class Screen:
             max_width=width - len(header_dom_prefix),
         )
 
+        header_resources_start = 0
         self.write(
             2,
             0,
@@ -1204,11 +1216,27 @@ class Screen:
             max_width=width,
             attr=self.header_summary_attr,
         )
+        header_resources_start += len(header_mem_prefix)
         self.write(
             2,
-            len(header_mem_prefix),
+            header_resources_start,
             header_mem_suffix,
-            max_width=width - len(header_mem_prefix),
+            max_width=width - header_resources_start,
+        )
+        header_resources_start += len(header_mem_suffix)
+        self.write(
+            2,
+            header_resources_start,
+            header_cpu_prefix,
+            max_width=width - header_resources_start,
+            attr=self.header_summary_attr,
+        )
+        header_resources_start += len(header_cpu_prefix)
+        self.write(
+            2,
+            header_resources_start,
+            header_cpu_suffix,
+            max_width=width - header_resources_start,
         )
 
         action_headers = ""

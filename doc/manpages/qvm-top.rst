@@ -216,6 +216,10 @@ Headers
       - ``used``: How much memory the domains allege to use.
       - ``swap``: How much swap the the domains allege to do.
 
+.. option:: CPUs
+
+   How many cores the CPU has.
+
 Columns
 -------
 
