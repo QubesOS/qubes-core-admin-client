@@ -264,7 +264,7 @@ class Volume:
         assert self._info is not None
         return self._info.get('is_outdated', False) == 'True'
 
-    def resize(self, size: object, *, allow_shrink: bool=False) -> None:
+    def resize(self, size: int, *, allow_shrink: bool=False) -> None:
         """Resize volume.
 
         :param int size: new size in bytes.
