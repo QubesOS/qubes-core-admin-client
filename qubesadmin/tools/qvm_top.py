@@ -1028,6 +1028,13 @@ class Screen:
             and self.cursor_row > len(self.visible_stats) + self.header_row
         ):
             self.cursor_row = self.body_top
+        elif self.cursor_row == -1:
+            if self.last_selected_stat in visible:
+                self.cursor_row = (
+                    visible.index(self.last_selected_stat) + self.body_top
+                )
+            else:
+                self.cursor_row = self.body_top
 
         line_content: dict[str, dict[int, tuple]] = {}
         line_start_after_action = 0
@@ -1597,7 +1604,7 @@ class Screen:
         Cancel action mode.
         """
         self.act = False
-        self.cursor_row = self.body_top
+        self.cursor_row = -1
 
     def getch(self) -> bool | None:
         """
@@ -1748,6 +1755,9 @@ class Screen:
             if self.get_action_from_selection():
                 self.cursor_row = self.body_top
                 self.act = True
+                return True
+            if self.act:
+                self.act = False
                 return True
 
         elif not self.act and char in (ord("/"),):
