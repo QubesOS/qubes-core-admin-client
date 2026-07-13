@@ -2541,6 +2541,14 @@ parser.add_argument(
     help="filter domains name matching each fixed string separated by comma",
 )
 parser.add_argument(
+    "--thin-columns",
+    action="store_true",
+    default=False,
+    help="Columns will to be as large as the its header or current lengthiest "
+    "data. It is not the default because columns will move every time the "
+    "length of the lengthiest data change.",
+)
+parser.add_argument(
     "--memory-unit",
     action="store",
     choices=MEMORY_UNIT_AVAILABLE,
@@ -2610,6 +2618,10 @@ async def run_async(args) -> int:
     else:
         user_columns = [col.strip() for col in FORMATS["default"]]
     columns = {col: Column.columns[col] for col in user_columns}
+    if args.thin_columns:
+        for col, column in columns.items():
+            columns[col].min_width = len(column.header)
+
     sort_column = args.sort_column or None
 
     app = args.app

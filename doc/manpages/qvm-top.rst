@@ -52,6 +52,12 @@ General Options
 
    Filter domains name matching each fixed string separated by comma.
 
+.. option:: --thin-columns
+
+    Columns will to be as large as the its header or current lengthiest data. It
+    is not the default because columns will move every time the length of the
+    lengthiest data change.
+
 .. option:: --memory-unit UNIT
 
    Unit to use for displaying memory. The digit after the dot is the precision.
