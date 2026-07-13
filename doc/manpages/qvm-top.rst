@@ -52,6 +52,11 @@ General Options
 
    Filter domains name matching each fixed string separated by comma.
 
+.. option:: --memory-unit UNIT
+
+   Unit to use for displaying memory. The digit after the dot is the precision.
+   Available: KiB, MiB, GiB.0, GiB.1, GiB.2, GiB.3.
+
 .. option:: --no-color
 
    Do not colorize the screen. If this option is not provided, but environment
