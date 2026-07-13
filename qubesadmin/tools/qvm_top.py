@@ -217,6 +217,9 @@ else:
     SORT_SIGN_DOWN = "v"
     ELLIPSIS = "..."
 UNTRUSTED_NUMBER_MAX_LEN = 20
+MEMORY_UNIT = "MiB"
+MEMORY_UNIT_PRECISION = 0
+MEMORY_UNIT_AVAILABLE = ["KiB", "MiB", "GiB.0", "GiB.1", "GiB.2", "GiB.3"]
 
 
 def convert_html_color_to_curses(hexadecimal: str):
@@ -252,9 +255,30 @@ def gen_logger(name: str) -> Logger:
     return logger
 
 
+def convert_memory(number: int) -> int | float:
+    """
+    Convert memory data to the expected unit.
+    """
+    precision: int | None = MEMORY_UNIT_PRECISION
+    if precision == 0:
+        precision = None
+    match MEMORY_UNIT:
+        case "KiB":
+            return number
+        case "MiB":
+            return number // 1024
+        case "GiB":
+            return round(float(number / 1024**2), precision)
+        case _:
+            raise ValueError("Unknown MEMORY_UNIT")
+
+
 class Stats:
     """
     Storage qube statistics.
+
+    Memory is always saved in KiB to avoid rounding errors when values are
+    calculated by clients.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -314,9 +338,9 @@ class Stats:
 
         if self.__class__.host_checked is False:
             self.__class__.host_checked = True
-            host_memory_max = getattr(self.vm.app, "maxmem", "NA")
+            host_memory_max: int | str = getattr(self.vm.app, "maxmem", "NA")
             if isinstance(host_memory_max, int):
-                host_memory_max = int(host_memory_max) // 1024
+                host_memory_max = int(host_memory_max) * 1024
             self.__class__.host_memory_max = host_memory_max
             self.__class__.host_no_cpus = getattr(self.vm.app, "no_cpus", "NA")
 
@@ -424,16 +448,18 @@ class Stats:
                 else self.features_default["internal"]
             ),
         }
+        for k in ["memory_init", "memory_max"]:
+            if isinstance(data[k], int):
+                data[k] = data[k] * 1024
+
         self.set_verbose(data)
 
     def update_stats(self, **kwargs: Any) -> None:
         """
         Update memory and CPU statistics.
         """
-        memory_assigned_max = int(kwargs["memory_assigned_max_KiB"]) // 1024
-        memory_assigned_usable = (
-            int(kwargs["memory_assigned_usable_KiB"]) // 1024
-        )
+        memory_assigned_max = int(kwargs["memory_assigned_max_KiB"])
+        memory_assigned_usable = int(kwargs["memory_assigned_usable_KiB"])
         memory_assigned_max_internal = kwargs.get(
             "memory_assigned_max_KiB_internal"
         )
@@ -444,9 +470,7 @@ class Stats:
             memory_assigned_max_internal = "NA"
             memory_assigned_max_total = memory_assigned_max
         else:
-            memory_assigned_max_internal = (
-                int(memory_assigned_max_internal) // 1024
-            )
+            memory_assigned_max_internal = int(memory_assigned_max_internal)
             memory_assigned_max_total = (
                 memory_assigned_max + memory_assigned_max_internal
             )
@@ -454,15 +478,15 @@ class Stats:
             memory_assigned_usable_internal = "NA"
             memory_assigned_usable_total = memory_assigned_usable
         else:
-            memory_assigned_usable_internal = (
-                int(memory_assigned_usable_internal) // 1024
+            memory_assigned_usable_internal = int(
+                memory_assigned_usable_internal
             )
             memory_assigned_usable_total = (
                 memory_assigned_usable + memory_assigned_usable_internal
             )
 
-        memory_used_swap = int(kwargs["memory_used_swap_KiB"]) // 1024
-        memory_used_noswap = int(kwargs["memory_used_noswap_KiB"]) // 1024
+        memory_used_swap = int(kwargs["memory_used_swap_KiB"])
+        memory_used_noswap = int(kwargs["memory_used_noswap_KiB"])
         memory_used_noswap_internal = kwargs.get(
             "memory_used_noswap_KiB_internal"
         )
@@ -470,9 +494,7 @@ class Stats:
             memory_used_noswap_internal = "NA"
             memory_used_noswap_total = memory_used_noswap
         else:
-            memory_used_noswap_internal = (
-                int(memory_used_noswap_internal) // 1024
-            )
+            memory_used_noswap_internal = int(memory_used_noswap_internal)
             memory_used_noswap_total = (
                 memory_used_noswap + memory_used_noswap_internal
             )
@@ -485,9 +507,12 @@ class Stats:
             )
         else:
             memory_usage_assigned = "NA"
-        memory_usage_used: float | str = round(
-            float(memory_used_noswap / memory_assigned_usable) * 100, 1
-        )
+        if memory_assigned_usable > 0:
+            memory_usage_used: float | str = round(
+                float(memory_used_noswap / memory_assigned_usable) * 100, 1
+            )
+        else:
+            memory_usage_used = 0.0
         if memory_used_noswap > 0:
             memory_usage_swap_over_used: float | str = round(
                 float(memory_used_swap / memory_used_noswap) * 100, 1
@@ -551,13 +576,13 @@ class Stats:
         """
         Update initial memory.
         """
-        self.set_verbose({"memory_init": value})
+        self.set_verbose({"memory_init": value * 1024})
 
     def update_memory_max(self, value: int) -> None:
         """
         Update maximum memory and it's related properties.
         """
-        memory_max = int(value)
+        memory_max = int(value) * 1024
         if memory_max > 0:
             memory_usage_assigned: float | str = "NA"
             if isinstance(self.memory_assigned_max, int):
@@ -982,7 +1007,7 @@ class Screen:
                 val
                 for stats in wanted
                 if (val := getattr(stats, machine_header, "NA"))
-                and isinstance(val, int)
+                and isinstance(val, (int, float))
             ]
 
         if self.sort_reverse:
@@ -1100,6 +1125,13 @@ class Screen:
                     ):
                         color_attr = self.label_colors["gray"]
 
+                if (
+                    isinstance(data, int)
+                    and not column.percentage
+                    and column.memory_convertable
+                ):
+                    data = convert_memory(data)
+
                 line_content.setdefault(column.machine_header, {}).setdefault(
                     curr_height, (data, sel_attr or color_attr)
                 )
@@ -1110,10 +1142,18 @@ class Screen:
         col_line_start: dict[int, int] = {}
         for machine_header, column in self.columns.items():
             self.column_width[machine_header] = 0
-            header_sum = 0
+            header_sum: int | float = 0
             if machine_header in sums:
                 header_sum = sum(sums[machine_header])
-                header_sum_len = len(str(header_sum))
+                if column.memory_convertable:
+                    header_sum = convert_memory(header_sum)
+                if not column.percentage and isinstance(header_sum, float):
+                    header_sum_formatted = (
+                        f"{header_sum:.{MEMORY_UNIT_PRECISION}f}"
+                    )
+                else:
+                    header_sum_formatted = str(header_sum)
+                header_sum_len = len(str(header_sum_formatted))
                 if not column.untrusted or (
                     column.untrusted
                     and header_sum_len <= UNTRUSTED_NUMBER_MAX_LEN
@@ -1136,7 +1176,10 @@ class Screen:
             ].items():
                 data, data_attr = height_data
 
-                content_str = str(data)
+                if not column.percentage and isinstance(data, float):
+                    content_str = f"{data:.{MEMORY_UNIT_PRECISION}f}"
+                else:
+                    content_str = str(data)
                 curr_width = self.column_width[machine_header]
                 content = column.justify(content_str, curr_width)
                 if (
@@ -1146,7 +1189,9 @@ class Screen:
                     content = column.justify(ELLIPSIS, curr_width)
 
                 if column.summable_for_overall:
-                    sum_content = column.justify(str(header_sum), curr_width)
+                    sum_content = column.justify(
+                        header_sum_formatted, curr_width
+                    )
                 else:
                     sum_content = " " * len(content)
 
@@ -1170,13 +1215,17 @@ class Screen:
                 )
 
         memory_total = Stats.host_memory_max
-        sum_memory_used_noswap = sum(memory_used_noswap_total)
-        sum_memory_used_swap = sum(memory_used_swap_total)
-        sum_memory_assigned_max_total = sum(memory_assigned_max_total)
+        if isinstance(memory_total, int):
+            memory_total = convert_memory(memory_total)
+        sum_memory_used_noswap = convert_memory(sum(memory_used_noswap_total))
+        sum_memory_used_swap = convert_memory(sum(memory_used_swap_total))
+        sum_memory_assigned_max_total = convert_memory(
+            sum(memory_assigned_max_total)
+        )
         pct_memory_used_noswap: float | str = "NA"
         pct_memory_used_swap: float | str = "NA"
         pct_memory_assigned_max_total: float | str = "NA"
-        if isinstance(memory_total, int):
+        if isinstance(memory_total, (int, float)):
             pct_memory_used_noswap = round(
                 sum_memory_used_noswap / memory_total * 100, 1
             )
@@ -1190,7 +1239,12 @@ class Screen:
         no_cpus = Stats.host_no_cpus
         header_cpu_prefix = "  CPUs"
         header_cpu_suffix = ": {}".format(no_cpus)
-        header_mem_prefix = "Mem"
+        if MEMORY_UNIT_PRECISION == 0:
+            header_mem_prefix = "Mem({})".format(MEMORY_UNIT)
+        else:
+            header_mem_prefix = "Mem({}.{})".format(
+                MEMORY_UNIT, MEMORY_UNIT_PRECISION
+            )
         total_mem_len = len(str(memory_total))
         header_mem_total = "{}".format(memory_total)
         header_mem_assigned_max_total = "{}({}%) assigned".format(
@@ -2091,6 +2145,7 @@ class Column:
         percentage_intensity: list[int] | None = None,
         summable_for_overall: bool = False,
         untrusted: bool = False,
+        memory_convertable: bool = False,
     ):
         # pylint: disable=too-many-positional-arguments
         self.internal = internal
@@ -2098,6 +2153,7 @@ class Column:
         self.percentage = percentage
         self.summable_for_overall = summable_for_overall
         self.untrusted = untrusted
+        self.memory_convertable = memory_convertable
         if percentage_intensity is None:
             self.percentage_intensity = [75, 50]
         else:
@@ -2109,7 +2165,7 @@ class Column:
             self.machine_header = machine_header
         else:
             self.machine_header = self.header.strip()
-        if isinstance(min_width, int):
+        if isinstance(min_width, (int, float)):
             self.min_width = min_width
         else:
             self.min_width = min_width(header)
@@ -2224,6 +2280,7 @@ Column(
     doc="How much memory the system must reserve for the qube to be able to "
     "initialize. On non-memory-balanced qubes, this is the maximum amount of "
     "memory a domain will ever have while it is running.",
+    memory_convertable=True,
 )
 Column(
     header="MM",
@@ -2232,6 +2289,7 @@ Column(
     doc="How much memory the qube can use from the system. Part of this value "
     "is reserved to videoram, while the rest is up to qmemman to balloon up "
     "this qube when there is enough free memory on the host.",
+    memory_convertable=True,
 )
 
 Column(
@@ -2241,6 +2299,7 @@ Column(
     doc="``MAM`` + ``MAMi``.",
     total=True,
     summable_for_overall=True,
+    memory_convertable=True,
 )
 Column(
     header="MAUT",
@@ -2249,6 +2308,7 @@ Column(
     doc="``MAU`` + ``MAUi``.",
     total=True,
     summable_for_overall=True,
+    memory_convertable=True,
 )
 Column(
     header="MUT",
@@ -2257,6 +2317,7 @@ Column(
     doc="``MU`` + ``MUi``.",
     total=True,
     summable_for_overall=True,
+    memory_convertable=True,
 )
 Column(
     header="CPUsecT",
@@ -2281,6 +2342,7 @@ Column(
     min_width=lambda header: max(len(header), 5),
     doc="How much memory has been assigned to the qube, including overhead.",
     summable_for_overall=True,
+    memory_convertable=True,
 )
 Column(
     header="MAU",
@@ -2293,6 +2355,7 @@ Column(
     "memory pressure, the value can be as low as enough for the qube to "
     "survive.",
     summable_for_overall=True,
+    memory_convertable=True,
 )
 Column(
     header="MU",
@@ -2301,6 +2364,7 @@ Column(
     doc="How much memory the qube alleges to use. " + UNTRUSTED_COLUMN,
     summable_for_overall=True,
     untrusted=True,
+    memory_convertable=True,
 )
 Column(
     header="MUS",
@@ -2309,6 +2373,7 @@ Column(
     doc="How much memory the qube alleges to use for swap. " + UNTRUSTED_COLUMN,
     summable_for_overall=True,
     untrusted=True,
+    memory_convertable=True,
 )
 Column(
     header="MAM/MM",
@@ -2475,6 +2540,15 @@ parser.add_argument(
     default="",
     help="filter domains name matching each fixed string separated by comma",
 )
+parser.add_argument(
+    "--memory-unit",
+    action="store",
+    choices=MEMORY_UNIT_AVAILABLE,
+    default=MEMORY_UNIT,
+    metavar="UNIT",
+    help="Unit to use for displaying memory. The digit after the dot is the "
+    "precision. Available: " + ", ".join(MEMORY_UNIT_AVAILABLE),
+)
 
 parser_format = parser.add_argument_group(title="formatting options")
 parser_format_exclusive = parser_format.add_mutually_exclusive_group()
@@ -2524,6 +2598,11 @@ async def run_async(args) -> int:
     """
     Dispatch events, display statistics and wait for exit.
     """
+    global MEMORY_UNIT  # pylint: disable=global-statement
+    global MEMORY_UNIT_PRECISION  # pylint: disable=global-statement
+    MEMORY_UNIT = args.memory_unit.split(".")[0]
+    if "." in args.memory_unit:
+        MEMORY_UNIT_PRECISION = int(args.memory_unit.split(".")[1])
     if args.columns:
         user_columns = [col.strip() for col in args.columns.split(",")]
     elif args.format:
