@@ -889,7 +889,12 @@ class Screen:
             [
                 stats
                 for stats in Monitor.entries.values()
-                if (self.show_halted or stats.state != "Halted")
+                if (
+                    self.show_halted
+                    or (
+                        stats.state != "Halted" and stats.vm.klass != "RemoteVM"
+                    )
+                )
                 and stats.vm in Monitor.domains
                 and (
                     (not self.filter_query and not self.filter)
