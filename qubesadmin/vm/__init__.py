@@ -44,17 +44,17 @@ if typing.TYPE_CHECKING:
 # ["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
 # but can be extended
 Klass = str
-POWER_STATES = [
-    "Running",
-    "Starting",
-    "Transient",
-    "Paused",
-    "Suspended",
-    "Halting",
-    "Halted",
-    "Crashed",
-    "NA"
-]
+POWER_STATES = {
+    "Running": {"short": "r"},
+    "Starting": {"short": "S"},
+    "Transient": {"short": "S"},
+    "Paused": {"short": "p"},
+    "Suspended": {"short": "s"},
+    "Halting": {"short": "H"},
+    "Halted": {"short": "h"},
+    "Crashed": {"short": "c"},
+    "NA": {"short": "-"},
+}
 PowerState = Literal[POWER_STATES]
 
 
