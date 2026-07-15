@@ -44,8 +44,9 @@ if typing.TYPE_CHECKING:
 # ["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
 # but can be extended
 Klass = str
-PowerState = Literal["Transient", "Running", "Halted", "Paused",
-"Suspended", "Halting", "Crashed", "NA"]
+POWER_STATES = ["Running", "Transient", "Paused", "Suspended", "Halting",
+                "Halted", "Crashed", "NA"]
+PowerState = Literal[POWER_STATES]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
