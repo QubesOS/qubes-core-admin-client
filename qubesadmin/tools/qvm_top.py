@@ -630,6 +630,7 @@ class Screen:
         sort_reverse: bool,
         sort_col_index: int | None,
         columns: dict[str, "Column"],
+        thin_columns: bool,
     ):
         # pylint: disable=too-many-positional-arguments
         self.allow_color = allow_color
@@ -640,6 +641,7 @@ class Screen:
         self.sort_reverse = sort_reverse
         self.sort_col_index = sort_col_index
         self.columns = columns
+        self.thin_columns = thin_columns
 
         self.log = gen_logger(f"{self.__class__.__qualname__}")
         self.getch_timeout = 1000
@@ -1137,7 +1139,9 @@ class Screen:
                     ):
                         color_attr = self.label_colors["gray"]
 
-                if (
+                if attr == "state" and self.thin_columns:
+                    data = POWER_STATES[data]["short"]
+                elif (
                     isinstance(data, int)
                     and not column.percentage
                     and column.memory_convertable
@@ -1226,6 +1230,32 @@ class Screen:
                     max(curr_width, column.min_width) + 1
                 )
 
+        state_counts = Counter(states)
+        total_states = len(states)
+        total_states_len = len(str(total_states))
+        all_states = list(POWER_STATES)
+
+        if self.thin_columns:
+            top_text = "top"
+            domain_text = "D"
+            mem_text = "M"
+            mem_unit = MEMORY_UNIT[0]
+            cpu_text = "C"
+            selected_text = "*"
+            assigned_text = "a"
+            used_text = "u"
+            swap_text = "s"
+        else:
+            top_text = "qvm-top"
+            domain_text = "Domain{}".format("s" if total_states > 0 else "")
+            mem_text = "Mem"
+            mem_unit = MEMORY_UNIT
+            cpu_text = "CPUs"
+            selected_text = "selected"
+            assigned_text = "assigned"
+            used_text = "used"
+            swap_text = "swap"
+
         memory_total = Stats.host_memory_max
         if isinstance(memory_total, int):
             memory_total = convert_memory(memory_total)
@@ -1249,27 +1279,31 @@ class Screen:
             )
 
         no_cpus = Stats.host_no_cpus
-        header_cpu_prefix = "  CPUs"
+        header_cpu_prefix = "  {}".format(cpu_text)
         header_cpu_suffix = ": {}".format(no_cpus)
         if MEMORY_UNIT_PRECISION == 0:
-            header_mem_prefix = "Mem({})".format(MEMORY_UNIT)
+            header_mem_prefix = "{}({})".format(mem_text, mem_unit)
         else:
-            header_mem_prefix = "Mem({}.{})".format(
-                MEMORY_UNIT, MEMORY_UNIT_PRECISION
+            header_mem_prefix = "{}({}.{})".format(
+                mem_text, mem_unit, MEMORY_UNIT_PRECISION
             )
         total_mem_len = len(str(memory_total))
         header_mem_total = "{}".format(memory_total)
-        header_mem_assigned_max_total = "{}({}%) assigned".format(
+
+        header_mem_assigned_max_total = "{}({}%) {}".format(
             str(sum_memory_assigned_max_total).rjust(total_mem_len),
             pct_memory_assigned_max_total,
+            assigned_text,
         )
-        header_mem_used_noswap = "{}({}%) used".format(
+        header_mem_used_noswap = "{}({}%) {}".format(
             str(sum_memory_used_noswap).rjust(total_mem_len),
             pct_memory_used_noswap,
+            used_text,
         )
-        header_mem_used_swap = "{}({}%) swap".format(
+        header_mem_used_swap = "{}({}%) {}".format(
             str(sum_memory_used_swap).rjust(total_mem_len),
             pct_memory_used_swap,
+            swap_text,
         )
         header_mem_suffix = ": "
         header_mem_values = [
@@ -1280,21 +1314,22 @@ class Screen:
         ]
         header_mem_suffix += ", ".join(header_mem_values)
 
-        state_counts = Counter(states)
-        total_states = len(states)
-        total_states_len = len(str(total_states))
-        all_states = list(POWER_STATES)
         state_parts = ["{}".format(total_states)]
         state_parts.append(
-            "({} selected)".format(
-                str(len(self.selected_stats)).rjust(total_states_len)
+            "({} {})".format(
+                str(len(self.selected_stats)).rjust(total_states_len),
+                selected_text,
             )
         )
         for state in all_states:
+            if self.thin_columns:
+                pretty_state = POWER_STATES[state]["short"]
+            else:
+                pretty_state = state.lower() if state != "NA" else "NA"
             state_parts.append(
                 "{} {}".format(
                     str(state_counts.get(state, 0)).rjust(total_states_len),
-                    state.lower() if state != "NA" else "NA",
+                    pretty_state,
                 )
             )
         extra = [state for state in state_counts if state not in all_states]
@@ -1305,7 +1340,7 @@ class Screen:
                     state.lower(),
                 )
             )
-        header_dom_prefix = "Domain{}".format("s" if total_states > 0 else "")
+        header_dom_prefix = domain_text
         header_dom_suffix = ": " + ", ".join(state_parts)
 
         current_time = strftime("%H:%M:%S")
@@ -1321,7 +1356,7 @@ class Screen:
         )
         sorted_header += sort_sign
 
-        header_desc_prefix = "qvm-top"
+        header_desc_prefix = top_text
         header_desc_suffix = f": {self.version} - {current_time}"
         scroll_hint = (
             f"{scroll_start + 1}-{scroll_end}/{total_items}"
@@ -1891,6 +1926,7 @@ class Monitor:
         sort_reverse: bool = False,
         sort_column: str | None = None,
         filter_query: str = "",
+        thin_columns: bool = False,
     ) -> None:
         # pylint: disable=too-many-positional-arguments
         self.app = app
@@ -1909,6 +1945,7 @@ class Monitor:
             sort_reverse=sort_reverse,
             sort_col_index=sort_col_index,
             columns=columns,
+            thin_columns=thin_columns,
         )
         self.log = gen_logger(f"{self.__class__.__qualname__}")
         root_logger = getLogger()
@@ -2150,6 +2187,7 @@ class Column:
     def __init__(
         self,
         header: str,
+        min_header: str | None = None,
         min_width: int | Callable = 0,
         internal: bool = False,
         total: bool = False,
@@ -2169,6 +2207,7 @@ class Column:
         self.summable_for_overall = summable_for_overall
         self.untrusted = untrusted
         self.memory_convertable = memory_convertable
+        self.min_header = min_header
         if percentage_intensity is None:
             self.percentage_intensity = [75, 50]
         else:
@@ -2281,6 +2320,7 @@ Column(
 )
 Column(
     header="STATE",
+    min_header="S",
     machine_header="state",
     min_width=max(len(state) for state in POWER_STATES),
     doc="Qube's power state.",
@@ -2635,6 +2675,8 @@ async def run_async(args) -> int:
     columns = {col: Column.columns[col] for col in user_columns}
     if args.thin_columns:
         for col, column in columns.items():
+            if column.min_header:
+                columns[col].header = column.min_header
             columns[col].min_width = len(column.header)
 
     sort_column = args.sort_column or None
@@ -2655,6 +2697,7 @@ async def run_async(args) -> int:
         columns=columns,
         allow_color=not (args.no_color or NO_COLOR),
         filter_query=args.filter,
+        thin_columns=args.thin_columns,
     )
     tasks = [
         create_task(dispatcher.listen_for_events()),
