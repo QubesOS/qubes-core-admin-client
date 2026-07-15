@@ -816,7 +816,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             power_state = "Running"
 
         elif event == "domain-pre-shutdown":
-            power_state = "Transient"
+            power_state = "Halting"
         elif event == "domain-shutdown-failed":
             power_state = "Running"
         elif event == "domain-shutdown":
