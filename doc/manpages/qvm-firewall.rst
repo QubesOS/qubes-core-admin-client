@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add [--before=*RULE_NUMBER*]   *RULE*
+:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add [--before=*RULE_NUMBER*]   *RULE*  [comment=*comment*]
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* del [--rule-no=*RULE_NUMBER*] [*RULE*]
 
@@ -40,6 +40,12 @@ Options
 .. option:: --version
 
    Show program's version number and exit
+
+
+Comments
+--------
+
+When **adding** a rule free form text comments can be appended using **comment**. 
 
 
 Actions description
