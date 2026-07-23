@@ -2251,26 +2251,38 @@ class _HelpColumnsAction(Action):
         )
 
     def __call__(self, _parser, _namespace, _values, option_string=None):
-        width = max(len(column.header) for column in Column.columns.values())
-        wrapper = TextWrapper(
-            width=800, initial_indent="  ", subsequent_indent=" " * (width + 6)
+        sep = " -> "
+        width = max(
+            len(column.header) + len(sep) + len(column.machine_header)
+            for column in Column.columns.values()
         )
+        text = f"Available columns (machine_header{sep}header   Description):\n"
+        if QUBES_TOP_DEBUG:
+            text += "\n" + "\n".join(
+                ".. option:: {header:{width}s}\n\n   {doc}\n".format(
+                    header=f"{column.machine_header}{sep}{column.header}",
+                    doc=column.__doc__,
+                    width=width,
+                )
+                for column in Column.columns.values()
+            )
 
-        text = (
-            "Available columns (machine_header -> header   Description):\n"
-            + "\n".join(
+        else:
+            wrapper = TextWrapper(
+                width=80,
+                initial_indent="  ",
+                subsequent_indent=" " * (width + 6),
+            )
+            text += "\n".join(
                 wrapper.fill(
                     "{header:{width}s}  {doc}".format(
-                        header="{} -> {}".format(
-                            column.machine_header, column.header.strip()
-                        ),
-                        doc=column.__doc__ or "",
+                        header=f"{column.machine_header}{sep}{column.header}",
+                        doc=column.__doc__,
                         width=width,
                     )
                 )
                 for column in Column.columns.values()
             )
-        )
         print(text)
         sys_exit(0)
 
