@@ -31,8 +31,6 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         super().setUp()
         self.vol = qubesadmin.storage.Volume(self.app, vm='test-vm',
             vm_name='volname')
-        self.pool_vol = qubesadmin.storage.Volume(self.app, pool='test-pool',
-            vid='some-id')
 
     def expect_info(self):
         self.app.expected_calls[
@@ -136,6 +134,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_030_resize(self):
+        self.expect_info()
         self.app.expected_calls[
             ('test-vm', 'admin.vm.volume.Resize', 'volname', b'2048')] = \
             b'0\x00'
@@ -175,7 +174,7 @@ class TestVMVolume(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
 
-class TestPoolVolume(TestVMVolume):
+class TestPoolVolume(qubesadmin.tests.QubesTestCase):
     def setUp(self):
         super().setUp()
         self.vol = qubesadmin.storage.Volume(self.app, pool='test-pool',
@@ -190,29 +189,6 @@ class TestPoolVolume(TestVMVolume):
             b'method_result')
         self.assertAllCalled()
 
-    def expect_info(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.Info', 'test-pool', b'some-id')] = \
-            b'0\x00' \
-            b'pool=test-pool\n' \
-            b'vid=some-id\n' \
-            b'size=1024\n' \
-            b'usage=512\n' \
-            b'rw=True\n' \
-            b'snap_on_start=True\n' \
-            b'save_on_stop=True\n' \
-            b'source=\n' \
-            b'revisions_to_keep=3\n'
-
-    def test_001_fetch_info(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.Info', 'test-pool',
-            b'some-id')] = \
-            b'0\x00prop1=val1\nprop2=val2\n'
-        self.vol._fetch_info()
-        self.assertEqual(self.vol._info, {'prop1': 'val1', 'prop2': 'val2'})
-        self.assertAllCalled()
-
     def test_010_pool(self):
         # this should _not_ produce any api call, as pool is already known
         self.assertEqual(self.vol.pool, 'test-pool')
@@ -222,57 +198,6 @@ class TestPoolVolume(TestVMVolume):
         # this should _not_ produce any api call, as vid is already known
         self.assertEqual(self.vol.vid, 'some-id')
         self.assertAllCalled()
-
-    def test_021_revisions(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.ListSnapshots',
-             'test-pool', b'some-id')] = \
-            b'0\x00' \
-            b'snapid1\n' \
-            b'snapid2\n' \
-            b'snapid3\n'
-        self.assertEqual(self.vol.revisions,
-            ['snapid1', 'snapid2', 'snapid3'])
-        self.assertAllCalled()
-
-    def test_022_revisions_empty(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.ListSnapshots',
-            'test-pool', b'some-id')] = b'0\x00'
-        self.assertEqual(self.vol.revisions, [])
-        self.assertAllCalled()
-
-    def test_030_resize(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.Resize',
-            'test-pool', b'some-id 2048')] = b'0\x00'
-        self.vol.resize(2048)
-        self.assertAllCalled()
-
-    def test_031_revert(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.Revert', 'test-pool',
-            b'some-id snapid1')] = b'0\x00'
-        self.vol.revert('snapid1')
-        self.assertAllCalled()
-
-    def test_040_import_data(self):
-        self.skipTest('admin.pool.volume.Import not supported')
-
-    def test_050_clone(self):
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.CloneFrom', 'test-pool',
-            b'volid')] = b'0\x00abcdef'
-        self.app.expected_calls[
-            ('dom0', 'admin.pool.volume.CloneTo', 'test-pool',
-            b'some-id abcdef')] = b'0\x00'
-        source_vol = qubesadmin.storage.Volume(self.app, pool='test-pool',
-            vid='volid')
-        self.vol.clone(source_vol)
-        self.assertAllCalled()
-
-    def test_050_clone_wrong_volume(self):
-        self.skipTest('admin.pool.volume.Clone not supported')
 
 
 class TestPool(qubesadmin.tests.QubesTestCase):

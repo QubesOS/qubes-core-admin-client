@@ -259,20 +259,13 @@ def revert_volume(args):
     volume.revert(revision)
 
 
-def extend_volumes(args):
-    """ Called by the parser to execute the :program:`qvm-volume extend`
+def resize_volume(args):
+    """ Called by the parser to execute the :program:`qvm-volume resize`
         subcommand
     """
     volume = args.volume
     size = qubesadmin.utils.parse_size(args.size)
-    if not args.force and size < volume.size:
-        raise qubesadmin.exc.StoragePoolException(
-            'For your own safety, shrinking of %s is'
-            ' disabled (%d < %d). If you really know what you'
-            ' are doing, resize filesystem manually first, then use `-f` '
-            'option.' %
-            (volume.name, size, volume.size))
-    volume.resize(size)
+    volume.resize(size, allow_shrink=args.force)
 
 
 def init_list_parser(sub_parsers):
@@ -308,18 +301,18 @@ def init_revert_parser(sub_parsers):
     revert_parser.set_defaults(func=revert_volume)
 
 
-def init_extend_parser(sub_parsers):
-    """ Add 'extend' action related options """
-    extend_parser = sub_parsers.add_parser(
+def init_resize_parser(sub_parsers):
+    """ Add 'resize' action related options """
+    resize_parser = sub_parsers.add_parser(
         "resize", aliases=('extend', ), help="resize volume for domain")
-    extend_parser.add_argument(metavar='VM:VOLUME', dest='volume',
+    resize_parser.add_argument(metavar='VM:VOLUME', dest='volume',
                                action=qubesadmin.tools.VMVolumeAction)
-    extend_parser.add_argument('size', help='New size in bytes')
-    extend_parser.add_argument(
+    resize_parser.add_argument('size', help='New size in bytes')
+    resize_parser.add_argument(
         '--force', '-f', action='store_true',
         help='Force operation, even if new size is smaller than the current '
              'one')
-    extend_parser.set_defaults(func=extend_volumes)
+    resize_parser.set_defaults(func=resize_volume)
 
 
 def init_info_parser(sub_parsers):
@@ -403,7 +396,7 @@ def get_parser():
         dest='command')
     init_info_parser(sub_parsers)
     init_config_parser(sub_parsers)
-    init_extend_parser(sub_parsers)
+    init_resize_parser(sub_parsers)
     init_list_parser(sub_parsers)
     init_revert_parser(sub_parsers)
     init_import_parser(sub_parsers)

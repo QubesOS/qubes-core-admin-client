@@ -232,7 +232,8 @@ class TC_00_qvm_volume(qubesadmin.tests.QubesTestCase):
                 qubesadmin.tools.qvm_volume.main(
                     ['resize', 'testvm:private', '1GiB'],
                     app=self.app))
-        self.assertIn('shrinking of private is disabled', stderr.getvalue())
+        self.assertIn('Refusing to shrink volume testvm:private',
+            stderr.getvalue())
         self.assertAllCalled()
 
     def test_013_resize_force_shrink(self):
