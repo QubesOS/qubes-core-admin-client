@@ -1170,3 +1170,102 @@ global: {
 }
 """,
         )
+
+    @unittest.mock.patch("qubesadmin.tools.qvm_start_daemon.get_monitor_layout")
+    def test_080_connection_established(self, mock_monitor_layout):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.addCleanup(loop.close)
+        self.app.cache_enabled = True
+        self.setup_common_args()
+        for vm in ("test-vm", "gui-vm", "remote"):
+            self.app.expected_calls[
+                (vm, "admin.vm.property.GetAll", None, None)
+            ] = b"2\00QubesPropertyAccessError\x00\x00No access to getall\x00"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.property.Get", "is_preload", None)
+        ] = b"0\x00default=True type=bool False"
+        self.app.expected_calls[
+            ("gui-vm", "admin.vm.property.Get", "is_preload", None)
+        ] = b"0\x00default=True type=bool False"
+        self.app.expected_calls[
+            ("gui-vm", "admin.vm.property.Get", "xid", None)
+        ] = b"0\x00default=True type=int 98"
+        self.app.expected_calls[
+            ("gui-vm", "admin.vm.property.Get", "stubdom_xid", None)
+        ] = b"0\x00default=True type=int -1"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.property.Get", "stubdom_xid", None)
+        ] = b"0\x00default=True type=int -1"
+
+        # add RemoteVM with minimal info
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Running\n"
+            b"remote class=RemoteVM state=Running\n"
+            b"gui-vm class=AppVM state=Running\n"
+        )
+
+        self.app.expected_calls[
+            ("remote", "admin.vm.property.Get", "label", None)
+        ] = b"0\x00default=False type=label red"
+        for prop in ("debug", "guivm", "xid", "stubdom_xid", "is_preload"):
+            self.app.expected_calls[
+                ("remote", "admin.vm.property.Get", prop, None)
+            ] = b"2\x00QubesNoSuchPropertyError\x00\x00Invalid property\x00"
+        self.app.expected_calls[
+            (
+                "remote",
+                "admin.vm.feature.CheckWithTemplate",
+                "rpc-clipboard",
+                None,
+            )
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00"
+
+        for name, _kind, _validator in GUI_DAEMON_OPTIONS:
+            self.app.expected_calls[
+                (
+                    "remote",
+                    "admin.vm.feature.Get",
+                    "gui-" + name.replace("_", "-"),
+                    None,
+                )
+            ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00"
+
+        monitor_layout = "1024 768 0 0\n"
+        mock_monitor_layout.return_value = monitor_layout
+
+        with (
+            unittest.mock.patch.object(
+                self.launcher, "start_gui"
+            ) as mock_start_gui,
+            unittest.mock.patch.object(
+                self.launcher, "start_audio"
+            ) as mock_start_audio,
+            unittest.mock.patch.object(
+                self.launcher, "start_gui_for_stubdomain"
+            ) as mock_start_gui_for_stubdomain,
+        ):
+            self.launcher.on_connection_established(
+                None, "connection-established"
+            )
+
+        print(repr(mock_start_gui.mock_calls))
+        self.assertEqual(
+            mock_start_gui.mock_calls,
+            [
+                unittest.mock.call(
+                    self.app.domains["gui-vm"], monitor_layout=monitor_layout
+                ),
+                unittest.mock.call(
+                    self.app.domains["test-vm"], monitor_layout=monitor_layout
+                ),
+            ],
+        )
+        self.assertEqual(
+            mock_start_audio.mock_calls,
+            [
+                unittest.mock.call(self.app.domains["gui-vm"]),
+                unittest.mock.call(self.app.domains["test-vm"]),
+            ],
+        )
+        self.assertEqual(mock_start_gui_for_stubdomain.mock_calls, [])
