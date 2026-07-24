@@ -139,8 +139,8 @@ autodoc_mock_imports = [
 intersphinx_mapping = {
     'python': ('http://docs.python.org/', None),
     'qubes-doc': ('https://doc.qubes-os.org/en/latest/', None),
-    'core-admin': ('https://dev.qubes-os.org/projects/core-admin/en/latest/', None),
-    'core-qrexec': ('https://dev.qubes-os.org/projects/qubes-core-qrexec/en/stable/', None),
+    'core-admin': ('https://doc.qubes-os.org/projects/core-admin/en/latest/', None),
+    'core-qrexec': ('https://doc.qubes-os.org/projects/core-qrexec/en/latest/', None),
 }
 
 if limit := os.environ.get("QUBES_DOC_LOCAL_INTERSPHINX_CACHE_LIMIT"):
