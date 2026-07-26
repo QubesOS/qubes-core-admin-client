@@ -361,10 +361,20 @@ class QubesArgumentParser(argparse.ArgumentParser):
         if version is not None:
             self.version = version
         else:
-            _metadata_ = importlib.metadata.metadata('qubesadmin')
-            self.version = '{} ({}) {}'.format(os.path.basename(sys.argv[0]), \
-                _metadata_['summary'], _metadata_['version'])
-            self.version += '\nCopyright (C) {}'.format(_metadata_['author'])
+            _metadata_ = importlib.metadata.metadata("qubesadmin")
+            self.version = "{} ({}) {}".format(
+                os.path.basename(sys.argv[0]),
+                _metadata_["summary"],
+                _metadata_["version"],
+            )
+            if "author" in _metadata_:
+                self.version += "\nCopyright (C) {}".format(
+                    _metadata_["author"]
+                )
+            else:
+                self.version += "\nCopyright (C) {}".format(
+                    _metadata_["Author-email"]
+                )
             self.version += '\nLicense: {}'.format(_metadata_['license'])
         if self.version != '':
             self.add_argument('--version', action='version')
