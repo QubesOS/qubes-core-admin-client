@@ -6,7 +6,7 @@ PIP ?= pip3
 
 .PHONY: build
 build:
-    # --no-isolation to use distro packages instead of downloading missing ones
+	# --no-isolation to use distro packages instead of downloading missing ones
 	$(PYTHON) -m build --no-isolation
 
 .PHONY: install-misc
