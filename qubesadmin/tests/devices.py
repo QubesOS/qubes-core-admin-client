@@ -331,7 +331,13 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(devs[1].port_id, 'dev2')
         self.assertAllCalled()
 
+    _test_class_details = (
+        b'0\x00test assignment_modes=ask-to-attach,auto-attach,required\n')
+
     def test_070_update_assignment_required(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = \
+            self._test_class_details
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1+_', b'required')] = b'0\0'
@@ -342,6 +348,9 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
 
     def test_071_update_assignment_ask(self):
         self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = \
+            self._test_class_details
+        self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1+_', b'ask-to-attach')] = b'0\0'
         dev = DeviceAssignment.new(
@@ -350,6 +359,9 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_072_update_assignment_auto(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = \
+            self._test_class_details
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1+_', b'auto-attach')] = b'0\0'
@@ -367,6 +379,90 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.assertNotIn(devclass, seen)
             seen.add(devclass)
         self.assertEqual(seen, {'block', 'mic', 'usb'})
+
+    def test_074_deviceclass_properties(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b'0\x00pci assignment_modes=required\n'
+            b'block assignment_modes=ask-to-attach,auto-attach,required\n'
+            b'usb assignment_modes=ask-to-attach,auto-attach\n')
+        props = self.app.deviceclass_properties()
+        self.assertEqual(
+            props['pci'], {'assignment_modes': 'required'})
+        self.assertEqual(
+            props['usb'],
+            {'assignment_modes': 'ask-to-attach,auto-attach'})
+        self.assertEqual(
+            props['block'],
+            {'assignment_modes': 'ask-to-attach,auto-attach,required'})
+
+    def test_075_deviceclass_properties_none(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b"2\x00ProtocolError\x00\x00unexpected argument\x00\x00")
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\x00pci\nblock\nusb\n'
+        props = self.app.deviceclass_properties()
+        # deviceclasses are still listed
+        self.assertEqual(props, {'pci': {}, 'block': {}, 'usb': {}})
+
+    def test_076_assign_unsupported_mode_rejected(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b'0\x00test assignment_modes=ask-to-attach,auto-attach\n')
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        with self.assertRaises(qubesadmin.exc.QubesValueError) as exc:
+            self.vm.devices['test'].assign(assign)
+        self.assertIn('required', str(exc.exception))
+        self.assertIn('ask-to-attach, auto-attach', str(exc.exception))
+
+    def test_077_assign_supported_mode_passes(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b'0\x00test assignment_modes=ask-to-attach,auto-attach,required\n')
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Assign', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='required' "
+             b"frontend_domain='test-vm'")] = b'0\0'
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        self.vm.devices['test'].assign(assign)
+        self.assertAllCalled()
+
+    def test_078_assign_old_backend_skips_validation(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b"2\x00ProtocolError\x00\x00unexpected argument\x00\x00")
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\x00test\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Assign', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='required' "
+             b"frontend_domain='test-vm'")] = b'0\0'
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        self.vm.devices['test'].assign(assign)
+        self.assertAllCalled()
+
+    def test_079_update_assignment_unsupported_mode_rejected(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b'0\x00test assignment_modes=ask-to-attach,auto-attach\n')
+        dev = DeviceAssignment.new(
+            self.app.domains['test-vm2'], devclass='test', port_id='dev1')
+        with self.assertRaises(qubesadmin.exc.QubesValueError) as exc:
+            self.vm.devices['test'].update_assignment(
+                dev, AssignmentMode.REQUIRED)
+        self.assertIn('required', str(exc.exception))
+        self.assertIn('ask-to-attach, auto-attach', str(exc.exception))
 
     def test_080_add_denied_device(self):
         self.app.expected_calls[

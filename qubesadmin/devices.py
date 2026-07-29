@@ -96,33 +96,49 @@ class DeviceCollection:
         self._remove(assignment, "detach")
         self._assignment_cache = None
 
+    def _supported_assignment_modes(
+        self,
+    ) -> "frozenset[AssignmentMode] | None":
+        """
+        Assignment modes allowed for this `deviceclass`.
+
+        Returns `None` when the information cannot be obtained;
+         the caller must then rely on backend-side validation.
+        """
+        try:
+            props = self._vm.app.deviceclass_properties().get(self._class, {})
+        except (qubesadmin.exc.QubesException, qubesadmin.exc.ProtocolError):
+            return None
+        raw = props.get("assignment_modes")
+        if not raw:
+            return None
+        try:
+            return frozenset(
+                AssignmentMode(value) for value in raw.split(",") if value
+            )
+        except ValueError:
+            return None
+
+    def _validate_assignment_mode(self, mode: AssignmentMode) -> None:
+        """
+        Raise a error if *mode* is not a valid one for this `deviceclass`.
+        """
+        supported = self._supported_assignment_modes()
+        if supported is None or mode in supported:
+            return
+        allowed = ", ".join(sorted(m.value for m in supported))
+        raise qubesadmin.exc.QubesValueError(
+            f"{self._class} devices do not support being assigned in "
+            f"'{mode.value}' mode; supported assignment mode(s): {allowed}."
+        )
+
     def assign(self, assignment: DeviceAssignment) -> None:
         """
         Assign device to domain (add to :file:`qubes.xml`).
 
         :param DeviceAssignment assignment: device object
         """
-        if (
-            assignment.devclass not in ("pci", "testclass", "block")
-            and assignment.required
-        ):
-            raise qubesadmin.exc.QubesValueError(
-                "Only pci and block devices can be assigned as required."
-            )
-        if assignment.devclass == "pci" and not assignment.required:
-            raise qubesadmin.exc.QubesValueError(
-                "PCI devices cannot be assigned as not required."
-            )
-        if (
-            assignment.devclass
-            not in ("testclass", "usb", "block", "mic", "pci")
-            and assignment.attach_automatically
-        ):
-            raise qubesadmin.exc.QubesValueError(
-                f"{assignment.devclass} devices cannot be assigned "
-                "to be automatically attached."
-            )
-
+        self._validate_assignment_mode(assignment.mode)
         self._add(assignment, "assign")
         # clear the whole cache instead of saving provided assignment, it might
         # get modified before actually assigning
@@ -282,6 +298,7 @@ class DeviceCollection:
                               `False` -> device will be auto-attached to qube
                               `True` -> device is required to start qube
         """
+        self._validate_assignment_mode(required)
         self._vm.qubesd_call(
             None,
             "admin.vm.device.{}.Set.assignment".format(self._class),
