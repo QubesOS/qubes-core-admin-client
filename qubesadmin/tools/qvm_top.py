@@ -1732,8 +1732,15 @@ class Screen:
 
         elif char in (ord("T"),):
             if self.visible_stats:
-                first_visible = list(self.visible_stats.values())[0]
-                if first_visible in self.selected_stats:
+                first_actionable = next(
+                    (
+                        stat
+                        for stat in list(self.visible_stats.values())
+                        if stat.get_actions()
+                    ),
+                    None,
+                )
+                if first_actionable in self.selected_stats:
                     self.selected_stats = [
                         stat
                         for stat in self.selected_stats
@@ -1744,6 +1751,7 @@ class Screen:
                         stat
                         for stat in self.visible_stats.values()
                         if stat not in self.selected_stats
+                        and stat.get_actions()
                     ]
 
         elif char in (ord("a"),):
