@@ -167,6 +167,16 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
+    def test_024_attach_manual_not_supported(self):
+        self.app._deviceclass_properties_cache = {
+            'test': {'assignment_modes': 'required'}}
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        with self.assertRaises(qubesadmin.exc.QubesValueError) as exc:
+            self.vm.devices['test'].attach(assign)
+        self.assertIn('cannot be attached manually', str(exc.exception))
+
     def test_030_detach(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Detach', 'test-vm2+dev1+_',

@@ -76,10 +76,11 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
-        if assignment.devclass == "pci":
+        supported = self._supported_assignment_modes()
+        if supported is not None and AssignmentMode.MANUAL not in supported:
             raise qubesadmin.exc.QubesValueError(
-                "PCI devices cannot be attached manually, "
-                "did you mean `qvm-pci assign --required ...`"
+                f"{assignment.devclass} devices cannot be attached manually, "
+                f"did you mean `qvm-device {assignment.devclass} assign ...`"
             )
         self._add(assignment, "attach")
         # clear the whole cache instead of saving provided assignment, it might
