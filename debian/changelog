@@ -1,3 +1,24 @@
+qubes-core-admin-client (4.3.34-1) unstable; urgency=medium
+
+  [ Edoardo Marziali ]
+  * Updated rules to include qvm-console in 4.3 release for Debian
+    installation.
+
+  [ Marek Marczykowski-Górecki ]
+  * deb/rpm: require matching python3-qubesadmin version
+  * Do not crash qvm-start-daemon on VMs without xid property
+
+  [ unman ]
+  * qvm-firewall - Add reference to comments in manpage and help.
+
+  [ Marek Marczykowski-Górecki ]
+  * Add 'prefix_data' support to run_service() function
+  * tools/qvm-run: use prefix_data feature instead of copy_stdin
+    subprocess
+  * Require qrexec new enough to have --prefix-data option
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 01 Aug 2026 04:24:07 +0200
+
 qubes-core-admin-client (4.3.33-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
