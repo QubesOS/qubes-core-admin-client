@@ -941,6 +941,13 @@ class DAEMONLauncher:
                     continue
 
                 power_state = vm.get_power_state()
+                if power_state in ("Running", "Transient"):
+                    try:
+                        self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+                    except AttributeError:
+                        # without access to XID (either permission denied, or
+                        # RemoteVM), can't really start daemons
+                        continue
                 if power_state == "Running":
                     if "guivm" in self.enabled_services:
                         asyncio.ensure_future(
@@ -948,7 +955,6 @@ class DAEMONLauncher:
                         )
                     if "audiovm" in self.enabled_services:
                         asyncio.ensure_future(self.start_audio(vm))
-                    self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
                 elif power_state == "Transient":
                     # it is still starting, we'll get 'domain-start'
                     # event when fully started
