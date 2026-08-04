@@ -1,5 +1,7 @@
 .. program:: qvm-service
 
+.. _qvm-service:
+
 ========================================================================
 :program:`qvm-service` -- Manage (Qubes-specific) services started in VM
 ========================================================================
@@ -252,6 +254,22 @@ knowledge of qubes-core code.
     tab of Qubes Application Menu.
     If the qube ``provides_network`` property set/reset to True or False,
     the value of ``servicevm`` feature is automatically readjusted accordingly.
+
+.. option:: app-dispvm.*
+
+   These features are used to cause a given application (identified by app ID)
+   to open files and URLs in a disposable VM.  It works by changing the value of
+   `XDG_DATA_DIRS` so that applications see `qvm-open-in-dvm.desktop` as the only
+   way to open any file or URL.
+
+   To retrieve the application ID, check :ref:`!Make a particular application open everything in a disposable`.
+
+   .. warning::
+
+      It is known to work with Thunderbird (app ID `thunderbird`) and Element
+      (app ID `im.riot.Riot` for the flatpak and `io.element.Element` for the
+      non-flatpak version).  It may break icons in some applications.  Please
+      report a bug if `app-dispvm.*` breaks an application.
 
 Authors
 =======
