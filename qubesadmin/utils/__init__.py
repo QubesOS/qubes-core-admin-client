@@ -519,3 +519,27 @@ def start_expert(
             except qubesadmin.exc.QubesException:
                 pass
         raise e
+
+
+def restart(domains,force=False):
+    """
+    Core functionality of qvm-restart. Made to be imported from other python 
+    modules.
+
+    Unlike the main routine, doesn't do any input verification - this is up to
+    the invoking module.
+    """
+    failed = {}
+    failed['shutdown'] = asyncio.run(
+        shutdown(
+            domains=domains, force=force, wait=True
+        )
+    )
+    failed['start'] = asyncio.run(
+        start(
+            domains=[
+                vm for vm in domains if vm not in failed['shutdown']
+            ]
+        )
+    )
+    return failed
