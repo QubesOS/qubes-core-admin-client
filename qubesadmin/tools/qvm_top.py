@@ -1231,17 +1231,6 @@ class Screen:
         sum_memory_assigned_total_total = convert_memory(
             sum(memory_assigned_total_total)
         )
-        pct_memory_used_noswap: float | str = "NA"
-        pct_swap_used: float | str = "NA"
-        pct_memory_assigned_total_total: float | str = "NA"
-        if isinstance(memory_total, (int, float)):
-            pct_memory_used_noswap = round(
-                sum_memory_used_noswap / memory_total * 100, 1
-            )
-            pct_swap_used = round(sum_swap_used / memory_total * 100, 1)
-            pct_memory_assigned_total_total = round(
-                sum_memory_assigned_total_total / memory_total * 100, 1
-            )
 
         no_cpus = Stats.host_no_cpus
         header_cpu_prefix = "  {}".format(cpu_text)
@@ -1255,19 +1244,16 @@ class Screen:
         total_mem_len = len(str(memory_total))
         header_mem_total = "{}".format(memory_total)
 
-        header_mem_assigned_max_total = "{}({}%) {}".format(
+        header_mem_assigned_max_total = "{} {}".format(
             str(sum_memory_assigned_total_total).rjust(total_mem_len),
-            pct_memory_assigned_total_total,
             assigned_text,
         )
-        header_mem_used_noswap = "{}({}%) {}".format(
+        header_mem_used_noswap = "{} {}".format(
             str(sum_memory_used_noswap).rjust(total_mem_len),
-            pct_memory_used_noswap,
             used_text,
         )
-        header_mem_used_swap = "{}({}%) {}".format(
+        header_mem_used_swap = "{} {}".format(
             str(sum_swap_used).rjust(total_mem_len),
-            pct_swap_used,
             swap_text,
         )
         header_mem_suffix = ": "
