@@ -327,9 +327,9 @@ List of known features
    Enabled/disabled ":doc:`qvm-services </manpages/qvm-service>`". Values can be either `1` for enabled service,
    or empty string for disabled service.
 
-   .. admonition:: See also
+   .. only:: man
 
-      :manpage:`qvm-service(1)` or :doc:`/manpages/qvm-service` for details.
+      .. seealso:: :manpage:`qvm-service(1)`
 
 .. option:: supported-rpc.*
 
@@ -365,17 +365,6 @@ List of known features
    Can be used to pass external configuration to inside the qube. To read, use
    `qubesdb-read`: for a feature named `vm-config.feature_name` use
    `qubesdb-read /vm-config/feature_name`.
-
-.. option:: app-dispvm.*
-
-   These features are used to cause a given application (identified by app ID)
-   to open files and URLs in a disposable VM.  It works by changing the value of
-   `XDG_DATA_DIRS` so that applications see `qvm-open-in-dvm.desktop` as the only
-   way to open any file or URL.  It is known to work with Thunderbird
-   (app ID `mozilla-thunderbird.desktop`) and Element (app ID `im.riot.Riot` for
-   the flatpak and `io.element.Element` for the non-flatpak version).  It may
-   break icons in some applications.  Please report a bug if `app-dispvm.*`
-   breaks an application.
 
 .. option:: audio-model
 
