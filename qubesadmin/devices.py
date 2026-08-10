@@ -43,8 +43,10 @@ from qubesadmin.device_protocol import (
     UnknownDevice,
     DeviceAssignment,
     VirtualDevice,
-    AssignmentMode, DeviceInterface,
+    AssignmentMode,
+    DeviceInterface,
 )
+
 if TYPE_CHECKING:
     from qubesadmin.vm import QubesVM
 
@@ -103,7 +105,7 @@ class DeviceCollection:
         :param DeviceAssignment assignment: device object
         """
         if (
-            assignment.devclass not in ("pci", "testclass", "block")
+            assignment.devclass not in self._vm.app.list_deviceclass()
             and assignment.required
         ):
             raise qubesadmin.exc.QubesValueError(
@@ -114,8 +116,7 @@ class DeviceCollection:
                 "PCI devices cannot be assigned as not required."
             )
         if (
-            assignment.devclass
-            not in ("testclass", "usb", "block", "mic", "pci")
+            assignment.devclass not in self._vm.app.list_deviceclass()
             and assignment.attach_automatically
         ):
             raise qubesadmin.exc.QubesValueError(
@@ -271,7 +272,7 @@ class DeviceCollection:
             )
 
     def update_assignment(
-            self, device: VirtualDevice, required: AssignmentMode
+        self, device: VirtualDevice, required: AssignmentMode
     ) -> None:
         """
         Update assignment of already attached device.
@@ -342,8 +343,7 @@ class DeviceManager(dict):
     def __iter__(self) -> Iterator[str]:
         return iter(self._vm.app.list_deviceclass())
 
-
-    def keys(self) -> list[str]: # type: ignore[override]
+    def keys(self) -> list[str]:  # type: ignore[override]
         return self._vm.app.list_deviceclass()
 
     def deny(self, *interfaces: Iterable[DeviceInterface]) -> None:
@@ -354,7 +354,7 @@ class DeviceManager(dict):
             None,
             "admin.vm.device.denied.Add",
             None,
-            "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
+            "".join(repr(ifc) for ifc in interfaces).encode("ascii"),
         )
 
     def allow(self, *interfaces: Iterable[DeviceInterface]) -> None:
@@ -365,7 +365,7 @@ class DeviceManager(dict):
             None,
             "admin.vm.device.denied.Remove",
             None,
-            "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
+            "".join(repr(ifc) for ifc in interfaces).encode("ascii"),
         )
 
     def clear_cache(self) -> None:
