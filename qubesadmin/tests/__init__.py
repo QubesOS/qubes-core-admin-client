@@ -177,6 +177,9 @@ class QubesTest(qubesadmin.app.QubesBase):
 
     def __init__(self):
         super().__init__()
+        # set default to "nothing" so tests do not issue an unexpected
+        #  `admin.deviceclass.List+details` call.
+        self._deviceclass_properties_cache = {}
         #: expected Admin API calls and saved replies for them
         self.expected_calls = {}
         #: expected qrexec service calls and saved replies for them
