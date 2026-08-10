@@ -1200,7 +1200,7 @@ def install(
                 name,
                 target + PATH_PREFIX + '/' + name])
 
-            app.domains.refresh_cache(force=True)
+            app.domains.refresh_cache()
             tpl = app.domains[name]
 
             tpl.features['template-name'] = name
