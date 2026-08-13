@@ -43,9 +43,9 @@ class EventsDispatcher:
                  enable_cache: bool=True):
         """Initialize EventsDispatcher
 
-        :param app :py:class:`qubesadmin.Qubes` object
-        :param api_method Admin API method producing events
-        :param enable_cache Enable caching (see below)
+        :param QubesBase app :py:class:`qubesadmin.Qubes` object
+        :param str api_method: Admin API method producing events
+        :param bool enable_cache: Enable caching (see below)
 
         Connecting :py:class:`EventsDispatcher` object to a
         :py:class:`qubesadmin.Qubes` implicitly enables caching. It is important
@@ -77,15 +77,15 @@ class EventsDispatcher:
           * event name (str)
           * keyword arguments related to the event, if any - all values as str
 
-        :param event Event name, or '*' for all events
-        :param handler Handler function'''
+        :param str event: Event name, or '*' for all events
+        :param handler: Handler function'''
         self.handlers.setdefault(event, set()).add(handler)
 
     def remove_handler(self, event: str, handler: Handler) -> None:
         '''Remove previously registered event handler
 
-        :param event Event name
-        :param handler Handler function
+        :param str event: Event name
+        :param handler: Handler function
         '''
         self.handlers[event].remove(handler)
 
@@ -93,10 +93,10 @@ class EventsDispatcher:
             -> tuple[asyncio.StreamReader, Callable]:
         '''Make connection to qubesd and return stream to read events from
 
-        :param vm: Specific VM for which events should be handled, use None
-        to handle events from all VMs (and non-VM objects)
-        :return stream to read events from and a cleanup function
-        (call it to terminate qubesd connection)'''
+        :param vm: Specific VM for which events should be handled, use
+           :obj:`None` to handle events from all VMs (and non-VM objects)
+        :return: stream to read events from and a cleanup function
+           (call it to terminate qubesd connection)'''
         if vm is not None:
             dest = vm.name
         else:
