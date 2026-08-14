@@ -342,7 +342,7 @@ class Table:
     def write_table(self, stream=sys.stdout):
         '''Sort & write whole table to file-like object.
 
-        :param file stream: Stream to write the table to.
+        :param io.TextIOWrapper stream: Stream to write the table to.
         '''
 
         def sort_string(field: str) -> str:

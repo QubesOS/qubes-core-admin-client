@@ -441,8 +441,8 @@ def qrexec_popen(
         service: str,
         stdout: typing.Union[int, typing.IO] = subprocess.PIPE,
         filter_esc: bool = True) -> subprocess.Popen:
-    """Return ``Popen`` object that communicates with the given qrexec call in
-    ``args.updatevm``.
+    """Return :class:`~subprocess.Popen` object that communicates with the given
+    qrexec call in ``args.updatevm``.
 
     Note that this falls back to invoking ``/etc/qubes-rpc/*`` directly if
     ``args.updatevm`` is empty string.
@@ -452,13 +452,14 @@ def qrexec_popen(
     :param app: Qubes application object
     :param service: The qrexec call to invoke
     :param stdout: Where the process stdout points to. This is passed directly
-        to ``subprocess.Popen``. Defaults to ``subprocess.PIPE``
+        to :class:`subprocess.Popen`. Defaults to :data:`subprocess.PIPE`
 
-        Note that stderr is always set to ``subprocess.PIPE``
+        Note that stderr is always set to :data:`subprocess.PIPE`
     :param filter_esc: Whether to filter out escape sequences from
         stdout/stderr. Defaults to True
 
-    :returns: ``Popen`` object that communicates with the given qrexec call
+    :returns: :class:`~subprocess.Popen` object that communicates with the
+       given qrexec call
     """
     if args.updatevm:
         return app.domains[args.updatevm].run_service(

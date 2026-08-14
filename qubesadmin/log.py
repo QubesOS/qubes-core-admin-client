@@ -21,7 +21,7 @@
 
 '''Qubes logging routines
 
-See also: :py:attr:`qubes.vm.qubesvm.QubesVM.log`
+See also: :py:attr:`!qubes.vm.qubesvm.QubesVM.log`
 '''
 
 import logging
@@ -42,7 +42,7 @@ def enable() -> None:
 
     Use :py:mod:`logging` module from standard library to log messages.
 
-    >>> import qubes.log
+    >>> import qubes.log            # doctest: +SKIP
     >>> qubes.log.enable()          # doctest: +SKIP
     >>> import logging
     >>> logging.warning('Foobar')   # doctest: +SKIP

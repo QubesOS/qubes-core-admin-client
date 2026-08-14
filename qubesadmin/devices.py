@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 class DeviceCollection:
     """Bag for devices.
 
-    Used as default value for :py:meth:`DeviceManager.__missing__` factory.
+    Used as default value for :py:meth:`!DeviceManager.__missing__` factory.
 
     :param vm: VM for which we manage devices
     :param class_: device class
@@ -91,7 +91,8 @@ class DeviceCollection:
         Detach (remove) device from domain.
 
         :param DeviceAssignment assignment: device to detach
-            (obtained from :py:meth:`assignments`)
+            (obtained from
+            :py:meth:`~qubesadmin.tools.qvm_device.Line.assignments`)
         """
         self._remove(assignment, "detach")
         self._assignment_cache = None
@@ -133,7 +134,8 @@ class DeviceCollection:
         Unassign device from domain (remove from :file:`qubes.xml`).
 
         :param DeviceAssignment assignment: device to unassign
-            (obtained from :py:meth:`assignments`)
+            (obtained from
+            :py:meth:`~qubesadmin.tools.qvm_device.Line.assignments`)
         """
         self._remove(assignment, "unassign")
         self._assignment_cache = None
@@ -277,10 +279,7 @@ class DeviceCollection:
         Update assignment of already attached device.
 
         :param VirtualDevice device: device for which change required flag
-        :param bool required: new assignment:
-                              `None` -> unassign device from qube
-                              `False` -> device will be auto-attached to qube
-                              `True` -> device is required to start qube
+        :param AssignmentMode required: new assignment
         """
         self._vm.qubesd_call(
             None,
@@ -305,10 +304,10 @@ class DeviceCollection:
 
         :returns: py:class:`DeviceInfo`
 
-        If domain isn't running, it is impossible to check device validity,
-        so return UnknownDevice object. Also do the same for non-existing
-        devices - otherwise it will be impossible to detach already
-        disconnected device.
+        If domain isn't running, it is impossible to check device validity, so
+        return :obj:`qubesadmin.device_protocol.UnknownDevice` object. Also do
+        the same for non-existing devices - otherwise it will be impossible to
+        detach already disconnected device.
         """
         # fist, check if we have cached device info
         if item in self._dev_cache:

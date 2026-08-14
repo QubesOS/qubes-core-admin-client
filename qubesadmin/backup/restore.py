@@ -186,7 +186,7 @@ class BackupHeader:
         """Parse backup header file.
 
         :param untrusted_header_text: header content
-        :type untrusted_header_text: basestring
+        :type untrusted_header_text: str
 
         .. warning::
             This function may be exposed to not yet verified header,
@@ -276,10 +276,11 @@ class BackupHeader:
 def launch_proc_with_pty(args: list[str], stdin: int | None=None,
                          stdout: int | None=None, stderr: int | None=None,
                          echo: bool=True) -> tuple[Popen, FileIO]:
-    """Similar to pty.fork, but handle stdin/stdout according to parameters
-    instead of connecting to the pty
+    """Similar to :func:`pty.fork`, but handle stdin/stdout according to
+    parameters instead of connecting to the pty
 
-    :return tuple (subprocess.Popen, pty_master)
+    :return: tuple (subprocess.Popen, pty_master)
+    :rtype: tuple(subprocess.Popen, io.FileIO)
     """
 
     def set_ctty(ctty_fd: int, master_fd: int) -> None:
@@ -303,14 +304,15 @@ def launch_proc_with_pty(args: list[str], stdin: int | None=None,
 def launch_scrypt(action: str, input_name: str, output_name: str,
                   passphrase: str) -> Popen:
     '''
-    Launch 'scrypt' process, pass passphrase to it and return
-    subprocess.Popen object.
+    Launch ``scrypt`` process, pass passphrase to it and return
+    :obj:`subprocess.Popen` object.
 
-    :param action: 'enc' or 'dec'
-    :param input_name: input path or '-' for stdin
-    :param output_name: output path or '-' for stdout
+    :param action: ``'enc'`` or ``'dec'``
+    :param input_name: input path or ``'-'`` for stdin
+    :param output_name: output path or ``'-'`` for stdout
     :param passphrase: passphrase
     :return: subprocess.Popen object
+    :rtype: subprocess.Popen
     '''
     command_line = ['scrypt', action, '-f', input_name, output_name]
     (p, pty) = launch_proc_with_pty(command_line,
@@ -374,18 +376,19 @@ class ExtractWorker3(Process):
         or forcefully).
 
         :param multiprocessing.Queue queue: a queue with filenames to
-        process; those files needs to be given as full path, inside *base_dir*
+           process; those files needs to be given as full path, inside
+           *base_dir*
         :param str base_dir: directory where all files to process live
         :param str passphrase: passphrase to decrypt the data
         :param bool encrypted: is encryption applied?
         :param callable progress_callback: report extraction progress
         :param subprocess.Popen vmproc: process extracting outer layer,
-        given here to monitor
-        it for failures (when it exits with non-zero exit code, inner layer
-        processing is stopped)
+           given here to monitor
+           it for failures (when it exits with non-zero exit code, inner layer
+           processing is stopped)
         :param bool compressed: is the data compressed?
-        :param str crypto_algorithm: encryption algorithm, either `scrypt` or an
-        algorithm supported by openssl
+        :param str crypto_algorithm: encryption algorithm, either ``"scrypt"``
+           or an algorithm supported by openssl
         :param str compression_filter: compression program, `gzip` by default
         :param bool verify_only: only verify data integrity, do not extract
         :param dict handlers: handlers for actual data
@@ -902,11 +905,14 @@ class BackupRestoreOptions:
 class BackupRestore:
     """Usage:
 
-    >>> restore_op = BackupRestore(...)
-    >>> # adjust restore_op.options here
-    >>> restore_info = restore_op.get_restore_info()
-    >>> # manipulate restore_info to select VMs to restore here
-    >>> restore_op.restore_do(restore_info)
+    .. doctest::
+       :skipif: True
+
+       >>> restore_op = BackupRestore(...)
+       >>> # adjust restore_op.options here
+       >>> restore_info = restore_op.get_restore_info()
+       >>> # manipulate restore_info to select VMs to restore here
+       >>> restore_op.restore_do(restore_info)
     """
 
     class VMToRestore:
@@ -1034,9 +1040,9 @@ class BackupRestore:
         archive
         :param limit_count: maximum number of files to extract
         :param limit_bytes: maximum size of extracted data
-        :return: a touple of (Popen object of started process, file-like
-        object for reading extracted files list, file-like object for reading
-        errors)
+        :return: a tuple of (:obj:`~subprocess.Popen` object of started
+           process, file-like object for reading extracted files list,
+           file-like object for reading errors)
         """
 
         # pylint: disable=consider-using-with
@@ -1125,7 +1131,7 @@ class BackupRestore:
         Raise :py:exc:`QubesException` on failure, return :py:obj:`True` on
         success.
 
-        'scrypt' algorithm is supported only for header file; hmac file is
+        ``'scrypt'`` algorithm is supported only for header file; hmac file is
         encrypted (and integrity protected) version of plain header.
 
         :param filename: path to file to be verified
@@ -1216,9 +1222,9 @@ class BackupRestore:
         'scrypt' tool. Filename (without extension) is also validated.
 
         :param filename: Input file name (relative to :py:attr:`tmpdir`),
-        needs to have `.enc` or `.hmac` extension
+           needs to have `.enc` or `.hmac` extension
         :param output: Output file name (relative to :py:attr:`tmpdir`),
-        use :py:obj:`None` to use *filename* without extension
+           use :py:obj:`None` to use *filename* without extension
         :return: *filename* without extension
         '''
         assert filename.endswith('.enc') or filename.endswith('.hmac')
@@ -1311,12 +1317,13 @@ class BackupRestore:
         return files
 
     def _retrieve_backup_header(self) -> BackupHeader:
-        """Retrieve backup header and qubes.xml. Only backup header is
-        analyzed, qubes.xml is left as-is
-        (not even verified/decrypted/uncompressed)
+        """Retrieve backup header and ``qubes.xml``.
 
-        :return header_data
-        :rtype :py:class:`BackupHeader`
+        Only backup header is analyzed, ``qubes.xml`` is left as-is (not even
+        verified/decrypted/uncompressed)
+
+        :return: header_data
+        :rtype: :py:class:`BackupHeader`
         """
 
         if not self.backup_vm and os.path.exists(
@@ -1374,11 +1381,13 @@ class BackupRestore:
     def _start_inner_extraction_worker(self, queue: Queue,
                                        handlers: dict[str, Callable])\
             -> ExtractWorker3:
-        """Start a worker process, extracting inner layer of bacup archive,
+        """Start a worker process, extracting inner layer of backup archive,
         extract them to :py:attr:`tmpdir`.
-        End the data by pushing QUEUE_FINISHED or QUEUE_ERROR to the queue.
 
-        :param queue :py:class:`Queue` object to handle files from
+        End the data by pushing :obj:`QUEUE_FINISHED` or :obj:`QUEUE_ERROR` to
+        the queue.
+
+        :param multiprocessing.Queue queue: object to handle files from
         """
 
         # Setup worker to extract encrypted data chunks to the restore dirs
@@ -1419,9 +1428,11 @@ class BackupRestore:
             f_qubesxml.write(stream.read())
 
     def _process_qubes_xml(self) -> Core2Qubes | Core3Qubes:
-        """Verify, unpack and load qubes.xml. Possibly convert its format if
-        necessary. It expect that :py:attr:`header_data` is already populated,
-        and :py:meth:`retrieve_backup_header` was called.
+        """Verify, unpack and load ``qubes.xml``.
+
+        Possibly convert its format if necessary. It expects that
+        :py:attr:`header_data` is already populated, and
+        :py:meth:`retrieve_backup_header` was called.
         """
         if self.header_data.version == 1:
             raise NotImplementedError('Backup format version 1 not supported')
@@ -1462,14 +1473,14 @@ class BackupRestore:
 
     def _restore_vm_data(self, vms_dirs: list[str], vms_size: int,
                          handlers: dict[str, Callable]) -> None:
-        '''Restore data of VMs
+        """Restore data of VMs.
 
         :param vms_dirs: list of directories to extract (skip others)
         :param vms_size: expected size (abort if source stream exceed this
-        value)
+           value)
         :param handlers: handlers for restored files - see
-        :py:class:`ExtractWorker3` for details
-        '''
+           :py:class:`ExtractWorker3` for details
+        """
         self.log.debug("Working in temporary dir: %s", self.tmpdir)
         self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
 
@@ -1652,8 +1663,9 @@ class BackupRestore:
         return new_name
 
     def restore_info_verify(self, restore_info: dict) -> dict:
-        '''Verify restore info - validate VM dependencies, name conflicts
-        etc.
+        '''Verify restore info.
+
+        Validate VM dependencies, name conflicts, etc.
         '''
         for vm in restore_info.keys():
             if vm in ['dom0']:
@@ -1976,17 +1988,17 @@ class BackupRestore:
                 format(self.tmpdir))
 
     def restore_do(self, restore_info: dict) -> None:
-        '''
+        """High level restore workflow.
 
-        High level workflow:
-        1. Create VMs object in host collection (qubes.xml)
-        2. Create them on disk (vm.create_on_disk)
+        1. Create VMs object in host collection (``qubes.xml``)
+        2. Create them on disk
+           (:meth:`~qubes.vm.qubesvm.QubesVM.create_on_disk`)
         3. Restore VM data, overriding/converting VM files
-        4. Apply possible fixups and save qubes.xml
+        4. Apply possible fixups and save ``qubes.xml``
 
         :param restore_info:
-        :return:
-        '''
+        :return: None
+        """
 
         if self.header_data.version == 1:
             raise NotImplementedError('Backup format version 1 not supported')
