@@ -181,3 +181,18 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
                                             app=self.app)
         self.assertEqual('', stdout.getvalue())
         self.assertAllCalled()
+
+    def test_010_computed_property(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00dom0 class=AdminVM state=Running\n'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.property.List', None, None)] = \
+            b'0\x00prop1\nprop2\n'
+        with self.assertRaises(SystemExit):
+            with qubesadmin.tests.tools.StderrBuffer() as stderr:
+                qubesadmin.tools.qvm_prefs.main([
+                    'dom0', 'derived_vms'], app=self.app)
+        self.assertIn('no such property: \'derived_vms\'',
+            stderr.getvalue())
+        self.assertAllCalled()
