@@ -1,7 +1,7 @@
 .. program:: qvm-remove
 
 :program:`qvm-remove` -- remove qubes (virtual machines) from the system
-=======================================================================
+========================================================================
 
 Description
 -----------
@@ -11,10 +11,10 @@ from a Qubes OS system. This operation is **irreversible** -- all data stored in
 the removed qube(s), including private volumes and stored snapshots, will be
 permanently lost.
 
-Before removing a qube, the tool checks for dependencies. If the qube is used as
-a template, net qube, or default disposable qube by another qube, the removal
-will be blocked with a clear error message listing the dependencies. You must
-first reconfigure the dependent qubes before the removal can proceed.
+If a qube is still in use by another qube (for example as its template or
+default disposable qube), the removal fails with a clear error message listing
+the dependencies. You must first reconfigure the dependent qubes before the
+removal can proceed.
 
 For safety, :program:`qvm-remove` prompts for confirmation before deleting any
 qube(s). Use :option:`--force` to skip the confirmation prompt (useful for
@@ -37,8 +37,8 @@ Options
 
    Remove all qubes at once. dom0 is never removed. This operation will
    prompt for an extra safety confirmation ("IKNOWWHATIAMDOING") unless
-   :option:`--exclude` is also specified. Use :option:`--exclude` to preserve
-   specific qubes from the removal.
+   :option:`--force` or :option:`--exclude` is also specified. Use
+   :option:`--exclude` to preserve specific qubes from the removal.
 
 .. option:: --exclude
 
