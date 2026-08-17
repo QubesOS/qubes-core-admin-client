@@ -1119,6 +1119,14 @@ class TC_20_QubesLocal(unittest.TestCase):
             self.get_request(), b"admin.vm.Start+ dom0 name some-vm\0"
         )
 
+    @mock.patch.object(sys, 'stderr')
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_015_run_service_user_colon(self, mock_stderr):
+        mock_stderr.fileno.return_value = 2
+        self.listen_and_send(b'0\0')
+        with self.assertRaises(ValueError):
+            self.app.run_service('some-vm', 'service.name', user='a:b')
+
 
 class TC_30_QubesRemote(unittest.TestCase):
     def setUp(self):

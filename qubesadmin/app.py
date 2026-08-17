@@ -1016,6 +1016,8 @@ class QubesLocal(QubesBase):
             qrexec_opts.extend(["-l", localcmd])
         if user is None:
             user = "DEFAULT"
+        if ":" in user:
+            raise ValueError("Username in qrexec cannot contain a colon")
         if not wait:
             qrexec_opts.extend(["-e"])
         if prefix_data:
