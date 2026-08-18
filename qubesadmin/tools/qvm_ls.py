@@ -396,12 +396,18 @@ class Table:
 
 #: Available formats. Feel free to plug your own one.
 formats = {
-    'simple': ('name', 'state', 'class', 'label', 'template', 'netvm'),
+    'simple': (
+        'name', 'state', 'class', 'label', 'active_template', 'template',
+        'netvm'
+    ),
     'network': ('name', 'state', 'netvm', 'ip', 'ipback', 'gateway'),
-    'kernel': ('name', 'state', 'class', 'template', 'kernel', 'kernelopts'),
+    'kernel': (
+        'name', 'state', 'class', 'active_template', 'template', 'kernel',
+        'kernelopts'
+    ),
     'full': ('name', 'state', 'class', 'label', 'qid', 'xid', 'uuid'),
 #   'perf': ('name', 'state', 'cpu', 'memory'),
-    'prefs': ('name', 'label', 'template', 'netvm',
+    'prefs': ('name', 'label', 'active_template', 'template', 'netvm',
         'vcpus', 'initialmem', 'maxmem', 'virt_mode'),
     'disk': ('name', 'state', 'disk',
         'priv-curr', 'priv-max', 'priv-used',
