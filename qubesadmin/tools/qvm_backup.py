@@ -34,7 +34,7 @@ try:
 except ImportError:
     have_events = False
 import qubesadmin.tools
-from qubesadmin.exc import QubesException
+from qubesadmin.exc import QubesException, QrexecDeniedError
 
 backup_profile_dir = '/etc/qubes/backup'
 
@@ -179,7 +179,9 @@ def main(args=None, app=None):
         print(backup_summary.decode())
     except QubesException as err:
         print('\nBackup preparation error: {}'.format(err), file=sys.stderr)
-        return 1
+        if not isinstance(err, QrexecDeniedError):
+            return 1
+        print('Skipping error as summary is not required to execute backup')
 
     if not args.yes:
         if input("Do you want to proceed? [y/N] ").upper() != "Y":

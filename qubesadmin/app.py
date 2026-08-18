@@ -1083,9 +1083,10 @@ class QubesRemote(QubesBase):
             ) as p:
                 (stdout, stderr) = p.communicate(payload)
         if p.returncode != 0:
-            raise qubesadmin.exc.QubesDaemonAccessError(
-                "Service call error: %s", stderr.decode()
-            )
+            msg = "Service call error: {}".format(stderr.decode())
+            if p.returncode == 126:
+                raise qubesadmin.exc.QrexecDeniedError(msg)
+            raise qubesadmin.exc.QubesDaemonAccessError(msg)
 
         return self._parse_qubesd_response(stdout)
 
