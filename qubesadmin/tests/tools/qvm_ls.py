@@ -547,7 +547,9 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \
             b'0\x00template1 class=TemplateVM state=Halted\n' \
-            b'sys-net class=AppVM state=Running\n'
+            b'template2 class=TemplateVM state=Halted\n' \
+            b'sys-net class=AppVM state=Running\n' \
+            b'sys-firewall class=AppVM state=Running\n'
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
@@ -556,29 +558,64 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         }
 
         # setup sys-net
-        props['label'] = 'type=label red'
+        net_props = props.copy()
+        net_props['netvm'] = 'type=vm '
+        net_props['label'] = 'type=label red'
         self.app.expected_calls[
             ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
                 '{} default=True {}\n'.format(key, value)
-                for key, value in props.items()).encode()
+                for key, value in net_props.items()).encode()
+
+        # setup sys-firewall
+        fw_props = props.copy()
+        fw_props['label'] = 'type=label red'
+        fw_props['active_template'] = 'type=vm template2'
+        self.app.expected_calls[
+            ('sys-firewall', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in fw_props.items()).encode()
+
 
         # setup template1
-        props['label'] = 'type=label black'
-        del props['template']
-        del props['active_template']
+        template1_props = props.copy()
+        template1_props['label'] = 'type=label black'
+        del template1_props['template']
+        del template1_props['active_template']
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
                 '{} default=True {}\n'.format(key, value)
-                for key, value in props.items()).encode()
+                for key, value in template1_props.items()).encode()
+
+        # setup template2
+        template2_props = props.copy()
+        template2_props['label'] = 'type=label black'
+        del template2_props['template']
+        self.app.expected_calls[
+            ('template2', 'admin.vm.property.GetAll', None, None)] = \
+            b'0\x00' + ''.join(
+                '{} default=True {}\n'.format(key, value)
+                for key, value in template2_props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--template-source', 'template1'],
-                                         app=self.app)
+            qubesadmin.tools.qvm_ls.main(
+                ['--template-source', 'template1'], app=self.app
+            )
         self.assertEqual(stdout.getvalue(),
             'NAME     STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
-            'sys-net  Running  AppVM  red    template1        template1  sys-net\n')
+            'sys-net  Running  AppVM  red    template1        template1  -\n')
+
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(
+                ['--template-source', 'template2'], app=self.app
+            )
+        self.assertEqual(stdout.getvalue(),
+            'NAME          STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'sys-firewall  Running  AppVM  red    template2        template1  sys-net\n'
+        )
+
         self.assertAllCalled()
 
     def test_114_filter_netvm_is(self):

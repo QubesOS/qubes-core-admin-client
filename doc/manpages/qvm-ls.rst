@@ -140,7 +140,7 @@ Filtering options
 
 .. option:: --template-source TEMPLATE ...
 
-   Filter results to the qubes based on the TEMPLATE(s)
+   Filter results to the qubes based on the ACTIVE-TEMPLATE(s)
 
 .. option:: --netvm-is NETVM ...
 

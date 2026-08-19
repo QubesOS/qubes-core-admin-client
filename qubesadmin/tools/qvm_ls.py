@@ -706,7 +706,7 @@ def main(args=None, app=None):
         domains_template = []
         spinner.show('Filtering results to qubes based on their templates...')
         for dom in domains:
-            if getattr(dom, 'template', '') in args.template_source:
+            if dom.get_active_template() in args.template_source:
                 domains_template.append(dom)
             spinner.update()
         domains = domains_template
