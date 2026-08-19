@@ -414,6 +414,14 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         return self.run(" ".join(shlex.quote(arg) for arg in args), **kwargs)
 
+    def get_active_template(self):
+        """
+        Get ``active_template``, if any, else return the ``template``, if any.
+        """
+        if not hasattr(self, "template"):
+            return None
+        return getattr(self, "active_template", getattr(self, "template"))
+
     @property
     def appvms(self):
         """Returns a generator containing all domains based on the current

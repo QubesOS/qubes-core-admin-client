@@ -96,6 +96,19 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.resume()
         self.assertAllCalled()
 
+    def test_007_check_feature_with_template(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.vm.features.check_with_template('os')
+
+    def test_008_check_feature_with_deferred_template(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os+deferred',
+             None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.vm.features.check_with_template('os', active=False)
+
     def test_010_run_linux(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \

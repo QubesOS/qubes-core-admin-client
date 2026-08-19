@@ -95,12 +95,18 @@ class Features:
     @typing.overload
     def check_with_template(self, item: str, default: T) -> str | T: ...
     # Overloaded to handle default None return type
-    def check_with_template(self, feature: str,
-                            default: object = None) -> object:
-        ''' Check if the vm's template has the specified feature. '''
+    def check_with_template(self, feature: str, default: object = None,
+                            active: bool = True) -> object:
+        ''' Check if the vm's template has the specified feature.
+        If ``deferred``, check against next template instead of active one.
+        '''
         try:
+            if active:
+                args = feature
+            else:
+                args = feature + "+deferred"
             qubesd_response = self.vm.qubesd_call(
-                self.vm.name, 'admin.vm.feature.CheckWithTemplate', feature)
+                self.vm.name, 'admin.vm.feature.CheckWithTemplate', args)
             return qubesd_response.decode('utf-8')
         except KeyError:
             if default is self.NO_DEFAULT:
