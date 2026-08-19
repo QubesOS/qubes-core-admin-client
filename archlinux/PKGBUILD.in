@@ -1,0 +1,45 @@
+#!/bin/bash
+pkgname=qubes-core-admin-client
+pkgver=@VERSION@
+pkgrel=@REL@
+pkgdesc="This package include management tools, like qvm-*."
+arch=("x86_64")
+url="https://qubes-os.org/"
+license=('GPL')
+depends=(
+        'scrypt'
+        'xorg-xrandr'
+        'python-setuptools'
+        'python-tqdm'
+        'python-xcffib'
+        'python-xlib'
+        'python-yaml'
+        'qubes-repo-templates'
+        'qubes-rpm-oxide'
+        )
+makedepends=(
+        'make'
+        'python-build'
+        'python-installer'
+        'python-setuptools'
+        'python-wheel'
+)
+
+_pkgnvr="${pkgname}-${pkgver}-${pkgrel}"
+changelog=debian/changelog
+source=("${_pkgnvr}.tar.gz")
+md5sums=(SKIP)
+
+build() {
+    cd "${_pkgnvr}"
+    python -m build --wheel --no-isolation
+}
+
+package() {
+    cd "${_pkgnvr}"
+    # shellcheck disable=SC2154
+    python -m installer --destdir="$pkgdir" dist/*.whl
+    make install-misc DESTDIR="$pkgdir"
+}
+
+# vim:set tabstop=4 shiftwidth=4 softtabstop=4 expandtab:
