@@ -128,8 +128,7 @@ def _format_flags(vm: QubesVM) -> str:
       1  type: 0=AdminVM, a/A=AppVM, d/D=DispVM, s/S=StandaloneVM,
                 t/T=TemplateVM
                (uppercase = HVM)
-      2  power state: r=running, t=transient, p=paused, s=suspended,
-                      h=halting, d=dying, c=crashed, ?=unknown
+      2  power state: See ``qubesadmin.vm.POWER_STATES``
       3  U  updateable
       4  N  provides_network
       5  R  installed_by_rpm
@@ -146,12 +145,9 @@ def _format_flags(vm: QubesVM) -> str:
         if getattr(vm, 'virt_mode', 'pv') == 'hvm':
             type_letter = type_letter.upper()
 
-    state = vm.get_power_state().lower()
-    if state == 'unknown':
-        power_letter = '?'
-    elif state in ('running', 'transient', 'paused', 'suspended',
-                   'halting', 'dying', 'crashed'):
-        power_letter = state[0]
+    state = vm.get_power_state()
+    if state in qubesadmin.vm.POWER_STATES:
+        power_letter = qubesadmin.vm.POWER_STATES[state]["short"]
     else:
         power_letter = '-'
 
