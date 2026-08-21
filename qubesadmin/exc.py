@@ -228,6 +228,11 @@ class QubesDaemonAccessError(QubesDaemonCommunicationError):
     or some server-side issue."""
 
 
+# pylint: disable=too-many-ancestors
+class QrexecDeniedError(QubesDaemonAccessError):
+    """Qrexec denied with the call."""
+
+
 class QubesPropertyAccessError(QubesDaemonAccessError, AttributeError):
     """Failed to read/write property value, cause is unknown (insufficient
     permissions, no such property, invalid value, other)"""
