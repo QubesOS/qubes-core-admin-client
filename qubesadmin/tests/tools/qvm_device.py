@@ -211,6 +211,13 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ],
             )
 
+    def test_005_fixed_device_class_parser(self):
+        """A fixed-class wrapper sets devclass without a positional."""
+        parser = qubesadmin.tools.qvm_device.get_parser("testclass")
+        args = parser.parse_args(["list"], app=self.app)
+
+        self.assertEqual(args.devclass, "testclass")
+
     def test_010_attach(self):
         """ Test attach action """
         self.app.expected_calls[(
