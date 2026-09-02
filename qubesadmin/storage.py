@@ -407,6 +407,21 @@ class Pool:
         self._config = None
 
     @property
+    def snap_on_start_forensics(self) -> int:
+        """Forensics mode for snap_on_start volumes"""
+        return int(self.config['snap_on_start_forensics'])
+
+    @snap_on_start_forensics.setter
+    def snap_on_start_forensics(self, value: object) -> None:
+        """Set snap_on_start_forensics property"""
+        self.app.qubesd_call(
+            'dom0',
+            'admin.pool.Set.snap_on_start_forensics',
+            self.name,
+            str(value).encode('ascii'))
+        self._config = None
+
+    @property
     def ephemeral_volatile(self):
         """Whether volatile volumes in this pool should be encrypted with an
            ephemeral key in dom0"""
