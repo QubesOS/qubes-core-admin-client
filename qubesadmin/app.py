@@ -21,6 +21,10 @@
 
 """
 Main Qubes() class and related classes.
+
+.. testsetup:: *
+
+   import qubesadmin
 """
 import grp
 import io
@@ -355,15 +359,18 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             template: str | QubesVM | None=None, pool: str | None=None,
             pools: dict | None=None
     ) -> QubesVM:
-        """Create new Virtual Machine
+        """Create new Virtual Machine.
 
         Example usage with custom storage pools:
 
-        >>> app = qubesadmin.Qubes()
-        >>> pools = {'private': 'external'}
-        >>> vm = app.add_new_vm('AppVM', 'my-new-vm', 'red',
-        >>>    'my-template', pools=pools)
-        >>> vm.netvm = app.domains['sys-whonix']
+        .. doctest::
+           :skipif: True
+
+           >>> app = qubesadmin.Qubes()
+           >>> pools = {'private': 'external'}
+           >>> vm = app.add_new_vm('AppVM', 'my-new-vm', 'red',
+           >>>    'my-template', pools=pools)
+           >>> vm.netvm = app.domains['sys-whonix']
 
         :param str cls: name of VM class (`AppVM`, `TemplateVM` etc)
         :param str name: name of VM
@@ -373,7 +380,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param str pool: storage pool to use instead of default one
         :param dict pools: storage pool for specific volumes
 
-        :return new VM object
+        :raise ValueError: if `name` contains space of both `pool` and `pools`
+           are used at the same time.
+
+        :return: new VM object
+
+        :rtype: QubesVM
         """
 
         if not isinstance(cls, str):
@@ -422,15 +434,18 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     ) -> QubesVM:
         # pylint: disable=too-many-statements
         # pylint: disable=too-many-branches
-        """Clone Virtual Machine
+        """Clone Virtual Machine.
 
         Example usage with custom storage pools:
 
-        >>> app = qubesadmin.Qubes()
-        >>> pools = {'private': 'external'}
-        >>> src_vm = app.domains['personal']
-        >>> vm = app.clone_vm(src_vm, 'my-new-vm', pools=pools)
-        >>> vm.label = app.labels['green']
+        .. doctest::
+           :skipif: True
+
+           >>> app = qubesadmin.Qubes()
+           >>> pools = {'private': 'external'}
+           >>> src_vm = app.domains['personal']
+           >>> vm = app.clone_vm(src_vm, 'my-new-vm', pools=pools)
+           >>> vm.label = app.labels['green']
 
         :param QubesVM or str src_vm: source VM
         :param str new_name: name of new VM
@@ -443,8 +458,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :param list ignore_volumes: do not clone volumes on this list,
             like 'private' or 'root'
         :param bool ignore_devices: if True, do not copy device assignments
+        :raise: ValueError: if `pool` and `ppols` are used at the same time
+        :raise QubesException:
 
-        :return new VM object
+        :return: new VM object
+        :rtype: QubesVM
         """
 
         if pool and pools:
@@ -693,7 +711,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     ) -> Popen:
         """Run qrexec service in a given destination
 
-        *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
+        ``kwargs`` are passed verbatim to :class:`subprocess.Popen`.
 
         :param str dest: Destination - may be a VM name or empty
             string for default (for a given service)

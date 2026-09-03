@@ -26,7 +26,7 @@
 """
 Common part of device API.
 
-The same in `qubes-core-admin` and `qubes-core-admin-client`,
+The same in :doc:`core-admin:index` and :doc:`qubes-core-admin-client <index>`,
 should be moved to one place.
 """
 from __future__ import annotations
@@ -75,12 +75,11 @@ class DeviceSerializer:
         """
         Unpacks basic port properties from a serialized encoded string.
 
-        Returns:
-            tuple: A tuple containing two dictionaries, properties and options,
+        :rtype: tuple[dict, dict]
+        :return: A tuple containing two dictionaries, properties and options,
                 extracted from the serialization.
 
-        Raises:
-            ValueError: If unexpected characters are found in property
+        :raise ValueError: If unexpected characters are found in property
                 names or values.
         """
         ut_decoded = untrusted_serialization.decode(
@@ -163,8 +162,7 @@ class DeviceSerializer:
 
         Modifies `properties`.
 
-        Raises:
-            UnexpectedDeviceProperty: If any property does not match
+        :raises UnexpectedDeviceProperty: If any property does not match
             the expected values.
         """
         expected = expected_device.port
@@ -253,11 +251,10 @@ class Port:
     """
     Class of a *bus* device port with *port id* exposed by a *backend domain*.
 
-    Attributes:
-        backend_domain (QubesVM): The domain which exposes devices,
-            e.g.`sys-usb`.
-        port_id (str): A unique (in backend domain) identifier for the port.
-        devclass (str): The class of the port (e.g., 'usb', 'pci').
+    :param QubesVM backend_domain: The domain which exposes devices,
+       e.g.`sys-usb`.
+    :param str port_id: A unique (in backend domain) identifier for the port.
+    :param str devclass: The class of the port (e.g., 'usb', 'pci').
     """
 
     def __init__(
@@ -313,7 +310,7 @@ class Port:
             domains: VMCollection, blind: bool=False
     ) -> Port:
         """
-        Parse qrexec argument <back_vm>+<port_id> to retrieve Port.
+        Parse qrexec argument ``<back_vm>+<port_id>`` to retrieve :obj:`Port`.
         """
         if blind:
             get_domain = domains.get_blind
@@ -327,7 +324,7 @@ class Port:
             domains: VMCollection, blind: bool=False
     ) -> Port:
         """
-        Parse string <back_vm>:<port_id> to retrieve Port.
+        Parse string ``<back_vm>:<port_id>`` to retrieve :obj:`Port`.
         """
         if blind:
             get_domain = domains.get_blind
@@ -340,7 +337,7 @@ class Port:
         cls, representation: str, devclass: str, get_domain: Callable, sep: str
     ) -> Port:
         """
-        Parse string representation and return instance of Port.
+        Parse string representation and return instance of :obj:`Port`.
         """
         backend_name, port_id = representation.split(sep, 1)
         backend = get_domain(backend_name)
@@ -374,7 +371,7 @@ class Port:
 
     @property
     def has_devclass(self) -> bool:
-        """Returns True if devclass is set."""
+        """Returns :obj:`True` if :obj:`devclass` is set."""
         return self.__devclass is not None
 
 
@@ -395,9 +392,8 @@ class VirtualDevice:
     """
     Class of a device connected to *port*.
 
-    Attributes:
-        port (Port): Peripheral device port exposed by vm.
-        device_id (str): An identifier for the device.
+    :param Port port: Peripheral device port exposed by vm.
+    :param str device_id: An identifier for the device.
     """
 
     def __init__(
@@ -499,10 +495,10 @@ class VirtualDevice:
         """
         Desired order (important for auto-attachment):
 
-        1. <portid>:<devid>
-        2. <portid>:*
-        3. *:<devid>
-        4. *:*
+        1. ``<portid>:<devid>``
+        2. ``<portid>:*``
+        3. ``*:<devid>``
+        4. ``*:*``
         """
         if isinstance(other, (VirtualDevice, DeviceAssignment)):
             if isinstance(self.port, AnyPort) and not isinstance(
@@ -552,7 +548,8 @@ class VirtualDevice:
         backend: QubesVM | None = None,
     ) -> VirtualDevice:
         """
-        Parse qrexec argument <back_vm>+<port_id>:<device_id> to get device info
+        Parse qrexec argument ``<back_vm>+<port_id>:<device_id>`` to get device
+        info
         """
         if backend is None:
             if blind:
@@ -573,7 +570,7 @@ class VirtualDevice:
         backend: QubesVM | None = None,
     ) -> VirtualDevice:
         """
-        Parse string <back_vm>+<port_id>:<device_id> to get device info
+        Parse string ``<back_vm>+<port_id>:<device_id>`` to get device info
         """
         if backend is None:
             assert domains is not None
@@ -595,7 +592,7 @@ class VirtualDevice:
         sep: str,
     ) -> VirtualDevice:
         """
-        Parse string representation and return instance of VirtualDevice.
+        Parse string representation and return instance of :obj:`VirtualDevice`.
         """
         if backend is None:
             assert get_domain is not None
@@ -678,7 +675,7 @@ class DeviceCategory(Enum):
     @staticmethod
     def from_str(interface_encoding: str) -> DeviceCategory:
         """
-        Returns `DeviceCategory` from data encoded in string.
+        Returns :obj:`DeviceCategory` from data encoded in string.
         """
         result = DeviceCategory.Other
         if len(interface_encoding) != len(DeviceCategory.Other.value[0]):
@@ -764,12 +761,12 @@ class DeviceInterface:
 
     @staticmethod
     def from_str_bulk(interfaces: str | None) -> list[DeviceInterface]:
-        """Interprets string of interfaces as list of `DeviceInterface`.
+        """Interprets string of interfaces as list of :obj:`DeviceInterface`.
 
         Examples:
-        "cITERFC" -> [DeviceInterface("cITERFC")]
-        "cITERFCcinterfc" -> [DeviceInterface("cITERFC"),
-                              DeviceInterface("cinterfc")]
+        | "cITERFC" -> [DeviceInterface("cITERFC")]
+        | "cITERFCcinterfc" -> [DeviceInterface("cITERFC"),
+        |                       DeviceInterface("cinterfc")]
         """
         interfaces = interfaces or ""
         if len(interfaces) % 7 != 0:
@@ -872,12 +869,13 @@ class DeviceInterface:
 
     def matches(self, other: DeviceInterface) -> bool:
         """
-        Check if this `DeviceInterface` (pattern) matches given one.
+        Check if this :obj:`DeviceInterface` (pattern) matches given one.
 
         The matching is done character by character using the string
         representation (`repr`) of both objects. A wildcard character (`'*'`)
         in the pattern (i.e., `self`) can match any character in the candidate
         (i.e., `other`).
+
         The two representations must be of the same length.
         """
         pattern = repr(self)
@@ -930,7 +928,8 @@ class DeviceInfo(VirtualDevice):
 
         Could be empty string or "unknown".
 
-        Override this method to return proper name from `/usr/share/hwdata/*`.
+        Override this method to return proper name from
+        :file:`/usr/share/hwdata/*`.
         """
         if not self._vendor:
             return "unknown"
@@ -943,7 +942,8 @@ class DeviceInfo(VirtualDevice):
 
         Could be empty string or "unknown".
 
-        Override this method to return proper name from `/usr/share/hwdata/*`.
+        Override this method to return proper name from
+        :file:`/usr/share/hwdata/*`.
         """
         if not self._product:
             return "unknown"
@@ -993,10 +993,10 @@ class DeviceInfo(VirtualDevice):
         """
         Short human-readable description.
 
-        For unknown device returns `unknown device (unknown vendor)`.
-        For unknown USB device returns `unknown usb device (unknown vendor)`.
-        For unknown USB device with known serial number returns
-            `<serial> (unknown vendor)`.
+        * For unknown device returns `unknown device (unknown vendor)`.
+        * For unknown USB device returns `unknown usb device (unknown vendor)`.
+        * For unknown USB device with known serial number returns
+          `<serial> (unknown vendor)`.
         """
         if self.product and self.product != "unknown":
             prod = self.product
@@ -1264,7 +1264,7 @@ class DeviceAssignment:
         options: dict[str, object] | None=None,
         mode: str | AssignmentMode = AssignmentMode.MANUAL,
     ) -> DeviceAssignment:
-        """Helper method to create a DeviceAssignment object."""
+        """Helper method to create a :obj:`DeviceAssignment` object."""
         return cls(
             VirtualDevice(Port(backend_domain, port_id, devclass), device_id),
             frontend_domain,
@@ -1344,7 +1344,8 @@ class DeviceAssignment:
 
     @property
     def devices(self) -> list[DeviceInfo]:
-        """Get DeviceInfo objects corresponding to this DeviceAssignment"""
+        """Get :obj:`DeviceInfo` objects corresponding to this
+        DeviceAssignment"""
         result: list[DeviceInfo] = []
         if not self.backend_domain:
             return result
@@ -1364,12 +1365,14 @@ class DeviceAssignment:
     @property
     def device(self) -> DeviceInfo:
         """
-        Get single DeviceInfo object or UnknownDevice, if the device has
-         not been found.
-        If there are more devices than one matching, raise ProtocolError.
-        If port id is set we have exactly one device
-        since we can attach ony one device to one port.
-        If assignment is more general we can get 0 or many devices.
+        Get single :obj:`DeviceInfo` object or :obj:`UnknownDevice`, if the
+        device has not been found.
+
+        * If there are more devices than one matching, raise
+          :obj:`ProtocolError`.
+        * If :obj:`port_id` is set we have exactly one device since we can
+          attach only one device to one port.
+        * If assignment is more general we can get 0 or many devices.
         """
         devices = self.devices
         if len(devices) == 1:
@@ -1408,7 +1411,8 @@ class DeviceAssignment:
         """
         Is the device attached to the fronted domain?
 
-        Returns False if device is attached to different domain
+        :return: :obj:`False` if device is attached to different domain
+        :rtype: bool
         """
         for device in self.devices:
             if device.attachment and device.attachment == self.frontend_domain:
@@ -1418,8 +1422,9 @@ class DeviceAssignment:
     @property
     def required(self) -> bool:
         """
-        Is the presence of this device required for the domain to start? If yes,
-        it will be attached automatically.
+        Is the presence of this device required for the domain to start?
+
+        If yes, it will be attached automatically.
         """
         return self.mode == AssignmentMode.REQUIRED
 
