@@ -44,8 +44,18 @@ if typing.TYPE_CHECKING:
 # ["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
 # but can be extended
 Klass = str
-PowerState = Literal["Transient", "Running", "Halted", "Paused",
-"Suspended", "Halting", "Dying", "Crashed", "NA"]
+POWER_STATES = {
+    "Running": {"short": "r"},
+    "Starting": {"short": "S"},
+    "Transient": {"short": "S"},
+    "Paused": {"short": "p"},
+    "Suspended": {"short": "s"},
+    "Halting": {"short": "H"},
+    "Halted": {"short": "h"},
+    "Crashed": {"short": "c"},
+    "NA": {"short": "-"},
+}
+PowerState = Literal[POWER_STATES]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
@@ -196,13 +206,12 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return value    meaning
         =============== ========================================================
         ``'Halted'``    Machine is not active.
-        ``'Transient'`` Machine is running, but does not have :program:`guid`
-                        or :program:`qrexec` available.
+        ``'Transient'`` Machine is in progress of starting. This state will be
+                        deprecated in favor of ``'Starting'``.
         ``'Running'``   Machine is ready and running.
         ``'Paused'``    Machine is paused.
         ``'Suspended'`` Machine is S3-suspended.
         ``'Halting'``   Machine is in process of shutting down (OS shutdown).
-        ``'Dying'``     Machine is in process of shutting down (cleanup).
         ``'Crashed'``   Machine crashed and is unusable.
         ``'NA'``        Machine is in unknown state.
         =============== ========================================================
