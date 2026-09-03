@@ -435,9 +435,28 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         Return `set` of all domains based on the current TemplateVM
         at any level of inheritance.
         """
-        result = set(vm.appvms)
-        for appvm in vm.appvms:
-            result.update(QubesVM._get_derived_vms(appvm))
+        # first build a map of templates -> children
+        children = {}
+        for domain in vm.app.domains:
+            try:
+                template = domain.template
+            except AttributeError:
+                continue
+            if template in children:
+                children[template].append(domain)
+            else:
+                children[template] = [domain]
+
+        result = set()
+        pending = [vm]
+
+        # starting with this VM, go through its children and build out a list
+        while pending:
+            parent = pending.pop()
+            for child in children.get(parent, ()):
+                if child not in result:
+                    result.add(child)
+                    pending.append(child)
         return result
 
     @property
