@@ -111,7 +111,7 @@ def validator_color(color: str) -> bool:
 GUI_DAEMON_OPTIONS = [
     ("allow_fullscreen", "bool", (lambda x: isinstance(x, bool))),
     ("override_redirect_protection", "bool", (lambda x: isinstance(x, bool))),
-    ("override_redirect", "str", (lambda x: x in ["allow", "disable"])),
+    ("override_redirect", "str", (lambda x: x in ["allow", "disabled"])),
     ("allow_utf8_titles", "bool", (lambda x: isinstance(x, bool))),
     ("secure_copy_sequence", "str", validator_key_sequence),
     ("secure_paste_sequence", "str", validator_key_sequence),
