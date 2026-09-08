@@ -54,6 +54,11 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"interfaces='u012345' product='test-device' "
             b"backend_domain='test-vm1'"
         )
+        # preset so `assign`/`attach` do not issue an extra qubesd call
+        self.app._deviceclass_properties_cache = {
+            'testclass': {
+                'assignment_modes':
+                    'manual,ask-to-attach,auto-attach,required'}}
         self.vm1 = self.app.domains['test-vm1']
         self.vm2 = self.app.domains['test-vm2']
         self.vm1_device = \
