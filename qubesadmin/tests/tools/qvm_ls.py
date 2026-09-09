@@ -388,17 +388,10 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
             b'0\x00vm1 class=AppVM state=Running\n' \
             b'template1 class=TemplateVM state=Halted\n' \
             b'sys-net class=AppVM state=Running\n'
-        self.app.expected_calls[
-            ('vm1', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Running'
-        self.app.expected_calls[
-            ('sys-net', 'admin.vm.CurrentState', None, None)] = \
-            b'0\x00power_state=Running'
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
-#           'virt_mode': b'type=str pv',
         }
         self.app.expected_calls[
             ('vm1', 'admin.vm.property.GetAll', None, None)] = \
