@@ -93,7 +93,7 @@ class Line:
         self.description = device.description
         self.assignment = assignment
         self.frontends = []
-        self.sbdf = getattr(device, "data", {}).get("sbdf")
+        self.sbdf = getattr(device, "data", {}).get("sbdf", "")
 
     @property
     def assignments(self):
