@@ -522,3 +522,36 @@ def start_expert(
             except qubesadmin.exc.QubesException:
                 pass
         raise e
+
+
+async def restart(domains, force=False, kill_domains=False):
+    """
+    Core functionality of qvm-restart. Made to be imported from other python 
+    modules.
+
+    Unlike the main routine, doesn't do any input verification - this is up to
+    the invoking module.
+    """
+    if kill_domains:
+        failed_shutdown = await kill(domains=domains)
+    else:
+        failed_shutdown = await shutdown(
+            domains=domains, force=force, wait=True
+        )
+    yield failed_shutdown
+    yield await start(
+        domains=[
+            vm for vm in domains if vm not in failed_shutdown
+        ]
+    )
+
+async def restart_flat(domains, **kwargs):
+    """
+    Restart but return one flat dict[qubesadmin.vm.QubesVM, BaseException],
+    like generic_action
+    """
+    return {
+        vm:report[vm]
+        async for report in restart(domains,**kwargs)
+            for vm in report
+    }
