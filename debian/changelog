@@ -1,3 +1,22 @@
+qubes-core-admin-client (4.3.35-1) unstable; urgency=medium
+
+  [ Divina Commedia ]
+  * Fix man page about qvm-run --gui and --no-gui
+
+  [ NoiceHax ]
+  * Don't let qvm-prefs access computed properties
+
+  [ Ben Grande ]
+  * Execute backup even if summary is denied by qrexec
+
+  [ ts-klassen ]
+  * Fix validation typo on qvm_start_daemon.py
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-device: fix listing assignments with --resolve-paths
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 14 Sep 2026 04:58:18 +0200
+
 qubes-core-admin-client (4.3.34-1) unstable; urgency=medium
 
   [ Edoardo Marziali ]
