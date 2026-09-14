@@ -45,6 +45,29 @@ if TYPE_CHECKING:
     from qubesadmin.app import VMCollection
 
 
+# duplicated from qubesadmin.utils to avoid an import cycle
+def qbool(value):
+    """
+    Property setter for boolean properties.
+
+    It accepts (case-insensitive) ``'0'``, ``'no'`` and ``false`` as
+    :py:obj:`False` and ``'1'``, ``'yes'`` and ``'true'`` as
+    :py:obj:`True`.
+    """
+
+    if isinstance(value, str):
+        lcvalue = value.lower()
+        if lcvalue in ("0", "no", "false", "off"):
+            return False
+        if lcvalue in ("1", "yes", "true", "on"):
+            return True
+        raise QubesValueError(
+            "Invalid literal for boolean property: {!r}".format(value)
+        )
+
+    return bool(value)
+
+
 class ProtocolError(AssertionError):
     """
     Raised when something is wrong with data received.
@@ -908,6 +931,7 @@ class DeviceInfo(VirtualDevice):
         parent: DeviceInfo | None = None,
         attachment: QubesVM | None = None,
         device_id: str | None = None,
+        busy: bool | None = None,
         **kwargs,
     ):
         super().__init__(port, device_id)
@@ -920,6 +944,7 @@ class DeviceInfo(VirtualDevice):
         self._interfaces = interfaces
         self._parent = parent
         self._attachment = attachment
+        self._busy = busy
 
         self.data = kwargs
 
@@ -1074,6 +1099,17 @@ class DeviceInfo(VirtualDevice):
         """
         return self._attachment
 
+    @property
+    def busy(self) -> bool:
+        """
+        Is the device currently busy (unavailable for attachment)?
+
+        True when a child device (partition or sub-device) is currently
+        passed through to a VM.  The device remains visible but cannot be
+        attached until all children are detached.
+        """
+        return bool(self._busy)
+
     def serialize(self) -> bytes:
         """
         Serialize an object to be transmitted via Qubes API.
@@ -1095,6 +1131,11 @@ class DeviceInfo(VirtualDevice):
         if self.attachment:
             properties += b" " + DeviceSerializer.pack_property(
                 "attachment", self.attachment.name
+            )
+
+        if self.busy:
+            properties += b" " + DeviceSerializer.pack_property(
+                "busy", "True"
             )
 
         properties += b" " + DeviceSerializer.pack_property(
@@ -1179,6 +1220,14 @@ class DeviceInfo(VirtualDevice):
             )
             del properties["parent_port_id"]
             del properties["parent_devclass"]
+
+        # A missing property means free; otherwise parse strictly.  An
+        # invalid value raises QubesValueError, which the caller
+        # (deserialize) turns into an UnknownDevice.
+        untrusted_busy = properties.pop("busy", None)
+        properties["busy"] = (
+            qbool(untrusted_busy) if untrusted_busy is not None else False
+        )
 
         return cls(**properties)
 
