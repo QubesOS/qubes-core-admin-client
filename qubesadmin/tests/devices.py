@@ -142,6 +142,73 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
+    def test_024_attach_force_detaches_the_current_holder(self):
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.test.Available', None, None)] = \
+            b"0\0dev1 attachment='test-vm3'\n"
+        self.app.expected_calls[
+            ('test-vm3', 'admin.vm.device.test.Detach',
+             'test-vm2+dev1+_', None)] = b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='manual' "
+             b"frontend_domain='test-vm' _force='yes'")] = b'0\0'
+
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
+        self.vm.devices['test'].attach(assign, force=True)
+        self.assertAllCalled()
+
+    def test_025_attach_force_detaches_nothing_when_free(self):
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.test.Available', None, None)] = \
+            b'0\0dev1\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='manual' "
+             b"frontend_domain='test-vm' _force='yes'")] = b'0\0'
+
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
+        self.vm.devices['test'].attach(assign, force=True)
+        # no Detach call is expected at all
+        self.assertAllCalled()
+
+    def test_026_attach_force_does_not_detach_from_the_target(self):
+        # already where this attach wants it, nothing happens
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.test.Available', None, None)] = \
+            b"0\0dev1 attachment='test-vm'\n"
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='manual' "
+             b"frontend_domain='test-vm' _force='yes'")] = b'0\0'
+
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
+        self.vm.devices['test'].attach(assign, force=True)
+        self.assertAllCalled()
+
+    def test_027_attach_force_does_not_leak_into_the_assignment(self):
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.test.Available', None, None)] = \
+            b'0\0dev1\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='manual' "
+             b"frontend_domain='test-vm' _force='yes'")] = b'0\0'
+
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test')
+        self.vm.devices['test'].attach(assign, force=True)
+
+        self.assertNotIn('force', assign.options)
+        self.assertAllCalled()
+
     def test_022_attach_required(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Attach', 'test-vm2+dev1+_',

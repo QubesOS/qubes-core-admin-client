@@ -48,6 +48,53 @@ from qubesadmin.device_protocol import (
 if TYPE_CHECKING:
     from qubesadmin.vm import QubesVM
 
+# Parent links come from not fully trusted backend qube, there can be a cycle.
+MAX_TREE_DEPTH = 8
+
+
+def _resolve(
+    backend: QubesVM, device: VirtualDevice
+) -> DeviceInfo | None:
+    """Look *device* up in its backend, to get one with attachment info."""
+    try:
+        resolved = backend.devices[device.devclass][device.port_id]
+    except (LookupError, qubesadmin.exc.QubesException):
+        return None
+    if isinstance(resolved, UnknownDevice):
+        return None
+    return resolved
+
+
+def _all_subdevices(device: DeviceInfo) -> Iterator[DeviceInfo]:
+    """
+    Descendants of *device*, as reported by its backend.
+
+    A "links" are untrusted input, so a backend could describe a cycle;
+    ``seen`` is what keeps that from looping forever here.
+    """
+    backend = device.backend_domain
+    if backend is None:
+        return
+
+    def key(dev: VirtualDevice) -> tuple[str, str]:
+        return dev.devclass, dev.port_id
+
+    seen = {key(device)}
+    stack = [(device, 0)]
+    while stack:
+        node, depth = stack.pop()
+        if depth >= MAX_TREE_DEPTH:
+            continue
+        for child in node.subdevices:
+            if key(child) in seen:
+                continue
+            seen.add(key(child))
+            resolved = _resolve(backend, child)
+            if resolved is None:
+                continue
+            yield resolved
+            stack.append((resolved, depth + 1))
+
 
 class DeviceCollection:
     """Bag for devices.
@@ -70,21 +117,64 @@ class DeviceCollection:
         #: in contrast to empty list which means "cached empty list"
         self._assignment_cache = None
 
-    def attach(self, assignment: DeviceAssignment) -> None:
+    def attach(self, assignment: DeviceAssignment, force: bool = False) -> None:
         """
         Attach (add) device to domain.
 
         :param DeviceAssignment assignment: device object
+        :param bool force: the best effort to attach.
+
+        Conflicts that can be resolved are resolved here, as detach calls:
+        the device is detached from the current qube, and so is any subdevice
+        of it attached elsewhere.
         """
         if assignment.devclass == "pci":
             raise qubesadmin.exc.QubesValueError(
                 "PCI devices cannot be attached manually, "
                 "did you mean `qvm-pci assign --required ...`"
             )
+        if force:
+            self._detach_conflicting(assignment)
+            assignment = assignment.clone(
+                options={**assignment.options, "force": "yes"}
+            )
         self._add(assignment, "attach")
         # clear the whole cache instead of saving provided assignment, it might
         # get modified before actually attaching
         self._attachment_cache = None
+
+    def _detach_conflicting(self, assignment: DeviceAssignment) -> None:
+        """
+        Detach whatever would make attaching *assignment* fail.
+        """
+        backend = assignment.backend_domain
+        if backend is None:
+            return
+
+        backend.devices.clear_cache()
+
+        device = assignment.device
+        if isinstance(device, UnknownDevice):
+            return
+
+        holder = device.attachment
+        if holder is not None and holder != self._vm:
+            holder.devices[device.devclass].detach(DeviceAssignment(device))
+        elif holder is not None:
+            # already exactly where this attach wants it
+            return
+
+        if not device.busy:
+            # nothing else to free
+            return
+
+        for subdevice in _all_subdevices(device):
+            subdevice_holder = subdevice.attachment
+            if subdevice_holder is None:
+                continue
+            subdevice_holder.devices[subdevice.devclass].detach(
+                DeviceAssignment(subdevice)
+            )
 
     def detach(self, assignment: DeviceAssignment) -> None:
         """
