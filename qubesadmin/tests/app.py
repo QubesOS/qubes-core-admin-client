@@ -26,6 +26,8 @@ import socket
 import subprocess
 import sys
 import unittest
+from contextlib import ExitStack
+from functools import partial
 
 import multiprocessing
 
@@ -1321,3 +1323,32 @@ class TC_30_QubesRemote(unittest.TestCase):
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+
+
+class TC_30_ContainerCacheInvalidation(qubesadmin.tests.QubesTestCase):
+    def test_disabling_cache_invalidates_everything(self) -> None:
+        flow = []
+        with mock.patch.object(self.app, '_invalidate_cache_all',
+                               side_effect=lambda: flow.append('invalidate')):
+            for is_enabled in (False, True, True, False, False):
+                self.app.cache_enabled = is_enabled
+                flow.append(str(is_enabled))
+        self.assertEqual(', '.join(flow),
+                         'False, True, True, invalidate, False, False')
+
+    def test_invalidate_existing_vm_containers_without_api_calls(self) -> None:
+        first_vm = self.app.domains.get_blind('first-vm')
+        second_vm = self.app.domains.get_blind('second-vm')
+        flow = []
+        with ExitStack() as patches:
+            for vm in (first_vm, second_vm):
+                for container_name in ('features', 'tags'):
+                    patches.enter_context(mock.patch.object(
+                        getattr(vm, container_name), 'clear_cache',
+                        side_effect=partial(flow.append,
+                                            f'{vm.name} {container_name}')))
+            self.app._invalidate_cache_all()  # pylint: disable=protected-access
+        self.assertEqual(
+            f'{", ".join(sorted(flow))}; calls={len(self.app.actual_calls)}',
+            'first-vm features, first-vm tags, '
+            'second-vm features, second-vm tags; calls=0')

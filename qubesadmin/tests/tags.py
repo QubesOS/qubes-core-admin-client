@@ -20,6 +20,10 @@
 
 # pylint: disable=missing-docstring
 
+from operator import contains
+from unittest.mock import Mock, patch
+
+from qubesadmin.exc import PermissionDenied
 import qubesadmin.tests
 import qubesadmin.tags
 
@@ -110,3 +114,170 @@ class TC_00_Tags(qubesadmin.tests.QubesTestCase):
             b'tag1\0'
         self.tags.discard('tag1')
         self.assertAllCalled()
+
+
+class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.app.cache_enabled = True
+        self.vm = self.app.domains.get_blind('test-vm')
+
+    def expect_read(self, method: str, response: bytes | list[bytes],
+                    tag: str | None = None) -> None:
+        self.app.expected_calls[
+            ('test-vm', f'admin.vm.tag.{method}', tag, None)] = response
+
+    def test_membership(self) -> None:
+        for response, is_present in ((b'1', True), (b'0', False), (b'', False)):
+            with self.subTest(response=response):
+                self.vm.tags.clear_cache()
+                self.app.actual_calls.clear()
+                self.expect_read('Get', b'0\0' + response, 'tag')
+                values = ['tag' in self.vm.tags for _ in range(2)]
+                self.assertEqual(
+                    f'{values!r}; calls={len(self.app.actual_calls)}',
+                    f'{[is_present, is_present]!r}; calls=1')
+
+    def test_lists(self) -> None:
+        for names in ('second\nfirst\n', ''):
+            with self.subTest(names=names):
+                self.vm.tags.clear_cache()
+                self.app.actual_calls.clear()
+                self.expect_read('List', b'0\0' + names.encode())
+                values = [','.join(self.vm.tags) for _ in range(2)]
+                expected = ','.join(names.splitlines())
+                self.assertEqual(
+                    f'{values!r}; calls={len(self.app.actual_calls)}',
+                    f'{[expected, expected]!r}; calls=1')
+
+    def test_filtered_methods_are_independent(self) -> None:
+        self.expect_read('List', b'0\0listed\n')
+        self.expect_read('Get', b'0\x001', 'omitted')
+        self.expect_read('Get', b'0\x000', 'listed')
+        names = ','.join(self.vm.tags)
+        values = [('omitted' in self.vm.tags, 'listed' in self.vm.tags)
+                  for _ in range(2)]
+        cached_names = ','.join(self.vm.tags)
+        self.assertEqual(
+            f'{names}; {values!r}; {cached_names}; '
+            f'calls={len(self.app.actual_calls)}',
+            'listed; [(True, False), (True, False)]; listed; calls=3')
+
+    def test_denied_list(self) -> None:
+        self.expect_read('List', b'2\0PermissionDenied\0\0denied\0')
+        self.expect_read('Get', b'0\x001', 'tag')
+        for _ in range(2):
+            with self.assertRaises(qubesadmin.exc.PermissionDenied):
+                list(self.vm.tags)
+        values = ['tag' in self.vm.tags for _ in range(2)]
+        self.assertEqual(
+            f'{values!r}; calls={len(self.app.actual_calls)}',
+            '[True, True]; calls=3')
+
+    def test_errors_not_cached(self) -> None:
+        for response, error_type, methods in (
+                (b'2\0PermissionDenied\0\0denied\0',
+                 qubesadmin.exc.PermissionDenied, ('Get',)),
+                (b'', qubesadmin.exc.QubesDaemonAccessError, ('Get', 'List')),
+                (b'invalid', qubesadmin.exc.QubesDaemonCommunicationError,
+                 ('Get', 'List')),
+                (b'2\0QubesVMNotFoundError\0\0gone\0',
+                 qubesadmin.exc.QubesVMNotFoundError, ('Get', 'List'))):
+            for method in methods:
+                tag = 'tag' if method == 'Get' else None
+                with self.subTest(response=response, method=method):
+                    self.app.actual_calls.clear()
+                    self.expect_read(method, response, tag)
+                    for _ in range(2):
+                        with self.assertRaises(error_type):
+                            if tag is None:
+                                list(self.vm.tags)
+                            else:
+                                contains(self.vm.tags, tag)
+                    self.assertEqual(len(self.app.actual_calls), 2)
+
+    def test_list_decoding_errors_not_cached(self) -> None:
+        self.expect_read('List', b'0\0\xff')
+        for _ in range(2):
+            with self.assertRaises(UnicodeDecodeError):
+                list(self.vm.tags)
+        self.assertEqual(len(self.app.actual_calls), 2)
+
+    def test_disabled_reads_are_not_cached(self) -> None:
+        self.app.cache_enabled = False
+        self.expect_read('Get', b'0\x001', 'tag')
+        self.expect_read('List', b'0\0tag\n')
+        for _ in range(2):
+            contains(self.vm.tags, 'tag')
+            list(self.vm.tags)
+        self.assertEqual(len(self.app.actual_calls), 4)
+
+    def test_vm_caches_are_independent(self) -> None:
+        self.expect_read('Get', b'0\x001', 'tag')
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.tag.Get', 'tag', None)] = b'0\x000'
+        other_vm = self.app.domains.get_blind('other-vm')
+        values = ['tag' in vm.tags for vm in
+                  (self.vm, other_vm, self.vm, other_vm)]
+        self.assertEqual(
+            f'{values!r}; calls={len(self.app.actual_calls)}',
+            '[True, False, True, False]; calls=2')
+
+    def test_clear_cache(self) -> None:
+        self.expect_read('Get', [b'0\x001', b'0\x000'], 'tag')
+        self.expect_read('List', [b'0\0tag\n', b'0\0new\n'])
+        contains(self.vm.tags, 'tag')
+        list(self.vm.tags)
+        self.vm.tags.clear_cache()
+        calls_after_clear = len(self.app.actual_calls)
+        is_present = 'tag' in self.vm.tags
+        names = ','.join(self.vm.tags)
+        self.assertEqual(
+            f'{is_present}; {names}; calls after clear={calls_after_clear}; '
+            f'total calls={len(self.app.actual_calls)}',
+            'False; new; calls after clear=2; total calls=4')
+
+    def read_membership_and_names(self) -> str:
+        return f'{"tag" in self.vm.tags}, {",".join(self.vm.tags)}'
+
+    def test_writes_update_cache(self) -> None:
+        self.expect_read('List', b'0\0other\n')
+        self.expect_read('Get', b'0\x000', 'tag')
+        before = self.read_membership_and_names()
+        self.expect_read('Set', b'0\0', 'tag')
+        self.vm.tags.add('tag')
+        after_add = self.read_membership_and_names()
+        self.expect_read('Remove', b'0\0', 'tag')
+        self.vm.tags.remove('tag')
+        after_removal = self.read_membership_and_names()
+        self.assertEqual(
+            f'{before}; {after_add}; {after_removal}; '
+            f'calls={len(self.app.actual_calls)}',
+            'False, other; True, other,tag; False, other; calls=4')
+
+    def test_failed_writes_keep_cache(self) -> None:
+        for method, mutation in (('Set', self.vm.tags.add),
+                                 ('Remove', self.vm.tags.remove)):
+            with self.subTest(method=method):
+                self.vm.tags.clear_cache()
+                self.app.actual_calls.clear()
+                self.expect_read('Get', b'0\x001', 'tag')
+                self.expect_read('List', b'0\0tag\n')
+                before = self.read_membership_and_names()
+                self.expect_read(method, b'2\0PermissionDenied\0\0denied\0',
+                                 'tag')
+                with self.assertRaises(PermissionDenied):
+                    mutation('tag')
+                self.assertEqual(
+                    f'{before}; {self.read_membership_and_names()}; '
+                    f'calls={len(self.app.actual_calls)}',
+                    'True, tag; True, tag; calls=3')
+
+    def test_update_discard_delegation(self) -> None:
+        calls = Mock()
+        with patch.object(self.vm.tags, 'add', calls.add), \
+             patch.object(self.vm.tags, 'remove', calls.remove):
+            self.vm.tags.update(['tag'])
+            self.vm.tags.discard('tag')
+        self.assertEqual('\n'.join(map(str, calls.mock_calls)),
+                         "call.add('tag')\ncall.remove('tag')")
