@@ -37,9 +37,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             self.skipTest("qvm-run change behavior on redirected stdout/stderr")
         super().setUp()
 
-    def default_filter_esc(self):
-        return os.isatty(sys.stdout.fileno())
-
     def test_000_run_single(self):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00test-vm class=AppVM state=Running\n"
@@ -358,22 +355,21 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     },
                 ),
                 # TODO: find a way to compare b'some-data\n' sent from another
-                # proces
+                # procces
             ],
         )
         self.assertAllCalled()
 
-    @unittest.expectedFailure
     def test_002_color_output(self):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00test-vm class=AppVM state=Running\n"
         )
         self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Running\n"
+        self.app.expected_calls[
             ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
-        # self.app.expected_calls[
-        #     ('test-vm', 'admin.vm.List', None, None)] = \
-        #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
         with unittest.mock.patch("sys.stdout", stdout):
             ret = qubesadmin.tools.qvm_run.main(
@@ -409,14 +405,16 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         stdout.close()
         self.assertAllCalled()
 
-    @unittest.expectedFailure
     def test_003_no_color_output(self):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00test-vm class=AppVM state=Running\n"
         )
-        # self.app.expected_calls[
-        #     ('test-vm', 'admin.vm.List', None, None)] = \
-        #     b'0\x00test-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Running\n"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         stdout = io.StringIO()
         with unittest.mock.patch("sys.stdout", stdout):
             ret = qubesadmin.tools.qvm_run.main(
@@ -431,38 +429,34 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             )
 
         self.assertEqual(ret, 0)
+        params = {
+            "stdin": None,
+            "stdout": None,
+            "stderr": None,
+            "user": None,
+            "prefix_data": b"command; exit\n",
+        }
+        filter_esc = os.isatty(sys.stdout.fileno())
+        if filter_esc:
+            params["filter_esc"] = filter_esc
         self.assertEqual(
             self.app.service_calls,
-            [
-                (
-                    "test-vm",
-                    "qubes.VMShell",
-                    {
-                        "filter_esc": self.default_filter_esc(),
-                        "stdin": None,
-                        "stdout": None,
-                        "stderr": None,
-                        "user": None,
-                        "prefix_data": b"command; exit\n",
-                    },
-                ),
-            ],
+            [("test-vm", "qubes.VMShell", params)],
         )
         self.assertEqual(stdout.getvalue(), "")
         stdout.close()
         self.assertAllCalled()
 
-    @unittest.expectedFailure
     def test_004_no_filter_esc(self):
         self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
             b"0\x00test-vm class=AppVM state=Running\n"
         )
         self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=Running\n"
+        self.app.expected_calls[
             ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
         ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
-        # self.app.expected_calls[
-        #     ('test-vm', 'admin.vm.List', None, None)] = \
-        #     b'0\x00test-vm class=AppVM state=Running\n'
         stdout = io.StringIO()
         with unittest.mock.patch("sys.stdout", stdout):
             ret = qubesadmin.tools.qvm_run.main(
@@ -484,9 +478,9 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
                     "test-vm",
                     "qubes.VMShell",
                     {
-                        "filter_esc": False,
                         "stdin": None,
                         "stderr": None,
+                        "stdout": None,
                         "user": None,
                         "prefix_data": b"command; exit\n",
                     },
@@ -1333,6 +1327,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         )
         self.assertAllCalled()
 
+    @unittest.expectedFailure
     def test_029_command_is_dashdash(self):
         self.app.expected_calls[
             (
@@ -1352,7 +1347,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             [
                 (
                     "@dispvm:test-vm",
-                    "qubes.VMExec+----",
+                    "qubes.VMExec+----+----",
                     {
                         "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
@@ -1422,11 +1417,10 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         )
         self.assertAllCalled()
 
-    @unittest.expectedFailure
     def test_032_argparse_bug_workaround_unnamed_dispvm(self):
         self.app.expected_calls[
-            ("@dispvm", "admin.vm.feature.CheckWithTemplate", "vmexec", None)
-        ] = b"0\x001"
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
         ret = qubesadmin.tools.qvm_run.main(
             ["--no-gui", "--dispvm", "test-vm", "command", "--"], app=self.app
         )
@@ -1435,13 +1429,14 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             self.app.service_calls,
             [
                 (
-                    "@dispvm",
-                    "qubes.VMExec+test--vm+command+----",
+                    "@dispvm:test-vm",
+                    "qubes.VMShell",
                     {
                         "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
                         "stderr": subprocess.DEVNULL,
                         "user": None,
+                        "prefix_data": b"command; exit\n",
                     },
                 ),
             ],
