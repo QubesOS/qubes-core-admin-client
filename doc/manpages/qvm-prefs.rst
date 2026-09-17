@@ -204,6 +204,29 @@ qrexec_timeout
 
     TemplateBasedVM uses its template's value as a default.
 
+rebootable
+    Property type: bool
+
+    Whether the qube reboot request's should be acknowledged. If set to
+    ``False``, the qube will simply shut down. A shutdown generates a volume
+    revision (see `revisions_to_keep` in :manpage:`qvm-volume(1)`), allowing the
+    qube to reboot several times, also allows it to throw away all previous
+    revisions of its storage volumes, and a user will not be able to revert to a
+    known good state in case of compromise to unintentional restart loop.
+    Due to the cleanup of volume revisions risk, consider setting a value to
+    ``rebootable_threshold`` according to your risk value.
+
+    TemplateBasedVM uses its template's value as a default.
+
+rebootable_threshold
+    Accepted values: threshold in seconds
+
+    When a qube reboots, the time is recorded, this threshold prevents the qube
+    from rebooting again until after a reboot request is made after the
+    expiration of the threshold. Set it to ``0`` to disable this check.
+
+    TemplateBasedVM uses its template's value as a default.
+
 stubdom_mem
     Accepted values: memory in MiB
 
