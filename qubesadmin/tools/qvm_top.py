@@ -40,12 +40,12 @@ from curses.ascii import (
     SP,
     CR,
 )
+from datetime import datetime, timezone
 from importlib.metadata import metadata
 from logging import getLogger, Formatter, Logger, DEBUG, INFO
 from logging.handlers import SysLogHandler
 from os import environ
 from sys import stderr, exc_info, exit as sys_exit
-from time import strftime
 from textwrap import TextWrapper
 from traceback import print_exception
 from typing import TypedDict, NotRequired, Callable, Awaitable, Any
@@ -299,6 +299,7 @@ class Stats:
         self.features_default = {"gui": True, "internal": False}
         self.state: str = "NA"
         self.label: Label | str = ""
+        self.start_time: datetime | None | str = "NA"
         self.is_preload: bool = False
         self.gui: bool = True
         self.internal: bool = False
@@ -419,6 +420,7 @@ class Stats:
         data = {
             "state": self.vm.get_power_state(),
             "label": self.vm.label,
+            "start_time": getattr(self.vm, "start_time", "NA"),
             "memory_init": getattr(self.vm, "memory", "NA"),
             "memory_max": getattr(self.vm, "maxmem", "NA"),
             "auto_cleanup": getattr(self.vm, "auto_cleanup", False),
@@ -443,8 +445,41 @@ class Stats:
         for k in ["memory_init", "memory_max"]:
             if isinstance(data[k], int):
                 data[k] = data[k] * 1024
-
+        data["start_time"] = self._get_timestamp(value=data["start_time"])
         self.set_verbose(data)
+
+    def _get_timestamp(
+        self, value: float | int | str
+    ) -> datetime | str | int | float:
+        """
+        Convert floating point to timestamp."""
+        if (
+            value
+            and value != "NA"
+            and (
+                isinstance(value, (int, float))
+                or (isinstance(value, str) and value[0].isdigit())
+            )
+        ):
+            # Weird handling due old server reporting it as str instead of int.
+            # Added float support just in case.
+            newvalue: datetime | str | int | float = datetime.fromtimestamp(
+                int(value), tz=timezone.utc
+            )
+        else:
+            newvalue = value
+        return newvalue
+
+    def update_start_time(self, value: float | int | str | None) -> None:
+        """
+        Update startup time.
+        """
+        if value is None:
+            value = getattr(self.vm, "start_time", "NA")
+        newvalue: datetime | str | int | float = self._get_timestamp(
+            value=value
+        )
+        self.set_verbose({"start_time": newvalue})
 
     def update_stats(self, **kwargs: Any) -> None:
         """
@@ -889,8 +924,13 @@ class Screen:
             if row.vm.klass == "AdminVM":
                 return (0, row.vm.name)
             return (1, row.vm.name)
-        val = getattr(row, header.lower())
+        little_header = header.lower()
+        if little_header == "uptime":
+            little_header = "start_time"
+        val = getattr(row, little_header)
         try:
+            if isinstance(val, datetime):
+                return (1, val.timestamp())
             return (1, float(val))
         except (TypeError, ValueError):
             return (0, val.lower())
@@ -924,6 +964,7 @@ class Screen:
         Define screen regions.
         """
         # pylint: disable=too-many-locals,too-many-statements,too-many-branches
+        current_time: datetime = datetime.now(tz=timezone.utc)
         self.stdscr.erase()
         height, width = self.stdscr.getmaxyx()
         sums_row = self.header_row - 1
@@ -1077,7 +1118,11 @@ class Screen:
             for column in self.columns.values():
                 color_attr = None
                 attr = column.machine_header.lower()
-                data = getattr(stats, attr)
+                if attr == "uptime":
+                    gattr = "start_time"
+                else:
+                    gattr = attr
+                data = getattr(stats, gattr)
                 if not sel_attr and self.allow_color:
                     if attr == "name":
                         try:
@@ -1108,6 +1153,13 @@ class Screen:
 
                 if attr == "state" and self.thin_columns:
                     data = POWER_STATES[data]["short"]
+                elif attr == "uptime" and isinstance(data, datetime):
+                    uptime = current_time - data
+                    days = uptime.days
+                    hours = uptime.seconds // 3600
+                    minutes = (uptime.seconds // 60) % 60
+                    seconds = uptime.seconds % 60
+                    data = f"{days}:{hours:02}:{minutes:02}:{seconds:02}"
                 elif (
                     isinstance(data, int)
                     and not column.percentage
@@ -1294,7 +1346,7 @@ class Screen:
         header_dom_prefix = domain_text
         header_dom_suffix = ": " + ", ".join(state_parts)
 
-        current_time = strftime("%H:%M:%S")
+        current_time_str = current_time.strftime("%H:%M:%S %Z")
         if self.sort_col_index is not None:
             sort_col_index = self.sort_col_index
         else:
@@ -1308,7 +1360,7 @@ class Screen:
         sorted_header += sort_sign
 
         header_desc_prefix = top_text
-        header_desc_suffix = f": {self.version} - {current_time}"
+        header_desc_suffix = f": {self.version} - {current_time_str}"
         scroll_hint = (
             f"{scroll_start + 1}-{scroll_end}/{total_items}"
             if total_items > 0
@@ -2046,6 +2098,9 @@ class Monitor:
         if name == "memory":
             item.update_memory_init(value=newvalue)
             return
+        if name == "start_time":
+            item.update_start_time(value=newvalue)
+            return
         if name == "label":
             newvalue = self.screen.init_label(label=newvalue)
         item.update_generic(name=name, value=newvalue)
@@ -2115,6 +2170,7 @@ class Monitor:
             ("property-set:label", self.set_generic),
             ("property-set:auto_cleanup", self.set_generic),
             ("property-reset:is_preload", self.set_generic),
+            ("property-reset:start_time", self.set_generic),
             ("property-set:guivm", self.set_generic),
             ("domain-feature-set:gui", self.set_feat_generic),
             ("domain-feature-delete:gui", self.del_feat_generic),
@@ -2297,6 +2353,13 @@ Column(
     doc="Qube's power state.",
     right_justify=False,
 )
+Column(
+    header="UPTIME",
+    min_header="T",
+    machine_header="uptime",
+    min_width=lambda header: max(len(header), 8),
+    doc="Qube's uptime.",
+)
 
 # Memory
 Column(
@@ -2467,10 +2530,11 @@ Column(
 
 # TODO: ben: check formats
 FORMATS: dict[str, list[str]] = {
-    "min": ["name", "state", "memory_usage_used", "cpu_usage"],
+    "min": ["name", "state", "uptime", "memory_usage_used", "cpu_usage"],
     "default": [
         "name",
         "state",
+        "uptime",
         "memory_assigned_usable",
         "memory_used_noswap",
         "swap_used",

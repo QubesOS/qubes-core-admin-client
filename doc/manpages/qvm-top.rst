@@ -245,6 +245,10 @@ necessary.
 
    Qube's power state.
 
+.. option:: uptime -> UPTIME
+
+   Qube's uptime.
+
 .. option:: memory_init -> MI
 
    How much memory the system must reserve for the qube to be able to initialize. On non-memory-balanced qubes, this is the maximum amount of memory a domain will ever have while it is running.
