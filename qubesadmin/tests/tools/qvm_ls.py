@@ -307,35 +307,43 @@ class TC_80_Power_state_filters(qubesadmin.tests.QubesTestCase):
             [
                 ('a', TestVM('a', power_state='Halted')),
                 ('b', TestVM('b', power_state='Transient')),
-                ('c', TestVM('c', power_state='Running'))
+                ('bb', TestVM('bb', power_state='Starting')),
+                ('c', TestVM('c', power_state='Running')),
+                ('d', TestVM('d', power_state='Halting')),
             ]
         )
 
     def test_100_nofilter(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main([], app=self.app)
+            qubesadmin.tools.qvm_ls.main(['--raw-list'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE      CLASS   LABEL  TEMPLATE  NETVM\n'
-            'a     Halted     TestVM  -      -         -\n'
-            'b     Transient  TestVM  -      -         -\n'
-            'c     Running    TestVM  -      -         -\n')
+            'a\n'
+            'b\n'
+            'bb\n'
+            'c\n'
+            'd\n'
+        )
 
     def test_100_running(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--running'], app=self.app)
+            qubesadmin.tools.qvm_ls.main(
+                ['--raw-list', '--running'],
+                app=self.app
+            )
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'c     Running  TestVM  -      -         -\n')
+            'c\n'
+        )
 
     def test_100_running_or_halted(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--running', '--halted'],
-                                         app=self.app)
+            qubesadmin.tools.qvm_ls.main(
+                ['--raw-list', '--running', '--halted'],
+                app=self.app
+            )
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'a     Halted   TestVM  -      -         -\n'
-            'c     Running  TestVM  -      -         -\n')
-
+            'a\n'
+            'c\n'
+        )
 
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
     def test_100_list_with_status(self):
