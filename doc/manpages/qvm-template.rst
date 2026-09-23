@@ -85,7 +85,7 @@ Commands
 install
 ^^^^^^^
 
-| :command:`qvm-template install` [-h] [--pool *POOL*] [--nogpgcheck] [--allow-pv] [--skip-start] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
+| :command:`qvm-template install` [-h] [--pool *POOL*] [--name *NAME*] [--nogpgcheck] [--allow-pv] [--skip-start] [--downloaddir *DOWNLOADDIR*] [--retries *RETRIES*] [*TEMPLATESPEC* [*TEMPLATESPEC* ...]]
 
 Install template packages.
 See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
@@ -97,6 +97,14 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
 .. option:: --pool POOL
 
    Specify pool to store created VMs in.
+
+.. option:: --name NAME
+
+   Install the template under *NAME* instead of the name it comes with. Exactly
+   one *TEMPLATESPEC* must be given, it must resolve to exactly one template,
+   and no qube named *NAME* may exist yet. This allows installing a fresh copy
+   of a template the user has already customized, without touching the existing
+   one.
 
 .. option:: --nogpgcheck
 

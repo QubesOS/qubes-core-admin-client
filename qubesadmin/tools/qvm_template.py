@@ -65,6 +65,11 @@ WRAPPER_PAYLOAD_END = "###!Q!END-QUBES-WRAPPER!Q!###"
 
 UPDATEVM = str('global UpdateVM')
 
+# as in qubes.vm.validate_name()
+VM_NAME_RE = re.compile(r'\A[a-zA-Z][a-zA-Z0-9_.-]*\Z')
+VM_NAME_MAX_LEN = 31
+VM_NAME_RESERVED = ('Domain-0', 'none', 'default')
+
 
 class AlreadyRunning(Exception):
     """Another qvm-template is already running"""
@@ -170,6 +175,9 @@ def get_parser() -> argparse.ArgumentParser:
         help_str='Install template packages.')
     parser_install.add_argument('--pool',
         help='Specify storage pool to store created templates in.')
+    parser_install.add_argument('--name', metavar='NAME',
+        help='Install the template under this name instead of its own.'
+             ' Requires exactly one TEMPLATESPEC.')
     parser_reinstall = parser_add_command('reinstall',
         help_str='Reinstall template packages.')
     parser_downgrade = parser_add_command('downgrade',
@@ -419,6 +427,25 @@ def get_managed_template_vm(app: qubesadmin.app.QubesBase, name: str
     if not is_managed_template(vm):
         parser.error(f"Template '{name}' is not managed by qvm-template.")
     return vm
+
+
+def check_target_name(args: argparse.Namespace,
+                      app: qubesadmin.app.QubesBase
+                      ) -> typing.Optional[str]:
+    """Validate ``--name`` and return the name to install the template as,
+    or None to keep the one from the package."""
+    # only 'install' has --name
+    name = getattr(args, 'name', None)
+    if name is None:
+        return None
+    if len(args.templates) != 1:
+        parser.error('--name requires exactly one TEMPLATESPEC.')
+    if len(name) > VM_NAME_MAX_LEN or not VM_NAME_RE.match(name) \
+            or name in VM_NAME_RESERVED or name.endswith('-dm'):
+        parser.error(f"Invalid template name '{name}'.")
+    if name in app.domains:
+        parser.error(f"A qube named '{name}' already exists.")
+    return name
 
 
 def confirm_action(msg: str, affected: typing.List[str]) -> None:
@@ -1054,6 +1081,8 @@ def install(
     """
     keys = get_keys_for_repos(args.repo_files, args.releasever)
 
+    target_name = check_target_name(args, app)
+
     unverified_rpm_list = []  # rpmfile, reponame
     verified_rpm_list = []
 
@@ -1076,10 +1105,11 @@ def install(
             parser.error(f"Illegal package name for package '{rpmfile}'.")
         # Remove prefix to get the real template name
         name = package_name[len(PACKAGE_NAME_PREFIX):]
+        vm_name = target_name if target_name is not None else name
 
         # Check if already installed
-        if not override_existing and name in app.domains:
-            print(f"Template '{name}' already installed, skipping..."
+        if not override_existing and vm_name in app.domains:
+            print(f"Template '{vm_name}' already installed, skipping..."
                    " (You may want to use the"
                    " {reinstall,upgrade,downgrade}"
                    " operations.)", file=sys.stderr)
@@ -1110,7 +1140,8 @@ def install(
                       file=sys.stderr)
                 return
 
-        verified_rpm_list.append((rpmfile, reponame, name, package_hdr))
+        verified_rpm_list.append(
+            (rpmfile, reponame, name, vm_name, package_hdr))
 
     # Process local templates
     for template in args.templates:
@@ -1135,8 +1166,9 @@ def install(
         # Verify that the templates to be downloaded are not yet installed
         # Note that we *still* have to do this again in verify() for
         # already-downloaded templates
-        if not override_existing and name in app.domains:
-            print(f"Template '{name}' already installed, skipping..."
+        vm_name = target_name if target_name is not None else name
+        if not override_existing and vm_name in app.domains:
+            print(f"Template '{vm_name}' already installed, skipping..."
                    " (You may want to use the"
                    " {reinstall,upgrade,downgrade}"
                    " operations.)", file=sys.stderr)
@@ -1150,12 +1182,17 @@ def install(
                 (os.path.join(args.cachedir, target_file), entry.reponame))
     dl_list = dl_list_copy
 
+    # one spec can still expand to several templates
+    if target_name is not None and len(dl_list) + len(verified_rpm_list) > 1:
+        parser.error('--name cannot be used when installing more than one '
+                     'template.')
+
     # Ask the user for confirmation before we actually download stuff
     if override_existing and not args.yes:
         override_tpls = []
         # Local templates, already verified
-        for _, _, name, _ in verified_rpm_list:
-            override_tpls.append(name)
+        for _, _, _, vm_name, _ in verified_rpm_list:
+            override_tpls.append(vm_name)
         # Templates not yet downloaded
         for name in dl_list:
             override_tpls.append(name)
@@ -1178,9 +1215,9 @@ def install(
     del unverified_rpm_list
 
     # Unpack and install
-    for rpmfile, reponame, name, package_hdr in verified_rpm_list:
+    for rpmfile, reponame, name, vm_name, package_hdr in verified_rpm_list:
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
-            print(f'Installing template \'{name}\'...', file=sys.stderr)
+            print(f'Installing template \'{vm_name}\'...', file=sys.stderr)
             if not extract_rpm(name, rpmfile, target):
                 raise qubesadmin.exc.QubesException(
                     f'Failed to extract {name} template')
@@ -1197,13 +1234,13 @@ def install(
                 cmdline += ['--pool', args.pool]
             subprocess.check_call(cmdline + [
                 'post-install',
-                name,
+                vm_name,
                 target + PATH_PREFIX + '/' + name])
 
             app.domains.refresh_cache(force=True)
-            tpl = app.domains[name]
+            tpl = app.domains[vm_name]
 
-            tpl.features['template-name'] = name
+            tpl.features['template-name'] = vm_name
             tpl.features['template-epoch'] = \
                 package_hdr[rpm.RPMTAG_EPOCHNUM]
             tpl.features['template-version'] = \
