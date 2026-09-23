@@ -98,6 +98,18 @@ default_pool_kernel, default_pool_private, default_pool_root, default_pool_volat
     Default storage pool for particular volume for new qubes. Defaults to value
     of `default_pool`.
 
+default_rebootable
+    Property type: bool
+
+    Default value for `rebootable` property, see :manpage:`qvm-prefs(1)` for
+    details.
+
+rebootable_threshold
+    Accepted values: threshold in seconds
+
+    Default value for `rebootable_threshold` property, see
+    :manpage:`qvm-prefs(1)` for details.
+
 stats_interval
 
     Interval (in seconds) at which VM statistics are sent. This is for example
