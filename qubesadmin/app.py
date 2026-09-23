@@ -226,6 +226,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         )
         #: cache for available storage pool drivers and options to create them
         self._pool_drivers: dict[str, list[str]] | None = None
+        #: cache for per-deviceclass metadata
+        self._deviceclass_properties_cache: \
+            dict[DeviceClass, dict[str, str]] | None = None
         self.log = logging.getLogger("app")
         self._local_name = None
 
@@ -245,6 +248,37 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         )
 
         return sorted(deviceclasses)
+
+    def deviceclass_properties(self) -> dict[DeviceClass, dict[str, str]]:
+        """Obtain per-device-class metadata.
+
+        Calls ``admin.deviceclass.List+details`` and parses each line of the
+        form ``<class> key=value [key=value ...]``.
+
+        Empty values may appear if a deviceclass does not support the details.
+        """
+        if self._deviceclass_properties_cache is not None:
+            return self._deviceclass_properties_cache
+        try:
+            raw = self.qubesd_call(
+                "dom0", "admin.deviceclass.List", "details"
+            ).decode()
+        except (qubesadmin.exc.QubesException, qubesadmin.exc.ProtocolError):
+            # older backend/extension
+            raw = self.qubesd_call(
+                "dom0", "admin.deviceclass.List"
+            ).decode()
+
+        result: dict[DeviceClass, dict[str, str]] = {}
+        for line in raw.splitlines():
+            name, _, rest = line.partition(" ")
+            props: dict[str, str] = {}
+            for token in rest.split():
+                key, _, value = token.partition("=")
+                props[key] = value
+            result[name] = props
+        self._deviceclass_properties_cache = result
+        return result
 
     def _refresh_pool_drivers(self) -> None:
         """
@@ -845,6 +879,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             vm._properties_cache = {}
             vm.devices.clear_cache()
         self._properties_cache = {}
+        self._deviceclass_properties_cache = None
 
 
 class QubesLocal(QubesBase):
