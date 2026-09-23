@@ -811,6 +811,299 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
     @mock.patch('qubesadmin.tools.qvm_template.download')
     @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
     @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_105_install_local_name_success(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_confirm,
+            mock_call,
+            mock_mkdirs,
+            mock_rename):
+        # fedora-42 is already installed, fedora-42-custom is not
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0fedora-42 class=TemplateVM state=Halted\n'
+        build_time = '2026-09-01 14:30:00' # 1788273000
+        install_time = '2026-09-01 15:30:00'
+        for key, val in [
+                ('name', 'fedora-42-custom'),
+                ('epoch', '1'),
+                ('version', '4.3.0'),
+                ('release', '202609011430'),
+                ('reponame', '@commandline'),
+                ('buildtime', build_time),
+                ('installtime', install_time),
+                ('license', 'GPL'),
+                ('url', 'https://qubes-os.org'),
+                ('summary', 'Summary'),
+                ('description', 'Desc|desc')]:
+            self.app.expected_calls[(
+                'fedora-42-custom',
+                'admin.vm.feature.Set',
+                f'template-{key}',
+                val.encode())] = b'0\0'
+        mock_verify.return_value = {
+            rpm.RPMTAG_NAME        : 'qubes-template-fedora-42',
+            rpm.RPMTAG_BUILDTIME   : 1788273000,
+            rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+            rpm.RPMTAG_EPOCHNUM    : 1,
+            rpm.RPMTAG_LICENSE     : 'GPL',
+            rpm.RPMTAG_RELEASE     : '202609011430',
+            rpm.RPMTAG_SUMMARY     : 'Summary',
+            rpm.RPMTAG_URL         : 'https://qubes-os.org',
+            rpm.RPMTAG_VERSION     : '4.3.0'
+        }
+        mock_dl_list.return_value = {}
+        def add_custom_vm_side_effect(*args, **kwargs):
+            # pylint: disable=unused-argument
+            self.app.expected_calls[
+                ('dom0', 'admin.vm.List', None, None)] = \
+                b'0\0fedora-42 class=TemplateVM state=Halted\n' \
+                b'fedora-42-custom class=TemplateVM state=Halted\n'
+            self.app.domains.clear_cache()
+            return self.app.domains['fedora-42-custom']
+        mock_call.side_effect = add_custom_vm_side_effect
+        mock_time = mock.Mock(wraps=datetime.datetime)
+        mock_time.now.return_value = \
+            datetime.datetime(2026, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'), \
+                mock.patch('datetime.datetime', new=mock_time), \
+                mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
+                mock.patch('sys.stderr', new=io.StringIO()) as _mock_err, \
+                tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
+            path = template_file.name
+            args = argparse.Namespace(
+                templates=[path],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.3',
+                yes=False,
+                allow_pv=False,
+                skip_start=False,
+                pool=None,
+                name='fedora-42-custom'
+            )
+            mock_tmpdir.return_value.__enter__.return_value = \
+                '/var/tmp/qvm-template-tmpdir'
+            qubesadmin.tools.qvm_template.install(args, self.app)
+        # Nothing downloaded
+        selector = qubesadmin.tools.qvm_template.VersionSelector.LATEST
+        mock_dl.assert_called_with(args, self.app,
+            path_override='/var/cache/qvm-template',
+            dl_list={}, version_selector=selector)
+        # Extracted under the package name
+        mock_extract.assert_called_with('fedora-42', path,
+            '/var/tmp/qvm-template-tmpdir')
+        # ...but installed under the requested one
+        self.assertEqual(mock_call.mock_calls, [
+            mock.call([
+                'qvm-template-postprocess',
+                '--really',
+                '--no-installed-by-rpm',
+                'post-install',
+                'fedora-42-custom',
+                '/var/tmp/qvm-template-tmpdir'
+                    '/var/lib/qubes/vm-templates/fedora-42'
+            ])
+        ])
+        self.assertEqual(mock_confirm.mock_calls, [])
+        self.assertEqual(mock_mkdirs.mock_calls, [
+            mock.call(args.cachedir, exist_ok=True)
+        ])
+        self.assertEqual(mock_rename.mock_calls, [])
+        self.assertAllCalled()
+
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_105_b_install_name_exists_fail(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_call):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0fedora-42-custom class=TemplateVM state=Halted\n'
+        mock_dl_list.return_value = {}
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'), \
+                mock.patch('sys.stderr', new=io.StringIO()) as mock_err, \
+                tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
+            args = argparse.Namespace(
+                templates=[template_file.name],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.3',
+                yes=False,
+                allow_pv=False,
+                skip_start=False,
+                pool=None,
+                name='fedora-42-custom'
+            )
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_template.install(args, self.app)
+            self.assertIn('already exists', mock_err.getvalue())
+        self.assertEqual(mock_verify.mock_calls, [])
+        self.assertEqual(mock_dl.mock_calls, [])
+        self.assertEqual(mock_extract.mock_calls, [])
+        self.assertEqual(mock_call.mock_calls, [])
+        self.assertAllCalled()
+
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_105_c_install_name_multispec_fail(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_call):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
+        mock_dl_list.return_value = {}
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'), \
+                mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+            args = argparse.Namespace(
+                templates=['fedora-42', 'debian-13'],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.3',
+                yes=False,
+                allow_pv=False,
+                skip_start=False,
+                pool=None,
+                name='fedora-42-custom'
+            )
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_template.install(args, self.app)
+            self.assertIn('exactly one TEMPLATESPEC', mock_err.getvalue())
+        self.assertEqual(mock_verify.mock_calls, [])
+        self.assertEqual(mock_dl_list.mock_calls, [])
+        self.assertEqual(mock_dl.mock_calls, [])
+        self.assertEqual(mock_extract.mock_calls, [])
+        self.assertEqual(mock_call.mock_calls, [])
+
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_105_d_install_name_invalid_fail(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_call):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
+        mock_dl_list.return_value = {}
+        for bad_name in ['-fedora-42', 'fedora 42', 'fedora/42', 'f' * 32,
+                         'Domain-0', 'none', 'default', 'fedora-42-dm']:
+            with self.subTest(bad_name):
+                with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                                '/tmp/test.lock'), \
+                        mock.patch('sys.stderr', new=io.StringIO()) \
+                            as mock_err:
+                    args = argparse.Namespace(
+                        templates=['fedora-42'],
+                        keyring='/tmp/keyring.gpg',
+                        nogpgcheck=False,
+                        cachedir='/var/cache/qvm-template',
+                        repo_files=[],
+                        releasever='4.3',
+                        yes=False,
+                        allow_pv=False,
+                        skip_start=False,
+                        pool=None,
+                        name=bad_name
+                    )
+                    with self.assertRaises(SystemExit):
+                        qubesadmin.tools.qvm_template.install(args, self.app)
+                    self.assertIn('Invalid template name',
+                                  mock_err.getvalue())
+        self.assertEqual(mock_verify.mock_calls, [])
+        self.assertEqual(mock_dl_list.mock_calls, [])
+        self.assertEqual(mock_dl.mock_calls, [])
+        self.assertEqual(mock_extract.mock_calls, [])
+        self.assertEqual(mock_call.mock_calls, [])
+
+    @mock.patch('os.rename')
+    @mock.patch('os.makedirs')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    def test_105_e_install_name_glob_fail(
+            self,
+            mock_verify,
+            mock_dl_list,
+            mock_dl,
+            mock_extract,
+            mock_confirm,
+            mock_call,
+            _mock_mkdirs,
+            mock_rename):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
+        # one spec, two templates
+        mock_dl_list.return_value = {
+            'fedora-42': qubesadmin.tools.qvm_template.DlEntry(
+                ('1', '4.3.0', '202609011430'),
+                'qubes-templates-itl', 1048576),
+            'fedora-42-xfce': qubesadmin.tools.qvm_template.DlEntry(
+                ('1', '4.3.0', '202609011430'),
+                'qubes-templates-itl', 1048576),
+        }
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'), \
+                mock.patch('sys.stderr', new=io.StringIO()) as mock_err:
+            args = argparse.Namespace(
+                templates=['fedora-42*'],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.3',
+                yes=False,
+                allow_pv=False,
+                skip_start=False,
+                pool=None,
+                name='fedora-42-custom'
+            )
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_template.install(args, self.app)
+            self.assertIn('more than one template', mock_err.getvalue())
+        self.assertEqual(mock_verify.mock_calls, [])
+        self.assertEqual(mock_dl.mock_calls, [])
+        self.assertEqual(mock_extract.mock_calls, [])
+        self.assertEqual(mock_confirm.mock_calls, [])
+        self.assertEqual(mock_call.mock_calls, [])
+        self.assertEqual(mock_rename.mock_calls, [])
+        self.assertAllCalled()
+
+    @mock.patch('os.rename')
+    @mock.patch('os.makedirs')
+    @mock.patch('subprocess.check_call')
+    @mock.patch('qubesadmin.tools.qvm_template.confirm_action')
+    @mock.patch('qubesadmin.tools.qvm_template.extract_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.download')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
     def test_106_install_local_badpath_fail(
             self,
             mock_verify,
