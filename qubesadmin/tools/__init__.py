@@ -310,7 +310,7 @@ class PoolsAction(QubesAction):
 class QubesArgumentParser(argparse.ArgumentParser):
     '''Parser preconfigured for use in most of the Qubes command-line tools.
 
-    :param mixed vmname_nargs: The number of ``VMNAME`` arguments that should be
+    :param vmname_nargs: The number of ``VMNAME`` arguments that should be
         consumed. Values include:
         * N (an integer) consumes N arguments (and produces a list)
         * '?' consumes zero or one arguments
@@ -320,7 +320,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
     :param show_forceroot: don't hide --force-root parameter, prevent running
         as root unless it is given
 
-    *kwargs* are passed to :py:class:`argparser.ArgumentParser`.
+    *kwargs* are passed to :py:class:`argparse.ArgumentParser`.
 
     Currenty supported options:
         ``--force-root`` (optional, ignored, help is suppressed)

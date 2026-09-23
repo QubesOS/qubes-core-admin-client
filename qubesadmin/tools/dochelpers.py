@@ -140,10 +140,10 @@ class OptionsCheckVisitor(docutils.nodes.SparseNodeVisitor):
         """ Call this to check if any undocumented arguments are left.
 
             While the documentation talks about a
-            'SparseNodeVisitor.depart_document()' function, this function does
-            not exists. (For details see implementation of
-            :py:meth:`NodeVisitor.dispatch_departure()`) So we need to
-            manually call this.
+            :meth:`!SparseNodeVisitor.depart_document` function, this function
+            does not exists. (For details see implementation of
+            :py:meth:`!NodeVisitor.dispatch_departure`) So we need to manually
+            call this.
         """
         if ignored_options is None:
             ignored_options = set()
@@ -212,10 +212,10 @@ class CommandCheckVisitor(docutils.nodes.SparseNodeVisitor):
         """ Call this to check if any undocumented sub_commands are left.
 
             While the documentation talks about a
-            'SparseNodeVisitor.depart_document()' function, this function does
-            not exists. (For details see implementation of
-            :py:meth:`NodeVisitor.dispatch_departure()`) So we need to
-            manually call this.
+            :meth:`!SparseNodeVisitor.depart_document` function, this function
+            does not exists. (For details see implementation of
+            :py:meth:`!NodeVisitor.dispatch_departure`) So we need to manually
+            call this.
         """
         if self.sub_commands:
             raise sphinx.errors.SphinxError(

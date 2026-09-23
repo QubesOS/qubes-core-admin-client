@@ -34,10 +34,10 @@ sys.path.insert(0, os.path.abspath('..'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.coverage',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
 ]
 
@@ -440,3 +440,22 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #
 # texinfo_no_detailmenu = False
+
+# -- -- Options for the nitpicky mode ------------------------------------------
+
+nitpicky = True
+nitpick_ignore = [
+    ("py:class", "argparse._SubParsersAction"),
+    ("py:class", "argparse._HelpAction"),
+    ("py:class", "argparse._MutuallyExclusiveGroup"),
+    ("py:class", "docutils.nodes.SparseNodeVisitor"),
+    ("py:class", "lxml.etree._Element"),
+    ("py:class", "qubesadmin.features.T"),
+    ("py:class", "qubesadmin.base.T"),
+    ("py:obj", "qubesadmin.base.T"),
+    ("py:class", "unittest.case.TestCase"),
+    ("py:class", "rpm.hdr"),
+    ("py:class", "Logger"),
+    ("py:class", "multiprocessing.context.BaseContext.Queue"),
+    ("py:class", "a set-like object providing a view on D's keys"), # warning on RTD, not local build
+]

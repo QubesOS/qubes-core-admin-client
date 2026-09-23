@@ -39,6 +39,14 @@ qubesadmin\.config module
     :undoc-members:
     :show-inheritance:
 
+qubesadmin.device_protocol module
+---------------------------------
+
+.. automodule:: qubesadmin.device_protocol
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 qubesadmin\.devices module
 --------------------------
 
