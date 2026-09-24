@@ -30,6 +30,7 @@ import unittest.mock
 import qubesadmin.tests
 import qubesadmin.events
 from qubesadmin.device_protocol import VirtualDevice, Port
+from qubesadmin.vm import QubesVM
 
 
 class TC_00_Events(qubesadmin.tests.QubesTestCase):
@@ -264,3 +265,83 @@ class TC_00_Events(qubesadmin.tests.QubesTestCase):
         dev = self.app.domains.get_blind('test-vm2').devices['test']['dev']
         handler.assert_called_once_with(vm, 'device-attach:test', device=dev,
             options='{}')
+
+
+class TC_10_FeatureTagEvents(qubesadmin.tests.QubesTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.dispatcher = qubesadmin.events.EventsDispatcher(self.app)
+        self.vm = self.app.domains.get_blind('test-vm')
+        self.other_vm = self.app.domains.get_blind('other-vm')
+
+    def prime_caches(self, has_tag: bool = False) -> None:
+        primed, changed = (b'1', b'0') if has_tag else (b'0', b'1')
+        for vm in (self.vm, self.other_vm):
+            vm.features.clear_cache()
+            vm.tags.clear_cache()
+            self.app.expected_calls[
+                (vm.name, 'admin.vm.feature.Get', 'feature', None)] = b'0\0old'
+            self.app.expected_calls[
+                (vm.name, 'admin.vm.tag.Get', 'tag', None)] = b'0\0' + primed
+            self.read_snapshot(vm)
+            self.app.expected_calls[
+                (vm.name, 'admin.vm.feature.Get', 'feature', None)] = b'0\0new'
+            self.app.expected_calls[
+                (vm.name, 'admin.vm.tag.Get', 'tag', None)] = b'0\0' + changed
+        self.app.actual_calls.clear()
+
+    @staticmethod
+    def read_snapshot(vm: qubesadmin.vm.QubesVM) -> str:
+        return f'{vm.features["feature"]}, {"tag" in vm.tags}'
+
+    def read_callback_snapshots(self, event: str, **kwargs: str) -> str:
+        snapshots = []
+        def record_snapshot(subject: QubesVM, _event: str, **_kwargs) -> None:
+            snapshots.append(self.read_snapshot(subject))
+        dispatcher = qubesadmin.events.EventsDispatcher(self.app)
+        dispatcher.add_handler(event, record_snapshot)
+        dispatcher.handle('test-vm', event, **kwargs)
+        return '; '.join(snapshots)
+
+    def test_change_events_update_cache_before_callbacks(self) -> None:
+        for event, kwargs, has_tag, expected in (
+                ('domain-feature-set:feature',
+                 {'feature': 'feature', 'value': 'new'}, False,
+                 'new, False; calls=0'),
+                ('domain-feature-delete:feature', {'feature': 'feature'},
+                 False, 'new, False; calls=1'),
+                ('domain-tag-add:tag', {'tag': 'tag'}, False,
+                 'old, True; calls=0'),
+                ('domain-tag-delete:tag', {'tag': 'tag'}, True,
+                 'old, False; calls=0')):
+            with self.subTest(event=event):
+                self.prime_caches(has_tag)
+                snapshots = self.read_callback_snapshots(event, **kwargs)
+                other = self.read_snapshot(self.other_vm)
+                self.assertEqual(
+                    f'{snapshots}; calls={len(self.app.actual_calls)}; '
+                    f'other={other}',
+                    f'{expected}; other=old, {has_tag}')
+
+    def test_pre_change_events_preserve_cache(self) -> None:
+        self.prime_caches()
+        for event in ('domain-feature-pre-set:feature',
+                      'domain-feature-pre-delete:feature',
+                      'domain-tag-pre-add:tag', 'domain-tag-pre-delete:tag'):
+            self.dispatcher.handle('test-vm', event)
+        snapshot = self.read_snapshot(self.vm)
+        self.assertEqual(
+            f'{snapshot}; calls={len(self.app.actual_calls)}',
+            'old, False; calls=0')
+
+    def test_reconnection_invalidates_before_callbacks(self) -> None:
+        flow = []
+        def record_reconnection(_subject: QubesVM | None, _event: str) -> None:
+            flow.append('callback')
+        self.dispatcher.add_handler('connection-established',
+                                    record_reconnection)
+        with unittest.mock.patch.object(
+                self.app, '_invalidate_cache_all',
+                side_effect=lambda: flow.append('invalidate')):
+            self.dispatcher.handle(None, 'connection-established')
+        self.assertEqual(', '.join(flow), 'invalidate, callback')

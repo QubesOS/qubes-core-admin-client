@@ -236,6 +236,26 @@ class EventsDispatcher:
         if self._reader_task:
             self._reader_task.cancel()
 
+    @staticmethod
+    def _update_feature_tag_cache(subject: QubesVM | None, event: str,
+                                  **kwargs: str) -> None:
+        '''Apply a feature or tag change to the caches before event callbacks.
+
+        Unlike properties, feature values travel as plain strings in both
+        directions, so the event payload is exactly what qubesd stores.
+        '''
+        if subject is None:
+            return
+        kind, _, name = event.partition(':')
+        if kind == 'domain-feature-set':
+            subject.features.record_value(name, kwargs['value'])
+        elif kind == 'domain-feature-delete':
+            subject.features.record_removal(name)
+        elif kind == 'domain-tag-add':
+            subject.tags.record_membership(name, True)
+        elif kind == 'domain-tag-delete':
+            subject.tags.record_membership(name, False)
+
     def handle(self, subject_name: str | None, event: str, **kwargs) -> None:
         """Call handlers for given event"""
         # pylint: disable=protected-access
@@ -254,6 +274,7 @@ class EventsDispatcher:
             subject = None
         # invalidate cache if needed; call it before other handlers
         # as those may want to use cached value
+        self._update_feature_tag_cache(subject, event, **kwargs)
         if event.startswith('property-set:') or \
                 event.startswith('property-reset:'):
             self.app._invalidate_cache(subject, event, **kwargs)
