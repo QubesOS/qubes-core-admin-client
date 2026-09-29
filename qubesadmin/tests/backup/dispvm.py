@@ -167,8 +167,10 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         args = unittest.mock.Mock(appvm='testvm')
         obj = RestoreInDisposableVM(self.app, args)
         obj.dispvm = unittest.mock.Mock(default_user='user2')
+        obj.dispvm.run_with_args.return_value = (b'/home/alice\n', b'')
         new_path = obj.transfer_pass_file('/some/path')
-        self.assertEqual(new_path, '/home/user2/QubesIncoming/dom0/path')
+        self.assertEqual(new_path, '/home/alice/QubesIncoming/dom0/path')
+        obj.dispvm.run_with_args.assert_called_once_with('printenv', 'HOME')
         mock_check_call.assert_called_once_with(
             ['qvm-copy-to-vm', 'disp-backup-restore', '/some/path'],
             stdout=subprocess.DEVNULL,
