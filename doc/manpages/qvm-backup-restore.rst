@@ -30,11 +30,12 @@ summary of the qubes to be restored together with any detected problems
 (name conflicts, missing templates or net qubes) and asks for confirmation.
 
 The backup passphrase protects both confidentiality and integrity of the
-backup. However, the backup metadata has to be parsed before its
-authenticity is verified, and a maliciously crafted backup could try to
-exploit this. If you restore a backup that may have been tampered with (for
-example, it was stored on an untrusted medium), use :option:`--paranoid-mode`
-to isolate the whole restore process in a disposable qube.
+backup. Only the backup header is processed before its integrity is
+verified, and that step is designed to be safe. This does not protect
+against a backup that was itself created maliciously, for example on a
+compromised system, or by someone who knows the backup passphrase. To
+restore such a backup, use :option:`--paranoid-mode`, which isolates the
+whole restore process in a disposable qube.
 
 If the backup contains a dom0 home directory, it is not restored in place:
 the archived home directory is placed in a new directory named
