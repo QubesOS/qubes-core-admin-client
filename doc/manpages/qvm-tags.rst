@@ -8,7 +8,7 @@ Synopsis
 
 | :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* [{list,ls,l}] [*TAG*]
 | :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* {add,a,set} *TAG* [*TAG* ...]
-| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* {del,d,unset,u} *TAG*
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* {del,d,unset,u} *TAG* [*TAG* ...]
 
 Description
 -----------
@@ -76,9 +76,9 @@ aliases: a, set
 del
 ^^^
 
-| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* del *TAG*
+| :command:`qvm-tags` [-h] [--verbose] [--quiet] *VMNAME* del *TAG* [*TAG* ...]
 
-Delete a tag from a qube. If the tag is not set for the given qube, do
+Delete tag(s) from a qube. If a tag is not set for the given qube, do
 nothing.
 
 aliases: d, unset, u
