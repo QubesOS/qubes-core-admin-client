@@ -327,6 +327,18 @@ async def kill(domains: list[qubesadmin.vm.QubesVM], **kwargs):
     )
 
 
+async def restart(domains: list[qubesadmin.vm.QubesVM], **kwargs):
+    """
+    Asynchronously restart qubes and return ones that failed.
+    """
+    return await generic_action(
+        domains,
+        action="restart",
+        ignored_exceptions=(qubesadmin.exc.QubesVMNotStartedError),
+        **kwargs,
+    )
+
+
 async def generic_action(
     domains: list[qubesadmin.vm.QubesVM],
     action: str | typing.Callable,

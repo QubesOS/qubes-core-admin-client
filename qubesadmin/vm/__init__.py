@@ -123,6 +123,25 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """
         self.qubesd_call(self._method_dest, "admin.vm.Start")
 
+    def restart (self, force=False, kill=False, start=False):
+        """
+        Restart domain.
+
+        :return:
+        """
+        arg_list = []
+        if force:
+            arg_list.append("force")
+        if kill:
+            arg_list.append("kill")
+        if start:
+            arg_list.append("start")
+        args = "+".join(arg_list)
+        params = [self._method_dest, "admin.vm.Restart"]
+        if args:
+            params.append(args)
+        self.qubesd_call(*params)
+
     def shutdown(self, force=False, wait=False):
         """
         Shutdown domain.

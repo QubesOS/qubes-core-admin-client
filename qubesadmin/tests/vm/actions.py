@@ -96,6 +96,48 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.resume()
         self.assertAllCalled()
 
+    def test_007_restart(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Restart', None, None)] = \
+            b'0\x00'
+        self.vm.restart()
+        self.assertAllCalled()
+
+    def test_007_restart_force(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Restart', 'force', None)] = \
+            b'0\x00'
+        self.vm.restart(force=True)
+        self.assertAllCalled()
+
+    def test_007_restart_kill(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Restart', 'kill', None)] = \
+            b'0\x00'
+        self.vm.restart(kill=True)
+        self.assertAllCalled()
+
+    def test_007_restart_start(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Restart', 'start', None)] = \
+            b'0\x00'
+        self.vm.restart(start=True)
+        self.assertAllCalled()
+
+    def test_007_restart_force_kill(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Restart', 'force+kill', None)] = \
+            b'0\x00'
+        self.vm.restart(force=True, kill=True)
+        self.assertAllCalled()
+
+    def test_007_restart_force_kill_start(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Restart', 'force+kill+start', None)] = \
+            b'0\x00'
+        self.vm.restart(force=True, kill=True, start=True)
+        self.assertAllCalled()
+
     def test_010_run_linux(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
