@@ -141,3 +141,19 @@ class TC_00_qvm_tags(qubesadmin.tests.QubesTestCase):
                 0)
             self.assertEqual(stdout.getvalue(), '')
         self.assertAllCalled()
+
+    def test_021_del_multiple(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.tag.Remove', 'tag3', None)] = b'0\x00'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.tag.Remove', 'tag4', None)] = b'0\x00'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            self.assertEqual(
+                qubesadmin.tools.qvm_tags.main(
+                    ['some-vm', 'del', 'tag3', 'tag4'], app=self.app),
+                0)
+            self.assertEqual(stdout.getvalue(), '')
+        self.assertAllCalled()
