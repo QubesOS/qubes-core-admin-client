@@ -93,6 +93,15 @@ The *DEVICE_ID* equals to `*` is ignored.
 
    Short version for `attach` & `assign --required` for backward compatibility.
 
+.. option:: --force, -f
+
+   Attach, even if the device is in use or its status is unclear. It first
+   forces disconnection from other qubes. Some data may be lost.
+   If the device is used internally by *BACKEND_DOMAIN* and is forcibly attached
+   to another qube, it may lead to data corruption. The one thing --force will
+   not do is detach a device from qubes that require it to run
+   (see qvm-device assign --required).
+
 aliases: a, at
 
 detach
