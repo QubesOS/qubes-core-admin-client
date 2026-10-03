@@ -874,6 +874,16 @@ class QubesTestWrapper(QubesTest):
                 b"metadata_usage=50\n"
             )
 
+        # setup device classes:
+        self.expected_calls[
+            ("dom0", "admin.deviceclass.List", "details", None)
+        ] = (
+            b"0\x00pci assignment_modes=required\n"
+            b"block assignment_modes=ask-to-attach,auto-attach,manual,required\n"
+            b"mic assignment_modes=ask-to-attach,auto-attach,manual\n"
+            b"usb assignment_modes=ask-to-attach,auto-attach,manual\n"
+        )
+
         self.populate_feature_calls()
 
     def update_vm_calls(self):
