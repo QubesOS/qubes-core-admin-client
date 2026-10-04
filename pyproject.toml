@@ -44,6 +44,7 @@ future-dev = [  # those tools are very efficient but not packaged for major dist
 ]
 
 [project.scripts]
+qubes-dpi = "qubesadmin.tools.qubes_dpi:main"
 qubes-prefs = "qubesadmin.tools.qubes_prefs:main"
 qvm-backup = "qubesadmin.tools.qvm_backup:main"
 qvm-backup-restore = "qubesadmin.tools.qvm_backup_restore:main"
