@@ -141,3 +141,27 @@ class TC_00_qvm_tags(qubesadmin.tests.QubesTestCase):
                 0)
             self.assertEqual(stdout.getvalue(), '')
         self.assertAllCalled()
+
+    def test_030_add_empty(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            with self.assertRaises(SystemExit) as e:
+                qubesadmin.tools.qvm_tags.main(['some-vm', 'add', ''],
+                    app=self.app)
+            self.assertEqual(e.exception.code, 1)
+            self.assertIn('tag cannot be empty', stderr.getvalue())
+        self.assertAllCalled()
+
+    def test_031_del_empty(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n'
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            with self.assertRaises(SystemExit) as e:
+                qubesadmin.tools.qvm_tags.main(['some-vm', 'del', ''],
+                    app=self.app)
+            self.assertEqual(e.exception.code, 1)
+            self.assertIn('tag cannot be empty', stderr.getvalue())
+        self.assertAllCalled()
