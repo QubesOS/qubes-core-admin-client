@@ -211,10 +211,19 @@ stubdom_mem
     sensible value. This property is mostly for debugging early stubdomain
     implementations and may be removed in the future, without notice.
 
+active_template
+    Property type: VM
+
+    TemplateVM on which VM is based. This property can not be changed by
+    clients. The default value is ``template``, but when there is a deferred
+    template, the ``active_template`` won't be the default anymore and will be
+    set according to the current running system.
+
 template
     Property type: VM
 
-    TemplateVM on which VM is based. It can be changed only when VM isn't running.
+    TemplateVM to base this qube from. When the qube is running and this value
+    changes, requires a qube restart to apply the changes.
 
 vcpus
     Accepted values: no of CPUs
