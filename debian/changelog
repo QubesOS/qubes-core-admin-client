@@ -1,3 +1,100 @@
+qubes-core-admin-client (4.4.1-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * deb/rpm: require matching python3-qubesadmin version
+
+  [ Rusty Bird ]
+  * storage: add getter for volume's VM's name
+  * tools: fix VMVolumeAction help text
+  * tools/qvm-volume: add 'clone' action
+
+  [ Marek Marczykowski-Górecki ]
+  * Add dependencies for 'column' tool
+
+  [ parulin ]
+  * Fix Sphinx and rST formatting issues
+  * Process command name in manpages checks
+  * Mock rpm module when building documentation
+  * Convert qvm-service definition items to options
+  * Convert qvm-features headers to options
+  * Add intersphinx mappings and local inventories
+  * Set fail_on_warning for RTD builds
+
+  [ unman ]
+  * qvm-firewall - Add reference to comments in manpage and help.
+
+  [ parulin ]
+  * Update from dev.qubes-os.org to doc.qubes-os.org
+
+  [ Rusty Bird ]
+  * tests/storage: remove phantom admin.pool.volume.* tests
+  * storage: remove outdated comment about shrinking
+  * tools/qvm-volume: use 'resize' in code instead of old 'extend'
+  * storage: centralize shrinking check from qvm-volume to module
+  * tools/qvm-volume: resize_volumes() -> resize_volume()
+  * storage: volume.resize(): size is an int
+
+  [ Marek Marczykowski-Górecki ]
+  * Adjust man page generation to updated setuptools
+  * Fix indentation in the makefile
+  * docs: use https for all intersphinx links
+  * Do not crash qvm-start-daemon on VMs without xid property
+  * blacken qubesadmin/tests/tools/qvm_start_daemon.py
+  * tests: qvm_start_daemon.on_connection_established()
+
+  [ Ben Grande ]
+  * Add standalone disposable template to mock_app
+
+  [ NoiceHax ]
+  * Don't let qvm-prefs access computed properties
+
+  [ Marek Marczykowski-Górecki ]
+  * Add Arch packaging
+
+  [ datenbar ]
+  * reject usernames containing colon in run_service
+
+  [ Ben Grande ]
+  * Execute backup even if summary is denied by qrexec
+
+  [ Divina Commedia ]
+  * Fix man page about qvm-run --gui and --no-gui
+
+  [ besendorf ]
+  * Fix ordering of dependent qube actions
+
+  [ Kunal Mehta ]
+  * Optimize QubesVM._get_derived_vms()
+
+  [ ts-klassen ]
+  * Fix validation typo on qvm_start_daemon.py
+
+  [ Marek Marczykowski-Górecki ]
+  * tools/qvm-device: fix listing assignments with --resolve-paths
+
+  [ Ben Grande ]
+  * Enable some old expectedFailures for qvm_run
+
+  [ Piotr Bartman-Szwarc ]
+  * q-dev: expose device assignment modes
+  * q-dev: fix tests
+  * q-dev: include MANUAL in exposed assignment modes
+
+  [ Ben Grande ]
+  * Deprecate Dying state as server never sends that
+  * Cache more power events
+  * Separate Transient state from Starting and Halting
+  * Add one letter state mapping
+
+  [ parulin ]
+  * Move app-dispvm from qvm-features to qvm-service
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: add admin.deviceclass.List call to mockups
+  * pylint: fix comment location
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 05 Oct 2026 16:12:59 +0200
+
 qubes-core-admin-client (4.4.0-1) unstable; urgency=medium
 
   [ anon ]
