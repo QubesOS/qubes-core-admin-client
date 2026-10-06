@@ -82,11 +82,11 @@ Set property of given volume. Properties currently possible to change:
 
   - `rw` - `True` if volume should be writeable by the qube, `False` otherwise
   - `revisions_to_keep` - how many revisions (previous versions of volume)
-    should be keep. At each qube shutdown its previous state is saved in new
-    revision, and the oldest revisions are remove so that only
-    `revisions_to_keep` are left. Set to `0` to not leave any previous versions.
-    Set to `-1` to disable volume snapshoting entirely (you will not be able to
-    backup/clone qube while it is running).
+    should be kept. At each qube shutdown, a revision is made, and the oldest
+    revisions are removed so that only `revisions_to_keep` are left. Set to `0`
+    to not leave any previous versions. Set to `-1` to disable volume
+    snapshoting entirely (you will not be able to backup/clone qube while it is
+    running).
   - `ephemeral` - should the volume be encrypted with en ephemeral key? This can
     be enabled only on a volume with `save_on_stop=False` and `snap_on_start=False`
     - which is only `volatile` volume. When set, it provides a bit more
