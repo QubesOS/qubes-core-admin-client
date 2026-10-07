@@ -1240,7 +1240,8 @@ def install(
             app.domains.refresh_cache(force=True)
             tpl = app.domains[vm_name]
 
-            tpl.features['template-name'] = vm_name
+            # the name of the template it came from, like a clone would have
+            tpl.features['template-name'] = name
             tpl.features['template-epoch'] = \
                 package_hdr[rpm.RPMTAG_EPOCHNUM]
             tpl.features['template-version'] = \
