@@ -104,7 +104,9 @@ See Section `Template Spec`_ for an explanation of *TEMPLATESPEC*.
    one *TEMPLATESPEC* must be given, it must resolve to exactly one template,
    and no qube named *NAME* may exist yet. This allows installing a fresh copy
    of a template the user has already customized, without touching the existing
-   one.
+   one. The ``template-name`` feature keeps the name of the template the
+   package came from, so to ``qvm-template`` the result looks like a clone of
+   that template.
 
 .. option:: --nogpgcheck
 

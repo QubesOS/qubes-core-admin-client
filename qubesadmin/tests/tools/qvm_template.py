@@ -827,7 +827,8 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         build_time = '2026-09-01 14:30:00' # 1788273000
         install_time = '2026-09-01 15:30:00'
         for key, val in [
-                ('name', 'fedora-42-custom'),
+                # the package name, not the name it was installed under
+                ('name', 'fedora-42'),
                 ('epoch', '1'),
                 ('version', '4.3.0'),
                 ('release', '202609011430'),
