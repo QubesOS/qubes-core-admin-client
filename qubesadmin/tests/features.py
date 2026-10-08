@@ -118,9 +118,8 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
                 self.app.actual_calls.clear()
                 self.expect_read('Get', b'0\0' + value.encode(), 'feature')
                 values = [self.vm.features['feature'] for _ in range(2)]
-                self.assertEqual(
-                    f'{values!r}; calls={len(self.app.actual_calls)}',
-                    f'{[value, value]!r}; calls=1')
+                self.assertEqual(values, [value, value])
+                self.assertEqual(len(self.app.actual_calls), 1)
 
     def test_missing_defaults(self) -> None:
         self.expect_read('Get',
@@ -128,9 +127,8 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
         values = (self.vm.features.get('missing'),
                   self.vm.features.get('missing', 'fallback'),
                   self.vm.features.get('missing', False))
-        self.assertEqual(
-            f'{values!r}; calls={len(self.app.actual_calls)}',
-            "(None, 'fallback', False); calls=1")
+        self.assertEqual(values, (None, 'fallback', False))
+        self.assertEqual(len(self.app.actual_calls), 1)
 
     def test_lists(self) -> None:
         for names in ('second\nfirst\n', ''):
@@ -138,33 +136,27 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
                 self.vm.features.clear_cache()
                 self.app.actual_calls.clear()
                 self.expect_read('List', b'0\0' + names.encode())
-                first = ','.join(self.vm.features.keys())
-                second = ','.join(self.vm.features)
-                expected = ','.join(names.splitlines())
-                self.assertEqual(
-                    f'{first}; {second}; calls={len(self.app.actual_calls)}',
-                    f'{expected}; {expected}; calls=1')
+                expected = names.splitlines()
+                self.assertEqual(list(self.vm.features.keys()), expected)
+                self.assertEqual(list(self.vm.features), expected)
+                self.assertEqual(len(self.app.actual_calls), 1)
 
     def test_items_delegation(self) -> None:
         with patch.object(qubesadmin.features.Features, '__iter__',
                           return_value=iter(('second', 'first'))), \
              patch.object(qubesadmin.features.Features, '__getitem__',
                           side_effect=lambda feature: f'value-{feature}'):
-            values = '; '.join(f'{key}={value}'
-                               for key, value in self.vm.features.items())
-        self.assertEqual(values, 'second=value-second; first=value-first')
+            items = list(self.vm.features.items())
+        self.assertEqual(items, [('second', 'value-second'),
+                                 ('first', 'value-first')])
 
     def test_filtered_list(self) -> None:
         self.expect_read('List', b'0\0visible\n')
         self.expect_read('Get', b'0\0readable', 'omitted')
-        names = ','.join(self.vm.features)
-        value = self.vm.features['omitted']
-        cached_names = ','.join(self.vm.features)
-        cached_value = self.vm.features['omitted']
-        self.assertEqual(
-            f'{names}; {value}; {cached_names}; {cached_value}; '
-            f'calls={len(self.app.actual_calls)}',
-            'visible; readable; visible; readable; calls=2')
+        for _ in range(2):
+            self.assertEqual(list(self.vm.features), ['visible'])
+            self.assertEqual(self.vm.features['omitted'], 'readable')
+        self.assertEqual(len(self.app.actual_calls), 2)
 
     def test_denied_list(self) -> None:
         self.expect_read('List', b'2\0PermissionDenied\0\0denied\0')
@@ -173,9 +165,8 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
             with self.assertRaises(qubesadmin.exc.PermissionDenied):
                 list(self.vm.features)
         values = [self.vm.features['feature'] for _ in range(2)]
-        self.assertEqual(
-            f'{values!r}; calls={len(self.app.actual_calls)}',
-            "['readable', 'readable']; calls=3")
+        self.assertEqual(values, ['readable', 'readable'])
+        self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_errors_not_cached(self) -> None:
         for response, error_type, methods in (
@@ -220,13 +211,11 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
         self.vm.features.get('missing')
         list(self.vm.features)
         self.vm.features.clear_cache()
-        calls_after_clear = len(self.app.actual_calls)
-        values = (self.vm.features['feature'], self.vm.features['missing'],
-                  ','.join(self.vm.features))
-        self.assertEqual(
-            f'{values!r}; calls after clear={calls_after_clear}; '
-            f'total calls={len(self.app.actual_calls)}',
-            "('new', 'found', 'new'); calls after clear=3; total calls=6")
+        self.assertEqual(len(self.app.actual_calls), 3)
+        self.assertEqual(self.vm.features['feature'], 'new')
+        self.assertEqual(self.vm.features['missing'], 'found')
+        self.assertEqual(list(self.vm.features), ['new'])
+        self.assertEqual(len(self.app.actual_calls), 6)
 
     def test_vm_caches_are_independent(self) -> None:
         self.expect_read('Get', b'0\0first', 'feature')
@@ -235,13 +224,11 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
         other_vm = self.app.domains.get_blind('other-vm')
         values = [vm.features['feature'] for vm in
                   (self.vm, other_vm, self.vm, other_vm)]
-        self.assertEqual(
-            f'{values!r}; calls={len(self.app.actual_calls)}',
-            "['first', 'other', 'first', 'other']; calls=2")
+        self.assertEqual(values, ['first', 'other', 'first', 'other'])
+        self.assertEqual(len(self.app.actual_calls), 2)
 
-    def read_value_and_names(self) -> str:
-        return (f'{self.vm.features.get("feature")}, '
-                f'{",".join(self.vm.features)}')
+    def read_value_and_names(self) -> tuple[str | None, list[str]]:
+        return self.vm.features.get('feature'), list(self.vm.features)
 
     def test_set_caches_serialized_value(self) -> None:
         for value, stored in (('write', 'write'), (True, '1'), (False, '')):
@@ -251,28 +238,24 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
                 self.app.expected_calls[('test-vm', 'admin.vm.feature.Set',
                                          'feature', stored.encode())] = b'0\0'
                 self.vm.features['feature'] = value
-                self.assertEqual(
-                    f'{self.vm.features["feature"]!r}; '
-                    f'calls={len(self.app.actual_calls)}',
-                    f'{stored!r}; calls=1')
+                self.assertEqual(self.vm.features['feature'], stored)
+                self.assertEqual(len(self.app.actual_calls), 1)
 
     def test_writes_update_names_and_missing(self) -> None:
         self.expect_read('List', b'0\0other\n')
         self.expect_read('Get',
             b'2\0QubesFeatureNotFoundError\0\0missing\0', 'feature')
-        before = self.read_value_and_names()
+        self.assertEqual(self.read_value_and_names(), (None, ['other']))
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.Set', 'feature', b'write')] = b'0\0'
         self.vm.features['feature'] = 'write'
-        after_set = self.read_value_and_names()
+        self.assertEqual(self.read_value_and_names(),
+                         ('write', ['other', 'feature']))
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.Remove', 'feature', None)] = b'0\0'
         del self.vm.features['feature']
-        after_removal = self.read_value_and_names()
-        self.assertEqual(
-            f'{before}; {after_set}; {after_removal}; '
-            f'calls={len(self.app.actual_calls)}',
-            'None, other; write, other,feature; None, other; calls=5')
+        self.assertEqual(self.read_value_and_names(), (None, ['other']))
+        self.assertEqual(len(self.app.actual_calls), 5)
 
     def test_failed_writes_keep_cache(self) -> None:
         for method, payload, mutation in (
@@ -285,27 +268,26 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
                 self.app.actual_calls.clear()
                 self.expect_read('Get', b'0\0old', 'feature')
                 self.expect_read('List', b'0\0feature\n')
-                before = self.read_value_and_names()
+                self.assertEqual(self.read_value_and_names(),
+                                 ('old', ['feature']))
                 self.app.expected_calls[
                     ('test-vm', f'admin.vm.feature.{method}', 'feature',
                      payload)] = b'2\0PermissionDenied\0\0denied\0'
                 with self.assertRaises(PermissionDenied):
                     mutation()
-                self.assertEqual(
-                    f'{before}; {self.read_value_and_names()}; '
-                    f'calls={len(self.app.actual_calls)}',
-                    'old, feature; old, feature; calls=3')
+                self.assertEqual(self.read_value_and_names(),
+                                 ('old', ['feature']))
+                self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_template_checks_always_use_server(self) -> None:
         self.expect_read('Get', b'0\0direct', 'feature')
         self.expect_read('CheckWithTemplate',
                          [b'0\0inherited', b'0\0changed'], 'feature')
-        direct = self.vm.features['feature']
+        self.assertEqual(self.vm.features['feature'], 'direct')
         inherited = [self.vm.features.check_with_template('feature')
                      for _ in range(2)]
-        self.assertEqual(
-            f'{direct}; {inherited!r}; calls={len(self.app.actual_calls)}',
-            "direct; ['inherited', 'changed']; calls=3")
+        self.assertEqual(inherited, ['inherited', 'changed'])
+        self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_missing_template_checks_always_use_server(self) -> None:
         self.expect_read('CheckWithTemplate',
@@ -316,9 +298,8 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
         with self.assertRaises(QubesFeatureNotFoundError):
             self.vm.features.check_with_template(
                 'feature', self.vm.features.NO_DEFAULT)
-        self.assertEqual(
-            f'{values!r}; calls={len(self.app.actual_calls)}',
-            "(None, 'default'); calls=3")
+        self.assertEqual(values, (None, 'default'))
+        self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_cached_misses_raise_fresh_exceptions(self) -> None:
         for message in ('001', '²', '100% missing'):
@@ -332,8 +313,7 @@ class TC_10_FeatureCache(qubesadmin.tests.QubesTestCase):
                     self.vm.features.get('missing', self.vm.features.NO_DEFAULT)
                 with self.assertRaises(QubesFeatureNotFoundError) as second:
                     self.vm.features.get('missing', self.vm.features.NO_DEFAULT)
-                self.assertEqual(
-                    f'{first.exception}; {second.exception}; '
-                    f'fresh={first.exception is not second.exception}; '
-                    f'calls={len(self.app.actual_calls)}',
-                    f'{message}; {message}; fresh=True; calls=1')
+                self.assertEqual(str(first.exception), message)
+                self.assertEqual(str(second.exception), message)
+                self.assertIsNot(first.exception, second.exception)
+                self.assertEqual(len(self.app.actual_calls), 1)

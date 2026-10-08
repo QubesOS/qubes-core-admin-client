@@ -21,7 +21,7 @@
 # pylint: disable=missing-docstring
 
 from operator import contains
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from qubesadmin.exc import PermissionDenied
 import qubesadmin.tests
@@ -134,9 +134,8 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
                 self.app.actual_calls.clear()
                 self.expect_read('Get', b'0\0' + response, 'tag')
                 values = ['tag' in self.vm.tags for _ in range(2)]
-                self.assertEqual(
-                    f'{values!r}; calls={len(self.app.actual_calls)}',
-                    f'{[is_present, is_present]!r}; calls=1')
+                self.assertEqual(values, [is_present, is_present])
+                self.assertEqual(len(self.app.actual_calls), 1)
 
     def test_lists(self) -> None:
         for names in ('second\nfirst\n', ''):
@@ -144,24 +143,21 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
                 self.vm.tags.clear_cache()
                 self.app.actual_calls.clear()
                 self.expect_read('List', b'0\0' + names.encode())
-                values = [','.join(self.vm.tags) for _ in range(2)]
-                expected = ','.join(names.splitlines())
-                self.assertEqual(
-                    f'{values!r}; calls={len(self.app.actual_calls)}',
-                    f'{[expected, expected]!r}; calls=1')
+                values = [list(self.vm.tags) for _ in range(2)]
+                expected = names.splitlines()
+                self.assertEqual(values, [expected, expected])
+                self.assertEqual(len(self.app.actual_calls), 1)
 
     def test_filtered_methods_are_independent(self) -> None:
         self.expect_read('List', b'0\0listed\n')
         self.expect_read('Get', b'0\x001', 'omitted')
         self.expect_read('Get', b'0\x000', 'listed')
-        names = ','.join(self.vm.tags)
+        self.assertEqual(list(self.vm.tags), ['listed'])
         values = [('omitted' in self.vm.tags, 'listed' in self.vm.tags)
                   for _ in range(2)]
-        cached_names = ','.join(self.vm.tags)
-        self.assertEqual(
-            f'{names}; {values!r}; {cached_names}; '
-            f'calls={len(self.app.actual_calls)}',
-            'listed; [(True, False), (True, False)]; listed; calls=3')
+        self.assertEqual(values, [(True, False), (True, False)])
+        self.assertEqual(list(self.vm.tags), ['listed'])
+        self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_denied_list(self) -> None:
         self.expect_read('List', b'2\0PermissionDenied\0\0denied\0')
@@ -170,9 +166,8 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
             with self.assertRaises(qubesadmin.exc.PermissionDenied):
                 list(self.vm.tags)
         values = ['tag' in self.vm.tags for _ in range(2)]
-        self.assertEqual(
-            f'{values!r}; calls={len(self.app.actual_calls)}',
-            '[True, True]; calls=3')
+        self.assertEqual(values, [True, True])
+        self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_errors_not_cached(self) -> None:
         for response, error_type, methods in (
@@ -219,9 +214,8 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
         other_vm = self.app.domains.get_blind('other-vm')
         values = ['tag' in vm.tags for vm in
                   (self.vm, other_vm, self.vm, other_vm)]
-        self.assertEqual(
-            f'{values!r}; calls={len(self.app.actual_calls)}',
-            '[True, False, True, False]; calls=2')
+        self.assertEqual(values, [True, False, True, False])
+        self.assertEqual(len(self.app.actual_calls), 2)
 
     def test_clear_cache(self) -> None:
         self.expect_read('Get', [b'0\x001', b'0\x000'], 'tag')
@@ -229,31 +223,26 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
         contains(self.vm.tags, 'tag')
         list(self.vm.tags)
         self.vm.tags.clear_cache()
-        calls_after_clear = len(self.app.actual_calls)
-        is_present = 'tag' in self.vm.tags
-        names = ','.join(self.vm.tags)
-        self.assertEqual(
-            f'{is_present}; {names}; calls after clear={calls_after_clear}; '
-            f'total calls={len(self.app.actual_calls)}',
-            'False; new; calls after clear=2; total calls=4')
+        self.assertEqual(len(self.app.actual_calls), 2)
+        self.assertNotIn('tag', self.vm.tags)
+        self.assertEqual(list(self.vm.tags), ['new'])
+        self.assertEqual(len(self.app.actual_calls), 4)
 
-    def read_membership_and_names(self) -> str:
-        return f'{"tag" in self.vm.tags}, {",".join(self.vm.tags)}'
+    def read_membership_and_names(self) -> tuple[bool, list[str]]:
+        return 'tag' in self.vm.tags, list(self.vm.tags)
 
     def test_writes_update_cache(self) -> None:
         self.expect_read('List', b'0\0other\n')
         self.expect_read('Get', b'0\x000', 'tag')
-        before = self.read_membership_and_names()
+        self.assertEqual(self.read_membership_and_names(), (False, ['other']))
         self.expect_read('Set', b'0\0', 'tag')
         self.vm.tags.add('tag')
-        after_add = self.read_membership_and_names()
+        self.assertEqual(self.read_membership_and_names(),
+                         (True, ['other', 'tag']))
         self.expect_read('Remove', b'0\0', 'tag')
         self.vm.tags.remove('tag')
-        after_removal = self.read_membership_and_names()
-        self.assertEqual(
-            f'{before}; {after_add}; {after_removal}; '
-            f'calls={len(self.app.actual_calls)}',
-            'False, other; True, other,tag; False, other; calls=4')
+        self.assertEqual(self.read_membership_and_names(), (False, ['other']))
+        self.assertEqual(len(self.app.actual_calls), 4)
 
     def test_failed_writes_keep_cache(self) -> None:
         for method, mutation in (('Set', self.vm.tags.add),
@@ -263,15 +252,15 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
                 self.app.actual_calls.clear()
                 self.expect_read('Get', b'0\x001', 'tag')
                 self.expect_read('List', b'0\0tag\n')
-                before = self.read_membership_and_names()
+                self.assertEqual(self.read_membership_and_names(),
+                                 (True, ['tag']))
                 self.expect_read(method, b'2\0PermissionDenied\0\0denied\0',
                                  'tag')
                 with self.assertRaises(PermissionDenied):
                     mutation('tag')
-                self.assertEqual(
-                    f'{before}; {self.read_membership_and_names()}; '
-                    f'calls={len(self.app.actual_calls)}',
-                    'True, tag; True, tag; calls=3')
+                self.assertEqual(self.read_membership_and_names(),
+                                 (True, ['tag']))
+                self.assertEqual(len(self.app.actual_calls), 3)
 
     def test_update_discard_delegation(self) -> None:
         calls = Mock()
@@ -279,5 +268,5 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
              patch.object(self.vm.tags, 'remove', calls.remove):
             self.vm.tags.update(['tag'])
             self.vm.tags.discard('tag')
-        self.assertEqual('\n'.join(map(str, calls.mock_calls)),
-                         "call.add('tag')\ncall.remove('tag')")
+        self.assertEqual(calls.mock_calls,
+                         [call.add('tag'), call.remove('tag')])
