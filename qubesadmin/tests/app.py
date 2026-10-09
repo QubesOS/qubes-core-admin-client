@@ -1321,3 +1321,30 @@ class TC_30_QubesRemote(unittest.TestCase):
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+
+
+class TC_30_ContainerCacheInvalidation(qubesadmin.tests.QubesTestCase):
+    def test_disabling_cache_invalidates_everything(self) -> None:
+        flow = []
+        with mock.patch.object(self.app, '_invalidate_cache_all',
+                               side_effect=lambda: flow.append('invalidate')):
+            for is_enabled in (False, True, True, False, False):
+                self.app.cache_enabled = is_enabled
+                flow.append(is_enabled)
+        self.assertEqual(flow, [False, True, True, 'invalidate', False, False])
+
+    def test_invalidate_existing_vm_containers_without_api_calls(self) -> None:
+        first_vm = self.app.domains.get_blind('first-vm')
+        second_vm = self.app.domains.get_blind('second-vm')
+        with mock.patch('qubesadmin.features.Features.clear_cache',
+                        autospec=True) as clear_features_cache, \
+             mock.patch('qubesadmin.tags.Tags.clear_cache',
+                        autospec=True) as clear_tags_cache:
+            self.app._invalidate_cache_all()  # pylint: disable=protected-access
+        self.assertCountEqual(clear_features_cache.mock_calls,
+                              [mock.call(first_vm.features),
+                               mock.call(second_vm.features)])
+        self.assertCountEqual(clear_tags_cache.mock_calls,
+                              [mock.call(first_vm.tags),
+                               mock.call(second_vm.tags)])
+        self.assertEqual(self.app.actual_calls, [])
