@@ -1,3 +1,21 @@
+qubes-core-admin-client (4.4.2-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * qvm-template: add --name to install under a different name
+  * qvm-template: keep the source template name in template-name
+
+  [ Ben Grande ]
+  * Check features for active and deferred template
+  * Wrapper to query active and deferred template
+  * Document deferred template
+  * Add active_template to qvm-ls formats
+  * Skip clone of active_template
+
+  [ Marek Marczykowski-Górecki ]
+  * rpm: bump "required" qubes-core-dom0 version
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 16 Oct 2026 04:42:43 +0200
+
 qubes-core-admin-client (4.4.1-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
