@@ -190,6 +190,14 @@ class DeviceAlreadyAssigned(QubesException, KeyError):
     """
 
 
+class DeviceUsed(QubesValueError):
+    """
+    Trying to attach a device that is not free to attach.
+
+    Distinct from `DeviceAlreadyAttached`, which means the device is attached.
+    """
+
+
 class UnrecognizedDevice(QubesException, ValueError):
     """
     Device identity is not as expected.
