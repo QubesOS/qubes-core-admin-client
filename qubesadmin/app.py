@@ -538,6 +538,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                     "name",
                     "qid",
                     "template",
+                    "active_template",
                     "label",
                     "uuid",
                     "installed_by_rpm",
