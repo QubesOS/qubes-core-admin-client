@@ -181,8 +181,10 @@ class RestoreInDisposableVM:
             ['qvm-copy-to-vm', self.dispvm_name, path],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL)
-        return '/home/{}/QubesIncoming/{}/{}'.format(
-            self.dispvm.default_user,
+        # qubes.Filecopy writes into default user home
+        home = self.dispvm.run_with_args('printenv', 'HOME')[0]
+        return '{}/QubesIncoming/{}/{}'.format(
+            home.decode().strip(),
             os.uname()[1],
             os.path.basename(path)
         )
