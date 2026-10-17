@@ -125,6 +125,11 @@ GUI_DAEMON_OPTIONS = [
         (lambda x: isinstance(x, int) and 256 <= x <= 256000),
     ),
     (
+        "max_clipboard_image_size",
+        "int",
+        (lambda x: isinstance(x, int) and 4096 <= x <= 16000000),
+    ),
+    (
         "events_max_delay",
         "int",
         (lambda x: isinstance(x, int) and 0 <= x <= 5000),
