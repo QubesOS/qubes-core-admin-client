@@ -151,6 +151,7 @@ DEFAULT_VM_PROPERTIES = {
     "start_time": Property("", "str", True),
     "stubdom_mem": Property("", "int", True),
     "stubdom_xid": Property("-1", "str", True),
+    "active_template": Property("fedora-36", "vm", True),
     "template": Property("fedora-36", "vm", False),
     "template_for_dispvms": Property("False", "bool", True),
     "updateable": Property("False", "bool", True),
