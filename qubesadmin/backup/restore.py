@@ -2047,6 +2047,7 @@ class BackupRestore:
 
         Create VMs, set their properties etc.
         '''
+        # pylint: disable=too-many-branches,too-many-statements
         vms = {}
         for vm_info in restore_info.values():
             assert isinstance(vm_info, self.VMToRestore)
@@ -2147,6 +2148,14 @@ class BackupRestore:
                         vm.name, feature, value, err)
 
             for tag in vm.tags:
+                if tag.startswith("created-by-"):
+                    continue
+                if tag.startswith("guivm-"):
+                    continue
+                if tag.startswith("audiovm-"):
+                    continue
+                if tag.startswith("relayvm-"):
+                    continue
                 try:
                     new_vm.tags.add(tag)
                 except Exception as err:  # pylint: disable=broad-except
