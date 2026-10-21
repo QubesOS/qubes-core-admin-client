@@ -84,8 +84,8 @@ def get_parser():
     add_parser.set_defaults(func=mode_add)
 
     del_parser = sub_parsers.add_parser('del', aliases=('d', 'unset', 'u'),
-        help='add tag')
-    del_parser.add_argument('tag', nargs=1,
+        help='delete tag')
+    del_parser.add_argument('tag', nargs='+',
         action='store')
     del_parser.set_defaults(func=mode_del)
 
