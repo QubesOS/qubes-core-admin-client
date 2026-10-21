@@ -34,9 +34,12 @@ Options
 
 .. option:: --wait
 
-   wait for the VMs to shut down. If some domains are providing network to other
-   domains, wait for those domains to shut down before shutting down their
-   dependents, unless :option:`--all` was specified
+   Wait for the VMs to shut down. If a qube cannot be shut down because
+   other running qubes depend on it, the command retries the shutdown
+   after other requested shutdowns complete. This allows dependent qubes
+   to shut down before the qubes they depend on. When :option:`--all` is
+   specified without :option:`--exclude`, it implies :option:`--force`,
+   which bypasses this dependency check.
 
 .. option:: --timeout
 
@@ -54,6 +57,16 @@ Options
 .. option:: --version
 
    Show program's version number and exit
+
+
+Examples
+--------
+
+To shut down a network stack, waiting for dependent qubes to stop:
+
+.. code-block:: console
+
+   qvm-shutdown --wait sys-net sys-firewall sys-whonix
 
 
 Authors
