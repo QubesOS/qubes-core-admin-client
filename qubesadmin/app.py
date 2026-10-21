@@ -560,6 +560,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             for tag in src_vm.tags:
                 if tag.startswith("created-by-"):
                     continue
+                if tag.startswith("guivm-"):
+                    continue
+                if tag.startswith("audiovm-"):
+                    continue
+                if tag.startswith("relayvm-"):
+                    continue
                 try:
                     dst_vm.tags.add(tag)
                 except qubesadmin.exc.QubesException as e:
