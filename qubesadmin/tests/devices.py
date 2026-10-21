@@ -20,6 +20,9 @@
 
 # pylint: disable=missing-docstring,protected-access
 
+import string
+import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 import qubesadmin.tests
@@ -27,7 +30,7 @@ import qubesadmin.device_protocol
 
 from qubesadmin.device_protocol import (
     DeviceAssignment, DeviceInfo, UnknownDevice,
-    AssignmentMode)
+    AssignmentMode, Port, VirtualDevice, ProtocolError)
 from qubesadmin.events import EventsDispatcher
 
 serialized_test_device = (
@@ -139,6 +142,20 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.app.domains['test-vm2'], 'dev1', devclass='test')
         assign.options['ro'] = True
         assign.options['something'] = 'value'
+        self.vm.devices['test'].attach(assign)
+        self.assertAllCalled()
+
+    def test_021_attach_plus_identity(self):
+        device_id = '03eb:2403:v1.2.2+dev:u030000'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Attach',
+             '+hex+test-vm2+dev1+' + device_id.encode('ascii').hex(),
+             b"device_id='03eb:2403:v1.2.2+dev:u030000' "
+             b"port_id='dev1' devclass='test' backend_domain='test-vm2' "
+             b"mode='manual' frontend_domain='test-vm'")] = b'0\0'
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            device_id=device_id)
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
 
@@ -572,3 +589,131 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             "8765:4321:0123456789:?*******",
         )
         self.assertAllCalled()
+
+
+class TC_04_VirtualDevice(unittest.TestCase):
+    def setUp(self):
+        self.backend = SimpleNamespace(name="sys-usb")
+        self.domains = {"sys-usb": self.backend}
+
+    def make_device(self, serial="v1.2.2+dev"):
+        return VirtualDevice(
+            Port(self.backend, "4-1", "usb"),
+            f"03eb:2403:{serial}:u030000",
+        )
+
+    def test_000_qarg_roundtrip_plus(self):
+        for serial in (
+            "v1.2.2+dev",
+            "a++b",
+            "+start",
+            "end+",
+            "a:+b",
+            "a+_______",
+        ):
+            with self.subTest(serial=serial):
+                device = self.make_device(serial)
+                argument = device.repr_for_qarg
+                self.assertLessEqual(
+                    set(argument),
+                    set(string.ascii_letters + string.digits + "_-+."),
+                )
+                parsed = VirtualDevice.from_qarg(argument, "usb", self.domains)
+                self.assertEqual(parsed, device)
+                assignment = DeviceAssignment.deserialize(
+                    DeviceAssignment(device).serialize(), parsed
+                )
+                self.assertEqual(assignment.device_id, device.device_id)
+
+    def test_001_plus_and_colon_are_distinct(self):
+        plus = self.make_device("a+b")
+        colon = self.make_device("a:b")
+        self.assertNotEqual(plus.repr_for_qarg, colon.repr_for_qarg)
+        for device in (plus, colon):
+            self.assertEqual(
+                VirtualDevice.from_qarg(
+                    device.repr_for_qarg, "usb", self.domains
+                ),
+                device,
+            )
+
+    def test_002_legacy_argument_unchanged(self):
+        device = self.make_device("v1.2.2dev")
+        self.assertEqual(
+            device.repr_for_qarg,
+            "sys-usb+4-1+03eb+2403+v1.2.2dev+u030000",
+        )
+        self.assertEqual(
+            VirtualDevice.from_qarg(device.repr_for_qarg, "usb", self.domains),
+            device,
+        )
+        wildcard = VirtualDevice.from_qarg("sys-usb+4-1+_", "usb", self.domains)
+        self.assertEqual(wildcard.device_id, "*")
+
+    def test_003_list_reply_preserves_plus(self):
+        device = self.make_device()
+        # Assigned/Attached replies use backend+port:identity.
+        self.assertEqual(
+            VirtualDevice.from_qarg(repr(device), "usb", self.domains),
+            device,
+        )
+        self.assertEqual(
+            VirtualDevice.from_str(str(device), "usb", self.domains),
+            device,
+        )
+
+    def test_004_malformed_hex_argument(self):
+        for encoded in ("", "0", "gg", "ff", "00", "0a", "0d", "61 62"):
+            with self.subTest(encoded=encoded):
+                with self.assertRaises(ProtocolError):
+                    VirtualDevice.from_qarg(
+                        "+hex+sys-usb+4-1+" + encoded,
+                        "usb",
+                        self.domains,
+                    )
+        for argument in (
+            "+hex+4-1+61",
+            "+hex+sys-usb+4-1+extra+61",
+            "+hex++hex+sys-usb+4-1+61",
+        ):
+            with self.subTest(argument=argument):
+                with self.assertRaises(ProtocolError):
+                    VirtualDevice.from_qarg(argument, "usb", self.domains)
+
+    def test_005_assignment_mismatch_rejected(self):
+        device = self.make_device()
+        parsed = VirtualDevice.from_qarg(
+            device.repr_for_qarg, "usb", self.domains
+        )
+        payload = DeviceAssignment(device).serialize()
+        for original, replacement in (
+            (b"v1.2.2+dev", b"v1.2.2:dev"),
+            (b"port_id='4-1'", b"port_id='4-2'"),
+            (b"backend_domain='sys-usb'", b"backend_domain='other'"),
+            (b"devclass='usb'", b"devclass='pci'"),
+        ):
+            with self.subTest(original=original):
+                self.assertIn(original, payload)
+                with self.assertRaises(ProtocolError):
+                    DeviceAssignment.deserialize(
+                        payload.replace(original, replacement), parsed
+                    )
+
+    def test_006_explicit_backend(self):
+        device = self.make_device()
+        argument = "+hex+4-1+" + device.device_id.encode("ascii").hex()
+        self.assertEqual(
+            VirtualDevice.from_qarg(
+                argument, "usb", None, backend=self.backend
+            ),
+            device,
+        )
+
+    def test_007_wildcard_port(self):
+        device = VirtualDevice(
+            Port(self.backend, "*", "usb"), self.make_device().device_id
+        )
+        self.assertEqual(
+            VirtualDevice.from_qarg(device.repr_for_qarg, "usb", self.domains),
+            device,
+        )
