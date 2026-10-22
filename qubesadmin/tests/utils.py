@@ -23,6 +23,7 @@
 import qubesadmin.tests
 import qubesadmin.utils
 
+from qubesadmin.tests.mock_app import mock_app
 
 class TestVMUsage(qubesadmin.tests.QubesTestCase):
     def setUp(self):
@@ -44,6 +45,11 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
                                   'default_guivm', 'default_audiovm',
                                   'default_template', 'clockvm', 'updatevm',
                                   'management_dispvm']
+        self.vm_properties = [
+            name
+            for name, prop in mock_app.GLOBAL_PROPERTIES.items()
+            if prop.type == "vm"
+        ]
 
         for prop in self.global_properties:
             self.app.expected_calls[
@@ -56,8 +62,9 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
         ]
 
         self.vm_properties = [
-            'template', 'netvm', 'guivm', 'audiovm', 'default_dispvm',
-            'management_dispvm'
+            name
+            for name, prop in mock_app.DEFAULT_VM_PROPERTIES.items()
+            if prop.type == "vm"
         ]
 
         for vm in self.vms:
