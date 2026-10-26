@@ -212,8 +212,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     log: Logger
     #: do not check for object (VM, label etc) existence before really needed
     blind_mode: bool = False
-    #: cache retrieved properties values
-    cache_enabled: bool = False
+    _cache_enabled: bool = False
 
     def __init__(self) -> None:
         super().__init__(self, "admin.property.", "dom0")
@@ -228,6 +227,19 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         self._pool_drivers: dict[str, list[str]] | None = None
         self.log = logging.getLogger("app")
         self._local_name = None
+
+    @property
+    def cache_enabled(self) -> bool:
+        """Cache retrieved properties, features, tags and device assignments"""
+        return self._cache_enabled
+
+    @cache_enabled.setter
+    def cache_enabled(self, is_enabled: bool) -> None:
+        # Nothing gets cached while disabled, so flushing on the way out is
+        # what keeps a later re-enable from serving values cached earlier.
+        if self._cache_enabled and not is_enabled:
+            self._invalidate_cache_all()
+        self._cache_enabled = is_enabled
 
     def list_vmclass(self) -> list[Klass]:
         """Call Qubesd in order to obtain the vm classes list"""
@@ -830,7 +842,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         This method is designed to be hooked as an event handler
         for 'connection-established' handler. This is done in
         :py:class:`qubesadmin.events.EventsDispatcher` class
-        directly, before calling other handlers.
+        directly, before calling other handlers. It also runs when
+        :py:attr:`cache_enabled` is switched off.
 
         There is no guarantee about events delivery before this point,
         so anything cached before needs to be discarded.
@@ -843,6 +856,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             assert isinstance(vm, qubesadmin.vm.QubesVM)
             vm._power_state_cache = None
             vm._properties_cache = {}
+            vm.features.clear_cache()
+            vm.tags.clear_cache()
             vm.devices.clear_cache()
         self._properties_cache = {}
 
