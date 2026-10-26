@@ -254,7 +254,7 @@ def attach_device(args):
                 f"at {device.port_id} port."
             )
 
-        vm.devices[args.devclass].attach(assignment)
+        vm.devices[args.devclass].attach(assignment, force=args.force)
     except qubesadmin.exc.QubesException as exc:
         # backward compatibility
         # if `--persistent` we ignore if attachment fails,
@@ -682,6 +682,16 @@ def get_parser(device_class=None):
     )
     attach_parser.add_argument(*read_only[0], **read_only[1])
     assign_parser.add_argument(*read_only[0], **read_only[1])
+
+    attach_parser.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        default=False,
+        help="Attach, even if the device is in use or its status is unclear. "
+             "It first forces disconnection from other qubes. Some data may be "
+             "lost.",
+    )
 
     attach_parser.add_argument(
         "--persistent",
