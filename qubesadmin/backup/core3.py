@@ -72,11 +72,11 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
 
     @staticmethod
     def get_property(xml_obj: _Element, prop: str) -> str | None:
-        '''Get property of given object (XML node)
+        """Get property of given object (XML node).
 
         Object can be any PropertyHolder serialized to XML - in practice
-        :py:class:`BaseVM` or :py:class:`Qubes`.
-        '''
+        :py:class:`!qubes.vm.BaseVM` or :py:class:`~qubes.Qubes`.
+        """
         xml_prop = xml_obj.findall('./property[@name=\'{}\']'.format(prop))
         if not xml_prop:
             raise KeyError(prop)

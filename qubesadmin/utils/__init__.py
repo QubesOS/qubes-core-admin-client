@@ -392,8 +392,8 @@ class DriveAction(argparse.Action):
 
 def get_drive_assignment(app, drive_str):
     """
-    Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for a
-    given drive. Intended to be used during before domain is started.
+    Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for
+    a given drive. Intended to be used during before domain is started.
 
     If running in dom0, it will also take care about creating the appropriate
     loop device (if necessary). Otherwise, only existing block devices are
@@ -401,8 +401,11 @@ def get_drive_assignment(app, drive_str):
 
     :param app: Qubes() instance
     :param drive_str: drive argument
-    :return: DeviceAssignment matching *drive_str*
+    :return: :py:class:`qubesadmin.device_protocol.DeviceAssignment` matching
+       :obj:`!drive_str`
+    :rtype: DeviceAssignment
     """
+
     devtype = "cdrom"
     if drive_str.startswith("cdrom:"):
         devtype = "cdrom"

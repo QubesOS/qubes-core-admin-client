@@ -44,15 +44,17 @@ from qubesadmin.device_protocol import (
 
 
 def prepare_table(dev_list, with_sbdf=False):
-    """Converts a list of :py:class:`qubes.devices.DeviceInfo` objects to a
-    list of tuples for the :py:func:`qubes.tools.print_table`.
+    """Converts a list of :py:class:`~qubesadmin.device_protocol.DeviceInfo`
+    objects to a list of tuples for the
+    :py:func:`~qubesadmin.tools.print_table`.
 
     If :program:`qvm-devices` is running in a TTY, it will omit duplicate
     data.
 
-    :param iterable dev_list: List of :py:class:`qubes.devices.DeviceInfo`
-        objects.
+    :param Iterable dev_list: List of
+       :py:class:`qubesadmin.device_protocol.DeviceInfo` objects.
     :param bool with_sbdf: when True, include SBDF identifier of PCI device
+
     :returns: list of tuples
     """
     output = []
@@ -495,8 +497,8 @@ def init_list_parser(sub_parsers):
 
 class DeviceAction(qubesadmin.tools.QubesAction):
     """Action for argument parser that gets the
-    :py:class:``qubesadmin.device_protocol.VirtualDevice`` from a
-    BACKEND:PORT_ID:DEVICE_ID string.
+    :py:class:`qubesadmin.device_protocol.VirtualDevice` from a
+    BACKEND:PORT_ID:DEVICE_ID string
     """
 
     def __init__(
