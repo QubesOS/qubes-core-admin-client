@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -24,7 +23,8 @@ import asyncio
 import fnmatch
 import subprocess
 import typing
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 from asyncio import StreamWriter, StreamReader
 
 import qubesadmin.config

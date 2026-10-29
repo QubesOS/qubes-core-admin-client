@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -41,7 +40,7 @@ async def run_async(args=None, app=None):
     if not failed:
         return 0
     for qube, exc in failed.items():
-        parser.print_error("Failed to kill: {}: {}".format(qube, exc))
+        parser.print_error(f"Failed to kill: {qube}: {exc}")
     raise SystemExit(len(failed))
 
 

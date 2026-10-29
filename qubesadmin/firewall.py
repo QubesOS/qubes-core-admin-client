@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -107,7 +106,7 @@ class DstHost(RuleOption):
                         'netmask for IPv6 must be between 0 and 128')
                 value += '/' + str(self.prefixlen)
                 self.type = 'dst6'
-            except socket.error:
+            except OSError:
                 try:
                     socket.inet_pton(socket.AF_INET, value)
                     if value.count('.') != 3:
@@ -122,7 +121,7 @@ class DstHost(RuleOption):
                             'netmask for IPv4 must be between 0 and 32')
                     value += '/' + str(self.prefixlen)
                     self.type = 'dst4'
-                except socket.error:
+                except OSError:
                     self.type = 'dsthost'
                     self.prefixlen = 0
                     safe_set = string.ascii_lowercase + string.digits + '-._'
@@ -139,7 +138,7 @@ class DstHost(RuleOption):
                 if prefixlen > 128:
                     raise ValueError('netmask for IPv6 must be <= 128')
                 self.type = 'dst6'
-            except socket.error:
+            except OSError:
                 try:
                     socket.inet_pton(socket.AF_INET, host)
                     if prefixlen > 32:
@@ -148,7 +147,7 @@ class DstHost(RuleOption):
                     if host.count('.') != 3:
                         raise ValueError(
                             'Invalid number of dots in IPv4 address')
-                except socket.error:
+                except OSError:
                     raise ValueError('Invalid IP address: ' + host)
 
         super().__init__(value)
@@ -233,7 +232,7 @@ class Expire(RuleOption):
         '''Human readable representation'''
         now = datetime.datetime.now(datetime.timezone.utc)
         duration = (self.datetime - now).total_seconds()
-        return "{:+.0f}s".format(duration)
+        return f"{duration:+.0f}s"
 
 
 class Comment(RuleOption):
@@ -411,7 +410,7 @@ class Rule:
         return NotImplemented
 
     def __repr__(self) -> str:
-        return 'Rule(\'{}\')'.format(self.rule)
+        return f'Rule(\'{self.rule}\')'
 
 
 class Firewall:
@@ -456,7 +455,7 @@ class Firewall:
         if rules is None:
             rules = self._rules
         self.vm.qubesd_call(None, 'admin.vm.firewall.Set',
-            payload=(''.join('{}\n'.format(rule.rule)
+            payload=(''.join(f'{rule.rule}\n'
                 for rule in rules)).encode('ascii'))
 
     @property

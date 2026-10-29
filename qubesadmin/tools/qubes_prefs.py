@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -20,7 +19,6 @@
 
 ''' Manipulate global properties.'''
 
-from __future__ import print_function
 
 import sys
 

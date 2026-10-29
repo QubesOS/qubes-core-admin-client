@@ -24,7 +24,6 @@
 '''qvm-ls - List available domains'''
 
 
-from __future__ import print_function
 
 import argparse
 import collections.abc
@@ -95,7 +94,7 @@ class Column:
         return str(ret)
 
     def __repr__(self):
-        return '{}(head={!r})'.format(self.__class__.__name__, self.head)
+        return f'{self.__class__.__name__}(head={self.head!r})'
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Column):
@@ -118,7 +117,7 @@ class PropertyColumn(Column):
         super().__init__(head=name.replace('_', '-').upper(), attr=name)
 
     def __repr__(self) -> str:
-        return '{}(head={!r}'.format(self.__class__.__name__, self.head)
+        return f'{self.__class__.__name__}(head={self.head!r}'
 
 
 def _format_flags(vm: QubesVM) -> str:
@@ -186,7 +185,7 @@ def calc_used(vm, volume_name):
     if size == 0:
         return 0
     usage = calc_usage(vm, volume_name)
-    return '{}%'.format(usage * 100 // size)
+    return f'{usage * 100 // size}%'
 
 
 # todo maxmem
@@ -558,8 +557,8 @@ def get_parser():
         help='exclude qubes having specific tag(s)')
 
     for pwstate in DOMAIN_POWER_STATES:
-        parser_filter.add_argument('--{}'.format(pwstate), action='store_true',
-        help='show {} VMs'.format(pwstate))
+        parser_filter.add_argument(f'--{pwstate}', action='store_true',
+        help=f'show {pwstate} VMs')
 
     parser_filter.add_argument('--template-source', nargs='+',
         metavar='TEMPLATE', action='store',
@@ -743,9 +742,9 @@ def main(args=None, app=None):
             try:
                 key, value = feature.split('=', 1)
             except ValueError:
-                parser.error("Invalid argument: --features {}".format(feature))
+                parser.error(f"Invalid argument: --features {feature}")
             if not key:
-                parser.error("Invalid argument: --features {}".format(feature))
+                parser.error(f"Invalid argument: --features {feature}")
             if value == '':
                 value = None
             elif value in ['\'\'', '""']:
@@ -758,9 +757,9 @@ def main(args=None, app=None):
             try:
                 key, value = pref.split('=', 1)
             except ValueError:
-                parser.error("Invalid argument: --prefs {}".format(pref))
+                parser.error(f"Invalid argument: --prefs {pref}")
             if not key:
-                parser.error("Invalid argument: --prefs {}".format(pref))
+                parser.error(f"Invalid argument: --prefs {pref}")
             if value == '':
                 value = None
             elif value in ['\'\'', '""']:

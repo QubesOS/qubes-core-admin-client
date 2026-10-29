@@ -1,5 +1,3 @@
-# encoding=utf-8
-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -89,7 +87,7 @@ class Line:
     """Helper class to hold single device info for listing"""
 
     def __init__(self, device: DeviceInfo, assignment=False):
-        self.ident = "{!s}:{!s}".format(device.backend_domain, device.port_id)
+        self.ident = f"{device.backend_domain!s}:{device.port_id!s}"
         self.description = device.description
         self.assignment = assignment
         self.frontends = []
@@ -208,7 +206,7 @@ def _frontend_desc(vm, assignment, virtual=False):
             vm,
             mode,
             ", ".join(
-                "{}={}".format(key, value)
+                f"{key}={value}"
                 for key, value in assignment.options.items()
             ),
         )

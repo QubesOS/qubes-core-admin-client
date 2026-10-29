@@ -366,7 +366,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('vm1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         # setup sys-net
@@ -374,7 +374,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         # setup template1
@@ -384,7 +384,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -419,7 +419,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('vm1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         # setup sys-net
@@ -427,7 +427,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -506,7 +506,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -533,7 +533,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         # setup template1
@@ -542,7 +542,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -569,7 +569,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         # setup template1
@@ -579,7 +579,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -607,7 +607,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('sys-net', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         # setup template1
@@ -617,7 +617,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
@@ -647,7 +647,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('internalvm', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         self.app.expected_calls[
@@ -667,7 +667,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('service-vm', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         self.app.expected_calls[
@@ -726,7 +726,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('internalvm', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         self.app.expected_calls[
@@ -738,7 +738,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('service-vm', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
-                '{} default=True {}\n'.format(key, value)
+                f'{key} default=True {value}\n'
                 for key, value in props.items()).encode()
 
         self.app.expected_calls[

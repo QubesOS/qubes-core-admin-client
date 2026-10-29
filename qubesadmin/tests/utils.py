@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -90,10 +89,10 @@ class TestVMUsage(qubesadmin.tests.QubesTestCase):
 
         self.assertSetEqual(
             set(result),
-            set([(vm, prop) for vm in self.vms for prop in self.vm_properties
+            {(vm, prop) for vm in self.vms for prop in self.vm_properties
                  if (not vm.startswith('template')
                      or not prop.startswith(
-                            'template')) and vm != 'template1']),
+                            'template')) and vm != 'template1'},
             "Incorrect VM properties listed.")
 
     def test_02_empty(self):

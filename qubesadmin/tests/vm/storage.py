@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -29,7 +28,7 @@ class TestVMVolumes(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'admin.vm.volume.List', None, None)] = \
             b'0\x00root\nprivate\nvolatile\nmodules\n'
         self.assertEqual(set(self.vm.volumes.keys()),
-            set(['root', 'private', 'volatile', 'modules']))
+            {'root', 'private', 'volatile', 'modules'})
         self.assertAllCalled()
 
     def test_001_volume_get(self):
