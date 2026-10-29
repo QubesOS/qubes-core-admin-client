@@ -26,21 +26,19 @@ from qubesadmin.vm import QubesVM
 
 class BackupApp:
     '''Interface for backup collection'''
-    # pylint: disable=too-few-public-methods
-    def __init__(self, qubes_xml: str | None):
+    def __init__(self, qubes_xml: str):
         '''Initialize BackupApp object and load qubes.xml into it'''
         self.store = qubes_xml
         self.domains = {}
         self.globals = {}
         self.load()
 
-    def load(self) -> bool | None:
+    def load(self) -> None:
         '''Load qubes.xml'''
         raise NotImplementedError
 
 class BackupVM:
     '''Interface for a single VM in the backup'''
-    # pylint: disable=too-few-public-methods
     def __init__(self) -> None:
         '''Initialize empty BackupVM object'''
         #: VM class

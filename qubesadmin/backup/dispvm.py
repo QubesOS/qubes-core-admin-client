@@ -175,6 +175,8 @@ class RestoreInDisposableVM:
 
     def transfer_pass_file(self, path: str) -> str:
         """Copy passhprase file to the DisposableVM"""
+        assert self.dispvm is not None
+
         subprocess.check_call(
             ['qvm-copy-to-vm', self.dispvm_name, path],
             stdout=subprocess.DEVNULL,
@@ -217,12 +219,16 @@ class RestoreInDisposableVM:
 
     def invalidate_backup_access(self) -> None:
         """Revoke access to backup archive"""
+        assert self.storage_access_proc is not None
+
         self.backup_storage_vm.tags.discard(self.storage_tag)
         typing.cast(typing.IO, self.storage_access_proc.stdin).close()
         self.storage_access_proc.wait()
 
     def prepare_inner_args(self) -> list:
         """Prepare arguments for inner (in-DispVM) qvm-backup-restore command"""
+        assert self.storage_access_id is not None
+
         new_options = []
         new_positional_args = []
 
@@ -269,6 +275,8 @@ class RestoreInDisposableVM:
 
     def extract_log(self) -> bytes:
         """Extract restore log from the DisposableVM"""
+        assert self.dispvm is not None
+
         untrusted_backup_log, _ = self.dispvm.run_with_args(
             'cat', self.backup_log_path,
             stdout=subprocess.PIPE,
@@ -278,11 +286,13 @@ class RestoreInDisposableVM:
 
     def run(self) -> bytes | None:
         """Run the backup restore operation"""
+
         lock = qubesadmin.utils.LockFile(LOCKFILE, True)
         lock.acquire()
         try:
             self.app.log.info("Starting restore process in a DisposableVM...")
             self.create_dispvm()
+            assert self.dispvm is not None
             self.clear_old_tags()
             self.register_backup_source()
             self.dispvm.start()
@@ -340,6 +350,7 @@ class RestoreInDisposableVM:
             return backup_log
         except subprocess.CalledProcessError as e:
             if e.returncode == 127:
+                assert self.dispvm is not None
                 raise qubesadmin.exc.QubesException(
                     '{} missing in {} template, install it there '
                     'package there'.format(self.terminal_app[0],

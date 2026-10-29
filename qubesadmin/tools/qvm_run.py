@@ -20,15 +20,12 @@
 """qvm-run tool"""
 import argparse
 import contextlib
+import io
 import os
 import shlex
 import signal
 import subprocess
 import sys
-
-import multiprocessing
-
-import select
 
 import qubesadmin.tools
 import qubesadmin.exc
@@ -128,11 +125,16 @@ parser.add_argument(
     help="disable colouring the stderr",
 )
 
+try:
+    _stdout_isatty = os.isatty(sys.stdout.fileno())
+except io.UnsupportedOperation:
+    _stdout_isatty = False
+
 parser.add_argument(
     "--filter-escape-chars",
     action="store_true",
     dest="filter_esc",
-    default=os.isatty(sys.stdout.fileno()),
+    default=_stdout_isatty,
     help="filter terminal escape sequences (default if output is terminal)",
 )
 
@@ -194,24 +196,6 @@ parser.add_argument(
 )
 
 
-def copy_stdin(stream):
-    """Copy stdin to *stream*"""
-    # multiprocessing.Process have sys.stdin connected to /dev/null, use fd 0
-    #  directly
-    while True:
-        try:
-            # select so this code works even if fd 0 is non-blocking
-            select.select([0], [], [])
-            data = os.read(0, 65536)
-            if data is None or data == b"":
-                break
-            stream.write(data)
-            stream.flush()
-        except KeyboardInterrupt:
-            break
-    stream.close()
-
-
 def print_no_color(msg, file, color):
     """Print a *msg* to *file* without coloring it.
     Namely reset to base color first, print a message, then restore color.
@@ -226,6 +210,7 @@ def run_command_single(args, vm):
     """Handle a single VM to run the command in"""
     run_kwargs = {}
     if not args.passio:
+        run_kwargs["stdin"] = subprocess.DEVNULL
         run_kwargs["stdout"] = subprocess.DEVNULL
         run_kwargs["stderr"] = subprocess.DEVNULL
     elif args.localcmd:
@@ -233,7 +218,9 @@ def run_command_single(args, vm):
         run_kwargs["stdout"] = subprocess.PIPE
         run_kwargs["stderr"] = None
     else:
-        # connect process output to stdout/err directly if --pass-io is given
+        # connect process output to stdin/stdout/err directly if --pass-io is
+        # given
+        run_kwargs["stdin"] = None
         run_kwargs["stdout"] = None
         run_kwargs["stderr"] = None
         if args.filter_esc:
@@ -262,7 +249,6 @@ def run_command_single(args, vm):
 
     use_exec = len(args.cmd_args) > 0 or args.no_shell
 
-    copy_proc = None
     local_proc = None
     shell_cmd = None
     if args.service:
@@ -283,38 +269,36 @@ def run_command_single(args, vm):
             service = "qubes.VMShell"
             if args.gui and args.dispvm:
                 service += "+WaitForSession"
-            elif args.user == "root":
-                service = "qubes.VMRootShell"
-                args.user = None
+            # if there is no vmexec, surely qubes.VMRootShell is also too old
+            # - see comment below
             shell_cmd = shlex.join(all_args)
     else:
         service = "qubes.VMShell"
         if args.gui and args.dispvm:
             service += "+WaitForSession"
-        elif args.user == "root":
+        elif args.user == "root" and vm.features.check_with_template(
+                "supported-rpc.qubes.VMRootExec", False
+        ):
+            # The above intentionally checks for VMRootExec, not VMRootShell.
+            # When VMRootExec was introduced, both VMRootExec and VMRootShell
+            # got also force-user=root setting necessary for the below to work.
             service = "qubes.VMRootShell"
             args.user = None
         shell_cmd = args.cmd
 
-    proc = vm.run_service(service, user=args.user, **run_kwargs)
     if shell_cmd:
-        proc.stdin.write(vm.prepare_input_for_vmshell(shell_cmd))
-        proc.stdin.flush()
+        run_kwargs["prefix_data"] = vm.prepare_input_for_vmshell(shell_cmd)
+    proc = vm.run_service(service, user=args.user, **run_kwargs)
     if args.localcmd:
         # pylint: disable=consider-using-with
         local_proc = subprocess.Popen(
             args.localcmd, shell=True, stdout=proc.stdin, stdin=proc.stdout
         )
-        # stdin is closed below
+        proc.stdin.close()
         proc.stdout.close()
-    elif args.passio:
-        copy_proc = multiprocessing.Process(
-            target=copy_stdin, args=(proc.stdin,)
-        )
-        copy_proc.start()
-        # keep the copying process running
-    proc.stdin.close()
-    return proc, copy_proc, local_proc
+    else:
+        assert proc.stdin is None, repr(proc.stdin)
+    return proc, local_proc
 
 
 def has_gui(qube) -> bool:
@@ -343,7 +327,11 @@ def main(args=None, app=None):
         if args.color_output is None and args.filter_esc:
             args.color_output = 31
 
-        if args.color_stderr is None and os.isatty(sys.stderr.fileno()):
+        try:
+            stderr_isatty = os.isatty(sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            stderr_isatty = False
+        if args.color_stderr is None and stderr_isatty:
             args.color_stderr = 31
 
     if len(args.domains) > 1 and args.passio and not args.localcmd:
@@ -389,8 +377,10 @@ def main(args=None, app=None):
             for qube in domains:
                 gui_per_domain[qube] = has_gui(qube)
     else:
+        if len(domains) != 1:
+            parser.print_usage(sys.stderr)
+            sys.exit(2)
         if args.gui is None:
-            assert len(domains) == 1
             args.gui = has_gui(domains[0])
     if args.color_output:
         sys.stdout.write(f"\033[0;{args.color_output}m")
@@ -398,7 +388,6 @@ def main(args=None, app=None):
     if args.color_stderr:
         sys.stderr.write(f"\033[0;{args.color_stderr}m")
         sys.stderr.flush()
-    copy_proc = None
     try:
         procs = []
         for vm in domains:
@@ -453,7 +442,7 @@ def main(args=None, app=None):
                         with contextlib.suppress(ProcessLookupError):
                             wait_session.send_signal(signal.SIGINT)
                         break
-                proc, copy_proc, local_proc = run_command_single(args, vm)
+                proc, local_proc = run_command_single(args, vm)
                 procs.append((vm, proc))
                 if local_proc:
                     procs.append((vm, local_proc))
@@ -490,8 +479,6 @@ def main(args=None, app=None):
         if args.color_stderr:
             sys.stderr.write("\033[0m")
             sys.stderr.flush()
-        if copy_proc is not None:
-            copy_proc.terminate()
 
     return retcode
 

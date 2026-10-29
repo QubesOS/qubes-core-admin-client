@@ -19,6 +19,7 @@
 
 # pylint: disable=missing-docstring
 
+import qubesadmin.vm
 import qubesadmin.tests.vm
 
 
@@ -289,6 +290,26 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
         self.assertFalse(self.vm.is_paused())
         self.assertFalse(self.vm.is_suspended())
 
+    def test_012_power_state_starting(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Starting'
+        self.assertEqual(self.vm.get_power_state(), 'Starting')
+        self.assertTrue(self.vm.is_running())
+        self.assertFalse(self.vm.is_halted())
+        self.assertFalse(self.vm.is_paused())
+        self.assertFalse(self.vm.is_suspended())
+
+    def test_012_power_state_halting(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halting'
+        self.assertEqual(self.vm.get_power_state(), 'Halting')
+        self.assertTrue(self.vm.is_running())
+        self.assertFalse(self.vm.is_halted())
+        self.assertFalse(self.vm.is_paused())
+        self.assertFalse(self.vm.is_suspended())
+
     def test_013_power_state_suspended(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.CurrentState', None, None)] = \
@@ -304,3 +325,10 @@ class TC_01_SpecialCases(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'admin.vm.CurrentState', None, None)] = \
             b'0\x00mem=1234'
         self.assertEqual(self.vm.get_mem(), 1234)
+
+    def test_020_klass(self):
+        vm = qubesadmin.vm.QubesVM(self.app, "test-vm")
+        self.app.expected_calls[("test-vm", "admin.vm.List", None, None)] = \
+            b"0\x00test-vm class=AppVM state=Running\n"
+        self.assertEqual(vm.klass, "AppVM")
+        self.assertAllCalled()

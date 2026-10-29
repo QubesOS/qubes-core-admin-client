@@ -19,6 +19,8 @@
 
 # pylint: disable=missing-docstring
 
+from subprocess import PIPE
+
 import qubesadmin.tests.vm
 
 
@@ -35,6 +37,27 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             ('test-vm', 'admin.vm.Shutdown', None, None)] = \
             b'0\x00'
         self.vm.shutdown()
+        self.assertAllCalled()
+
+    def test_001_shutdown_force(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Shutdown', 'force', None)] = \
+            b'0\x00'
+        self.vm.shutdown(force=True)
+        self.assertAllCalled()
+
+    def test_001_shutdown_wait(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Shutdown', 'wait', None)] = \
+            b'0\x00'
+        self.vm.shutdown(wait=True)
+        self.assertAllCalled()
+
+    def test_001_shutdown_force_wait(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Shutdown', 'force+wait', None)] = \
+            b'0\x00'
+        self.vm.shutdown(force=True, wait=True)
         self.assertAllCalled()
 
     def test_002_kill(self):
@@ -72,13 +95,28 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.resume()
         self.assertAllCalled()
 
+    def test_007_check_feature_with_template(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.vm.features.check_with_template('os')
+
+    def test_008_check_feature_with_deferred_template(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os+deferred',
+             None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
+        self.vm.features.check_with_template('os', active=False)
+
     def test_010_run_linux(self):
         self.app.expected_calls[
             ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'os', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00Feature \'os\' not set\x00'
         self.vm.run('some command')
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', {
+                'stdin': PIPE, 'stdout': PIPE, 'stderr': PIPE
+            }),
             ('test-vm', 'qubes.VMShell', b'some command; exit\n'),
         ])
 
@@ -88,9 +126,63 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             b'0\x00Windows'
         self.vm.run('some command')
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', {
+                'stdin': PIPE, 'stdout': PIPE, 'stderr': PIPE
+            }),
             ('test-vm', 'qubes.VMShell', b'some command& exit\n'),
         ])
+
+    def test_012_run_linux_root(self):
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
+        self.app.expected_calls[
+            (
+                "test-vm",
+                "admin.vm.feature.CheckWithTemplate",
+                "supported-rpc.qubes.VMRootExec",
+                None,
+            )
+        ] = (
+            b"2\x00QubesFeatureNotFoundError\x00\x00"
+            b"Feature 'supported-rpc.qubes.VMRootExec' not set\x00"
+        )
+        self.vm.run("some command", user="root")
+        self.assertEqual(
+            self.app.service_calls,
+            [
+                ("test-vm", "qubes.VMShell", {
+                    "user": "root",
+                    "stdin": PIPE,
+                    "stdout": PIPE,
+                    "stderr": PIPE
+                }),
+                ("test-vm", "qubes.VMShell", b"some command; exit\n"),
+            ],
+        )
+
+    def test_013_run_linux_root_vmrootshell(self):
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "os", None)
+        ] = b"2\x00QubesFeatureNotFoundError\x00\x00Feature 'os' not set\x00"
+        self.app.expected_calls[
+            (
+                "test-vm",
+                "admin.vm.feature.CheckWithTemplate",
+                "supported-rpc.qubes.VMRootExec",
+                None,
+            )
+        ] = b"0\x001"
+        self.vm.run("some command", user="root")
+        self.assertEqual(
+            self.app.service_calls,
+            [
+                ("test-vm", "qubes.VMRootShell", {
+                    "stdin": PIPE, "stdout": PIPE, "stderr": PIPE
+                }),
+                ("test-vm", "qubes.VMRootShell", b"some command; exit\n"),
+            ],
+        )
 
     def test_015_run_with_args_shell(self):
         self.app.expected_calls[
@@ -104,7 +196,9 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
         self.vm.run_with_args('some', 'argument with spaces',
             'and $pecial; chars')
         self.assertEqual(self.app.service_calls, [
-            ('test-vm', 'qubes.VMShell', {}),
+            ('test-vm', 'qubes.VMShell', {
+                "stdin": PIPE, "stdout": PIPE, "stderr": PIPE
+            }),
             ('test-vm', 'qubes.VMShell',
                 b'some \'argument with spaces\' \'and $pecial; chars\'; '
                 b'exit\n'),
@@ -121,7 +215,7 @@ class TC_00_Actions(qubesadmin.tests.vm.VMTestCase):
             ('test-vm',
              'qubes.VMExec+some+argument-20with-20spaces+and-20-24'
              'pecial-3B-20chars',
-             {}),
+             {"stdin": PIPE, "stdout": PIPE, "stderr": PIPE}),
             ('test-vm',
              'qubes.VMExec+some+argument-20with-20spaces+and-20-24'
              'pecial-3B-20chars',

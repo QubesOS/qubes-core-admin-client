@@ -23,6 +23,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import unittest
 
 import multiprocessing
@@ -184,7 +185,6 @@ class TC_00_VMCollection(qubesadmin.tests.QubesTestCase):
         vm4 = self.app.domains['test-vm']
         self.assertIsNot(vm1, vm4)
         self.assertAllCalled()
-
 
 
 class TC_10_QubesBase(qubesadmin.tests.QubesTestCase):
@@ -1024,7 +1024,8 @@ class TC_20_QubesLocal(unittest.TestCase):
         os.chmod(service_path, 0o755)
 
         with mock.patch('qubesadmin.config.QREXEC_SERVICES_DIR',
-                        self.tmpdir):
+                        self.tmpdir), \
+             mock.patch('os.getuid', return_value=0):
             value = self.app.qubesd_call(
                 'test-vm', 'test.service',
                 'some-arg', payload=payload, payload_stream=payload_stream)
@@ -1040,8 +1041,10 @@ class TC_20_QubesLocal(unittest.TestCase):
         with open(self.tmpdir + '/payload', 'rb') as payload_f:
             self.assertEqual(payload_f.read(), expected)
 
+    @mock.patch.object(sys, 'stderr')
     @mock.patch('os.isatty', lambda fd: fd == 2)
-    def test_010_run_service(self):
+    def test_010_run_service(self, mock_stderr):
+        mock_stderr.fileno.return_value = 2
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
             self.app.run_service('some-vm', 'service.name')
@@ -1068,8 +1071,10 @@ class TC_20_QubesLocal(unittest.TestCase):
         self.assertEqual(self.get_request(),
             b'admin.vm.Start+ dom0 name some-vm\0')
 
+    @mock.patch.object(sys, 'stderr')
     @mock.patch('os.isatty', lambda fd: fd == 2)
-    def test_012_run_service_user(self):
+    def test_012_run_service_user(self, mock_stderr):
+        mock_stderr.fileno.return_value = 2
         self.listen_and_send(b'0\0')
         with mock.patch('subprocess.Popen') as mock_proc:
             self.app.run_service('some-vm', 'service.name', user='user')
@@ -1087,6 +1092,40 @@ class TC_20_QubesLocal(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.app.run_service('', 'service.name')
 
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_014_run_service_prefix_data(self):
+        self.listen_and_send(b'0\0')
+        with mock.patch("subprocess.Popen") as mock_proc:
+            self.app.run_service(
+                "some-vm", "service.name", prefix_data=b"prefix data"
+            )
+            mock_proc.assert_called_once_with(
+                [
+                    qubesadmin.config.QREXEC_CLIENT,
+                    "-d",
+                    "some-vm",
+                    "-T",
+                    "-p",
+                    b"prefix data",
+                    "DEFAULT:QUBESRPC service.name+ dom0",
+                ],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertEqual(
+            self.get_request(), b"admin.vm.Start+ dom0 name some-vm\0"
+        )
+
+    @mock.patch.object(sys, 'stderr')
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_015_run_service_user_colon(self, mock_stderr):
+        mock_stderr.fileno.return_value = 2
+        self.listen_and_send(b'0\0')
+        with self.assertRaises(ValueError):
+            self.app.run_service('some-vm', 'service.name', user='a:b')
+
 
 class TC_30_QubesRemote(unittest.TestCase):
     def setUp(self):
@@ -1098,6 +1137,9 @@ class TC_30_QubesRemote(unittest.TestCase):
         })
         self.proc_patch = mock.patch('subprocess.Popen', self.proc_mock)
         self.proc_patch.start()
+        self.stderr_patch = mock.patch.object(sys, 'stderr')
+        self.mock_stderr = self.stderr_patch.start()
+        self.mock_stderr.fileno.return_value = 2
         self.app = qubesadmin.app.QubesRemote()
 
     def set_proc_stdout(self, send_data):
@@ -1106,6 +1148,7 @@ class TC_30_QubesRemote(unittest.TestCase):
         })
 
     def tearDown(self):
+        self.stderr_patch.stop()
         self.proc_patch.stop()
         super().tearDown()
 
@@ -1265,3 +1308,42 @@ class TC_30_QubesRemote(unittest.TestCase):
             'some-vm', 'admin.vm.CurrentState'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
+
+    @mock.patch('os.isatty', lambda fd: fd == 2)
+    def test_016_run_service_prefix_data(self):
+        self.app.run_service(
+            "some-vm", "service.name", prefix_data=b"prefix data"
+        )
+        self.proc_mock.assert_called_once_with(
+            [qubesadmin.config.QREXEC_CLIENT_VM,
+              "-T", "-p", b"prefix data", "some-vm", "service.name"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+
+class TC_30_ContainerCacheInvalidation(qubesadmin.tests.QubesTestCase):
+    def test_disabling_cache_invalidates_everything(self) -> None:
+        flow = []
+        with mock.patch.object(self.app, '_invalidate_cache_all',
+                               side_effect=lambda: flow.append('invalidate')):
+            for is_enabled in (False, True, True, False, False):
+                self.app.cache_enabled = is_enabled
+                flow.append(is_enabled)
+        self.assertEqual(flow, [False, True, True, 'invalidate', False, False])
+
+    def test_invalidate_existing_vm_containers_without_api_calls(self) -> None:
+        first_vm = self.app.domains.get_blind('first-vm')
+        second_vm = self.app.domains.get_blind('second-vm')
+        with mock.patch('qubesadmin.features.Features.clear_cache',
+                        autospec=True) as clear_features_cache, \
+             mock.patch('qubesadmin.tags.Tags.clear_cache',
+                        autospec=True) as clear_tags_cache:
+            self.app._invalidate_cache_all()  # pylint: disable=protected-access
+        self.assertCountEqual(clear_features_cache.mock_calls,
+                              [mock.call(first_vm.features),
+                               mock.call(second_vm.features)])
+        self.assertCountEqual(clear_tags_cache.mock_calls,
+                              [mock.call(first_vm.tags),
+                               mock.call(second_vm.tags)])
+        self.assertEqual(self.app.actual_calls, [])

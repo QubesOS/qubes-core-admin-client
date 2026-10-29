@@ -6,4 +6,4 @@ https://www.qubes-os.org/doc/admin-api/ for protocol specification.
 Compatibility
 =============
 
-This package requires Python >= 3.5
+This package requires Python >= 3.10

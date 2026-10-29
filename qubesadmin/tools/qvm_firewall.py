@@ -31,7 +31,6 @@ import qubesadmin.tools
 
 
 class RuleAction(argparse.Action):
-    # pylint: disable=too-few-public-methods
     '''Parser action for a single firewall rule. It accept syntax:
         - <action> [<dsthost> [<proto> [<dstports>|<icmptype>]]]
         - action=<action> [specialtarget=dns] [dsthost=<dsthost>]
@@ -106,6 +105,10 @@ Available matches:
     expire         the rule is automatically removed at the time given as
                      seconds since 1/1/1970, or +seconds (e.g. +300 for a rule
                      to expire in 5 minutes)
+
+Comments:
+    Rules can be annotated with free form text on creation using [comment=<text>]
+
 """
 
 parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs=1, epilog=epilog,

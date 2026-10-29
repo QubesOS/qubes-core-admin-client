@@ -18,14 +18,16 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """Qubes VM objects."""
-
+from __future__ import annotations
 import logging
 import shlex
 
 import subprocess
+import typing
 import warnings
+from logging import Logger
+from typing import Literal, TypeVar
 
-import qubesadmin.base
 import qubesadmin.exc
 import qubesadmin.storage
 import qubesadmin.features
@@ -34,19 +36,35 @@ import qubesadmin.device_protocol
 import qubesadmin.firewall
 import qubesadmin.tags
 
+if typing.TYPE_CHECKING:
+    import qubesadmin.base
+
+
+# ["AppVM", "AdminVM", "TemplateVM", "DispVM", "StandaloneVM"]
+# but can be extended
+Klass = str
+POWER_STATES = {
+    "Running": {"short": "r"},
+    "Starting": {"short": "S"},
+    "Transient": {"short": "S"},
+    "Paused": {"short": "p"},
+    "Suspended": {"short": "s"},
+    "Halting": {"short": "H"},
+    "Halted": {"short": "h"},
+    "Crashed": {"short": "c"},
+    "NA": {"short": "-"},
+}
+PowerState = Literal[POWER_STATES]
+
 
 class QubesVM(qubesadmin.base.PropertyHolder):
     """Qubes domain."""
 
-    log = None
-
-    tags = None
-
-    features = None
-
-    devices = None
-
-    firewall = None
+    log: Logger
+    tags: qubesadmin.tags.Tags
+    features: qubesadmin.features.Features
+    devices: qubesadmin.devices.DeviceManager
+    firewall: qubesadmin.firewall.Firewall
 
     def __init__(self, app, name, klass=None, power_state=None):
         super().__init__(app, "admin.vm.property.", name)
@@ -62,7 +80,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self.firewall = qubesadmin.firewall.Firewall(self)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Domain name"""
         return self._method_dest
 
@@ -78,7 +96,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         self._volumes = None
         self.app.domains.clear_cache()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._method_dest
 
     def __lt__(self, other):
@@ -104,17 +122,22 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """
         self.qubesd_call(self._method_dest, "admin.vm.Start")
 
-    def shutdown(self, force=False):
+    def shutdown(self, force=False, wait=False):
         """
         Shutdown domain.
 
         :return:
         """
-        # TODO: wait parameter (using event?)
+        arg_list = []
         if force:
-            self.qubesd_call(self._method_dest, "admin.vm.Shutdown", "force")
-        else:
-            self.qubesd_call(self._method_dest, "admin.vm.Shutdown")
+            arg_list.append("force")
+        if wait:
+            arg_list.append("wait")
+        args = "+".join(arg_list)
+        params = [self._method_dest, "admin.vm.Shutdown"]
+        if args:
+            params.append(args)
+        self.qubesd_call(*params)
 
     def kill(self):
         """
@@ -182,13 +205,12 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return value    meaning
         =============== ========================================================
         ``'Halted'``    Machine is not active.
-        ``'Transient'`` Machine is running, but does not have :program:`guid`
-                        or :program:`qrexec` available.
+        ``'Transient'`` Machine is in progress of starting. This state will be
+                        deprecated in favor of ``'Starting'``.
         ``'Running'``   Machine is ready and running.
         ``'Paused'``    Machine is paused.
         ``'Suspended'`` Machine is S3-suspended.
         ``'Halting'``   Machine is in process of shutting down (OS shutdown).
-        ``'Dying'``     Machine is in process of shutting down (cleanup).
         ``'Crashed'``   Machine crashed and is unusable.
         ``'NA'``        Machine is in unknown state.
         =============== ========================================================
@@ -355,13 +377,20 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         # pylint: disable=redefined-builtin
         try:
             service = "qubes.VMShell"
-            if kwargs.get("user", None) == "root":
+            # intentionally check for qubes.VMRootExec, as this is when
+            # qubes.VMRootShell got force-user='root' in its config
+            if kwargs.get(
+                "user", None
+            ) == "root" and self.features.check_with_template(
+                "supported-rpc.qubes.VMRootExec", False
+            ):
+
                 kwargs.pop("user")
                 service = "qubes.VMRootShell"
             return self.run_service_for_stdio(
                 service,
                 input=self.prepare_input_for_vmshell(command, input),
-                **kwargs
+                **kwargs,
             )
         except subprocess.CalledProcessError as e:
             e.cmd = command
@@ -393,6 +422,14 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
         return self.run(shlex.join(args), **kwargs)
 
+    def get_active_template(self):
+        """
+        Get ``active_template``, if any, else return the ``template``, if any.
+        """
+        if not hasattr(self, "template"):
+            return None
+        return getattr(self, "active_template", getattr(self, "template"))
+
     @property
     def appvms(self):
         """Returns a generator containing all domains based on the current
@@ -422,9 +459,28 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         Return `set` of all domains based on the current TemplateVM
         at any level of inheritance.
         """
-        result = set(vm.appvms)
-        for appvm in vm.appvms:
-            result.update(QubesVM._get_derived_vms(appvm))
+        # first build a map of templates -> children
+        children = {}
+        for domain in vm.app.domains:
+            try:
+                template = domain.template
+            except AttributeError:
+                continue
+            if template in children:
+                children[template].append(domain)
+            else:
+                children[template] = [domain]
+
+        result = set()
+        pending = [vm]
+
+        # starting with this VM, go through its children and build out a list
+        while pending:
+            parent = pending.pop()
+            for child in children.get(parent, ()):
+                if child not in result:
+                    result.add(child)
+                    pending.append(child)
         return result
 
     @property
@@ -444,8 +500,21 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         """Qube class"""
         # use cached value if available
         if self._klass is None:
-            # pylint: disable=no-member
-            self._klass = super().klass
+            try:
+                # use List method as that should be allowed for VMs that are
+                # visible
+                vm_list_data = self.qubesd_call(
+                    self._method_dest, "admin.vm.List"
+                )
+                assert vm_list_data.count(b"\n") == 1
+                vm_name, props = vm_list_data.decode("ascii").split(" ", 1)
+                assert vm_name == self.name
+                props = props.split(" ")
+                props_dict = dict([vm_prop.split("=", 1) for vm_prop in props])
+                self._klass = props_dict["class"]
+            except qubesadmin.exc.QubesDaemonAccessError:
+                # pylint: disable=no-member
+                self._klass = super().klass
         return self._klass
 
     def get_notes(self) -> str:

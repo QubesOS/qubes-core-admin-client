@@ -1,7 +1,7 @@
 .. program:: qvm-ls
 
 :program:`qvm-ls` -- List qubes and various information about them
-================================================================
+==================================================================
 
 Synopsis
 --------

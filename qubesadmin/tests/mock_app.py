@@ -150,6 +150,7 @@ DEFAULT_VM_PROPERTIES = {
     "start_time": Property("", "str", True),
     "stubdom_mem": Property("", "int", True),
     "stubdom_xid": Property("-1", "str", True),
+    "active_template": Property("fedora-36", "vm", True),
     "template": Property("fedora-36", "vm", False),
     "template_for_dispvms": Property("False", "bool", True),
     "updateable": Property("False", "bool", True),
@@ -230,6 +231,7 @@ ALL_KNOWN_FEATURES = [
     "qubes-vm-update-update-if-stale",
     "restart-after-update",
     "qubes-vm-update-hide-skipped",
+    "qubes-vm-update-hide-prohibited",
     "template-name",
     "last-updates-check",
     "last-update",
@@ -438,6 +440,10 @@ class MockQube:
         list_call = f"{name} class={klass} state={state}\n".encode()
         vm_list += list_call
         self.qapp.expected_calls[vm_list_call] = vm_list
+        # Also register per-VM admin.vm.List call (used by .klass property)
+        self.qapp.expected_calls[
+            (name, "admin.vm.List", None, None)
+        ] = b"0\x00" + list_call
 
     def update_calls(self):
         """
@@ -694,6 +700,7 @@ class MockDevice:
         vendor: str,
         attached: str | None = None,
         assigned: list[tuple[str, str, list[Any] | None]] | None = None,
+        device_unknown: bool = False,
     ):
         """
         :param qapp: QubesTest object
@@ -715,6 +722,7 @@ class MockDevice:
         self.assigned = assigned
         self.product = product
         self.vendor = vendor
+        self.device_unknown = device_unknown
 
         self.interface = self.device_id.split(":")[-1]
 
@@ -764,16 +772,17 @@ class MockDevice:
             )
         ]
 
-        self.qapp.expected_calls[
-            (
-                self.backend_vm,
-                f"admin.vm.device.{self.dev_class}.Available",
-                None,
-                None,
+        if not self.device_unknown:
+            self.qapp.expected_calls[
+                (
+                    self.backend_vm,
+                    f"admin.vm.device.{self.dev_class}.Available",
+                    None,
+                    None,
+                )
+            ] = (
+                current_response + self.device_string().encode()
             )
-        ] = (
-            current_response + self.device_string().encode()
-        )
 
         if self.attached:
             current_response = self.qapp.expected_calls[
@@ -864,6 +873,17 @@ class QubesTestWrapper(QubesTest):
                 b"metadata_size=1024\n"
                 b"metadata_usage=50\n"
             )
+
+        # setup device classes:
+        self.expected_calls[
+            ("dom0", "admin.deviceclass.List", "details", None)
+        ] = (
+            b"0\x00pci assignment_modes=required\n"
+            b"block assignment_modes=ask-to-attach,auto-attach,manual,"
+            b"required\n"
+            b"mic assignment_modes=ask-to-attach,auto-attach,manual\n"
+            b"usb assignment_modes=ask-to-attach,auto-attach,manual\n"
+        )
 
         self.populate_feature_calls()
 
@@ -1058,6 +1078,16 @@ class MockQubesComplete(MockQubes):
             name="test-alt-dvm-running",
             qapp=self,
             klass="AppVM",
+            template_for_dispvms=True,
+            template="fedora-36",
+            features={"appmenus-dispvm": "1"},
+            running=True,
+        )
+
+        self._qubes["test-std-dvm"] = MockQube(
+            name="test-std-dvm",
+            qapp=self,
+            klass="StandaloneVM",
             template_for_dispvms=True,
             template="fedora-36",
             features={"appmenus-dispvm": "1"},
