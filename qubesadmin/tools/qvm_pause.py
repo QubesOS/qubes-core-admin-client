@@ -19,6 +19,7 @@
 
 '''qvm-pause - Pause a domain'''
 
+import asyncio
 import sys
 import qubesadmin
 
@@ -44,15 +45,16 @@ def main(args=None, app=None):
 
     args = parser.parse_args(args, app=app)
     exit_code = 0
-    for domain in args.domains:
-        try:
-            if args.suspend:
-                domain.suspend()
-            else:
-                domain.pause()
-        except (OSError, qubesadmin.exc.QubesException) as e:
-            exit_code = 1
-            parser.print_error(str(e))
+    if args.suspend:
+        action = "suspend"
+        failed = asyncio.run(qubesadmin.utils.suspend(domains=args.domains))
+    else:
+        action = "pause"
+        failed = asyncio.run(qubesadmin.utils.pause(domains=args.domains))
+    if failed:
+        exit_code = 1
+        for qube, exc in failed.items():
+            parser.print_error(f"Failed to {action}: {qube}: {exc}")
 
     return exit_code
 

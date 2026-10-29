@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring,protected-access
 
+from unittest import mock
 
 import qubesadmin.tests
 import qubesadmin.device_protocol
@@ -26,7 +27,7 @@ import qubesadmin.device_protocol
 from qubesadmin.device_protocol import (
     DeviceAssignment, DeviceInfo, UnknownDevice,
     AssignmentMode)
-
+from qubesadmin.events import EventsDispatcher
 
 serialized_test_device = (
     b"0\0dev1 port_id='dev1' devclass='test' vendor='itl' product='test-device'"
@@ -164,6 +165,16 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         assign.options['ro'] = True
         self.vm.devices['test'].attach(assign)
         self.assertAllCalled()
+
+    def test_024_attach_manual_not_supported(self):
+        self.app._deviceclass_properties_cache = {
+            'test': {'assignment_modes': 'required'}}
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        with self.assertRaises(qubesadmin.exc.QubesValueError) as exc:
+            self.vm.devices['test'].attach(assign)
+        self.assertIn('cannot be attached manually', str(exc.exception))
 
     def test_030_detach(self):
         self.app.expected_calls[
@@ -329,7 +340,11 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(devs[1].port_id, 'dev2')
         self.assertAllCalled()
 
+    _test_class_modes = {
+        'test': {'assignment_modes': 'ask-to-attach,auto-attach,required'}}
+
     def test_070_update_assignment_required(self):
+        self.app._deviceclass_properties_cache = dict(self._test_class_modes)
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1+_', b'required')] = b'0\0'
@@ -339,6 +354,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_071_update_assignment_ask(self):
+        self.app._deviceclass_properties_cache = dict(self._test_class_modes)
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1+_', b'ask-to-attach')] = b'0\0'
@@ -348,6 +364,7 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertAllCalled()
 
     def test_072_update_assignment_auto(self):
+        self.app._deviceclass_properties_cache = dict(self._test_class_modes)
         self.app.expected_calls[
             ('test-vm', 'admin.vm.device.test.Set.assignment',
              'test-vm2+dev1+_', b'auto-attach')] = b'0\0'
@@ -365,6 +382,94 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
             self.assertNotIn(devclass, seen)
             seen.add(devclass)
         self.assertEqual(seen, {'block', 'mic', 'usb'})
+
+    def test_074_deviceclass_properties(self):
+        # force a fetch
+        self.app._deviceclass_properties_cache = None
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b'0\x00pci assignment_modes=required\n'
+            b'block assignment_modes=ask-to-attach,auto-attach,required\n'
+            b'usb assignment_modes=ask-to-attach,auto-attach\n')
+        props = self.app.deviceclass_properties()
+        self.assertEqual(
+            props['pci'], {'assignment_modes': 'required'})
+        self.assertEqual(
+            props['usb'],
+            {'assignment_modes': 'ask-to-attach,auto-attach'})
+        self.assertEqual(
+            props['block'],
+            {'assignment_modes': 'ask-to-attach,auto-attach,required'})
+
+    def test_075_deviceclass_properties_none(self):
+        # force a fetch
+        self.app._deviceclass_properties_cache = None
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b"2\x00ProtocolError\x00\x00unexpected argument\x00\x00")
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\x00pci\nblock\nusb\n'
+        props = self.app.deviceclass_properties()
+        # deviceclasses are still listed
+        self.assertEqual(props, {'pci': {}, 'block': {}, 'usb': {}})
+
+    def test_076_assign_unsupported_mode_rejected(self):
+        self.app._deviceclass_properties_cache = {
+            'test': {'assignment_modes': 'ask-to-attach,auto-attach'}}
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        with self.assertRaises(qubesadmin.exc.QubesValueError) as exc:
+            self.vm.devices['test'].assign(assign)
+        self.assertIn('required', str(exc.exception))
+        self.assertIn('ask-to-attach, auto-attach', str(exc.exception))
+
+    def test_077_assign_supported_mode_passes(self):
+        self.app._deviceclass_properties_cache = {
+            'test': {
+                'assignment_modes': 'ask-to-attach,auto-attach,required'}}
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Assign', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='required' "
+             b"frontend_domain='test-vm'")] = b'0\0'
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        self.vm.devices['test'].assign(assign)
+        self.assertAllCalled()
+
+    def test_078_assign_old_backend_skips_validation(self):
+        # force a fetch
+        self.app._deviceclass_properties_cache = None
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', 'details', None)] = (
+            b"2\x00ProtocolError\x00\x00unexpected argument\x00\x00")
+        self.app.expected_calls[
+            ('dom0', 'admin.deviceclass.List', None, None)] = \
+            b'0\x00test\n'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.device.test.Assign', 'test-vm2+dev1+_',
+             b"device_id='*' port_id='dev1' devclass='test' "
+             b"backend_domain='test-vm2' mode='required' "
+             b"frontend_domain='test-vm'")] = b'0\0'
+        assign = DeviceAssignment.new(
+            self.app.domains['test-vm2'], 'dev1', devclass='test',
+            mode='required')
+        self.vm.devices['test'].assign(assign)
+        self.assertAllCalled()
+
+    def test_079_update_assignment_unsupported_mode_rejected(self):
+        self.app._deviceclass_properties_cache = {
+            'test': {'assignment_modes': 'ask-to-attach,auto-attach'}}
+        dev = DeviceAssignment.new(
+            self.app.domains['test-vm2'], devclass='test', port_id='dev1')
+        with self.assertRaises(qubesadmin.exc.QubesValueError) as exc:
+            self.vm.devices['test'].update_assignment(
+                dev, AssignmentMode.REQUIRED)
+        self.assertIn('required', str(exc.exception))
+        self.assertIn('ask-to-attach, auto-attach', str(exc.exception))
 
     def test_080_add_denied_device(self):
         self.app.expected_calls[
@@ -413,5 +518,56 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.app.domains['test-vm'].devices.allow(
             qubesadmin.device_protocol.DeviceInterface("uabcdef"),
             qubesadmin.device_protocol.DeviceInterface("m******"),
+        )
+        self.assertAllCalled()
+
+    def test_100_cache_invalidate(self):
+        # this also enables caching
+        dispatcher = EventsDispatcher(self.app)
+        handler = mock.Mock()
+        dispatcher.add_handler("device-added:test", handler)
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.device.test.Available", None, None)
+        ] = (
+            serialized_test_device
+            + b"device_id='1234:5678:0123456789:?*******'\n"
+        )
+        vm = self.app.domains.get("test-vm")
+        # this also populates cache
+        dev = vm.devices["test"]["dev1"]
+        self.assertIsInstance(dev, DeviceInfo)
+        self.assertNotIsInstance(dev, UnknownDevice)
+        self.assertEqual(dev.device_id, "1234:5678:0123456789:?*******")
+        dispatcher.handle(
+            "test-vm",
+            "device-added:test",
+            device="test-vm:dev1:1234:5678:0123456789:?*******",
+        )
+        handler.assert_called_once_with(vm, "device-added:test", device=dev)
+        handler.reset_mock()
+        dispatcher.handle("test-vm", "device-removed:test", port="test-vm:dev1")
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.device.test.Available", None, None)
+        ] = (
+            serialized_test_device
+            + b"device_id='8765:4321:0123456789:?*******'\n"
+        )
+        dispatcher.handle(
+            "test-vm",
+            "device-added:test",
+            device="test-vm:dev1:8765:4321:0123456789:?*******",
+        )
+        handler.assert_called_once_with(
+            vm, "device-added:test", device=mock.ANY
+        )
+        self.assertIsInstance(
+            handler.mock_calls[0].kwargs["device"], DeviceInfo
+        )
+        self.assertNotIsInstance(
+            handler.mock_calls[0].kwargs["device"], UnknownDevice
+        )
+        self.assertEqual(
+            handler.mock_calls[0].kwargs["device"].device_id,
+            "8765:4321:0123456789:?*******",
         )
         self.assertAllCalled()

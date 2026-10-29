@@ -86,13 +86,12 @@ def prepare_table(dev_list, with_sbdf=False):
 class Line:
     """Helper class to hold single device info for listing"""
 
-    # pylint: disable=too-few-public-methods
     def __init__(self, device: DeviceInfo, assignment=False):
         self.ident = f"{device.backend_domain!s}:{device.port_id!s}"
         self.description = device.description
         self.assignment = assignment
         self.frontends = []
-        self.sbdf = getattr(device, "data", {}).get("sbdf")
+        self.sbdf = getattr(device, "data", {}).get("sbdf", "")
 
     @property
     def assignments(self):
@@ -234,6 +233,10 @@ def attach_device(args):
     try:
         try:
             dev = assignment.device
+            if isinstance(dev, UnknownDevice):
+                raise qubesadmin.exc.QubesException(
+                    "Unknown device, skipping attachment of device from the "
+                    f"port {assignment}")
         except ProtocolError as exc:
             raise qubesadmin.exc.QubesException(str(exc))
 
@@ -297,6 +300,8 @@ def detach_device(args):
 
         if not assignment.matches(actual_dev):
             raise qubesadmin.exc.QubesException(f"{device} is not attached.")
+        if isinstance(actual_dev, UnknownDevice):
+            raise qubesadmin.exc.QubesException(f"{device} not found.")
 
         vm.devices[args.devclass].detach(assignment)
     elif args.device:
@@ -355,11 +360,18 @@ def assign_device(args):
         _print_attach_hint(assignment, vm)
 
 
+def _build_options_str(options):
+    """Build CLI option flags string from assignment options dict."""
+    parts = [f"-o {key}={value}" for key, value in options.items()]
+    return (" " + " ".join(parts)) if parts else ""
+
+
 def _print_attach_hint(assignment, vm):
     # pylint: disable=missing-function-docstring
     attached = vm.devices[assignment.devclass].get_attached_devices()
+    options_str = _build_options_str(assignment.options)
     ports = [
-        f"\tqvm-{assignment.devclass} attach {vm} "
+        f"\tqvm-{assignment.devclass} attach{options_str} {vm} "
         f"{assignment.backend_domain}:{dev.port_id}"
         for dev in assignment.devices
         if dev not in attached and not isinstance(dev, UnknownDevice)
@@ -483,7 +495,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
     """Action for argument parser that gets the
     :py:class:``qubesadmin.device_protocol.VirtualDevice`` from a
     BACKEND:PORT_ID:DEVICE_ID string.
-    """  # pylint: disable=too-few-public-methods
+    """
 
     def __init__(
         self,

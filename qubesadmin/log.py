@@ -37,7 +37,7 @@ formatter_log = logging.Formatter(FORMAT_LOG)
 formatter_debug = logging.Formatter(FORMAT_DEBUG)
 
 
-def enable():
+def enable() -> None:
     '''Enable global logging
 
     Use :py:mod:`logging` module from standard library to log messages.
@@ -58,7 +58,7 @@ def enable():
     logging.root.setLevel(logging.INFO)
 
 
-def enable_debug():
+def enable_debug() -> None:
     '''Enable debug logging
 
     Enable more messages and additional info to message format.

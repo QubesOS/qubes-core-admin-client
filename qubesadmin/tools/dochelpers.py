@@ -75,8 +75,7 @@ def prepare_manpage(command):
 
     stream.write(make_rst_section('Synopsis', '-'))
     usage = ' '.join(parser.format_usage().strip().split())
-    if usage.startswith('usage: '):
-        usage = usage[len('usage: '):]
+    usage = usage.removeprefix('usage: ')
 
     # replace METAVARS with *METAVARS*
     usage = re.sub(r'\b([A-Z]{2,})\b', r'*\1*', usage)
@@ -231,9 +230,14 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
     def __init__(self, app, command, document):
         docutils.nodes.SparseNodeVisitor.__init__(self, document)
         try:
-            parser = qubesadmin.tools.get_parser_for_command(command)
+            if command == "qvm-start-gui":
+                parser = qubesadmin.tools.get_parser_for_command(
+                    "qvm-start-daemon"
+                )
+            else:
+                parser = qubesadmin.tools.get_parser_for_command(command)
         except ImportError:
-            msg = 'cannot import module for command'
+            msg = f"cannot import module for command '{command}'"
             if log:
                 log.warning(msg)
 
@@ -288,7 +292,7 @@ def check_man_args(app, doctree, docname):
         options.
     """
     dirname, command = os.path.split(docname)
-    if os.path.basename(dirname) != 'manpages':
+    if os.path.basename(dirname) != "manpages" or command == "index":
         return
 
     msg = f'Checking arguments for {command!r}'

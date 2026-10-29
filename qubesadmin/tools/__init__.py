@@ -29,101 +29,114 @@ import logging
 import os
 import subprocess
 import sys
-import textwrap
+from argparse import Namespace
+from collections.abc import Sequence
 
 import qubesadmin.log
 import qubesadmin.exc
 import qubesadmin.vm
 
-#: constant returned when some action should be performed on all qubes
-VM_ALL = object()
-
 class QubesAction(argparse.Action):
-    ''' Interface providing a convinience method to be called, after
-        `namespace.app` is instantiated.
-    '''
-    # pylint: disable=too-few-public-methods
+    """
+    Custom Action for Qubes
+    """
     def parse_qubes_app(self, parser, namespace):
-        ''' This method is called by :py:class:`qubes.tools.QubesArgumentParser`
-            after the `namespace.app` is instantiated. Oerwrite this method when
-            extending :py:class:`qubes.tools.QubesAction` to initialized values
-            based on the `namespace.app`
-        '''
+        """
+        This method is called by :py:class:`qubes.tools.QubesArgumentParser`
+        after `namespace.app` is instantiated.
+
+        Used to initialize values based on `namespace.app`.
+        """
         raise NotImplementedError
 
 
 class PropertyAction(argparse.Action):
-    '''Action for argument parser that stores a property.'''
-    # pylint: disable=redefined-builtin,too-few-public-methods
+    """Action for argument parser that stores a property.
+    Format: `--<option_name> property=value`
+    """
+    # pylint: disable=redefined-builtin
     def __init__(self,
-            option_strings,
-            dest,
+            option_strings: list[str],
+            dest: str,
             *,
-            metavar='NAME=VALUE',
-            required=False,
-            help='set property to a value'):
+            metavar: str='NAME=VALUE',
+            required: bool=False,
+            help: str='set property to a value'):
         super().__init__(option_strings, 'properties',
-            metavar=metavar, default={}, help=help)
+            metavar=metavar, help=help, required=required)
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, parser: argparse.ArgumentParser, namespace: Namespace,
+                 values: str | Sequence | None,
+                 option_string: str | None=None) -> None:
+        if not isinstance(values, str):
+            parser.error(f'Invalid property token: {values!r}')
         try:
             prop, value = values.split('=', 1)
         except ValueError:
-            parser.error(f'invalid property token: {values!r}')
+            parser.error(f'Invalid property token: {values!r}')
 
         properties = getattr(namespace, self.dest)
-        # copy it, to not modify _mutable_ self.default
-        if not properties:
-            properties = properties.copy()
+        if properties is None:
+            properties = {}
         properties[prop] = value
         setattr(namespace, self.dest, properties)
 
 
 class SinglePropertyAction(argparse.Action):
-    '''Action for argument parser that stores a property.'''
+    """Action for argument parser that stores a property.
+    Format: `--property_name value` or `--property_name`
+    """
 
-    # pylint: disable=redefined-builtin,too-few-public-methods
+    # pylint: disable=redefined-builtin
     def __init__(self,
             option_strings,
             dest,
             *,
-            metavar='VALUE',
-            const=None,
-            nargs=None,
-            required=False,
-            help=None):
+            metavar: str='VALUE',
+            const: object=None,
+            nargs: int | str | None=None,
+            required: bool=False,
+            help: str | None=None):
         if help is None:
             help = f'set {dest!r} property to a value'
             if const is not None:
                 help += f' {const!r}'
 
-        if const is not None:
-            nargs = 0
+        if const is not None and nargs is None:
+            nargs = argparse.OPTIONAL
 
-        super().__init__(option_strings, 'properties',
-            metavar=metavar, help=help, default={}, const=const,
-            nargs=nargs)
+        super().__init__(option_strings, 'properties', required=required,
+            metavar=metavar, help=help, const=const, nargs=nargs)
 
         self.name = dest
 
 
-    def __call__(self, parser, namespace, values, option_string=None):
-        if values is self.default and self.default == {}:
-            return
+    def __call__(self, parser: argparse.ArgumentParser,
+                 namespace: Namespace, values: str | Sequence | None,
+                 option_string: str | None=None)\
+            -> None:
+        if not values:
+            # If we omit the argument and it's optional, __call__ will
+            #  not be called.
+            # If we omit it and it's positional, `values` will be either
+            #  `None` or `[]` depending on `nargs`.
+            # We don't want to modify `propertie` in either case, unless
+            #  `const` is set.
+            if self.const is None or self.const == []:
+                return
+            values = self.const
 
         properties = getattr(namespace, self.dest)
-        # copy it, to not modify _mutable_ self.default
-        if not properties:
-            properties = properties.copy()
-        properties[self.name] = values \
-            if self.const is None else self.const
+        if properties is None:
+            properties = {}
+        properties[self.name] = values or self.const
         setattr(namespace, self.dest, properties)
 
 
 class VmNameAction(QubesAction):
     """ Action for parsing one or multiple domains from provided VMNAMEs """
 
-    # pylint: disable=too-few-public-methods,redefined-builtin
+    # pylint: disable=redefined-builtin
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
                  **kwargs):
         if help is None:
@@ -176,14 +189,18 @@ class VmNameAction(QubesAction):
                     except KeyError:
                         parser.error(f'no such domain: {vm_name!r}')
             else:
-                destinations = set()
+                destinations = []
                 for destination in getattr(namespace, self.dest):
                     if any(wildcard in destination for wildcard in '*?[!]'):
-                        for domain in app.domains:
+                        for domain in [
+                            qube
+                            for qube in app.domains
+                            if qube.name not in destinations
+                        ]:
                             if fnmatch.fnmatch(domain.name, destination):
-                                destinations.add(domain.name)
-                    else:
-                        destinations.add(destination)
+                                destinations.append(domain.name)
+                    elif destination not in destinations:
+                        destinations.append(destination)
 
                 for vm_name in destinations:
                     try:
@@ -194,7 +211,6 @@ class VmNameAction(QubesAction):
 
 class RunningVmNameAction(VmNameAction):
     ''' Action for argument parser that gets a running domain from VMNAME '''
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
                  **kwargs):
@@ -224,55 +240,12 @@ class RunningVmNameAction(VmNameAction):
                 parser.error_runtime("domain {!r} is not running".format(
                     vm.name))
 
-
-class VolumeAction(QubesAction):
-    ''' Action for argument parser that gets the
-        :py:class:``qubes.storage.Volume`` from a POOL_NAME:VOLUME_ID string.
-    '''
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, help='A pool & volume id combination',
-                 required=True, **kwargs):
-        # pylint: disable=redefined-builtin
-        super().__init__(help=help, required=required,
-                                           **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        ''' Set ``namespace.vmname`` to ``values`` '''
-        setattr(namespace, self.dest, values)
-
-    def parse_qubes_app(self, parser, namespace):
-        ''' Acquire the :py:class:``qubes.storage.Volume`` object from
-            ``namespace.app``.
-        '''
-        assert hasattr(namespace, 'app')
-        app = namespace.app
-
-        try:
-            pool_name, vid = getattr(namespace, self.dest).split(':')
-            try:
-                pool = app.pools[pool_name]
-                volume = [v for v in pool.volumes if v.vid == vid]
-                assert volume > 1, 'Duplicate vids in pool %s' % pool_name
-                if not volume:
-                    parser.error_runtime(
-                        'no volume with id {!r} pool: {!r}'.format(vid,
-                                                                   pool_name))
-                else:
-                    setattr(namespace, self.dest, volume[0])
-            except KeyError:
-                parser.error_runtime(f'no pool {pool_name!r}')
-        except ValueError:
-            parser.error('expected a pool & volume id combination like foo:bar')
-
-
 class VMVolumeAction(QubesAction):
     ''' Action for argument parser that gets the
         :py:class:``qubes.storage.Volume`` from a VM:VOLUME string.
     '''
-    # pylint: disable=too-few-public-methods
 
-    def __init__(self, help='A pool & volume id combination',
+    def __init__(self, help='A VM & volume id combination',
                  required=True, **kwargs):
         # pylint: disable=redefined-builtin
         super().__init__(help=help, required=required,
@@ -307,7 +280,6 @@ class VMVolumeAction(QubesAction):
 
 class PoolsAction(QubesAction):
     ''' Action for argument parser to gather multiple pools '''
-    # pylint: disable=too-few-public-methods
 
     def __call__(self, parser, namespace, values, option_string=None):
         ''' Set ``namespace.vmname`` to ``values`` '''
@@ -387,10 +359,20 @@ class QubesArgumentParser(argparse.ArgumentParser):
         if version is not None:
             self.version = version
         else:
-            _metadata_ = importlib.metadata.metadata('qubesadmin')
-            self.version = '{} ({}) {}'.format(os.path.basename(sys.argv[0]), \
-                _metadata_['summary'], _metadata_['version'])
-            self.version += '\nCopyright (C) {}'.format(_metadata_['author'])
+            _metadata_ = importlib.metadata.metadata("qubesadmin")
+            self.version = "{} ({}) {}".format(
+                os.path.basename(sys.argv[0]),
+                _metadata_["summary"],
+                _metadata_["version"],
+            )
+            if "author" in _metadata_:
+                self.version += "\nCopyright (C) {}".format(
+                    _metadata_["author"]
+                )
+            else:
+                self.version += "\nCopyright (C) {}".format(
+                    _metadata_["Author-email"]
+                )
             self.version += '\nLicense: {}'.format(_metadata_['license'])
         if self.version != '':
             self.add_argument('--version', action='version')
@@ -478,7 +460,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
 class SubParsersHelpAction(argparse._HelpAction):
     ''' Print help for all options and all subparsers '''
     # source https://stackoverflow.com/a/24122778
-    # pylint: disable=protected-access,too-few-public-methods
+    # pylint: disable=protected-access
 
     @staticmethod
     def _indent(indent, text):
@@ -509,7 +491,7 @@ class SubParsersHelpAction(argparse._HelpAction):
 class AliasedSubParsersAction(argparse._SubParsersAction):
     '''SubParser with support for action aliases'''
     # source https://gist.github.com/sampsyo/471779
-    # pylint: disable=protected-access,too-few-public-methods,missing-docstring
+    # pylint: disable=protected-access,missing-docstring
     class _AliasedPseudoAction(argparse.Action):
         # pylint: disable=redefined-builtin
         def __init__(self, name, aliases, help):

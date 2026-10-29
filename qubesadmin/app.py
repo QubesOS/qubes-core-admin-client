@@ -22,6 +22,7 @@
 Main Qubes() class and related classes.
 """
 import grp
+import io
 import os
 import shlex
 import socket
@@ -30,6 +31,11 @@ import subprocess
 import sys
 
 import logging
+import typing
+from logging import Logger
+from subprocess import Popen
+from typing import IO, TypeVar
+from collections.abc import Generator, Iterable
 
 import qubesadmin.base
 import qubesadmin.exc
@@ -37,61 +43,72 @@ import qubesadmin.label
 import qubesadmin.storage
 import qubesadmin.utils
 import qubesadmin.vm
+from qubesadmin.label import Label
+from qubesadmin.vm import Klass, PowerState
 import qubesadmin.config
 import qubesadmin.device_protocol
+from qubesadmin.vm import QubesVM
 
 try:
-    import qubesdb
+    import qubesdb  # type: ignore
 
     has_qubesdb = True
 except ImportError:
     has_qubesdb = False
 
+# ["mic", "block", "pci", "usb", "webcam"]
+# but can be extended
+DeviceClass = str
+
 
 class VMCollection:
     """Collection of VMs objects"""
 
-    def __init__(self, app):
+    def __init__(self, app: "QubesBase"):
         self.app = app
-        self._vm_list = None
-        self._vm_objects = {}
+        # TODO we should properly document what's in / the
+        #  purpose of _vm_dict and _vm_objects
+        self._vm_dict: dict[str, dict[str, str]] = {}
+        self._vm_objects: dict[str, QubesVM] = {}
+        self._vm_dict_initialized: bool = False
 
-    def clear_cache(self, invalidate_name=None):
+    def clear_cache(self, invalidate_name: str | None=None) -> None:
         """Clear cached list of VMs
         If *invalidate_name* is given, remove that object from cache
         explicitly too.
         """
-        self._vm_list = None
+        self._vm_dict_initialized = False
+        self._vm_dict = {}
         if invalidate_name:
             self._vm_objects.pop(invalidate_name, None)
 
-    def refresh_cache(self, force=False):
+    def refresh_cache(self, force: bool=False) -> None:
         """Refresh cached list of VMs"""
-        if not force and self._vm_list is not None:
+        if not force and self._vm_dict_initialized:
             return
         vm_list_data = self.app.qubesd_call("dom0", "admin.vm.List")
-        new_vm_list = {}
+        new_vm_dict = {}
         # FIXME: this will probably change
         for vm_data in vm_list_data.splitlines():
             vm_name, props = vm_data.decode("ascii").split(" ", 1)
             vm_name = str(vm_name)
             props = props.split(" ")
-            new_vm_list[vm_name] = dict(
+            new_vm_dict[vm_name] = dict(
                 [vm_prop.split("=", 1) for vm_prop in props]
             )
             # if cache not enabled, drop power state
             if not self.app.cache_enabled:
                 try:
-                    del new_vm_list[vm_name]["state"]
+                    del new_vm_dict[vm_name]["state"]
                 except KeyError:
                     pass
 
-        self._vm_list = new_vm_list
+        self._vm_dict = new_vm_dict
         for name, vm in list(self._vm_objects.items()):
-            if vm.name not in self._vm_list:
+            if vm.name not in self._vm_dict:
                 # VM no longer exists
                 del self._vm_objects[name]
-            elif vm.klass != self._vm_list[vm.name]["class"]:
+            elif vm.klass != self._vm_dict[vm.name]["class"]:
                 # VM class have changed
                 del self._vm_objects[name]
             # TODO: some generation ID, to detect VM re-creation
@@ -99,35 +116,46 @@ class VMCollection:
                 # renamed
                 self._vm_objects[vm.name] = vm
                 del self._vm_objects[name]
+        self._vm_dict_initialized = True
 
-    def __getitem__(self, item):
-        if isinstance(item, qubesadmin.vm.QubesVM):
+    def __getitem__(self, item: str | QubesVM) -> QubesVM:
+        if isinstance(item, QubesVM):
             item = item.name
         if not self.app.blind_mode and item not in self:
             raise KeyError(item)
         return self.get_blind(item)
 
-    def get_blind(self, item):
+    def get_blind(self, item: str) -> QubesVM:
         """
         Get a vm without downloading the list
         and checking if exists
         """
         if item not in self._vm_objects:
-            cls = qubesadmin.vm.QubesVM
             # provide class name to constructor, if already cached (which can be
             # done by 'item not in self' check above, unless blind_mode is
             # enabled
-            klass = None
-            power_state = None
-            if self._vm_list and item in self._vm_list:
-                klass = self._vm_list[item]["class"]
-                power_state = self._vm_list[item].get("state")
-            self._vm_objects[item] = cls(
+            klass: Klass | None = None
+            power_state: PowerState | None = None
+            if item in self._vm_dict:
+                klass = typing.cast(Klass | None, self._vm_dict[item]["class"])
+                power_state = typing.cast(PowerState | None,
+                                          self._vm_dict[item].get("state"))
+            self._vm_objects[item] = QubesVM(
                 self.app, item, klass=klass, power_state=power_state
             )
         return self._vm_objects[item]
 
-    def get(self, item, default=None):
+    T = TypeVar("T")
+
+    @typing.overload
+    def get(self, item: str | QubesVM) -> QubesVM:
+        ...
+    @typing.overload
+    def get(self, item: str | QubesVM, default: T) -> QubesVM | T:
+        ...
+    # Overloaded to handle default None return type
+    def get(self, item: str | QubesVM, default: object=None)\
+            -> object:
         """
         Get a VM object, or return *default* if it can't be found.
         """
@@ -136,30 +164,30 @@ class VMCollection:
         except KeyError:
             return default
 
-    def __contains__(self, item):
+    def __contains__(self, item: QubesVM | str) -> bool:
         if isinstance(item, qubesadmin.vm.QubesVM):
             item = item.name
         self.refresh_cache()
-        return item in self._vm_list
+        return item in self._vm_dict
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         self.app.qubesd_call(key, "admin.vm.Remove")
         self.clear_cache()
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[QubesVM, None, None]:
         self.refresh_cache()
-        for vm in sorted(self._vm_list):
+        for vm in sorted(self._vm_dict):
             yield self[vm]
 
-    def keys(self):
+    def keys(self) -> Iterable[str]:
         """Get list of VM names."""
         self.refresh_cache()
-        return self._vm_list.keys()
+        return self._vm_dict.keys()
 
-    def values(self):
+    def values(self) -> list[QubesVM]:
         """Get list of VM objects."""
         self.refresh_cache()
-        return [self[name] for name in self._vm_list]
+        return [self[name] for name in self._vm_dict]
 
 
 class QubesBase(qubesadmin.base.PropertyHolder):
@@ -170,22 +198,22 @@ class QubesBase(qubesadmin.base.PropertyHolder):
     :py:class:`QubesLocal` or :py:class:`QubesRemote`.
     """
 
+    # Below: local-only properties (see PropertyHolder._local_properties)
     #: domains (VMs) collection
-    domains = None
+    domains: VMCollection
     #: labels collection
-    labels = None
+    labels: qubesadmin.base.WrapperObjectsCollection[Label]
     #: storage pools
-    pools = None
+    pools: qubesadmin.base.WrapperObjectsCollection[qubesadmin.storage.Pool]
     #: type of qubesd connection: either 'socket' or 'qrexec'
-    qubesd_connection_type = None
+    qubesd_connection_type: typing.Literal["socket", "qrexec"]
     #: logger
-    log = None
+    log: Logger
     #: do not check for object (VM, label etc) existence before really needed
-    blind_mode = False
-    #: cache retrieved properties values
-    cache_enabled = False
+    blind_mode: bool = False
+    _cache_enabled: bool = False
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(self, "admin.property.", "dom0")
         self.domains = VMCollection(self)
         self.labels = qubesadmin.base.WrapperObjectsCollection(
@@ -195,27 +223,75 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             self, "admin.pool.List", qubesadmin.storage.Pool
         )
         #: cache for available storage pool drivers and options to create them
-        self._pool_drivers = None
+        self._pool_drivers: dict[str, list[str]] | None = None
+        #: cache for per-deviceclass metadata
+        self._deviceclass_properties_cache: \
+            dict[DeviceClass, dict[str, str]] | None = None
         self.log = logging.getLogger("app")
         self._local_name = None
 
-    def list_vmclass(self):
+    @property
+    def cache_enabled(self) -> bool:
+        """Cache retrieved properties, features, tags and device assignments"""
+        return self._cache_enabled
+
+    @cache_enabled.setter
+    def cache_enabled(self, is_enabled: bool) -> None:
+        # Nothing gets cached while disabled, so flushing on the way out is
+        # what keeps a later re-enable from serving values cached earlier.
+        if self._cache_enabled and not is_enabled:
+            self._invalidate_cache_all()
+        self._cache_enabled = is_enabled
+
+    def list_vmclass(self) -> list[Klass]:
         """Call Qubesd in order to obtain the vm classes list"""
         vmclass = (
             self.qubesd_call("dom0", "admin.vmclass.List").decode().splitlines()
         )
         return sorted(vmclass)
 
-    def list_deviceclass(self):
+    def list_deviceclass(self) -> list[DeviceClass]:
         """Call Qubesd in order to obtain the device classes list"""
         deviceclasses = (
             self.qubesd_call("dom0", "admin.deviceclass.List")
             .decode()
             .splitlines()
         )
+
         return sorted(deviceclasses)
 
-    def _refresh_pool_drivers(self):
+    def deviceclass_properties(self) -> dict[DeviceClass, dict[str, str]]:
+        """Obtain per-device-class metadata.
+
+        Calls ``admin.deviceclass.List+details`` and parses each line of the
+        form ``<class> key=value [key=value ...]``.
+
+        Empty values may appear if a deviceclass does not support the details.
+        """
+        if self._deviceclass_properties_cache is not None:
+            return self._deviceclass_properties_cache
+        try:
+            raw = self.qubesd_call(
+                "dom0", "admin.deviceclass.List", "details"
+            ).decode()
+        except (qubesadmin.exc.QubesException, qubesadmin.exc.ProtocolError):
+            # older backend/extension
+            raw = self.qubesd_call(
+                "dom0", "admin.deviceclass.List"
+            ).decode()
+
+        result: dict[DeviceClass, dict[str, str]] = {}
+        for line in raw.splitlines():
+            name, _, rest = line.partition(" ")
+            props: dict[str, str] = {}
+            for token in rest.split():
+                key, _, value = token.partition("=")
+                props[key] = value
+            result[name] = props
+        self._deviceclass_properties_cache = result
+        return result
+
+    def _refresh_pool_drivers(self) -> None:
         """
         Refresh cached storage pool drivers and their parameters.
 
@@ -235,17 +311,19 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             self._pool_drivers = pool_drivers
 
     @property
-    def pool_drivers(self):
+    def pool_drivers(self) -> Iterable[str]:
         """Available storage pool drivers"""
         self._refresh_pool_drivers()
+        assert self._pool_drivers is not None
         return self._pool_drivers.keys()
 
-    def pool_driver_parameters(self, driver):
+    def pool_driver_parameters(self, driver: str) -> list[str]:
         """Parameters to initialize storage pool using given driver"""
         self._refresh_pool_drivers()
+        assert self._pool_drivers is not None
         return self._pool_drivers[driver]
 
-    def add_pool(self, name, driver, **kwargs):
+    def add_pool(self, name: str, driver: str, **kwargs) -> None:
         """Add a storage pool to config
 
         :param name: name of storage pool to create
@@ -263,12 +341,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             "dom0", "admin.pool.Add", driver, payload.encode("utf-8")
         )
 
-    def remove_pool(self, name):
+    def remove_pool(self, name: str) -> None:
         """Remove a storage pool"""
         self.qubesd_call("dom0", "admin.pool.Remove", name, None)
 
     @property
-    def local_name(self):
+    def local_name(self) -> str:
         """Get localhost name"""
         if not self._local_name:
             local_name = None
@@ -286,7 +364,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
         return self._local_name
 
-    def get_label(self, label):
+    def get_label(self, label: str | int) -> Label:
         """Get label as identified by index or name
 
         :throws QubesLabelNotFoundError: when label is not found
@@ -303,10 +381,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             for i in self.labels.values():
                 if i.index == int(label):
                     return i
-        raise qubesadmin.exc.QubesLabelNotFoundError(label)
+        raise qubesadmin.exc.QubesLabelNotFoundError(str(label))
 
     @staticmethod
-    def get_vm_class(clsname):
+    def get_vm_class(clsname: str) -> str:
         """Find the class for a domain.
 
         Compatibility function, client tools use str to identify domain classes.
@@ -318,8 +396,10 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         return clsname
 
     def add_new_vm(
-        self, cls, name, label, template=None, pool=None, pools=None
-    ):
+        self, cls: str | type[QubesVM], name: str, label: str,
+            template: str | QubesVM | None=None, pool: str | None=None,
+            pools: dict | None=None
+    ) -> QubesVM:
         """Create new Virtual Machine
 
         Example usage with custom storage pools:
@@ -375,16 +455,16 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     def clone_vm(
         self,
-        src_vm,
-        new_name,
-        new_cls=None,
+        src_vm: str | QubesVM,
+        new_name: str,
+        new_cls: str | None=None,
         *,
-        pool=None,
-        pools=None,
-        ignore_errors=False,
-        ignore_volumes=None,
-        ignore_devices=False,
-    ):
+        pool: str | None=None,
+        pools: dict | None=None,
+        ignore_errors: bool=False,
+        ignore_volumes: list | None=None,
+        ignore_devices: bool=False,
+    ) -> QubesVM:
         # pylint: disable=too-many-statements
         # pylint: disable=too-many-branches
         """Clone Virtual Machine
@@ -469,6 +549,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                     "name",
                     "qid",
                     "template",
+                    "active_template",
                     "label",
                     "uuid",
                     "installed_by_rpm",
@@ -489,6 +570,12 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
             for tag in src_vm.tags:
                 if tag.startswith("created-by-"):
+                    continue
+                if tag.startswith("guivm-"):
+                    continue
+                if tag.startswith("audiovm-"):
+                    continue
+                if tag.startswith("relayvm-"):
                     continue
                 try:
                     dst_vm.tags.add(tag)
@@ -620,8 +707,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         return dst_vm
 
     def qubesd_call(
-        self, dest, method, arg=None, payload=None, payload_stream=None
-    ):
+        self, dest: str | None, method: str, arg: str | None=None,
+            payload: bytes | None=None, payload_stream: IO | None=None
+    ) -> bytes:
         """
         Execute Admin API method.
 
@@ -644,16 +732,17 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     def run_service(
         self,
-        dest,
-        service,
-        user=None,
+        dest: str,
+        service: str,
+        user: str | None=None,
         *,
-        filter_esc=False,
-        localcmd=None,
-        wait=True,
-        autostart=True,
+        filter_esc: bool=False,
+        localcmd: str | None=None,
+        wait: bool=True,
+        autostart: bool=True,
+        prefix_data: bytes | None=None,
         **kwargs,
-    ):
+    ) -> Popen:
         """Run qrexec service in a given destination
 
         *kwargs* are passed verbatim to :py:meth:`subprocess.Popen`.
@@ -675,7 +764,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         )
 
     @staticmethod
-    def _call_with_stream(command, payload, payload_stream):
+    def _call_with_stream(command: str | list[str], payload: bytes | None,
+                          payload_stream: IO)\
+            -> tuple[Popen, bytes, bytes]:
         """Helper method to pass data to qubesd. Calls a command with
         payload and payload_stream as input.
 
@@ -696,6 +787,7 @@ class QubesBase(qubesadmin.base.PropertyHolder):
                 # because the process can get blocked on stdout or stderr pipe.
                 # However, in practice the output should be always smaller
                 # than 4K.
+                assert proc.stdin is not None
                 proc.stdin.write(payload)
                 try:
                     shutil.copyfileobj(payload_stream, proc.stdin)
@@ -708,7 +800,8 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             stdout, stderr = proc.communicate()
         return proc, stdout, stderr
 
-    def _invalidate_cache(self, subject, event, name, **kwargs):
+    def _invalidate_cache(self, subject: QubesVM | None,
+                          event: str, name: str, **kwargs) -> None:
         """Invalidate cached value of a property.
 
         This method is designed to be hooked as an event handler for:
@@ -729,24 +822,22 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         :return: none
         """  # pylint: disable=unused-argument
         if subject is None:
-            subject = self
+            subject_or_self = self
+        else:
+            subject_or_self = subject
 
         try:
             # pylint: disable=protected-access
-            del subject._properties_cache[name]
+            del subject_or_self._properties_cache[name]
         except KeyError:
             pass
 
-    def _update_power_state_cache(self, subject, event, **kwargs):
+    def _update_power_state_cache(self, subject: QubesVM,
+                                  event: str, **kwargs) -> None:
         """Update cached VM power state.
 
-        This method is designed to be hooked as an event handler for:
-        - domain-pre-start
-        - domain-start
-        - domain-shutdown
-        - domain-paused
-        - domain-unpaused
-        - domain-start-failed
+        This method is designed to be hooked as an event handler for
+        :py:data:`qubesadmin.events.POWER_EVENTS`.
 
         This is done in :py:class:`qubesadmin.events.EventsDispatcher` class
         directly, before calling other handlers.
@@ -762,16 +853,27 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
         if event == "domain-pre-start":
             power_state = "Transient"
+        elif event == "domain-start-failed":
+            power_state = "Halted"
         elif event == "domain-start":
             power_state = "Running"
-        elif event == "domain-shutdown":
-            power_state = "Halted"
+
         elif event == "domain-paused":
             power_state = "Paused"
         elif event == "domain-unpaused":
             power_state = "Running"
-        elif event == "domain-start-failed":
+        elif event == "domain-suspended":
+            power_state = "Suspended"
+        elif event == "domain-resumed":
+            power_state = "Running"
+
+        elif event == "domain-pre-shutdown":
+            power_state = "Halting"
+        elif event == "domain-shutdown-failed":
+            power_state = "Running"
+        elif event == "domain-shutdown":
             power_state = "Halted"
+
         else:
             # unknown power state change, drop cached power state
             power_state = None
@@ -779,14 +881,15 @@ class QubesBase(qubesadmin.base.PropertyHolder):
         # pylint: disable=protected-access
         subject._power_state_cache = power_state
 
-    def _invalidate_cache_all(self):
+    def _invalidate_cache_all(self) -> None:
         """Invalidate all cached data
 
 
         This method is designed to be hooked as an event handler
         for 'connection-established' handler. This is done in
         :py:class:`qubesadmin.events.EventsDispatcher` class
-        directly, before calling other handlers.
+        directly, before calling other handlers. It also runs when
+        :py:attr:`cache_enabled` is switched off.
 
         There is no guarantee about events delivery before this point,
         so anything cached before needs to be discarded.
@@ -799,8 +902,11 @@ class QubesBase(qubesadmin.base.PropertyHolder):
             assert isinstance(vm, qubesadmin.vm.QubesVM)
             vm._power_state_cache = None
             vm._properties_cache = {}
+            vm.features.clear_cache()
+            vm.tags.clear_cache()
             vm.devices.clear_cache()
         self._properties_cache = {}
+        self._deviceclass_properties_cache = None
 
 
 class QubesLocal(QubesBase):
@@ -812,8 +918,9 @@ class QubesLocal(QubesBase):
     qubesd_connection_type = "socket"
 
     def qubesd_call(
-        self, dest, method, arg=None, payload=None, payload_stream=None
-    ):
+        self, dest: str | None, method: str, arg: str | None=None,
+            payload: bytes | None=None, payload_stream: IO | None=None
+    ) -> bytes:
         """
         Execute Admin API method.
 
@@ -841,13 +948,15 @@ class QubesLocal(QubesBase):
                 raise qubesadmin.exc.QubesDaemonCommunicationError(
                     f"{method_path} not found"
                 )
+            assert dest is not None
             command = [
                 "env",
                 "QREXEC_REMOTE_DOMAIN=dom0",
                 "QREXEC_REQUESTED_TARGET=" + dest,
                 method_path,
-                arg,
             ]
+            if arg is not None:
+                command.append(arg)
             if os.getuid() != 0:
                 command.insert(0, "sudo")
             (_, stdout, _) = self._call_with_stream(
@@ -876,16 +985,17 @@ class QubesLocal(QubesBase):
 
     def run_service(
         self,
-        dest,
-        service,
-        user=None,
+        dest: str,
+        service: str,
+        user: str | None=None,
         *,
-        filter_esc=False,
-        localcmd=None,
-        wait=True,
-        autostart=True,
+        filter_esc: bool=False,
+        localcmd: str | None=None,
+        wait: bool=True,
+        autostart: bool=True,
+        prefix_data: bytes | None=None,
         **kwargs,
-    ):
+    ) -> Popen:
         """Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
@@ -903,6 +1013,8 @@ class QubesLocal(QubesBase):
             raise ValueError("Empty destination name allowed only from a VM")
         if not wait and localcmd:
             raise ValueError("wait=False incompatible with localcmd")
+        if prefix_data and b"\0" in prefix_data:
+            raise ValueError("prefix_data cannot contain NUL character")
         if autostart:
             try:
                 self.qubesd_call(dest, "admin.vm.Start")
@@ -927,6 +1039,10 @@ class QubesLocal(QubesBase):
                 raise NotImplementedError(
                     "wait=False not implemented in dom0->dom0 calls"
                 )
+            if prefix_data and kwargs.get("stdin", None) != subprocess.PIPE:
+                raise NotImplementedError(
+                    "prefix_data for dom0->dom0 calls requires stdin=PIPE"
+                )
             if user is None:
                 user = grp.getgrnam("qubes").gr_mem[0]
 
@@ -946,18 +1062,28 @@ class QubesLocal(QubesBase):
                 **kwargs,
                 env=env,
             )
+            if prefix_data:
+                p.stdin.write(prefix_data)
             return p
         qrexec_opts = ["-d", dest]
         if filter_esc:
             qrexec_opts.extend(["-t"])
-        if filter_esc or os.isatty(sys.stderr.fileno()):
+        try:
+            stderr_isatty = os.isatty(sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            stderr_isatty = False
+        if filter_esc or stderr_isatty:
             qrexec_opts.extend(["-T"])
         if localcmd:
             qrexec_opts.extend(["-l", localcmd])
         if user is None:
             user = "DEFAULT"
+        if ":" in user:
+            raise ValueError("Username in qrexec cannot contain a colon")
         if not wait:
             qrexec_opts.extend(["-e"])
+        if prefix_data:
+            qrexec_opts.extend(["-p", prefix_data])
         if "connect_timeout" in kwargs:
             qrexec_opts.extend(["-w", str(kwargs.pop("connect_timeout"))])
         kwargs.setdefault("stdin", subprocess.PIPE)
@@ -985,8 +1111,9 @@ class QubesRemote(QubesBase):
     qubesd_connection_type = "qrexec"
 
     def qubesd_call(
-        self, dest, method, arg=None, payload=None, payload_stream=None
-    ):
+        self, dest: str | None, method: str, arg: str | None=None,
+            payload: bytes | None=None, payload_stream: IO | None=None
+    ) -> bytes:
         """
         Execute Admin API method.
 
@@ -1003,6 +1130,7 @@ class QubesRemote(QubesBase):
         .. warning:: *payload_stream* will get closed by this function
         """
         service_name = method
+        assert dest is not None
         if arg is not None:
             service_name += "+" + arg
         command = [qubesadmin.config.QREXEC_CLIENT_VM, dest, service_name]
@@ -1027,16 +1155,17 @@ class QubesRemote(QubesBase):
 
     def run_service(
         self,
-        dest,
-        service,
-        user=None,
+        dest: str,
+        service: str,
+        user: str | None=None,
         *,
-        filter_esc=False,
-        localcmd=None,
-        wait=True,
-        autostart=True,
+        filter_esc: bool=False,
+        localcmd: str | None=None,
+        wait: bool=True,
+        autostart: bool=True,
+        prefix_data: bytes | None=None,
         **kwargs,
-    ):
+    ) -> Popen:
         """Run qrexec service in a given destination
 
         :param str dest: Destination - may be a VM name or empty
@@ -1057,17 +1186,23 @@ class QubesRemote(QubesBase):
             raise ValueError("non-default user not possible for calls from VM")
         if not wait and localcmd:
             raise ValueError("wait=False incompatible with localcmd")
+        if prefix_data and b"\0" in prefix_data:
+            raise ValueError("prefix_data cannot contain NUL character")
         qrexec_opts = []
         if filter_esc:
             qrexec_opts.extend(["-t"])
-        if filter_esc or (
-            os.isatty(sys.stderr.fileno()) and "stderr" not in kwargs
-        ):
+        try:
+            stderr_isatty = os.isatty(sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            stderr_isatty = False
+        if filter_esc or (stderr_isatty and "stderr" not in kwargs):
             qrexec_opts.extend(["-T"])
         if not autostart and not self.domains.get_blind(dest).is_running():
             raise qubesadmin.exc.QubesVMNotRunningError(
                 "%s is not running", dest
             )
+        if prefix_data:
+            qrexec_opts.extend(["-p", prefix_data])
         if not wait:
             # qrexec-client-vm can only request service calls, which are
             # started using MSG_EXEC_CMDLINE qrexec protocol message; this

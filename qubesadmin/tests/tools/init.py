@@ -133,10 +133,42 @@ class TC_01_SinglePropertyAction(qubesadmin.tests.QubesTestCase):
         self.assertIn(
             ('testprop', 'testvalue'), args.properties.items())
 
-    def test_104_set_prop_positional(self):
+    def test_104_set_prop_const_override(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--testprop', '-T',
+            action=qubesadmin.tools.SinglePropertyAction,
+            const='testvalue')
+        args = parser.parse_args(['-T', 'override'])
+        self.assertIn(
+            ('testprop', 'override'), args.properties.items())
+
+    def test_105_set_prop_positional(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('testprop',
             action=qubesadmin.tools.SinglePropertyAction)
         args = parser.parse_args(['testvalue'])
         self.assertIn(
             ('testprop', 'testvalue'), args.properties.items())
+
+
+class TC_02_QubesArgumentParser(qubesadmin.tests.QubesTestCase):
+    def test_000_domain_preserve_order(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\x00some-vm class=AppVM state=Running\n'
+            b'some-a class=AppVM state=Halted\n'
+            b'some-b class=AppVM state=Paused\n'
+        )
+
+        parser = qubesadmin.tools.QubesArgumentParser(vmname_nargs="+")
+        wanted_args = ["some-vm", "some-a", "some-vm"]
+        args = parser.parse_args(wanted_args, app=self.app)
+        self.assertEqual(
+            ["some-a", "some-b", "some-vm"],
+            [qube.name for qube in self.app.domains],
+            "app namespace must have domains in alphabetical order",
+        )
+        self.assertEqual(
+            ["some-vm", "some-a"],
+            [qube.name for qube in args.domains],
+            "args namespace must have domains in input order",
+        )

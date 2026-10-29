@@ -19,6 +19,8 @@
 
 # pylint: disable=missing-docstring
 
+import subprocess
+
 import qubesadmin.tests
 import qubesadmin.vm
 
@@ -36,7 +38,12 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('disp123', 'test.service', {'connect_timeout': 30}),
+            ('disp123', 'test.service', {
+                'connect_timeout': 30,
+                "stdin": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+            }),
             ('disp123', 'test.service', b''),
         ])
         self.assertAllCalled()
@@ -55,7 +62,12 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('disp123', 'test.service', {'connect_timeout': 30}),
+            ('disp123', 'test.service', {
+                'connect_timeout': 30,
+                "stdin": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+            }),
             ('disp123', 'test.service', b''),
         ])
         self.assertAllCalled()
@@ -72,7 +84,11 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('@dispvm', 'test.service', {}),
+            ('@dispvm', 'test.service', {
+                "stdin": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+            }),
             ('@dispvm', 'test.service', b''),
         ])
         self.assertAllCalled()
@@ -82,7 +98,11 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         vm.run_service_for_stdio('test.service')
         vm.cleanup()
         self.assertEqual(self.app.service_calls, [
-            ('@dispvm:test-vm', 'test.service', {}),
+            ('@dispvm:test-vm', 'test.service', {
+                "stdin": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+            }),
             ('@dispvm:test-vm', 'test.service', b''),
         ])
         self.assertAllCalled()

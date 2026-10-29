@@ -1,5 +1,3 @@
-# pylint: disable=too-few-public-methods
-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #

@@ -781,6 +781,11 @@ class AppProxy:
         self._delay_stream = delay_stream
         self.cache_enabled = False
 
+    def __getattr__(self, name):
+        if name == "_app":
+            raise AttributeError(name)
+        return getattr(self._app, name)
+
     def qubesd_call(self, dest, method, arg=None, payload=None,
             payload_stream=None):
         if payload_stream:
@@ -1491,12 +1496,7 @@ class TC_10_BackupCompatibility(qubesadmin.tests.backup.BackupTestCase):
                     str(value).encode())] = b'0\0'
 
             for tag in vm['tags']:
-                if tag.startswith('created-by-'):
-                    self.app.expected_calls[
-                        (name, 'admin.vm.tag.Set', tag, None)] = b''
-                    self.app.expected_calls[
-                        (name, 'admin.vm.tag.Get', tag, None)] = b'0\0001'
-                else:
+                if not tag.startswith('created-by-'):
                     self.app.expected_calls[
                         (name, 'admin.vm.tag.Set', tag, None)] = b'0\0'
 
