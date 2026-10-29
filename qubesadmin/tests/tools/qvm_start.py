@@ -70,6 +70,64 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             1)
         self.assertAllCalled()
 
+    def test_004_preflight_before_start(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Running'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.CurrentState', None, None)] = \
+            b'0\x00power_state=Halted'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Start', None, None)] = b'0\x00'
+
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            retcode = qubesadmin.tools.qvm_start.main(
+                ['some-vm', 'other-vm'], app=self.app
+            )
+
+        self.assertEqual(retcode, 1)
+        self.assertIn('some-vm: Domain is already running', stderr.getvalue())
+        start_indices = [
+            index for index, call in enumerate(self.app.actual_calls)
+            if call[1] == 'admin.vm.Start'
+        ]
+        self.assertEqual(len(start_indices), 1)
+        self.assertTrue(all(
+            call[1] == 'admin.vm.CurrentState'
+            for call in self.app.actual_calls[:start_indices[0]]
+            if call[0] in ('some-vm', 'other-vm')
+        ))
+        self.assertEqual(sum(
+            call[1] == 'admin.vm.CurrentState'
+            for call in self.app.actual_calls
+        ), 2)
+        self.assertAllCalled()
+
+    def test_005_skip_running_without_state_checks(self):
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00some-vm class=AppVM state=Running\n' \
+            b'other-vm class=AppVM state=Running\n'
+        self.app.expected_calls[
+            ('some-vm', 'admin.vm.Start', None, None)] = b'0\x00'
+        self.app.expected_calls[
+            ('other-vm', 'admin.vm.Start', None, None)] = b'0\x00'
+
+        retcode = qubesadmin.tools.qvm_start.main(
+            ['--skip-if-running', 'some-vm', 'other-vm'], app=self.app
+        )
+
+        self.assertEqual(retcode, 0)
+        self.assertFalse(any(
+            call[1] == 'admin.vm.CurrentState'
+            for call in self.app.actual_calls
+        ))
+        self.assertAllCalled()
+
     def test_010_drive_cdrom(self):
         self.app.expected_calls[
             ('dom0', 'admin.vm.List', None, None)] = \

@@ -231,9 +231,14 @@ class ManpageCheckVisitor(docutils.nodes.SparseNodeVisitor):
     def __init__(self, app, command, document):
         docutils.nodes.SparseNodeVisitor.__init__(self, document)
         try:
-            parser = qubesadmin.tools.get_parser_for_command(command)
+            if command == "qvm-start-gui":
+                parser = qubesadmin.tools.get_parser_for_command(
+                    "qvm-start-daemon"
+                )
+            else:
+                parser = qubesadmin.tools.get_parser_for_command(command)
         except ImportError:
-            msg = 'cannot import module for command'
+            msg = f"cannot import module for command '{command}'"
             if log:
                 log.warning(msg)
 
@@ -288,7 +293,7 @@ def check_man_args(app, doctree, docname):
         options.
     """
     dirname, command = os.path.split(docname)
-    if os.path.basename(dirname) != 'manpages':
+    if os.path.basename(dirname) != "manpages" or command == "index":
         return
 
     msg = 'Checking arguments for {!r}'.format(command)

@@ -111,7 +111,7 @@ def validator_color(color: str) -> bool:
 GUI_DAEMON_OPTIONS = [
     ("allow_fullscreen", "bool", (lambda x: isinstance(x, bool))),
     ("override_redirect_protection", "bool", (lambda x: isinstance(x, bool))),
-    ("override_redirect", "str", (lambda x: x in ["allow", "disable"])),
+    ("override_redirect", "str", (lambda x: x in ["allow", "disabled"])),
     ("allow_utf8_titles", "bool", (lambda x: isinstance(x, bool))),
     ("secure_copy_sequence", "str", validator_key_sequence),
     ("secure_paste_sequence", "str", validator_key_sequence),
@@ -123,6 +123,11 @@ GUI_DAEMON_OPTIONS = [
         "max_clipboard_size",
         "int",
         (lambda x: isinstance(x, int) and 256 <= x <= 256000),
+    ),
+    (
+        "max_clipboard_image_size",
+        "int",
+        (lambda x: isinstance(x, int) and 0 <= x <= 67108864),
     ),
     (
         "events_max_delay",
@@ -725,6 +730,14 @@ class DAEMONLauncher:
         """
         if getattr(vm, "is_preload", False):
             return
+
+        if vm.xid < 0:
+            vm.log.warning(
+                "Skipping GUI start: invalid XID (%s)",
+                vm.xid,
+            )
+            return
+
         guid_cmd = self.common_guid_args(vm)
         guid_cmd.extend(["-d", str(vm.xid)])
 
@@ -753,6 +766,15 @@ class DAEMONLauncher:
         """
         if getattr(vm, "is_preload", False):
             return
+
+        stubdom_xid = getattr(vm, "stubdom_xid", -1)
+        if stubdom_xid < 0:
+            vm.log.warning(
+                "Skipping stubdomain GUI start: invalid stubdom XID (%s)",
+                stubdom_xid,
+            )
+            return
+
         want_stubdom = force
         if not want_stubdom and vm.features.check_with_template(
             "gui-emulated", False
@@ -786,10 +808,19 @@ class DAEMONLauncher:
         """
         if getattr(vm, "is_preload", False):
             return
+
+        xid = self.pacat_domid(vm)
+        if xid < 0:
+            vm.log.warning(
+                "Skipping AUDIO start: invalid XID (%s)",
+                xid,
+            )
+            return
+
         pacat_cmd = [
             PACAT_DAEMON_PATH,
             "-l",
-            str(self.pacat_domid(vm)),
+            str(xid),
             vm.name,
         ]
         vm.log.info("Starting AUDIO")
@@ -915,6 +946,13 @@ class DAEMONLauncher:
                     continue
 
                 power_state = vm.get_power_state()
+                if power_state in ("Running", "Transient"):
+                    try:
+                        self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+                    except AttributeError:
+                        # without access to XID (either permission denied, or
+                        # RemoteVM), can't really start daemons
+                        continue
                 if power_state == "Running":
                     if "guivm" in self.enabled_services:
                         asyncio.ensure_future(
@@ -922,7 +960,6 @@ class DAEMONLauncher:
                         )
                     if "audiovm" in self.enabled_services:
                         asyncio.ensure_future(self.start_audio(vm))
-                    self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
                 elif power_state == "Transient":
                     # it is still starting, we'll get 'domain-start'
                     # event when fully started

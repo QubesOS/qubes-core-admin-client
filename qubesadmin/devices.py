@@ -31,8 +31,10 @@ class is implemented by an extension.
 Devices are identified by pair of (backend domain, `port_id`), where `port_id`
 is :py:class:`str`.
 """
+from __future__ import annotations
 import itertools
-from typing import Iterable
+from typing import TYPE_CHECKING
+from collections.abc import Iterable, Iterator
 
 import qubesadmin.exc
 from qubesadmin.device_protocol import (
@@ -43,6 +45,8 @@ from qubesadmin.device_protocol import (
     VirtualDevice,
     AssignmentMode, DeviceInterface,
 )
+if TYPE_CHECKING:
+    from qubesadmin.vm import QubesVM
 
 
 class DeviceCollection:
@@ -55,7 +59,7 @@ class DeviceCollection:
 
     """
 
-    def __init__(self, vm, class_):
+    def __init__(self, vm: QubesVM, class_: str):
         self._vm = vm
         self._class = class_
         self._dev_cache = {}
@@ -72,10 +76,11 @@ class DeviceCollection:
 
         :param DeviceAssignment assignment: device object
         """
-        if assignment.devclass == "pci":
+        supported = self._supported_assignment_modes()
+        if supported is not None and AssignmentMode.MANUAL not in supported:
             raise qubesadmin.exc.QubesValueError(
-                "PCI devices cannot be attached manually, "
-                "did you mean `qvm-pci assign --required ...`"
+                f"{assignment.devclass} devices cannot be attached manually, "
+                f"did you mean `qvm-device {assignment.devclass} assign ...`"
             )
         self._add(assignment, "attach")
         # clear the whole cache instead of saving provided assignment, it might
@@ -92,33 +97,49 @@ class DeviceCollection:
         self._remove(assignment, "detach")
         self._assignment_cache = None
 
+    def _supported_assignment_modes(
+        self,
+    ) -> "frozenset[AssignmentMode] | None":
+        """
+        Assignment modes allowed for this `deviceclass`.
+
+        Returns `None` when the information cannot be obtained;
+         the caller must then rely on backend-side validation.
+        """
+        try:
+            props = self._vm.app.deviceclass_properties().get(self._class, {})
+        except (qubesadmin.exc.QubesException, qubesadmin.exc.ProtocolError):
+            return None
+        raw = props.get("assignment_modes")
+        if not raw:
+            return None
+        try:
+            return frozenset(
+                AssignmentMode(value) for value in raw.split(",") if value
+            )
+        except ValueError:
+            return None
+
+    def _validate_assignment_mode(self, mode: AssignmentMode) -> None:
+        """
+        Raise a error if *mode* is not a valid one for this `deviceclass`.
+        """
+        supported = self._supported_assignment_modes()
+        if supported is None or mode in supported:
+            return
+        allowed = ", ".join(sorted(m.value for m in supported))
+        raise qubesadmin.exc.QubesValueError(
+            f"{self._class} devices do not support being assigned in "
+            f"'{mode.value}' mode; supported assignment mode(s): {allowed}."
+        )
+
     def assign(self, assignment: DeviceAssignment) -> None:
         """
         Assign device to domain (add to :file:`qubes.xml`).
 
         :param DeviceAssignment assignment: device object
         """
-        if (
-            assignment.devclass not in ("pci", "testclass", "block")
-            and assignment.required
-        ):
-            raise qubesadmin.exc.QubesValueError(
-                "Only pci and block devices can be assigned as required."
-            )
-        if assignment.devclass == "pci" and not assignment.required:
-            raise qubesadmin.exc.QubesValueError(
-                "PCI devices cannot be assigned as not required."
-            )
-        if (
-            assignment.devclass
-            not in ("testclass", "usb", "block", "mic", "pci")
-            and assignment.attach_automatically
-        ):
-            raise qubesadmin.exc.QubesValueError(
-                f"{assignment.devclass} devices cannot be assigned "
-                "to be automatically attached."
-            )
-
+        self._validate_assignment_mode(assignment.mode)
         self._add(assignment, "assign")
         # clear the whole cache instead of saving provided assignment, it might
         # get modified before actually assigning
@@ -268,7 +289,7 @@ class DeviceCollection:
 
     def update_assignment(
             self, device: VirtualDevice, required: AssignmentMode
-    ):
+    ) -> None:
         """
         Update assignment of already attached device.
 
@@ -278,6 +299,7 @@ class DeviceCollection:
                               `False` -> device will be auto-attached to qube
                               `True` -> device is required to start qube
         """
+        self._validate_assignment_mode(required)
         self._vm.qubesd_call(
             None,
             "admin.vm.device.{}.Set.assignment".format(self._class),
@@ -288,7 +310,7 @@ class DeviceCollection:
 
     __iter__ = get_exposed_devices
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """
         Clear cache of available devices.
         """
@@ -296,7 +318,7 @@ class DeviceCollection:
         self._assignment_cache = None
         self._attachment_cache = None
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: object) -> DeviceInfo:
         """Get device object with given port_id.
 
         :returns: py:class:`DeviceInfo`
@@ -316,6 +338,8 @@ class DeviceCollection:
                 return dev
         # if still nothing, return UnknownDevice instance for the reason
         # explained in docstring, but don't cache it
+        if not isinstance(item, str | None):
+            raise NotImplementedError
         return UnknownDevice(Port(self._vm, item, devclass=self._class))
 
 
@@ -325,21 +349,22 @@ class DeviceManager(dict):
     :param vm: VM for which we manage devices
     """
 
-    def __init__(self, vm):
+    def __init__(self, vm: QubesVM):
         super().__init__()
         self._vm = vm
 
-    def __missing__(self, key):
+    def __missing__(self, key: str) -> DeviceCollection:
         self[key] = DeviceCollection(self._vm, key)
         return self[key]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._vm.app.list_deviceclass())
 
-    def keys(self):
+
+    def keys(self) -> list[str]: # type: ignore[override]
         return self._vm.app.list_deviceclass()
 
-    def deny(self, *interfaces: Iterable[DeviceInterface]):
+    def deny(self, *interfaces: Iterable[DeviceInterface]) -> None:
         """
         Deny a device with any of the given interfaces from attaching to the VM.
         """
@@ -350,7 +375,7 @@ class DeviceManager(dict):
             "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
         )
 
-    def allow(self, *interfaces: Iterable[DeviceInterface]):
+    def allow(self, *interfaces: Iterable[DeviceInterface]) -> None:
         """
         Remove given interfaces from denied list.
         """
@@ -361,7 +386,7 @@ class DeviceManager(dict):
             "".join(repr(ifc) for ifc in interfaces).encode('ascii'),
         )
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear cache of all available device classes"""
         for devclass in self.values():
             devclass.clear_cache()

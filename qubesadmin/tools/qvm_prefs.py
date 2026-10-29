@@ -117,6 +117,12 @@ def process_actions(parser, args, target):
         return 0
     else:
         args.property = args.property.replace('-', '_')
+        # Some attributes are computed by this library instead of coming from
+        # the Admin API (derived_vms, appvms, methods...). Those are not
+        # properties, so reject them instead of letting getattr find them.
+        if hasattr(type(target), args.property) and \
+                args.property not in target.property_list():
+            parser.error('no such property: {!r}'.format(args.property))
 
     if args.value is not None:
         if str(args.value).lower() == "none":

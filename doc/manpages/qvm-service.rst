@@ -1,5 +1,7 @@
 .. program:: qvm-service
 
+.. _qvm-service:
+
 ========================================================================
 :program:`qvm-service` -- Manage (Qubes-specific) services started in VM
 ========================================================================
@@ -51,8 +53,9 @@ Supported services
 This list can be incomplete as VM can implement any additional service without
 knowledge of qubes-core code.
 
-meminfo-writer
-    Default: enabled everywhere excluding NetVM
+.. option:: meminfo-writer
+
+    :Default: enabled everywhere excluding NetVM
 
     This service reports VM memory usage to dom0, which effectively enables
     dynamic memory management for the VM.
@@ -61,64 +64,71 @@ meminfo-writer
 
         This service is managed by dom0 code and is not visible for *qvm-service* tool.
 
-qubes-firewall
-    Default: enabled only in ProxyVM
+.. option:: qubes-firewall
+
+    :Default: enabled only in ProxyVM
 
     Dynamic firewall manager, based on settings in dom0 (qvm-firewall, firewall tab in qubes-manager).
     This service is not supported in netvms.
 
-qubes-network
-    Default: enabled only in NetVM and ProxyVM
+.. option:: qubes-network
+
+    :Default: enabled only in NetVM and ProxyVM
 
     Expose network for other VMs. This includes enabling network forwarding,
     MASQUERADE, DNS redirection and basic firewall.
 
-qubes-update-check
-    Default: enabled
+.. option:: qubes-update-check
+
+    :Default: enabled
 
     Notify dom0 about updates available for this VM. This is shown in
     qubes-manager as 'update-pending' flag.
 
-cups
-    Default: enabled only in AppVM
+.. option:: cups
+
+    :Default: enabled only in AppVM
 
     Enable CUPS service. The user can disable cups in VM which do not need
     printing to speed up booting.
 
-crond
-    Default: disabled
+.. option:: crond
+
+    :Default: disabled
 
     Enable CRON service.
 
-network-manager
-    Default: enabled in every qube that has no netvm and has provides_network
-    preference set to True
+.. option:: network-manager
+
+    :Default: enabled in every qube that has no netvm and has provides_network
+       preference set to True
 
     Enable NetworkManager. Only VM with direct access to network device needs
     this service, but can be useful in ProxyVM to ease VPN setup.
 
-clocksync
-    Default: disabled
+.. option:: clocksync
+
+    :Default: disabled
 
     Enable NTPD (or equivalent) service. If disabled, VM will sync clock with
     selected VM (aka ClockVM) instead. ClockVM for particular VM can be set in
     policy of qubes.GetDate service, using target= parameter.
 
-qubes-yum-proxy
-    Deprecated name for qubes-updates-proxy.
+.. option:: qubes-updates-proxy
 
-qubes-updates-proxy
-    Default: enabled in NetVM
+    :Default: enabled in NetVM
 
     Provide proxy service, which allow access only to yum repos. Filtering is
     done based on URLs, so it shouldn't be used as leak control (pretty easy to
     bypass), but is enough to prevent some erroneous user actions.
 
-yum-proxy-setup
-    Deprecated name for updates-proxy-setup.
+    .. option:: qubes-yum-proxy
 
-updates-proxy-setup
-    Default: enabled in AppVM (also in templates)
+       Deprecated name for :option:`qubes-updates-proxy`.
+
+.. option:: updates-proxy-setup
+
+    :Default: enabled in AppVM (also in templates)
 
     Setup yum at startup to use qubes-yum-proxy service.
 
@@ -127,49 +137,61 @@ updates-proxy-setup
        this service is automatically enabled when you allow VM to access updates
        proxy and disabled when you deny access to updates proxy.
 
-disable-default-route
-    Default: disabled
+    .. option:: yum-proxy-setup
+
+       Deprecated name for :option:`updates-proxy-setup`.
+
+.. option:: disable-default-route
+
+    :Default: disabled
 
     Disables the default route for networking.  Enabling  this  service
     will  prevent the creation of the default route, but the VM will
     still be able to reach it's direct neighbors.  The functionality
     is implemented in /usr/lib/qubes/setup-ip.
 
-disable-dns-server
-    Default: disabled
+.. option:: disable-dns-server
+
+    :Default: disabled
 
     Enabling this service will result in an empty /etc/resolv.conf.
     The functionality is implemented in /usr/lib/qubes/setup-ip.
 
-lightdm:
-    Default: disabled
+.. option:: lightdm
+
+    :Default: disabled
 
     Start `lightdm` and avoid starting `qubes-gui-agent`.
     In this case, `lightdm` is responsible to start the `X.org` server.
 
-software-rendering:
-    Default: enabled
+.. option:: software-rendering
+
+    :Default: enabled
 
     Sets variables that enforces the use of software rendering. Disable this
     service in case your qube has access to a graphics card.
 
-guivm:
-    Default: disabled
+.. option:: guivm
+
+    :Default: disabled
 
     Enable common mandatory functionalities in a GuiVM.
 
-guivm-gui-agent:
-    Default: disabled
+.. option:: guivm-gui-agent
+
+    :Default: disabled
 
     When enabled, it starts hybrid GuiVM specific functionality.
 
-guivm-vnc:
-    Default: disabled
+.. option:: guivm-vnc
+
+    :Default: disabled
 
     When enabled, it starts VNC GuiVM specific functionality.
 
-tracker:
-    Default: disabled
+.. option:: tracker
+
+    :Default: disabled
 
     When enabled, GNOME Tracker is started.  This provides desktop search
     features for the GNOME desktop and for certain GNOME applications  By
@@ -183,49 +205,71 @@ tracker:
 
     If GNOME Tracker is not installed in the qube, this has no effect.
 
-evolution-data-server:
-    Default: disabled
+.. option:: evolution-data-server
+
+    :Default: disabled
 
     When enabled, Evolution Data Server is started.  This provides
     an API for applications to integrate with the Evolution mail and calendar
     client, and is mostly used by GNOME applications.  If Evolution Data
     Server is not installed in the qube, this has no effect.
 
-usb-reset-on-attach:
-    Default: disabled
+.. option:: usb-reset-on-attach
+
+    :Default: disabled
 
     Reset devices when attaching them using qvm-usb (or its GUI equivalent).
     This is known to help with some devices, that cannot deal with re-attaching
     to another driver.
 
-minimal-netvm:
-    Default: enabled in NetVM
+.. option:: minimal-netvm
+
+    :Default: enabled in NetVM
 
     Performs memory optimizations to make NetVM consume as little RAM as possible.
     This is done by disabling unnecessary services and keeping a memory reserve
     for the kernel drivers.
 
-minimal-usbvm:
-    Default: enabled in USBVM
+.. option:: minimal-usbvm
+
+    :Default: enabled in USBVM
 
     Disables unnecessary services for USBVM.
 
-custom-persist:
-    Default: disabled
+.. option:: custom-persist
 
-    Enables minimal state AppVM (custom persist) feature. When enabled, user bind
-    dirs must be defined using qvm-features as ``/rw/config/qubes-bind-dirs.d/``
-    will be ignored (see feature documentation for more details).
-    This will also disable ``/home`` and ``/usr/local`` persistence as well as
-    ``/rw/config/*`` automatically executed configs.
+    :Default: disabled
 
-servicevm
-    Default: disabled
+    Enables minimal state qube with the :doc:`custom persist feature <qubes-doc:user/advanced-topics/bind-dirs>`. When enabled,
+    user bind dirs must be defined using :option:`qvm-features custom-persist.*`
+    as ``/rw/config/qubes-bind-dirs.d/`` will be ignored. This will also disable
+    ``/home`` and ``/usr/local`` persistence as well as ``/rw/config/*``
+    automatically executed configs.
+
+.. option:: servicevm
+
+    :Default: disabled
 
     Changes the qube icon to ServiceVM theme and moves the qube to ``SERVICE``
     tab of Qubes Application Menu.
     If the qube ``provides_network`` property set/reset to True or False,
     the value of ``servicevm`` feature is automatically readjusted accordingly.
+
+.. option:: app-dispvm.*
+
+   These features are used to cause a given application (identified by app ID)
+   to open files and URLs in a disposable VM.  It works by changing the value of
+   `XDG_DATA_DIRS` so that applications see `qvm-open-in-dvm.desktop` as the only
+   way to open any file or URL.
+
+   To retrieve the application ID, check :ref:`!Make a particular application open everything in a disposable`.
+
+   .. warning::
+
+      It is known to work with Thunderbird (app ID `thunderbird`) and Element
+      (app ID `im.riot.Riot` for the flatpak and `io.element.Element` for the
+      non-flatpak version).  It may break icons in some applications.  Please
+      report a bug if `app-dispvm.*` breaks an application.
 
 Authors
 =======

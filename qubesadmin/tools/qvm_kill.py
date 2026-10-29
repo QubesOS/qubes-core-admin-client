@@ -18,37 +18,36 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''qvm-kill - forceful shutdown'''
+'''Immediately terminate a qube without a graceful shutdown sequence.'''
 
 
+import asyncio
 import sys
+
 import qubesadmin.exc
 import qubesadmin.tools
+import qubesadmin.tools.qvm_shutdown
 
 parser = qubesadmin.tools.QubesArgumentParser(
-    description='forceful shutdown of a domain', vmname_nargs='+')
+    description='immediately terminate a qube without a graceful shutdown'
+                ' sequence',
+    vmname_nargs='+')
+
+
+async def run_async(args=None, app=None):
+    # pylint: disable=missing-docstring
+    args = parser.parse_args(args, app=app)
+    failed = await qubesadmin.utils.kill(domains=args.domains)
+    if not failed:
+        return 0
+    for qube, exc in failed.items():
+        parser.print_error("Failed to kill: {}: {}".format(qube, exc))
+    raise SystemExit(len(failed))
+
 
 def main(args=None, app=None):
-    '''Main routine of :program:`qvm-kill`.
-
-    :param list args: Optional arguments to override those delivered from \
-        command line.
-    '''
-
-    args = parser.parse_args(args, app=app)
-
-    exit_code = 0
-    for domain in args.domains:
-        try:
-            domain.kill()
-        except qubesadmin.exc.QubesVMNotStartedError:
-            pass
-        except (IOError, OSError, qubesadmin.exc.QubesException) as e:
-            exit_code = 1
-            parser.print_error("Failed to kill '{}': {}".format(
-                domain.name, e))
-
-    return exit_code
+    # pylint: disable=missing-docstring
+    return asyncio.run(run_async(args=args, app=app))
 
 
 if __name__ == '__main__':
