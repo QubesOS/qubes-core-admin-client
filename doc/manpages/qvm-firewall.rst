@@ -6,7 +6,7 @@
 Synopsis
 --------
 
-:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add [--before=*RULE_NUMBER*]   *RULE*
+:command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* add [--before=*RULE_NUMBER*]   *RULE*  [comment=*comment*]
 
 :command:`qvm-firewall` [-h] [--verbose] [--quiet] [--reload] *VMNAME* del [--rule-no=*RULE_NUMBER*] [*RULE*]
 
@@ -42,6 +42,12 @@ Options
    Show program's version number and exit
 
 
+Comments
+--------
+
+When **adding** a rule free form text comments can be appended using **comment**. 
+
+
 Actions description
 -------------------
 
@@ -49,7 +55,7 @@ Available actions:
 
 * add - add specified rule. See `Rule syntax` section below.
 
-* del - delete specified rule. The rule to remove can be selected either by rule number using :option:`--rule-no`
+* del - delete specified rule. The rule to remove can be selected either by rule number using ``--rule-no``
   or by specifying the rule itself using the same syntax used for adding it.
 
 * list - list all the rules for a given VM.

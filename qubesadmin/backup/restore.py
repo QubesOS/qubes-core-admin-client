@@ -1438,7 +1438,7 @@ class BackupRestore:
         queue.put(QUEUE_FINISHED)
 
         qubes_xml_path = os.path.join(self.tmpdir, 'qubes-restored.xml')
-        handlers = {
+        handlers: dict[str, Callable] = {
             'qubes.xml': functools.partial(self._save_qubes_xml, qubes_xml_path)
             }
         extract_proc = self._start_inner_extraction_worker(queue, handlers)
@@ -2067,6 +2067,7 @@ class BackupRestore:
 
         Create VMs, set their properties etc.
         '''
+        # pylint: disable=too-many-branches,too-many-statements
         vms = {}
         for vm_info in restore_info.values():
             assert isinstance(vm_info, self.VMToRestore)
@@ -2167,6 +2168,14 @@ class BackupRestore:
                         vm.name, feature, value, err)
 
             for tag in vm.tags:
+                if tag.startswith("created-by-"):
+                    continue
+                if tag.startswith("guivm-"):
+                    continue
+                if tag.startswith("audiovm-"):
+                    continue
+                if tag.startswith("relayvm-"):
+                    continue
                 try:
                     new_vm.tags.add(tag)
                 except Exception as err:  # pylint: disable=broad-except

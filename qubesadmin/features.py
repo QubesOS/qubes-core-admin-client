@@ -19,7 +19,18 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''VM features interface'''
+from __future__ import annotations
 
+import typing
+from typing import TypeVar
+from collections.abc import Iterator, Generator
+
+from qubesadmin.exc import QubesFeatureNotFoundError
+
+if typing.TYPE_CHECKING:
+    from qubesadmin.vm import QubesVM
+
+T = TypeVar('T')
 
 class Features:
     '''Manager of the features.
@@ -33,41 +44,92 @@ class Features:
     false in Python) will result in string `'0'`, which is considered true.
     '''
 
-    def __init__(self, vm):
+    def __init__(self, vm: QubesVM):
         super().__init__()
         self.vm = vm
+        self._values_cache: dict[str, str] = {}
+        self._missing_cache: dict[str, str] = {}
+        self._names_cache: list[str] | None = None
 
-    def __delitem__(self, key):
+    def clear_cache(self) -> None:
+        '''Discard cached direct values, missing features and feature names.'''
+        self._values_cache.clear()
+        self._missing_cache.clear()
+        self._names_cache = None
+
+    def record_value(self, key: str, value: str) -> None:
+        '''Cache a feature value confirmed by qubesd.'''
+        if not self.vm.app.cache_enabled:
+            return
+        self._missing_cache.pop(key, None)
+        self._values_cache[key] = value
+        if self._names_cache is not None and key not in self._names_cache:
+            self._names_cache.append(key)
+
+    def record_removal(self, key: str) -> None:
+        '''Drop a feature that qubesd confirmed as removed.'''
+        if not self.vm.app.cache_enabled:
+            return
+        self._values_cache.pop(key, None)
+        if self._names_cache is not None and key in self._names_cache:
+            self._names_cache.remove(key)
+
+    def __delitem__(self, key: str) -> None:
         self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Remove', key)
+        self.record_removal(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: object) -> None:
         if isinstance(value, bool):
             # False value needs to be serialized as empty string
-            self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key,
-                b'1' if value else b'')
+            serialized = '1' if value else ''
         else:
-            self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key,
-                str(value).encode())
+            serialized = str(value)
+        self.vm.qubesd_call(self.vm.name, 'admin.vm.feature.Set', key,
+                            serialized.encode())
+        self.record_value(key, serialized)
 
-    def __getitem__(self, item):
-        return self.vm.qubesd_call(
-            self.vm.name, 'admin.vm.feature.Get', item).decode('utf-8')
+    def __getitem__(self, item: str) -> str:
+        if item in self._values_cache:
+            return self._values_cache[item]
+        if item in self._missing_cache:
+            raise QubesFeatureNotFoundError(
+                self._missing_cache[item].replace('%', '%%'))
+        try:
+            value = self.vm.qubesd_call(
+                self.vm.name, 'admin.vm.feature.Get', item).decode('utf-8')
+        except QubesFeatureNotFoundError as error:
+            if self.vm.app.cache_enabled:
+                self._missing_cache[item] = error.args[0]
+            raise
+        if self.vm.app.cache_enabled:
+            self._values_cache[item] = value
+        return value
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
+        if self._names_cache is not None:
+            return iter(self._names_cache)
         qubesd_response = self.vm.qubesd_call(self.vm.name,
             'admin.vm.feature.List')
-        return iter(qubesd_response.decode('utf-8').splitlines())
+        names = qubesd_response.decode('utf-8').splitlines()
+        if self.vm.app.cache_enabled:
+            self._names_cache = names
+        return iter(names)
 
     keys = __iter__
 
-    def items(self):
+    def items(self) -> Generator[tuple[str, str]]:
         '''Return iterable of pairs (feature, value)'''
         for key in self:
             yield key, self[key]
 
     NO_DEFAULT = object()
 
-    def get(self, item, default=None):
+    @typing.overload
+    def get(self, item: str) -> str | None: ...
+    @typing.overload
+    def get(self, item: str, default: T) -> str | T: ...
+    # Overloaded to handle default None return type
+    def get(self, item: str, default: object = None) -> object:
         '''Get a feature, return default value if missing.'''
         try:
             return self[item]
@@ -76,11 +138,23 @@ class Features:
                 raise
             return default
 
-    def check_with_template(self, feature, default=None):
-        ''' Check if the vm's template has the specified feature. '''
+    @typing.overload
+    def check_with_template(self, item: str) -> str | None: ...
+    @typing.overload
+    def check_with_template(self, item: str, default: T) -> str | T: ...
+    # Overloaded to handle default None return type
+    def check_with_template(self, feature: str, default: object = None,
+                            active: bool = True) -> object:
+        ''' Check if the vm's template has the specified feature.
+        If ``deferred``, check against next template instead of active one.
+        '''
         try:
+            if active:
+                args = feature
+            else:
+                args = feature + "+deferred"
             qubesd_response = self.vm.qubesd_call(
-                self.vm.name, 'admin.vm.feature.CheckWithTemplate', feature)
+                self.vm.name, 'admin.vm.feature.CheckWithTemplate', args)
             return qubesd_response.decode('utf-8')
         except KeyError:
             if default is self.NO_DEFAULT:

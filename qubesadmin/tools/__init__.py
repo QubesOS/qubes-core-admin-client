@@ -191,14 +191,18 @@ class VmNameAction(QubesAction):
                     except KeyError:
                         parser.error('no such domain: {!r}'.format(vm_name))
             else:
-                destinations = set()
+                destinations = []
                 for destination in getattr(namespace, self.dest):
                     if any(wildcard in destination for wildcard in '*?[!]'):
-                        for domain in app.domains:
+                        for domain in [
+                            qube
+                            for qube in app.domains
+                            if qube.name not in destinations
+                        ]:
                             if fnmatch.fnmatch(domain.name, destination):
-                                destinations.add(domain.name)
-                    else:
-                        destinations.add(destination)
+                                destinations.append(domain.name)
+                    elif destination not in destinations:
+                        destinations.append(destination)
 
                 for vm_name in destinations:
                     try:
@@ -243,7 +247,7 @@ class VMVolumeAction(QubesAction):
         :py:class:``qubes.storage.Volume`` from a VM:VOLUME string.
     '''
 
-    def __init__(self, help='A pool & volume id combination',
+    def __init__(self, help='A VM & volume id combination',
                  required=True, **kwargs):
         # pylint: disable=redefined-builtin
         super().__init__(help=help, required=required,
@@ -357,10 +361,20 @@ class QubesArgumentParser(argparse.ArgumentParser):
         if version is not None:
             self.version = version
         else:
-            _metadata_ = importlib.metadata.metadata('qubesadmin')
-            self.version = '{} ({}) {}'.format(os.path.basename(sys.argv[0]), \
-                _metadata_['summary'], _metadata_['version'])
-            self.version += '\nCopyright (C) {}'.format(_metadata_['author'])
+            _metadata_ = importlib.metadata.metadata("qubesadmin")
+            self.version = "{} ({}) {}".format(
+                os.path.basename(sys.argv[0]),
+                _metadata_["summary"],
+                _metadata_["version"],
+            )
+            if "author" in _metadata_:
+                self.version += "\nCopyright (C) {}".format(
+                    _metadata_["author"]
+                )
+            else:
+                self.version += "\nCopyright (C) {}".format(
+                    _metadata_["Author-email"]
+                )
             self.version += '\nLicense: {}'.format(_metadata_['license'])
         if self.version != '':
             self.add_argument('--version', action='version')

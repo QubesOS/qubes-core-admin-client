@@ -8,6 +8,6 @@ PYTHONPATH="${TESTPYTHONPATH}:${PYTHONPATH}"
 export PYTHONPATH
 
 [ -r version ] || ln -s ${ROOTDIR}/version ./
-[ -r setup.py ] || ln -s ${ROOTDIR}/setup.py ./
-"${PYTHON}" ./setup.py egg_info --egg-base "${TESTPYTHONPATH}"
+"${PYTHON}" -m pip install -e . --no-deps
+
 "${PYTHON}" -m coverage run --rcfile=$ROOTDIR/ci/coveragerc -m unittest discover -s qubesadmin/tests -p '*.py' -v "$@"

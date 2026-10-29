@@ -19,8 +19,13 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 '''VM Labels'''
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import qubesadmin.exc
+
+if TYPE_CHECKING:
+    from qubesadmin.app import QubesBase
 
 
 class Label:
@@ -32,14 +37,14 @@ class Label:
     :param str name: label's name like "red" or "green"
     '''
 
-    def __init__(self, app, name):
+    def __init__(self, app: QubesBase, name: str):
         self.app = app
         self._name = name
-        self._color = None
-        self._index = None
+        self._color: str | None = None
+        self._index: int | None = None
 
     @property
-    def color(self):
+    def color(self) -> str:
         '''color specification as in HTML (``#abcdef``)'''
         if self._color is None:
             try:
@@ -51,18 +56,18 @@ class Label:
         return self._color
 
     @property
-    def name(self):
+    def name(self) -> str:
         '''label's name like "red" or "green"'''
         return self._name
 
     @property
-    def icon(self):
+    def icon(self) -> str:
         '''freedesktop icon name, suitable for use in
         :py:meth:`PyQt4.QtGui.QIcon.fromTheme`'''
         return 'appvm-' + self.name
 
     @property
-    def index(self):
+    def index(self) -> int:
         '''label numeric identifier'''
         if self._index is None:
             try:
@@ -73,13 +78,13 @@ class Label:
             self._index = int(qubesd_response.decode())
         return self._index
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._name
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Label):
             return self.name == other.name
         return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.name)

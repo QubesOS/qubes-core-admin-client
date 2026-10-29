@@ -1,0 +1,5 @@
+etc/xdg/autostart/qvm-start-daemon.desktop
+etc/xdg/autostart/qvm-start-daemon-kde.desktop
+etc/qubes/post-install.d/30-keyboard-layout-service.sh
+usr/bin/*
+usr/share/man/man1/*

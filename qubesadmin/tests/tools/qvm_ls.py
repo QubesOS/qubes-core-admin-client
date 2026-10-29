@@ -19,9 +19,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-# pylint: disable=missing-docstring
-
-import unittest
+# pylint: disable=missing-docstring,line-too-long
 
 import qubesadmin
 import qubesadmin.vm
@@ -44,34 +42,13 @@ class TestApp:
 
 class TC_00_Column(qubesadmin.tests.QubesTestCase):
     def test_100_init(self):
+        '''Column registers itself in Column.columns on init.'''
         try:
-            testcolumn = qubesadmin.tools.qvm_ls.Column('TESTCOLUMN')
-            self.assertEqual(testcolumn.ls_head, 'TESTCOLUMN')
+            testcolumn = qubesadmin.tools.qvm_ls.Column(
+                'TESTCOLUMN', attr=lambda vm: None)
+            self.assertEqual(testcolumn.head, 'TESTCOLUMN')
         finally:
-            try:
-                qubesadmin.tools.qvm_ls.Column.columns['TESTCOLUMN']
-            except KeyError:
-                pass
-
-
-class TC_10_globals(qubesadmin.tests.QubesTestCase):
-    def test_100_simple_flag(self):
-        flag = qubesadmin.tools.qvm_ls.simple_flag(1, 'T', 'internal')
-
-        # TODO after serious testing of QubesVM and Qubes app, this should be
-        #      using normal components
-        vm = TestVM('test-vm', internal=False)
-
-        self.assertFalse(flag(None, vm))
-        vm.internal = True
-        self.assertTrue(flag(None, vm))
-
-    @unittest.skip('column list generated dynamically')
-    def test_900_formats_columns(self):
-        for cols in qubesadmin.tools.qvm_ls.formats.values():
-            for col in cols:
-                self.assertIn(col.upper(),
-                              qubesadmin.tools.qvm_ls.Column.columns)
+            del qubesadmin.tools.qvm_ls.Column.columns['TESTCOLUMN']
 
 
 class TC_50_List(qubesadmin.tests.QubesTestCase):
@@ -80,15 +57,16 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         app.domains['test-vm'].internal = False
         app.domains['test-vm'].updateable = False
         app.domains['test-vm'].template = TestVM('template')
+        app.domains['test-vm'].active_template = TestVM('template')
         app.domains['test-vm'].netvm = TestVM('sys-net')
         app.domains['test-vm'].label = 'green'
         app.domains['dom0'].label = 'black'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main([], app=app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'dom0     Running  TestVM  black  -         -\n'
-            'test-vm  Running  TestVM  green  template  sys-net\n')
+            'NAME     STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'dom0     Running  TestVM  black  -                -         -\n'
+            'test-vm  Running  TestVM  green  template         template  sys-net\n')
 
     def test_101_list_with_underscore(self):
         app = TestApp()
@@ -108,14 +86,15 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         app.domains['test-vm'].internal = False
         app.domains['test-vm'].updateable = False
         app.domains['test-vm'].template = TestVM('template')
+        app.domains['test-vm'].active_template = TestVM('template')
         app.domains['test-vm'].netvm = TestVM('sys-net')
         app.domains['test-vm'].label = 'green'
         app.domains['dom0'].label = 'black'
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['test-vm'], app=app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'test-vm  Running  TestVM  green  template  sys-net\n')
+            'NAME     STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'test-vm  Running  TestVM  green  template         template  sys-net\n')
 
     def test_102_raw_list(self):
         app = TestApp()
@@ -130,9 +109,9 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--all'], app=app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'dom0     Running  TestVM  -      -         -\n'
-            'test-vm  Running  TestVM  -      -         -\n')
+            'NAME     STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'dom0     Running  TestVM  -      -                -         -\n'
+            'test-vm  Running  TestVM  -      -                -         -\n')
 
     def test_104_wildcards(self):
         app = TestApp()
@@ -199,6 +178,7 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         appd = app.domains # For the sake of a 80 character line
         appd['dom0'].label = 'black'
         appd['test-vm-temp'].template = TestVM('template')
+        appd['test-vm-temp'].active_template = TestVM('template')
         appd['test-vm-net-1'].netvm = None
         appd['test-vm-net-1'].provides_network = True
         appd['test-vm-net-2'].netvm = None
@@ -222,16 +202,47 @@ class TC_50_List(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--tree'], app=app)
         self.assertEqual(stdout.getvalue(),
-        'NAME             STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-        'dom0             Running  TestVM  black  -         -\n'
-        'test-vm-temp     Running  TestVM  -      template  -\n'
-        'test-vm-net-1    Running  TestVM  -      -         -\n'
-        '└─test-vm-1      Running  TestVM  -      -         test-vm-net-1\n'
-        'test-vm-net-2    Running  TestVM  -      -         -\n'
-        '└─test-vm-proxy  Running  TestVM  -      -         test-vm-net-2\n'
-        '  └─test-vm-2    Running  TestVM  -      -         test-vm-proxy\n'
-        '  └─test-vm-3    Running  TestVM  -      -         test-vm-proxy\n'
-        '└─test-vm-4      Running  TestVM  -      -         test-vm-net-2\n')
+        'NAME             STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+        'dom0             Running  TestVM  black  -                -         -\n'
+        'test-vm-temp     Running  TestVM  -      template         template  -\n'
+        'test-vm-net-1    Running  TestVM  -      -                -         -\n'
+        '└─test-vm-1      Running  TestVM  -      -                -         test-vm-net-1\n'
+        'test-vm-net-2    Running  TestVM  -      -                -         -\n'
+        '└─test-vm-proxy  Running  TestVM  -      -                -         test-vm-net-2\n'
+        '  └─test-vm-2    Running  TestVM  -      -                -         test-vm-proxy\n'
+        '  └─test-vm-3    Running  TestVM  -      -                -         test-vm-proxy\n'
+        '└─test-vm-4      Running  TestVM  -      -                -         test-vm-net-2\n')
+
+    def test_105_flags(self):
+        '''FLAGS column encodes type, power state and boolean attributes.'''
+        app = TestApp()
+        vm = app.domains['test-vm']
+        vm.klass = 'AppVM'
+        vm.updateable = True
+        vm.provides_network = False
+        vm.installed_by_rpm = False
+        vm.internal = False
+        vm.debug = True
+        vm.autostart = False
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--fields', 'name,flags',
+                                          'test-vm'], app=app)
+        # arU---D-: AppVM, running, updateable, debug
+        self.assertEqual(stdout.getvalue(),
+            'NAME     FLAGS\n'
+            'test-vm  arU---D-\n')
+
+    def test_106_raw_data(self):
+        '''--raw-data produces pipe-separated values with no header.'''
+        app = TestApp()
+        app.domains['test-vm'].klass = 'AppVM'
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(['--raw-data', '--fields=name,class',
+                                          'dom0', 'test-vm'], app=app)
+        self.assertEqual(stdout.getvalue(),
+            'dom0|TestVM\n'
+            'test-vm|AppVM\n')
+
 
 class TC_70_Tags(qubesadmin.tests.QubesTestCase):
     def setUp(self):
@@ -263,38 +274,38 @@ class TC_70_Tags(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--tags', 'my'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'dom0  Running  TestVM  black  -         -\n')
+            'NAME  STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'dom0  Running  TestVM  black  -                -         -\n')
 
     def test_100_tag_nomatch(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--tags', 'nx'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+            'NAME  STATE  CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n')
 
     def test_100_tags(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--tags', 'my', 'other'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'dom0     Running  TestVM  black  -         -\n'
-            'test-vm  Running  TestVM  red    template  sys-firewall\n')
+            'NAME     STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'dom0     Running  TestVM  black  -                -         -\n'
+            'test-vm  Running  TestVM  red    -                template  sys-firewall\n')
 
     def test_100_tags_nomatch(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--tags', 'nx1', 'nx2'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+            'NAME  STATE  CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n')
 
     def test_100_exclude_tag(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--exclude-tags', 'not-my'], \
                     app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'dom0  Running  TestVM  black  -         -\n')
+            'NAME  STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'dom0  Running  TestVM  black  -                -         -\n')
 
 
 class TC_80_Power_state_filters(qubesadmin.tests.QubesTestCase):
@@ -304,34 +315,43 @@ class TC_80_Power_state_filters(qubesadmin.tests.QubesTestCase):
             [
                 ('a', TestVM('a', power_state='Halted')),
                 ('b', TestVM('b', power_state='Transient')),
-                ('c', TestVM('c', power_state='Running'))
+                ('bb', TestVM('bb', power_state='Starting')),
+                ('c', TestVM('c', power_state='Running')),
+                ('d', TestVM('d', power_state='Halting')),
             ]
         )
 
     def test_100_nofilter(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main([], app=self.app)
+            qubesadmin.tools.qvm_ls.main(['--raw-list'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE      CLASS   LABEL  TEMPLATE  NETVM\n'
-            'a     Halted     TestVM  -      -         -\n'
-            'b     Transient  TestVM  -      -         -\n'
-            'c     Running    TestVM  -      -         -\n')
+            'a\n'
+            'b\n'
+            'bb\n'
+            'c\n'
+            'd\n'
+        )
 
     def test_100_running(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--running'], app=self.app)
+            qubesadmin.tools.qvm_ls.main(
+                ['--raw-list', '--running'],
+                app=self.app
+            )
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'c     Running  TestVM  -      -         -\n')
+            'c\n'
+        )
 
     def test_100_running_or_halted(self):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
-            qubesadmin.tools.qvm_ls.main(['--running', '--halted'],
-                                         app=self.app)
+            qubesadmin.tools.qvm_ls.main(
+                ['--raw-list', '--running', '--halted'],
+                app=self.app
+            )
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'a     Halted   TestVM  -      -         -\n'
-            'c     Running  TestVM  -      -         -\n')
+            'a\n'
+            'c\n'
+        )
 
 
 class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
@@ -344,6 +364,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
+            'active_template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
 #           'virt_mode': b'type=str pv',
         }
@@ -364,6 +385,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         # setup template1
         props['label'] = 'type=label black'
         del props['template']
+        del props['active_template']
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
@@ -372,11 +394,12 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main([], app=self.app)
+        self.maxDiff = None
         self.assertEqual(stdout.getvalue(),
-            'NAME       STATE    CLASS       LABEL  TEMPLATE   NETVM\n'
-            'sys-net    Running  AppVM       red    template1  sys-net\n'
-            'template1  Halted   TemplateVM  black  -          sys-net\n'
-            'vm1        Running  AppVM       green  template1  sys-net\n')
+            'NAME       STATE    CLASS       LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'sys-net    Running  AppVM       red    template1        template1  sys-net\n'
+            'template1  Halted   TemplateVM  black  -                -          sys-net\n'
+            'vm1        Running  AppVM       green  template1        template1  sys-net\n')
         self.assertAllCalled()
 
     def test_101_list_selected(self):
@@ -394,6 +417,7 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
+            'active_template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
 #           'virt_mode': b'type=str pv',
         }
@@ -414,9 +438,9 @@ class TC_90_List_with_qubesd_calls(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['vm1', 'sys-net'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'sys-net  Running  AppVM  red    template1  sys-net\n'
-            'vm1      Running  AppVM  green  template1  sys-net\n')
+            'NAME     STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'sys-net  Running  AppVM  red    template1        template1  sys-net\n'
+            'vm1      Running  AppVM  green  template1        template1  sys-net\n')
         self.assertAllCalled()
 
 class TC_100_Sort(qubesadmin.tests.QubesTestCase):
@@ -432,17 +456,19 @@ class TC_100_Sort(qubesadmin.tests.QubesTestCase):
         )
 
     def test_101_sort_string(self):
+        '''--sort with --reverse and --ignore-case sorts case-insensitively.'''
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(
                 ['--sort', 'NAME', '--reverse', '--ignore-case'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'dom0  Running  TestVM  black  -         -\n'
-            'c     Running  TestVM  blue   -         -\n'
-            'B     Running  TestVM  green  -         -\n'
-            'a     Running  TestVM  red    -         -\n')
+            'NAME  STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'dom0  Running  TestVM  black  -                -         -\n'
+            'c     Running  TestVM  blue   -                -         -\n'
+            'B     Running  TestVM  green  -                -         -\n'
+            'a     Running  TestVM  red    -                -         -\n')
 
     def test_102_sort_numeric(self):
+        '''Numeric columns are sorted by value, not lexicographically.'''
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(
                 ['--field', 'NAME,MAXMEM', '--sort', 'MAXMEM'], app=self.app)
@@ -452,6 +478,18 @@ class TC_100_Sort(qubesadmin.tests.QubesTestCase):
             'a     100\n'
             'c     300\n'
             'B     1000\n')
+
+    def test_103_sort_column_not_in_output(self):
+        '''--sort on a column absent from output leaves order unchanged.'''
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            qubesadmin.tools.qvm_ls.main(
+                ['--fields', 'NAME,CLASS', '--sort', 'STATE'], app=self.app)
+        self.assertEqual(stdout.getvalue(),
+            'NAME  CLASS\n'
+            'B     TestVM\n'
+            'a     TestVM\n'
+            'c     TestVM\n'
+            'dom0  TestVM\n')
 
 
 class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
@@ -480,8 +518,8 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_ls.main(['--class', 'TemplateVM'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME       STATE   CLASS       LABEL  TEMPLATE  NETVM\n'
-            'template1  Halted  TemplateVM  black  -         sys-net\n')
+            'NAME       STATE   CLASS       LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'template1  Halted  TemplateVM  black  -                -         sys-net\n')
         self.assertAllCalled()
 
     def test_112_filter_label(self):
@@ -515,8 +553,8 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--label', 'black'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME       STATE   CLASS       LABEL  TEMPLATE  NETVM\n'
-            'template1  Halted  TemplateVM  black  -         sys-net\n')
+            'NAME       STATE   CLASS       LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'template1  Halted  TemplateVM  black  -                -         sys-net\n')
         self.assertAllCalled()
 
     def test_113_filter_template_source(self):
@@ -527,6 +565,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
+            'active_template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
         }
 
@@ -541,6 +580,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         # setup template1
         props['label'] = 'type=label black'
         del props['template']
+        del props['active_template']
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
@@ -551,8 +591,8 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_ls.main(['--template-source', 'template1'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME     STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'sys-net  Running  AppVM  red    template1  sys-net\n')
+            'NAME     STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'sys-net  Running  AppVM  red    template1        template1  sys-net\n')
         self.assertAllCalled()
 
     def test_114_filter_netvm_is(self):
@@ -563,6 +603,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
+            'active_template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
         }
 
@@ -577,6 +618,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         # setup template1
         props['label'] = 'type=label black'
         del props['template']
+        del props['active_template']
         self.app.expected_calls[
             ('template1', 'admin.vm.property.GetAll', None, None)] = \
             b'0\x00' + ''.join(
@@ -586,10 +628,11 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--netvm-is', 'sys-net'],
                                          app=self.app)
+        self.maxDiff = None
         self.assertEqual(stdout.getvalue(),
-            'NAME       STATE    CLASS       LABEL  TEMPLATE   NETVM\n'
-            'sys-net    Running  AppVM       red    template1  sys-net\n'
-            'template1  Halted   TemplateVM  black  -          sys-net\n')
+            'NAME       STATE    CLASS       LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'sys-net    Running  AppVM       red    template1        template1  sys-net\n'
+            'template1  Halted   TemplateVM  black  -                -          sys-net\n')
         self.assertAllCalled()
 
     def test_115_internal_servicevm_pending_updates(self):
@@ -600,6 +643,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
+            'active_template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
         }
 
@@ -646,28 +690,28 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--internal', 'y'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'internalvm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1        template1  sys-net\n')
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--internal', 'n'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'service-vm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'service-vm  Running  AppVM  red    template1        template1  sys-net\n')
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--servicevm', 'y'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'service-vm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'service-vm  Running  AppVM  red    template1        template1  sys-net\n')
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--servicevm', 'n'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'internalvm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1        template1  sys-net\n')
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--pending-update'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'internalvm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1        template1  sys-net\n')
         self.assertAllCalled()
 
     def test_116_features(self):
@@ -678,6 +722,7 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
         props = {
             'label': 'type=label green',
             'template': 'type=vm template1',
+            'active_template': 'type=vm template1',
             'netvm': 'type=vm sys-net',
         }
 
@@ -719,21 +764,21 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature=yes'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'internalvm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'internalvm  Running  AppVM  red    template1        template1  sys-net\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature='],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+            'NAME  STATE  CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--features', 'cool-feature=""'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME        STATE    CLASS  LABEL  TEMPLATE   NETVM\n'
-            'service-vm  Running  AppVM  red    template1  sys-net\n')
+            'NAME        STATE    CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE   NETVM\n'
+            'service-vm  Running  AppVM  red    template1        template1  sys-net\n')
 
         self.assertAllCalled()
 
@@ -759,17 +804,17 @@ class TC_110_Filtering(qubesadmin.tests.QubesTestCase):
             qubesadmin.tools.qvm_ls.main(['--prefs', 'maxmem=100'],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'a     Running  TestVM  red    -         -\n')
+            'NAME  STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'a     Running  TestVM  red    -                -         -\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--prefs', 'maxmem=""'], app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE    CLASS   LABEL  TEMPLATE  NETVM\n'
-            'b     Running  TestVM  green  -         -\n')
+            'NAME  STATE    CLASS   LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n'
+            'b     Running  TestVM  green  -                -         -\n')
 
         with qubesadmin.tests.tools.StdoutBuffer() as stdout:
             qubesadmin.tools.qvm_ls.main(['--prefs', 'non-existent='],
                                          app=self.app)
         self.assertEqual(stdout.getvalue(),
-            'NAME  STATE  CLASS  LABEL  TEMPLATE  NETVM\n')
+            'NAME  STATE  CLASS  LABEL  ACTIVE-TEMPLATE  TEMPLATE  NETVM\n')

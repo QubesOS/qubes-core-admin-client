@@ -62,497 +62,454 @@ List of known features
    This list of features may be incomplete, because extensions are free to use any
    values, without registering them anywhere.
 
-boot-mode.\*
-^^^^^^^^^^^^
+.. option:: boot-mode.\*
 
-Boot mode information. Boot modes allow qubes to provide the user features that
-are controlled via kernel parameters. Each boot mode has one or more kernel
-parameters associated with it. If a qube is booted in a particular boot mode,
-that boot mode's kernel parameters are appended to the qube's usual kernel
-command line, activating the corresponding features within the VM. Templates
-that support toggling features in this way can advertise boot modes, which will
-then be shown in the settings dialog of Qube Manager. Templates can also specify
-default boot modes for themselves and for AppVMs based on them.
+   Boot mode information. Boot modes allow qubes to provide the user features that
+   are controlled via kernel parameters. Each boot mode has one or more kernel
+   parameters associated with it. If a qube is booted in a particular boot mode,
+   that boot mode's kernel parameters are appended to the qube's usual kernel
+   command line, activating the corresponding features within the VM. Templates
+   that support toggling features in this way can advertise boot modes, which will
+   then be shown in the settings dialog of Qube Manager. Templates can also specify
+   default boot modes for themselves and for AppVMs based on them.
 
-All VMs have an implicitly defined bootmode, `default`, which appends no
-additional kernel parameters. It is used as a fallback in the event a template
-does not specify any boot modes, or there is no valid bootmode set.
+   All VMs have an implicitly defined bootmode, `default`, which appends no
+   additional kernel parameters. It is used as a fallback in the event a template
+   does not specify any boot modes, or there is no valid bootmode set.
 
-boot-mode.active
-^^^^^^^^^^^^^^^^
+   .. option:: boot-mode.active
 
-The default boot mode this qube will use. This boot mode option is expected to
-be set by the template and should not be modified by the user. The user can
-override this boot mode by setting a boot mode in Qube Manager, or by setting
-the `bootmode` property with `qvm-prefs`.
+      The default boot mode this qube will use. This boot mode option is expected to
+      be set by the template and should not be modified by the user. The user can
+      override this boot mode by setting a boot mode in Qube Manager, or by setting
+      the `bootmode` property with `qvm-prefs`.
 
-boot-mode.appvm-default
-^^^^^^^^^^^^^^^^^^^^^^^
+   .. option:: boot-mode.appvm-default
 
-The default boot mode AppVMs based on this template will use. This boot mode
-option is expected to be set by the template and should not be modified by the
-user. The user can override this boot mode by setting default boot mode for
-derived AppVMs in Qube Manager, or by setting the `appvm_default_bootmode`
-property with `qvm-prefs`.
+      The default boot mode AppVMs based on this template will use. This boot mode
+      option is expected to be set by the template and should not be modified by the
+      user. The user can override this boot mode by setting default boot mode for
+      derived AppVMs in Qube Manager, or by setting the `appvm_default_bootmode`
+      property with `qvm-prefs`.
 
-boot-mode.kernelopts.\*
-^^^^^^^^^^^^^^^^^^^^^^^
+   .. option:: boot-mode.kernelopts.\*
 
-A boot mode supported by this qube. The boot mode's ID is specified by the
-last dot-separated word in the feature key, while the boot mode's kernel
-options are specified by the feature value.
+      A boot mode supported by this qube. The boot mode's ID is specified by the
+      last dot-separated word in the feature key, while the boot mode's kernel
+      options are specified by the feature value.
 
-boot-mode.name.\*
-^^^^^^^^^^^^^^^^^
+   .. option:: boot-mode.name.\*
 
-The user-visible pretty name for a boot mode. The ID of the boot mode with the
-given pretty name is specified by the last dot-separated word in the feature
-key, while the pretty name is specified by the feature value.
+      The user-visible pretty name for a boot mode. The ID of the boot mode with the
+      given pretty name is specified by the last dot-separated word in the feature
+      key, while the pretty name is specified by the feature value.
 
-gui
-^^^
+.. option:: gui
 
-Qube has gui-agent installed. Setting this feature to :py:obj:`True` enables GUI
-based on a gui-agent installed inside the VM.
-See also `gui-emulated` feature.
+   Qube has gui-agent installed. Setting this feature to :py:obj:`True` enables GUI
+   based on a gui-agent installed inside the VM.
+   See also `gui-emulated` feature.
 
-If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
-applicable for given VM virtualization mode).
+   If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
+   applicable for given VM virtualization mode).
 
-gui-emulated
-^^^^^^^^^^^^
+.. option:: gui-emulated
 
-Qube provides GUI through emulated VGA. Setting this feature to
-:py:obj:`True` enables emulated VGA output. Note that when gui-agent connects to
-actual VM, emulated VGA output is closed (unless `debug` property is set to
-:py:obj:`True`). It's possible to open emulated VGA output for a running qube,
-regardless of this feature, using `qvm-start-daemon --force-stubdomain QUBE_NAME`
-command.
+   Qube provides GUI through emulated VGA. Setting this feature to
+   :py:obj:`True` enables emulated VGA output. Note that when gui-agent connects to
+   actual VM, emulated VGA output is closed (unless `debug` property is set to
+   :py:obj:`True`). It's possible to open emulated VGA output for a running qube,
+   regardless of this feature, using `qvm-start-daemon --force-stubdomain QUBE_NAME`
+   command.
 
-This feature is applicable only when qube's `virt_mode` is set to `hvm`.
-See also `gui` feature.
+   This feature is applicable only when qube's `virt_mode` is set to `hvm`.
+   See also `gui` feature.
 
-If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
-applicable for given VM virtualization mode).
+   If neither `gui` nor `gui-emulated` is set, emulated VGA is used (if
+   applicable for given VM virtualization mode).
 
-gui-\*, gui-default-\*
-^^^^^^^^^^^^^^^^^^^^^^
+   gui-\*, .. option:: gui-default-\*
 
-GUI daemon configuration. See `/etc/qubes/guid.conf` for a list of supported
-options.
+   GUI daemon configuration. See `/etc/qubes/guid.conf` for a list of supported
+   options.
 
-To change a given GUI option for a specific qube, set the `gui-{option}`
-feature (with underscores replaced with dashes). For example, to enable
-`allow_utf8_titles` for a qube, set `gui-allow-utf8-titles` to `True`.
+   To change a given GUI option for a specific qube, set the `gui-{option}`
+   feature (with underscores replaced with dashes). For example, to enable
+   `allow_utf8_titles` for a qube, set `gui-allow-utf8-titles` to `True`.
 
-To change a given GUI option globally, set the `gui-default-{option}` feature
-on the GuiVM for that qube.
+   To change a given GUI option globally, set the `gui-default-{option}` feature
+   on the GuiVM for that qube.
 
-input-dom0-proxy
-^^^^^^^^^^^^^^^^
+.. option:: input-dom0-proxy
 
-When set to :py:obj:`True`, Qubes input proxy sender services will start
-for every non-virtual input devices available in dom0 on domain start.
+   When set to :py:obj:`True`, Qubes input proxy sender services will start
+   for every non-virtual input devices available in dom0 on domain start.
 
 
-qrexec
-^^^^^^
+.. option:: qrexec
 
-Qube has qrexec agent installed - i.e. it is possible to request staring a
-command/service in there.
+   Qube has qrexec agent installed - i.e. it is possible to request staring a
+   command/service in there.
 
-Default: assume qrexec not installed (do not wait for it while starting the
-qube)
+   Default: assume qrexec not installed (do not wait for it while starting the
+   qube)
 
-rpc-clipboard
-^^^^^^^^^^^^^
+.. option:: rpc-clipboard
 
-Use `qubes.ClipboardCopy` and `qubes.ClipboardPaste` qubes RPC services to
-fetch/send clipboard content from/to this qube, instead of using GUI protocol.
-This is supported (and required) by Qubes Windows Tools.
+   Use `qubes.ClipboardCopy` and `qubes.ClipboardPaste` qubes RPC services to
+   fetch/send clipboard content from/to this qube, instead of using GUI protocol.
+   This is supported (and required) by Qubes Windows Tools.
 
-Default: use GUI protocol for clipboard operations
+   Default: use GUI protocol for clipboard operations
 
-no-monitor-layout
-^^^^^^^^^^^^^^^^^
+.. option:: no-monitor-layout
 
-When set to :py:obj:`True`, monitor layout is not sent to this qube. That is
-avoid calling `qubes.SetMonitorLayout` in this qube.
+   When set to :py:obj:`True`, monitor layout is not sent to this qube. That is
+   avoid calling `qubes.SetMonitorLayout` in this qube.
 
-Default: send monitor layout
+   Default: send monitor layout
 
-internal
-^^^^^^^^
+.. option:: no-default-kernelopts
 
-Internal qubes (with this feature set to :py:obj:`True`) are not included in the
-menu, not available in GUI tools (e.g in Global Settings as a default net qube)
-and generally hidden from normal usage (including not showing as a Qrexec target
-for `Ask` rules. It is not recommended to set this feature manually. If this
-feature is set to a template, applications may consider qubes based on this
-template as internal also.
+   When set, qube starts without the default kernel options, but with options
+   provided by the ``kernelopts`` property. Be aware that the default kernel
+   options include ``root=...``.
 
-Default: not internal VM
+   Default: start with default kernel options and ``kernelopts`` options
 
-anon-timezone
-^^^^^^^^^^^^^
+.. option:: no-nomodeset
 
-Do not expose the system timezone to the VM.
+   Omits ``nomodeset`` from default kernel options.
 
-Default: expose the timezone in the VM via the
-``/qubes-timezone`` key in QubesDB.
+   Default: start with ``nomodeset`` kernel option unless GPU is attached to the
+   qube.
 
-appmenus-legacy
-^^^^^^^^^^^^^^^
+.. option:: internal
 
-Generate legacy menu entries, using `qubes-desktop-run` command inside a VM,
-instead of `qubes.StartApp` qrexec service. This is used for qubes imported from
-previous Qubes version.
+   Internal qubes (with this feature set to :py:obj:`True`) are not included in the
+   menu, not available in GUI tools (e.g in Global Settings as a default net qube)
+   and generally hidden from normal usage (including not showing as a Qrexec target
+   for `Ask` rules. It is not recommended to set this feature manually. If this
+   feature is set to a template, applications may consider qubes based on this
+   template as internal also.
 
-Default: new style menu entries, using `qubes.StartApp` service
+   Default: not internal VM
 
-appmenus-dispvm
-^^^^^^^^^^^^^^^
+.. option:: anon-timezone
 
-Generate menu entries for starting applications in Disposable VM based on given
-AppVM, instead of this AppVM directly.
+   Do not expose the system timezone to the VM.
 
-Default: create menu entries for AppVM itself
+   Default: expose the timezone in the VM via the
+   ``/qubes-timezone`` key in QubesDB.
 
-qubes-firewall
-^^^^^^^^^^^^^^
+.. option:: appmenus-legacy
 
-Setting this to :py:obj:`True` means that qube support enforcing firewall rules
-set with `qvm-firewall` command.
+   Generate legacy menu entries, using `qubes-desktop-run` command inside a VM,
+   instead of `qubes.StartApp` qrexec service. This is used for qubes imported from
+   previous Qubes version.
 
-Default: assume qubes-firewall not enforced
+   Default: new style menu entries, using `qubes.StartApp` service
 
-net.fake-ip
-^^^^^^^^^^^
+.. option:: appmenus-dispvm
 
-Hide the real IP of the qube from it, and configure it with value set to this
-feature. Note that you can assign the same `net.fake-ip` address to multiple
-qubes and it shouldn't cause any troubles (unless you want to two such qubes
-communicate with each other). This feature does not affect address used in
-firewall rules, routing tables etc.
+   Generate menu entries for starting applications in Disposable VM based on given
+   AppVM, instead of this AppVM directly.
 
-Default: do not hide IP (qube's `ip` property) from the qube
+   Default: create menu entries for AppVM itself
 
-net.fake-gateway
-^^^^^^^^^^^^^^^^
+.. option:: qubes-firewall
 
-Hide the real gateway of the qube from it, and configure it with value set to
-this feature.
+   Setting this to :py:obj:`True` means that qube support enforcing firewall rules
+   set with `qvm-firewall` command.
 
-Default: do not hide geteway (qube's `gateway` property) from the qube
+   Default: assume qubes-firewall not enforced
 
-net.fake-netmask
-^^^^^^^^^^^^^^^^
+.. option:: net.fake-ip
 
-Hide the real netmask of the qube from it, and configure it with value set to
-this feature.
+   Hide the real IP of the qube from it, and configure it with value set to this
+   feature. Note that you can assign the same `net.fake-ip` address to multiple
+   qubes and it shouldn't cause any troubles (unless you want to two such qubes
+   communicate with each other). This feature does not affect address used in
+   firewall rules, routing tables etc.
 
-Default: do not hide netmask (qube's `netmask` property) from the qube
+   Default: do not hide IP (qube's `ip` property) from the qube
 
-updates-available
-^^^^^^^^^^^^^^^^^
+.. option:: net.fake-gateway
 
-There are updates available. In most cases it is useful to (only) read this
-feature to check if qube needs to be updated.
+   Hide the real gateway of the qube from it, and configure it with value set to
+   this feature.
 
-Default/no value: no updates available
+   Default: do not hide geteway (qube's `gateway` property) from the qube
 
-video-model
-^^^^^^^^^^^
+.. option:: net.fake-netmask
 
-Choose video card modes emulated by QEMU for this qube. For available values see
-libvirt documentation about <video><model type=...> element:
-https://libvirt.org/formatdomain.html#elementsVideo
-Some systems (Windows) works better with 'cirrus' model set here.
-Setting this feature to `none` disables emulated video card.
+   Hide the real netmask of the qube from it, and configure it with value set to
+   this feature.
 
-Default: vga
+   Default: do not hide netmask (qube's `netmask` property) from the qube
 
-pci-e820-host
-^^^^^^^^^^^^^
+.. option:: updates-available
 
-Enable e820_host option in Xen domU config if qube has any PCI device assigned.
-This is option is needed for some PCI device drivers to correctly allocate
-memory. Refer to Xen documentation for details.
+   There are updates available. In most cases it is useful to (only) read this
+   feature to check if qube needs to be updated.
 
-Default: yes if qube has any PCI device, otherwise no
+   Default/no value: no updates available
 
-memory-hotplug
-^^^^^^^^^^^^^^
+.. option:: video-model
 
-Use memory hotplug for dynamic memory balancing. When enabled, qube will be
-started with only initial memory assigned and qmemman may give it more memory
-later via hotplug. When disabled, qube is started with maximum memory assigned
-and balloon driver in qube's kernel returns unused memory at startup (this does
-delay qube startup by few seconds).
-Support is detected by looking for `memory-hotplug-supported` (empty) file in
-dom0-provided kernel directory, or for `supported-feature.memory-hotplug`
-feature - for in-qube kernel.
+   Choose video card modes emulated by QEMU for this qube. For available values see
+   libvirt documentation about <video><model type=...> element:
+   https://libvirt.org/formatdomain.html#elementsVideo
+   Some systems (Windows) works better with 'cirrus' model set here.
+   Setting this feature to `none` disables emulated video card.
 
-Default: yes if support in the qube kernel is detected, otherwise no.
+   Default: vga
 
-linux-stubdom
-^^^^^^^^^^^^^
+.. option:: pci-e820-host
 
-Use Linux-based stubdomain for running device model (qemu). This makes use of
-recent qemu upstream version. If disabled, use MiniOS-based stubdomain with old
-qemu fork (aka qemu-traditional). This applies only to `hvm` `virt_mode`, for
-other modes it is ignored.
+   Enable e820_host option in Xen domU config if qube has any PCI device assigned.
+   This is option is needed for some PCI device drivers to correctly allocate
+   memory. Refer to Xen documentation for details.
 
-Default: True
+   Default: yes if qube has any PCI device, otherwise no
 
-tag-created-vm-with
-^^^^^^^^^^^^^^^^^^^
+.. option:: memory-hotplug
 
-When a qube with this feature create a new VM, it gets extra tags listed in this
-feature value (separated with space) automatically. Tags are added before qube
-creation finishes.
+   Use memory hotplug for dynamic memory balancing. When enabled, qube will be
+   started with only initial memory assigned and qmemman may give it more memory
+   later via hotplug. When disabled, qube is started with maximum memory assigned
+   and balloon driver in qube's kernel returns unused memory at startup (this does
+   delay qube startup by few seconds).
+   Support is detected by looking for `memory-hotplug-supported` (empty) file in
+   dom0-provided kernel directory, or for `supported-feature.memory-hotplug`
+   feature - for in-qube kernel.
 
-set-created-guivm
-^^^^^^^^^^^^^^^^^
+   Default: yes if support in the qube kernel is detected, otherwise no.
 
-When a qube with this feature create a new VM, it sets to the new VM its `guivm`
-property value to `set-created-guivm` feature value.
+.. option:: linux-stubdom
 
-supported-feature.*
-^^^^^^^^^^^^^^^^^^^
+   Use Linux-based stubdomain for running device model (qemu). This makes use of
+   recent qemu upstream version. If disabled, use MiniOS-based stubdomain with old
+   qemu fork (aka qemu-traditional). This applies only to `hvm` `virt_mode`, for
+   other modes it is ignored.
 
-Advertised "features" as supported by given VM. Template-based qubes support all
-features advertised by their template (in other words, to check for features
-supported by a template-based qube, look at `supported-feature.*` on its
-template). Supported feature `x` is noted as `supported-feature.x` with value of
-`1`. Not supported feature is not listed at all. Other values are not supported.
+   Default: True
 
-supported-service.*
-^^^^^^^^^^^^^^^^^^^
+.. option:: tag-created-vm-with
 
-Advertised "qvm-services" as supported by given VM. Template-based qubes support all
-services advertised by their template (in other words, to check for features
-supported by a template-based qube, look at `supported-service.*` on its
-template). Supported qvm-service `x` is noted as `supported-service.x` with value of
-`1`. Not supported service is not listed at all. Other values are not supported.
+   When a qube with this feature create a new VM, it gets extra tags listed in this
+   feature value (separated with space) automatically. Tags are added before qube
+   creation finishes.
 
-service.*
-^^^^^^^^^
+.. option:: set-created-guivm
 
-Enabled/disabled "qvm-services". Values can be either `1` for enabled service,
-or empty string for disabled service.
-See :manpage:`qvm-service(1)` for details.
+   When a qube with this feature create a new VM, it sets to the new VM its `guivm`
+   property value to `set-created-guivm` feature value.
 
-supported-rpc.*
-^^^^^^^^^^^^^^^
+.. option:: supported-feature.*
 
-Advertised RPC services as supported by given VM. Template-based qubes support
-all services advertised by their template, in addition to services advertised by
-this very VM (in other words, to check for features supported by a
-template-based qube, look at `supported-rpc.*` on both its template and
-the VM itself). Supported RPC service `x` is noted as `supported-rpc.x`
-with value of `1`. Not supported RPC service is not listed at all. Other values
-are not supported.
+   Advertised "features" as supported by given VM. Template-based qubes support all
+   features advertised by their template (in other words, to check for features
+   supported by a template-based qube, look at `supported-feature.*` on its
+   template). Supported feature `x` is noted as `supported-feature.x` with value of
+   `1`. Not supported feature is not listed at all. Other values are not supported.
 
-qubes-agent-version
-^^^^^^^^^^^^^^^^^^^
+.. option:: supported-service.*
 
-Qubes agent version installed in the template/standalone. It contains just
-major.minor number (no patch number). Can be used to check if template was
-updated to the current qubes version after importing from older release.
+   Advertised "qvm-services" as supported by given VM. Template-based qubes support all
+   services advertised by their template (in other words, to check for features
+   supported by a template-based qube, look at `supported-service.*` on its
+   template). Supported qvm-service `x` is noted as `supported-service.x` with value of
+   `1`. Not supported service is not listed at all. Other values are not supported.
 
-qemu-extra-args
-^^^^^^^^^^^^^^^
+.. option:: service.*
 
-Extra arguments to add to the QEMU running in a stubdomain. Applicable only for
-HVM qubes (as others don't have QEMU). A template-based qube defaults to a value
-taken from its template..
+   Enabled/disabled ":doc:`qvm-services </manpages/qvm-service>`". Values can be either `1` for enabled service,
+   or empty string for disabled service.
 
-stubdom-qrexec
-^^^^^^^^^^^^^^
+   .. only:: man
 
-Set this to value `1` to enable qrexec agent in the stubdomain. This feature can
-be set on a qube with virt_mode HVM, to support USB passthrough via stubdomain.
-It is ignored on non-HVM qubes. Useful for Windows qube for example.
+      .. seealso:: :manpage:`qvm-service(1)`
 
-vm-config.*
-^^^^^^^^^^^
+.. option:: supported-rpc.*
 
-These features are exposed to qubesdb inside the qube in the `/vm-config` tree.
-Can be used to pass external configuration to inside the qube. To read, use
-`qubesdb-read`: for a feature named `vm-config.feature_name` use
-`qubesdb-read /vm-config/feature_name`.
+   Advertised RPC services as supported by given VM. Template-based qubes support
+   all services advertised by their template, in addition to services advertised by
+   this very VM (in other words, to check for features supported by a
+   template-based qube, look at `supported-rpc.*` on both its template and
+   the VM itself). Supported RPC service `x` is noted as `supported-rpc.x`
+   with value of `1`. Not supported RPC service is not listed at all. Other values
+   are not supported.
 
-app-dispvm.*
-^^^^^^^^^^^^
+.. option:: qubes-agent-version
 
-These features are used to cause a given application (identified by app ID)
-to open files and URLs in a disposable VM.  It works by changing the value of
-`XDG_DATA_DIRS` so that applications see `qvm-open-in-dvm.desktop` as the only
-way to open any file or URL.  It is known to work with Thunderbird
-(app ID `mozilla-thunderbird.desktop`) and Element (app ID `im.riot.Riot` for
-the flatpak and `io.element.Element` for the non-flatpak version).  It may
-break icons in some applications.  Please report a bug if `app-dispvm.*`
-breaks an application.
+   Qubes agent version installed in the template/standalone. It contains just
+   major.minor number (no patch number). Can be used to check if template was
+   updated to the current qubes version after importing from older release.
 
-audio-model
-^^^^^^^^^^^
+.. option:: qemu-extra-args
 
-Enable emulated audio for this qube. This feature can be set on a qube with
-virt_mode HVM to support audio passthrough (both input and output) via emulated
-device instead of audio agent installed in the qube itself. The value is audio
-model to be emulated, supported values are `ich6`, `sb16`, `ac97`, `es1370`.
-Recommended is `ich6`. This is useful to get audio in a Windows qube.
+   Extra arguments to add to the QEMU running in a stubdomain. Applicable only for
+   HVM qubes (as others don't have QEMU). A template-based qube defaults to a value
+   taken from its template..
 
-uefi
-^^^^
+.. option:: stubdom-qrexec
 
-Boot the HVM qube via UEFI boot, instead of legacy one. Support for this boot
-mode is experimental and may not work in all the cases. It is ignored for
-non-HVM qubes.
+   Set this to value `1` to enable qrexec agent in the stubdomain. This feature can
+   be set on a qube with virt_mode HVM, to support USB passthrough via stubdomain.
+   It is ignored on non-HVM qubes. Useful for Windows qube for example.
 
-skip-update
-^^^^^^^^^^^
+.. option:: vm-config.*
 
-By setting this feature to `1` for TemplateVMs and StandaloneVMs, you will not
-receive notifications if they are outdated or EOL. They will not be targeted for
-update via `qubes-vm-update` unless explicitly targeted with `--target` option.
-Similarly, updater GUI will not select them for update.
+   These features are exposed to qubesdb inside the qube in the `/vm-config` tree.
+   Can be used to pass external configuration to inside the qube. To read, use
+   `qubesdb-read`: for a feature named `vm-config.feature_name` use
+   `qubesdb-read /vm-config/feature_name`.
 
-prohibit-start
-^^^^^^^^^^^^^^
+.. option:: audio-model
 
-Prevents qube from being started in anyway. By setting `prohibit-start` feature
-value of a qube to any non-empty string, the system will refuse to start it
-at all conditions (via qvm-run, qrexec, Qube Manager, ...). This is useful for
-known compromised qubes, awating some forensic analysis; templates user really
-need to keep in the original, unmodified state; qubes user want to re-configure
-and need not automatically started but the qube is a target of frequent qrexec
-calls. Feature value could contain the rationale for the start ban.
+   Enable emulated audio for this qube. This feature can be set on a qube with
+   virt_mode HVM to support audio passthrough (both input and output) via emulated
+   device instead of audio agent installed in the qube itself. The value is audio
+   model to be emulated, supported values are `ich6`, `sb16`, `ac97`, `es1370`.
+   Recommended is `ich6`. This is useful to get audio in a Windows qube.
 
-Note: `prohibit-start` for a TemplateVM does not forbid start of AppVMs based
-on it.
+.. option:: uefi
 
-preload-dispvm-max
-^^^^^^^^^^^^^^^^^^
+   Boot the HVM qube via UEFI boot, instead of legacy one. Support for this boot
+   mode is experimental and may not work in all the cases. It is ignored for
+   non-HVM qubes.
 
-Number of disposables to preload. Upon setting, the quantity of running
-preloaded disposables will be adjusted to match the maximum configured, if there
-is not enough of them and there is enough available memory on the system, new
-ones will be created, if there are more than enough, the excess will be removed.
-When set on `dom0`, preloaded disposables will derive from the `default_dispvm`
-and the maximum for the new global disposable template will respect the `dom0`
-feature until it is deleted.
+.. option:: skip-update
 
-|
-| **Valid on**: disposable template and dom0
-| **Type**: `int`
-| **Default**: `0`
+   By setting this feature to `1` for TemplateVMs and StandaloneVMs, you will not
+   receive notifications if they are outdated or EOL. They will not be targeted for
+   update via `qubes-vm-update` unless explicitly targeted with `--target` option.
+   Similarly, updater GUI will not select them for update.
 
-preload-dispvm-delay
-^^^^^^^^^^^^^^^^^^^^
+.. option:: prohibit-start
 
-After a preloaded disposable is used, add an amount in seconds to delay
-preloading the next disposable. The feature is first queried from the disposable
-template, then dom0, then it uses the default if unset. The delay exists in
-order to speed up usage of disposables when multiple ones are requested in a
-short time, in other words, use the request disposable faster and wait to
-preload later. There are a few strategies that can be used with a delay:
+   Prevents qube from being started in anyway. By setting `prohibit-start` feature
+   value of a qube to any non-empty string, the system will refuse to start it
+   at all conditions (via qvm-run, qrexec, Qube Manager, ...). This is useful for
+   known compromised qubes, awating some forensic analysis; templates user really
+   need to keep in the original, unmodified state; qubes user want to re-configure
+   and need not automatically started but the qube is a target of frequent qrexec
+   calls. Feature value could contain the rationale for the start ban.
 
-- **Positive delay**: The default strategy uses a small delay of `3` seconds. It
-  is useful when requesting 1-3 disposables in that time. Not recommended if
-  requesting more disposables than `preload-dispvm-max` in a short time.
-- **No delay**: Having `0` delay means that time to use a preloaded disposable
-  will be affected by disposables preloading in the background, but also
-  guarantees faster and consistent usage on the long run. It is indicated when
-  you plan to request more preloaded disposables than the number set in
-  `preload-dispvm-max`.
-- **Negative delay**: When a negative number is used, such as `-5`, it only
-  starts preloading again via the used event after the last preloaded disposable
-  is used. It is useful when the workflow requires exactly the number of preloaded
-  disposables, as it guarantees that requests to multiple preloaded disposables
-  in a short time are never delayed. If you'd like some of the behavior of
-  negative delay but cannot guarantee that all preloaded disposables will be
-  used, prefer a big positive delay.
+   Note: `prohibit-start` for a TemplateVM does not forbid start of AppVMs based
+   on it.
 
-|
-| **Valid on**: disposable template and dom0
-| **Type**: `float`
-| **Default**: `3`
+.. option:: preload-dispvm-max
 
-preload-dispvm-threshold
-^^^^^^^^^^^^^^^^^^^^^^^^
+   Number of disposables to preload. Upon setting, the quantity of running
+   preloaded disposables will be adjusted to match the maximum configured, if there
+   is not enough of them and there is enough available memory on the system, new
+   ones will be created, if there are more than enough, the excess will be removed.
+   When set on `dom0`, preloaded disposables will derive from the `default_dispvm`
+   and the maximum for the new global disposable template will respect the `dom0`
+   feature until it is deleted.
 
-The amount in MiB of free system memory that will never be used for preloading
-disposables. Ensures preloaded disposables do not consume all available memory.
+   :Valid on: disposable template and dom0
+   :Type: `int`
+   :Default: `0`
 
-|
-| **Valid on**: dom0
-| **Type**: `int`
-| **Default**: `0`
+.. option:: preload-dispvm-delay
 
-preload-dispvm
-^^^^^^^^^^^^^^
+   After a preloaded disposable is used, add an amount in seconds to delay
+   preloading the next disposable. The feature is first queried from the disposable
+   template, then dom0, then it uses the default if unset. The delay exists in
+   order to speed up usage of disposables when multiple ones are requested in a
+   short time, in other words, use the request disposable faster and wait to
+   preload later. There are a few strategies that can be used with a delay:
 
-Space separated list of preloaded disposables originated from the disposable
-template. Preloaded disposables are disposables that run in the background
-waiting for use, specially designed for minimal waiting time to open
-applications in a fresh disposable.
+   - **Positive delay**: The default strategy uses a small delay of `3` seconds. It
+     is useful when requesting 1-3 disposables in that time. Not recommended if
+     requesting more disposables than `preload-dispvm-max` in a short time.
+   - **No delay**: Having `0` delay means that time to use a preloaded disposable
+     will be affected by disposables preloading in the background, but also
+     guarantees faster and consistent usage on the long run. It is indicated when
+     you plan to request more preloaded disposables than the number set in
+     `preload-dispvm-max`.
+   - **Negative delay**: When a negative number is used, such as `-5`, it only
+     starts preloading again via the used event after the last preloaded disposable
+     is used. It is useful when the workflow requires exactly the number of preloaded
+     disposables, as it guarantees that requests to multiple preloaded disposables
+     in a short time are never delayed. If you'd like some of the behavior of
+     negative delay but cannot guarantee that all preloaded disposables will be
+     used, prefer a big positive delay.
 
-Preloaded disposables have its GUI applications entries hidden and are paused to
-avoid user mistakes, as it is not intended to use them directly. To use them,
-target the disposable template to start a service in a disposable, instead of
-creating a new disposable, calls will be redirected to the first preloaded
-disposable in the list. As soon as the preloaded disposable is requested to be
-used, it is removed from the `preload-dispvm` list, GUI applications entries
-become visible, followed by a new disposable being preloaded.
+   :Valid on: disposable template and dom0
+   :Type: `float`
+   :Default: `3`
 
-|
-| **Managed by**: system
-| **Valid on**: disposable template
-| **Type**: `str`
-| **Default**: empty
+.. option:: preload-dispvm-threshold
 
-preload-dispvm-completed
-^^^^^^^^^^^^^^^^^^^^^^^^
+   The amount in MiB of free system memory that will never be used for preloading
+   disposables. Ensures preloaded disposables do not consume all available memory.
 
-If `True`, preloaded disposable has completed all necessary steps to be usable.
+   :Valid on: dom0
+   :Type: `int`
+   :Default: `0`
 
-|
-| **Managed by**: system
-| **Valid on**: preloaded disposables
-| **Type**: `boolean`
-| **Default**: `False`
+.. option:: preload-dispvm
 
-preload-dispvm-in-progress
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+   Space separated list of preloaded disposables originated from the disposable
+   template. Preloaded disposables are disposables that run in the background
+   waiting for use, specially designed for minimal waiting time to open
+   applications in a fresh disposable.
 
-If `True`, preloaded disposable is being created and has not completed or has
-been requested for use and is running the procedures to mark it as used.
+   Preloaded disposables have its GUI applications entries hidden and are paused to
+   avoid user mistakes, as it is not intended to use them directly. To use them,
+   target the disposable template to start a service in a disposable, instead of
+   creating a new disposable, calls will be redirected to the first preloaded
+   disposable in the list. As soon as the preloaded disposable is requested to be
+   used, it is removed from the `preload-dispvm` list, GUI applications entries
+   become visible, followed by a new disposable being preloaded.
 
-|
-| **Managed by**: system
-| **Valid on**: preloaded disposables
-| **Type**: `boolean`
-| **Default**: `False`
+   :Managed by: system
+   :Valid on: disposable template
+   :Type: `str`
+   :Default: empty
 
-custom-persist.*
-^^^^^^^^^^^^^^^^
+.. option:: preload-dispvm-completed
 
-Adds a bind-dirs element in an AppVM where `custom-persist` service is
-enabled. The `custom-persist.*` key can take any arbitrary name and will
-have no effect on the feature behaviour. The value must be the absolute path to
-the file or directory that need to be added to the bind-dirs list.
-The entry value can be prefixed by settings to pre-create the resource in
-``/rw/bind-dirs`` before bind-mounting it . When using the pre-creation
-settings, the feature value must respect the following format:
-``<file|dir>:<owner>:<group>:<mode>:<absolute path>``.
+   If `True`, preloaded disposable has completed all necessary steps to be usable.
 
-expert-mode
-^^^^^^^^^^^
-Allows expert mode for specific domain(s) or the entire system if it is enabled
-for the GUIVM (dom0 by default). At the time of writing this documentation, the
-only recognized feature is the `Debug Console` in Qui Domains systray widget.
+   :Managed by: system
+   :Valid on: preloaded disposables
+   :Type: `boolean`
+   :Default: `False`
+
+.. option:: preload-dispvm-in-progress
+
+   If `True`, preloaded disposable is being created and has not completed or has
+   been requested for use and is running the procedures to mark it as used.
+
+   :Managed by: system
+   :Valid on: preloaded disposables
+   :Type: `boolean`
+   :Default: `False`
+
+.. option:: custom-persist.*
+
+   Adds a bind-dirs element in a qube where :option:`custom-persist <qvm-service
+   custom-persist>` service is enabled. The :option:`custom-persist.*` key can
+   take any arbitrary name and will have no effect on the feature behaviour.
+
+   The value must be the absolute path to the file or directory that need to be
+   added to the bind-dirs list.
+
+   The entry value can be prefixed by settings to pre-create the resource in
+   ``/rw/bind-dirs`` before bind-mounting it . When using the pre-creation
+   settings, the feature value must respect the following format:
+   ``<file|dir>:<owner>:<group>:<mode>:<absolute path>``.
+
+.. option:: expert-mode
+
+   Allows expert mode for specific domain(s) or the entire system if it is enabled
+   for the GUIVM (dom0 by default). At the time of writing this documentation, the
+   only recognized feature is the `Debug Console` in Qui Domains systray widget.
 
 
 End user specific features

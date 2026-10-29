@@ -20,6 +20,7 @@
 
 '''qvm-unpause - Unpause a domain'''
 
+import asyncio
 import sys
 import qubesadmin
 
@@ -45,15 +46,13 @@ def main(args=None, app=None):
             for vm in domains
             if not vm.features.get("internal")
         ]
-    for domain in domains:
-        try:
-            if domain.is_suspended():
-                domain.resume()
-            else:
-                domain.unpause()
-        except (IOError, OSError, qubesadmin.exc.QubesException) as e:
-            exit_code = 1
-            parser.print_error(str(e))
+
+    failed = asyncio.run(qubesadmin.utils.unpause(domains=domains))
+    action = "unpause/resume"
+    if failed:
+        exit_code = 1
+        for qube, exc in failed.items():
+            parser.print_error("Failed to {}: {}: {}".format(action, qube, exc))
 
     return exit_code
 

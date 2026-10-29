@@ -80,13 +80,16 @@ Options
 
 .. option:: --gui
 
-   Run the command with GUI forwarding enabled, which is the default. This
-   switch can be used to counter :option:`--no-gui`.
+   Wait for the qube's GUI session to be ready before running the command.
+   This is the default when ``DISPLAY`` is set, the qube has a ``guivm``
+   property and its ``gui`` feature is enabled. For DisposableVMs, the
+   command is then started once the GUI session is ready. This switch can be
+   used to counter :option:`--no-gui`.
 
 .. option:: --no-gui, --nogui
 
-   Run the command without GUI forwarding enabled. Can be switched back with
-   :option:`--gui`.
+   Do not wait for the qube's GUI session to be ready; run the command
+   immediately. Can be switched back with :option:`--gui`.
 
 .. option:: --service
 

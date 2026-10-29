@@ -36,6 +36,20 @@ from qubesadmin.vm import QubesVM
 Handler: typing.TypeAlias\
     = Callable[[QubesVM | None, str, ...], Any]  # noqa: ANN401
 
+POWER_EVENTS = [
+    "domain-pre-start",
+    "domain-start-failed",
+    "domain-start",
+    "domain-paused",
+    "domain-unpaused",
+    "domain-suspended",
+    "domain-resumed",
+    "domain-pre-shutdown",
+    "domain-shutdown-failed",
+    "domain-shutdown",
+]
+
+
 class EventsDispatcher:
     ''' Events dispatcher, responsible for receiving events and calling
     appropriate handlers'''
@@ -222,6 +236,26 @@ class EventsDispatcher:
         if self._reader_task:
             self._reader_task.cancel()
 
+    @staticmethod
+    def _update_feature_tag_cache(subject: QubesVM | None, event: str,
+                                  **kwargs: str) -> None:
+        '''Apply a feature or tag change to the caches before event callbacks.
+
+        Unlike properties, feature values travel as plain strings in both
+        directions, so the event payload is exactly what qubesd stores.
+        '''
+        if subject is None:
+            return
+        kind, _, name = event.partition(':')
+        if kind == 'domain-feature-set':
+            subject.features.record_value(name, kwargs['value'])
+        elif kind == 'domain-feature-delete':
+            subject.features.record_removal(name)
+        elif kind == 'domain-tag-add':
+            subject.tags.record_membership(name, True)
+        elif kind == 'domain-tag-delete':
+            subject.tags.record_membership(name, False)
+
     def handle(self, subject_name: str | None, event: str, **kwargs) -> None:
         """Call handlers for given event"""
         # pylint: disable=protected-access
@@ -240,12 +274,12 @@ class EventsDispatcher:
             subject = None
         # invalidate cache if needed; call it before other handlers
         # as those may want to use cached value
+        self._update_feature_tag_cache(subject, event, **kwargs)
         if event.startswith('property-set:') or \
                 event.startswith('property-reset:'):
             self.app._invalidate_cache(subject, event, **kwargs)
-        elif event in ('domain-pre-start', 'domain-start', 'domain-shutdown',
-                       'domain-paused', 'domain-unpaused',
-                       'domain-start-failed'):
+        elif event in POWER_EVENTS:
+            assert subject is not None
             self.app._update_power_state_cache(subject, event, **kwargs)
             subject.devices.clear_cache()
         elif event == 'connection-established':
@@ -257,6 +291,7 @@ class EventsDispatcher:
             "device-unassign",
             "device-assignment-changed"
         ):
+            assert subject is not None
             devclass = event.split(":")[1]
             subject.devices[devclass]._assignment_cache = None
         elif event.split(":")[0] in (
@@ -264,9 +299,11 @@ class EventsDispatcher:
             "device-detach",
             "device-removed"
         ):
+            assert subject is not None
             devclass = event.split(":")[1]
             subject.devices[devclass]._attachment_cache = None
         if event.split(":")[0] in ("device-removed",):
+            assert subject is not None
             devclass = event.split(":")[1]
             port_id = kwargs.get("port", ":").split(":")[1]
             try:

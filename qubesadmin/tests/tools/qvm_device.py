@@ -54,6 +54,11 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
             b"interfaces='u012345' product='test-device' "
             b"backend_domain='test-vm1'"
         )
+        # preset so `assign`/`attach` do not issue an extra qubesd call
+        self.app._deviceclass_properties_cache = {
+            'testclass': {
+                'assignment_modes':
+                    'manual,ask-to-attach,auto-attach,required'}}
         self.vm1 = self.app.domains['test-vm1']
         self.vm2 = self.app.domains['test-vm2']
         self.vm1_device = \
@@ -211,6 +216,55 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 ],
             )
 
+    def test_005_list_assignments_pci_with_sbdf(self):
+        """
+        List PCI devices with SBDF info.
+        """
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\0dom0 class=AdminVM state=Running\n"
+            b"test-vm1 class=AppVM state=Running\n"
+        )
+        self.app.domains.clear_cache()
+        self.expected_device_call(
+            "dom0",
+            "Available",
+            b"0\00000_14.0:0x8086:0xa0ed::p0c0330 "
+            b"device_id='0x8086:0xa0ed::p0c0330' port_id='00_14.0' "
+            b"devclass='pci' backend_domain='dom0' product='p1' vendor='v' "
+            b"interfaces='p0c0330' _sbdf='0000:00:14.0'\n"
+            b"00_1d.0-00_00.0:0x8086:0x2725::p028000 "
+            b"device_id='0x8086:0x2725::p028000' port_id='00_1d.0-00_00.0' "
+            b"devclass='pci' backend_domain='dom0' product='p2' vendor='v' "
+            b"interfaces='p028000' _sbdf='0000:aa:00.0'\n",
+            klass="pci",
+        )
+        self.expected_device_call("dom0", "Attached", b"0\0", klass="pci")
+        self.expected_device_call("dom0", "Assigned", b"0\0", klass="pci")
+        self.expected_device_call("test-vm1", "Attached", b"0\0", klass="pci")
+        self.expected_device_call(
+            "test-vm1",
+            "Assigned",
+            b"0\000dom0+00_1d.0-00_00.0:* device_id='*' "
+            b"port_id='00_1d.0-00_00.0' devclass='pci' backend_domain='dom0' "
+            b"mode='required' frontend_domain='test-vm1' "
+            b"_no-strict-reset='True'\n",
+            klass="pci",
+        )
+
+        with qubesadmin.tests.tools.StdoutBuffer() as buf:
+            qubesadmin.tools.qvm_device.main(
+                ["pci", "list", "-s", "--with-sbdf", "dom0"], app=self.app
+            )
+            self.assertEqual(
+                [x.rstrip() for x in buf.getvalue().splitlines()],
+                [
+                    "dom0:00_14.0          0000:00:14.0  PCI_USB: v p1",
+                    "dom0:00_1d.0-00_00.0                any device   "
+                    "  *test-vm1 (required: no-strict-reset=True)",
+                    "dom0:00_1d.0-00_00.0  0000:aa:00.0  Network: v p2",
+                ],
+            )
+
     def test_010_attach(self):
         """ Test attach action """
         self.app.expected_calls[(
@@ -284,12 +338,12 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
 
     def test_021_detach_unknown(self):
         """ Test detach action """
-        self.app.expected_calls[
-            ('test-vm2', 'admin.vm.device.testclass.Detach',
-             'test-vm1+dev7+0000+0000++_______', None)] = b'0\0'
-        qubesadmin.tools.qvm_device.main(
-            ['testclass', 'detach', 'test-vm2', 'test-vm1:dev7'], app=self.app)
-        self.assertAllCalled()
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            retcode = qubesadmin.tools.qvm_device.main(
+                ['testclass', 'detach', 'test-vm2', 'test-vm1:dev7'],
+                app=self.app)
+            self.assertEqual(retcode, 1)
+            self.assertIn("not found", stderr.getvalue())
 
     def test_022_detach_all(self):
         """ Test detach action """
@@ -379,6 +433,36 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
                 app=self.app)
             self.assertIn('Assigned.', buf.getvalue())
             self.assertIn('now restart domain', buf.getvalue())
+            self.assertIn('-o read-only=yes', buf.getvalue())
+        self.assertAllCalled()
+
+    def test_032b_assign_option_in_hint(self):
+        """ Test that -o options are copied to the suggested attach command """
+        self.app.domains['test-vm2'].is_running = lambda: True
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Assign',
+            'test-vm1+dev1+dead+beef+babe+u012345',
+            b"device_id='dead:beef:babe:u012345' port_id='dev1' "
+            b"devclass='testclass' backend_domain='test-vm1' "
+            b"mode='auto-attach' frontend_domain='test-vm2' "
+            b"_frontend-dev='xvdl'"
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.device.testclass.Attached', None, None
+        )] = b'0\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.GetAll', None, None
+        )] = b'2\0QubesDaemonNoResponseError\0\0err\0'
+        self.app.expected_calls[(
+            'test-vm2', 'admin.vm.property.Get', 'devices_denied', None
+        )] = b'0\0default=False type=str '
+        with qubesadmin.tests.tools.StdoutBuffer() as buf:
+            qubesadmin.tools.qvm_device.main(
+                ['testclass', 'assign', '-o', 'frontend-dev=xvdl',
+                 'test-vm2', 'test-vm1:dev1'],
+                app=self.app)
+            self.assertIn('Assigned.', buf.getvalue())
+            self.assertIn('-o frontend-dev=xvdl', buf.getvalue())
         self.assertAllCalled()
 
     def test_033_assign_invalid(self):

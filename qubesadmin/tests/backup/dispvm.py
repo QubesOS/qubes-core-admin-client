@@ -27,6 +27,7 @@ import unittest.mock
 from unittest.mock import call
 
 import subprocess
+from subprocess import PIPE
 
 import qubesadmin.tests
 from qubesadmin.tools import qvm_backup_restore
@@ -195,7 +196,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         self.assertEqual(obj.storage_access_id, 'someid')
         self.assertEqual(self.app.service_calls, [
             ('backup-storage', 'qubes.RegisterBackupLocation',
-             {'stdin':subprocess.PIPE, 'stdout':subprocess.PIPE}),
+             {'stdin': PIPE, 'stdout': PIPE, 'stderr': PIPE}),
             ('backup-storage', 'qubes.RegisterBackupLocation',
              b'/backup/path\n'),
         ])

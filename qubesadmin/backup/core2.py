@@ -87,7 +87,7 @@ class Core2VM(qubesadmin.backup.BackupVM):
 
         expire = node.get('expire')
 
-        kwargs = {
+        kwargs: dict[str, object] = {
             'action': action,
         }
         if dsthost:
