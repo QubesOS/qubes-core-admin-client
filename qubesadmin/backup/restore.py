@@ -91,6 +91,9 @@ MAX_STDERR_BYTES = 1024
 HEADER_QUBES_XML_MAX_SIZE = 1024 * 1024
 # hmac file max size - regardless of backup format version!
 HMAC_MAX_SIZE = 4096
+# max size of a single file in the (outer) backup archive; backup data is split
+# into 100MB chunks, take a big margin in case the chunk size gets increased
+BACKUP_FILE_MAX_SIZE = 10 * 100 * 1024 * 1024
 
 BLKSIZE = 512
 
@@ -1026,7 +1029,9 @@ class BackupRestore:
 
     def _start_retrieval_process(self, filelist: list[str],
                                  limit_count: int | str,
-                                 limit_bytes: int) -> tuple[Popen, IO, IO]:
+                                 limit_bytes: int,
+                                 limit_bytes_per_file: int=0)\
+            -> tuple[Popen, IO, IO]:
         """Retrieve backup stream and extract it to :py:attr:`tmpdir`
 
         :param filelist: list of files to extract; listing directory name
@@ -1034,6 +1039,7 @@ class BackupRestore:
         archive
         :param limit_count: maximum number of files to extract
         :param limit_bytes: maximum size of extracted data
+        :param limit_bytes_per_file: maximum size of a single extracted file
         :return: a touple of (Popen object of started process, file-like
         object for reading extracted files list, file-like object for reading
         errors)
@@ -1087,6 +1093,7 @@ class BackupRestore:
         tar1_env = os.environ.copy()
         tar1_env['UPDATES_MAX_BYTES'] = str(limit_bytes)
         tar1_env['UPDATES_MAX_FILES'] = str(limit_count)
+        tar1_env['UPDATES_MAX_BYTES_PER_FILE'] = str(limit_bytes_per_file)
         self.log.debug("Run command %s", str(tar1_command))
         command = subprocess.Popen(
             tar1_command,
@@ -1465,8 +1472,8 @@ class BackupRestore:
         '''Restore data of VMs
 
         :param vms_dirs: list of directories to extract (skip others)
-        :param vms_size: expected size (abort if source stream exceed this
-        value)
+        :param vms_size: expected size (used only to estimate the number of
+        files)
         :param handlers: handlers for restored files - see
         :py:class:`ExtractWorker3` for details
         '''
@@ -1480,15 +1487,20 @@ class BackupRestore:
         # limit as 2*(10*COUNT_OF_VMS+TOTAL_SIZE/100MB)
         limit_count = str(2 * (10 * len(vms_dirs) +
                                int(vms_size / (100 * 1024 * 1024))))
+        # Do not limit the total size: the size recorded in the backup is
+        # only an estimate, taken before the data is exported, so the actual
+        # data can be bigger. Limit the size of each file instead - it needs
+        # to be received in full before it can be verified.
+        limit_bytes_per_file = BACKUP_FILE_MAX_SIZE
 
         if self.options.ignore_size_limit:
             limit_count = '0'
-            vms_size = 0
+            limit_bytes_per_file = 0
 
         # retrieve backup from the backup stream (either VM, or dom0 file)
         (retrieve_proc, filelist_pipe, error_pipe) = \
             self._start_retrieval_process(
-                vms_dirs, limit_count, vms_size)
+                vms_dirs, limit_count, 0, limit_bytes_per_file)
 
         to_extract = Queue()
 
@@ -1589,8 +1601,9 @@ class BackupRestore:
             if retrieve_proc.wait() != 0:
                 if retrieve_proc.returncode == errno.EDQUOT:
                     raise QubesException(
-                        'retrieved backup size exceed expected size, if you '
-                        'believe this is ok, use --ignore-size-limit option')
+                        'retrieved backup exceed size or file count limit, '
+                        'if you believe this is ok, use --ignore-size-limit '
+                        'option')
                 raise QubesException(
                     "unable to read the qubes backup file {} ({}): {}"
                     .format(self.backup_location,
@@ -2033,13 +2046,14 @@ class BackupRestore:
                     handlers[os.path.join(vm_info.subdir,
                         'whitelisted-appmenus.list')] = \
                         functools.partial(self._handle_appmenus_list, vm)
+        extract_error = None
         try:
             self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
                 handlers=handlers)
         except QubesException as err:
             if self.options.verify_only:
                 raise
-            self.log.error('Error extracting data: %s', str(err))
+            extract_error = err
         finally:
             if self.log.getEffectiveLevel() > logging.DEBUG:
                 shutil.rmtree(self.tmpdir)
@@ -2047,6 +2061,12 @@ class BackupRestore:
         if self.canceled:
             raise BackupCanceledError("Restore canceled",
                                       tmpdir=self.tmpdir)
+
+        if extract_error is not None:
+            # qubes restored so far are kept, but do not report success
+            raise QubesException(
+                'Error extracting data, restored qubes may be incomplete: '
+                '{}'.format(extract_error)) from extract_error
 
         self.log.info("-> Done.")
         if not self.options.verify_only:

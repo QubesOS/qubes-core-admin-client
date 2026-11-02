@@ -77,7 +77,7 @@ parser.add_argument("--ignore-username-mismatch", action="store_true",
 
 parser.add_argument("--ignore-size-limit", action="store_true",
     dest="ignore_size_limit", default=False,
-    help="Ignore size limit calculated from backup metadata")
+    help="Ignore size and file count limits of retrieved backup data")
 
 parser.add_argument("--compression-filter", "-Z", action="store",
     dest="compression",

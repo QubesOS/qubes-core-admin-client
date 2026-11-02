@@ -54,6 +54,8 @@ Requires:   python%{python3_pkgversion}-pyxdg
 Requires:   python%{python3_pkgversion}-xlib
 Conflicts:  qubes-core-dom0 < 4.4.1
 Conflicts:  qubes-manager < 4.3.7
+# qfile-dom0-unpacker with UPDATES_MAX_BYTES_PER_FILE support
+Conflicts:  qubes-core-dom0-linux < 4.4.2
 
 %description -n python%{python3_pkgversion}-qubesadmin
 Python%{python3_pkgversion} module qubesadmin.
