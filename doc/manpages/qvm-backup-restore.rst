@@ -97,10 +97,11 @@ Options
 
 .. option:: --ignore-size-limit
 
-    Backup metadata contains expected size of each VM. By default if backup
-    contains more data than expected, it is rejected. Use this option to ignore
-    this limit and restore such (broken, or potentially malicious) backup
-    anyway.
+    By default, backup data is rejected if any of its files is bigger than
+    the maximum backup chunk size (with a big safety margin), or if it contains
+    many more files than expected from the backup metadata. Use this option to
+    ignore these limits and restore such (broken, or potentially malicious)
+    backup anyway.
 
 .. option:: --compression-filter, -Z
 
