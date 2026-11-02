@@ -776,6 +776,12 @@ class TC_00_QubesXML(qubesadmin.tests.QubesTestCase):
             qubes_xml.file.flush()
             backup_app = qubesadmin.backup.core3.Core3Qubes(qubes_xml.name)
         self.assertCorrectlyConverted(backup_app, parsed_qubes_xml_v4)
+        # sum of the save_on_stop volume sizes
+        self.assertEqual(backup_app.domains['test-d8test'].max_size,
+            2 * 1024 ** 3)
+        self.assertEqual(backup_app.domains['test-fedora-25-clone'].max_size,
+            12 * 1024 ** 3)
+        self.assertEqual(backup_app.domains['dom0'].max_size, 0)
 
 # backup code use multiprocessing, synchronize with main process
 class AppProxy:
