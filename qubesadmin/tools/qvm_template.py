@@ -191,6 +191,9 @@ def get_parser() -> argparse.ArgumentParser:
         parser_x.add_argument('--skip-start', action='store_true',
             help='Do not start templates to call their '
                  'qubes.PostInstall service.')
+        parser_x.add_argument('--skip-space-check', action='store_true',
+            help='Do not check for free space in the storage pool '
+                 'before importing templates.')
         parser_x.add_argument('templates', nargs='*', metavar='TEMPLATESPEC')
 
     # qvm-template download
@@ -872,6 +875,52 @@ def extract_rpm(name: str, path: str, target: str) -> bool:
     return True
 
 
+def check_pool_space(args: argparse.Namespace,
+        app: qubesadmin.app.QubesBase, vm_name: str, package_hdr: rpm.hdr,
+        override_existing: bool, failed: bool = False) -> None:
+    """Check that the target storage pool has enough free space for
+    a template.
+
+    :param args: Arguments received by the application.
+    :param app: Qubes application object
+    :param vm_name: Name of the template to install
+    :param package_hdr: Header of the template package
+    :param override_existing: Whether the template already exists
+    :param failed: Set if the import already failed; then also report
+        a pool that is more than 90% full
+
+    :raises QubesException: if there is not enough free space
+    """
+    try:
+        if override_existing:
+            pool_name = app.domains[vm_name].volumes['root'].pool
+        else:
+            pool_name = args.pool or app.default_pool_root
+        details = app.pools[pool_name].usage_details
+        size = details['data_size']
+        free = size - details['data_usage']
+    except (KeyError, ValueError, qubesadmin.exc.QubesException):
+        # pool not found, size unknown, or no access to it
+        return
+    # The image is packed as a sparse tar and imported skipping holes, so
+    # the installed size is close to the space really used in the pool.
+    needed = package_hdr[rpm.RPMTAG_LONGSIZE]
+    if needed <= free and not (failed and free < size // 10):
+        return
+    space_str = (f'the template needs about '
+        f'{qubesadmin.utils.size_to_human(needed)}, only '
+        f'{qubesadmin.utils.size_to_human(free)} of '
+        f'{qubesadmin.utils.size_to_human(size)} is free')
+    if failed:
+        raise qubesadmin.exc.QubesException(
+            f'Failed to install template \'{vm_name}\', storage pool '
+            f'\'{pool_name}\' is full or nearly full: {space_str}.')
+    raise qubesadmin.exc.QubesException(
+        f'Not enough free space in storage pool \'{pool_name}\' to install '
+        f'template \'{vm_name}\': {space_str}. Free some space, or use '
+        f'--skip-space-check to try anyway.')
+
+
 def filter_version(
         query_res,
         app: qubesadmin.app.QubesBase,
@@ -996,6 +1045,17 @@ def download(
     package_hdrs = {}
 
     path = path_override if path_override is not None else args.downloaddir
+    dl_size = 0
+    for name, entry in dl_list.items():
+        spec = PACKAGE_NAME_PREFIX + name + '-' + build_version_str(entry.evr)
+        if not os.path.exists(os.path.join(path, f'{spec}.rpm')):
+            dl_size += entry.dlsize
+    free = shutil.disk_usage(path).free if dl_size else 0
+    if dl_size > free:
+        raise qubesadmin.exc.QubesException(
+            f'Not enough free space in {path} to download templates: '
+            f'{qubesadmin.utils.size_to_human(dl_size)} needed, only '
+            f'{qubesadmin.utils.size_to_human(free)} is free.')
     with tempfile.TemporaryDirectory(dir=path) as dl_dir:
         for name, entry in dl_list.items():
             version_str = build_version_str(entry.evr)
@@ -1216,6 +1276,9 @@ def install(
 
     # Unpack and install
     for rpmfile, reponame, name, vm_name, package_hdr in verified_rpm_list:
+        if not args.skip_space_check:
+            check_pool_space(args, app, vm_name, package_hdr,
+                             override_existing)
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as target:
             print(f'Installing template \'{vm_name}\'...', file=sys.stderr)
             if not extract_rpm(name, rpmfile, target):
@@ -1232,10 +1295,15 @@ def install(
                 cmdline.append('--skip-start')
             if not override_existing and args.pool:
                 cmdline += ['--pool', args.pool]
-            subprocess.check_call(cmdline + [
-                'post-install',
-                vm_name,
-                target + PATH_PREFIX + '/' + name])
+            try:
+                subprocess.check_call(cmdline + [
+                    'post-install',
+                    vm_name,
+                    target + PATH_PREFIX + '/' + name])
+            except subprocess.CalledProcessError:
+                check_pool_space(args, app, vm_name, package_hdr,
+                                 override_existing, failed=True)
+                raise
 
             app.domains.refresh_cache(force=True)
             tpl = app.domains[vm_name]
