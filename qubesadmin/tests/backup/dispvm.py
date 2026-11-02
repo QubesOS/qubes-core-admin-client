@@ -313,7 +313,8 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             appvm=None)
         obj = RestoreInDisposableVM(self.app, args)
         methods = ['create_dispvm', 'clear_old_tags', 'register_backup_source',
-                   'prepare_inner_args', 'extract_log', 'finalize_tags']
+                   'prepare_inner_args', 'extract_log', 'finalize_tags',
+                   'invalidate_backup_access']
         for m in methods:
             setattr(obj, m, unittest.mock.Mock())
         obj.extract_log.return_value = b'Some logs\nexit code: 0\n'
@@ -321,6 +322,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         obj.prepare_inner_args.return_value = ['args']
         obj.terminal_app = ('terminal',)
         obj.dispvm = unittest.mock.Mock()
+        obj.storage_access_proc = unittest.mock.Mock()
         with tempfile.NamedTemporaryFile() as tmp:
             with unittest.mock.patch('qubesadmin.backup.dispvm.LOCKFILE',
                     tmp.name):
@@ -353,13 +355,14 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         obj = RestoreInDisposableVM(self.app, args)
         methods = ['create_dispvm', 'clear_old_tags', 'register_backup_source',
                    'prepare_inner_args', 'extract_log', 'finalize_tags',
-                   'transfer_pass_file']
+                   'transfer_pass_file', 'invalidate_backup_access']
         for m in methods:
             setattr(obj, m, unittest.mock.Mock())
         obj.extract_log.return_value = b'Some logs\nexit code: 0\n'
         obj.prepare_inner_args.return_value = ['args']
         obj.terminal_app = ('terminal',)
         obj.dispvm = unittest.mock.Mock()
+        obj.storage_access_proc = unittest.mock.Mock()
         with tempfile.NamedTemporaryFile() as tmp:
             with unittest.mock.patch('qubesadmin.backup.dispvm.LOCKFILE',
                     tmp.name):
@@ -390,7 +393,8 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             appvm=None)
         obj = RestoreInDisposableVM(self.app, args)
         methods = ['create_dispvm', 'clear_old_tags', 'register_backup_source',
-                   'prepare_inner_args', 'extract_log', 'finalize_tags']
+                   'prepare_inner_args', 'extract_log', 'finalize_tags',
+                   'invalidate_backup_access']
         for m in methods:
             setattr(obj, m, unittest.mock.Mock())
         obj.extract_log.return_value = b'Some error\nexit code: 1\n'
@@ -398,6 +402,7 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         obj.prepare_inner_args.return_value = ['args']
         obj.terminal_app = ('terminal',)
         obj.dispvm = unittest.mock.Mock()
+        obj.storage_access_proc = unittest.mock.Mock()
         with tempfile.NamedTemporaryFile() as tmp:
             with unittest.mock.patch('qubesadmin.backup.dispvm.LOCKFILE',
                     tmp.name):
@@ -429,11 +434,12 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
             appvm=None)
         obj = RestoreInDisposableVM(self.app, args)
         methods = ['create_dispvm', 'clear_old_tags', 'register_backup_source',
-                   'finalize_tags']
+                   'finalize_tags', 'invalidate_backup_access']
         for m in methods:
             setattr(obj, m, unittest.mock.Mock())
         obj.transfer_pass_file = unittest.mock.Mock()
         obj.dispvm = unittest.mock.Mock()
+        obj.storage_access_proc = unittest.mock.Mock()
         obj.dispvm.run = unittest.mock.Mock()
         obj.dispvm.run.side_effect = subprocess.CalledProcessError(
             '1',

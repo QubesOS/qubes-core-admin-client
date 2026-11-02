@@ -373,5 +373,7 @@ class RestoreInDisposableVM:
                 except qubesadmin.exc.QubesVMNotStartedError:
                     # delete it manually
                     del self.app.domains[self.dispvm]
+            if self.storage_access_proc is not None:
+                self.invalidate_backup_access()
             self.finalize_tags()
             lock.release()
