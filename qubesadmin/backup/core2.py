@@ -34,7 +34,7 @@ from qubesadmin.vm import QubesVM
 
 service_to_feature = {
     'ntpd': 'service.ntpd',
-    'qubes-update-check': 'check-updates',
+    'qubes-update-check': 'service.qubes-update-check',
     'meminfo-writer': 'service.meminfo-writer',
 }
 
