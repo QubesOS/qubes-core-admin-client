@@ -114,6 +114,12 @@ Options
     Restore from a backup located in a specific AppVM. The backup location is
     then a path (or command) interpreted inside that qube.
 
+.. option:: --pool=POOL, -P POOL
+
+   Create restored qubes in the given storage pool, instead of the default
+   one. The root volume of an AppVM stays in its template's pool. The dom0
+   home directory is not affected.
+
 .. option:: --passphrase-file, -p
 
    Read passphrase from file, or use '-' to read from stdin. With this

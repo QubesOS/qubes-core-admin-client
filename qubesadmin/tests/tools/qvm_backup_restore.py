@@ -98,6 +98,64 @@ class TC_00_qvm_backup_restore(qubesadmin.tests.QubesTestCase):
         self.assertEqual(mock_backup.return_value.options.exclude, ['test-vm2'])
         self.assertAllCalled()
 
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.input', create=True)
+    @mock.patch('getpass.getpass')
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.BackupRestore')
+    def test_002_pool(self, mock_backup, mock_getpass, mock_input):
+        mock_getpass.return_value = 'testpass'
+        mock_input.return_value = 'Y'
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+            b'0\0default\npool2\n'
+        mock_backup.configure_mock(**{
+            'return_value.get_restore_summary.return_value': '',
+            'return_value.get_restore_info.return_value': {},
+        })
+        with mock.patch('qubesadmin.tools.qvm_backup_restore.handle_broken'):
+            qubesadmin.tools.qvm_backup_restore.main(
+                ['--pool', 'pool2', '/some/path'], app=self.app)
+        mock_backup.assert_called_once_with(
+            self.app, '/some/path', None, 'testpass',
+            force_compression_filter=None, location_is_service=False)
+        self.assertEqual(mock_backup.return_value.options.override_pool,
+            'pool2')
+        mock_backup.return_value.restore_do.assert_called_once_with({})
+        self.assertAllCalled()
+
+    @mock.patch('getpass.getpass')
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.BackupRestore')
+    def test_003_pool_missing(self, mock_backup, mock_getpass):
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+            b'0\0default\n'
+        with self.assertRaises(SystemExit):
+            with qubesadmin.tests.tools.StderrBuffer() as stderr:
+                qubesadmin.tools.qvm_backup_restore.main(
+                    ['-P', 'pool2', '/some/path'], app=self.app)
+        self.assertIn('no such pool', stderr.getvalue())
+        mock_getpass.assert_not_called()
+        mock_backup.assert_not_called()
+        self.assertAllCalled()
+
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.input', create=True)
+    @mock.patch('getpass.getpass')
+    @mock.patch('qubesadmin.tools.qvm_backup_restore.BackupRestore')
+    def test_004_pool_list_denied(self, mock_backup, mock_getpass,
+            mock_input):
+        """Inside paranoid mode DispVM listing pools is not allowed"""
+        mock_getpass.return_value = 'testpass'
+        mock_input.return_value = 'Y'
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+            b''
+        mock_backup.configure_mock(**{
+            'return_value.get_restore_summary.return_value': '',
+            'return_value.get_restore_info.return_value': {},
+        })
+        with mock.patch('qubesadmin.tools.qvm_backup_restore.handle_broken'):
+            qubesadmin.tools.qvm_backup_restore.main(
+                ['--pool', 'pool2', '/some/path'], app=self.app)
+        self.assertEqual(mock_backup.return_value.options.override_pool,
+            'pool2')
+        self.assertAllCalled()
+
     def test_010_handle_broken_no_problems(self):
         vm1 = BackupVM()
         vm1.name = 'test-vm'

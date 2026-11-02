@@ -87,6 +87,11 @@ parser.add_argument("--compression-filter", "-Z", action="store",
 parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
     help="Specify VM containing the backup to be restored")
 
+parser.add_argument("-P", "--pool", action="store", dest="pool",
+    metavar="POOL", default=None,
+    help="Create restored VMs in this storage pool, instead of the "
+         "default one")
+
 parser.add_argument("-p", "--passphrase-file", action="store",
     dest="pass_file", default=None,
     help="Read passphrase from file, or use '-' to read from stdin")
@@ -243,6 +248,15 @@ def main(args=None, app=None):
     if args.location_is_service and not args.appvm:
         parser.error('--location-is-service option requires -d')
 
+    if args.pool:
+        try:
+            if args.pool not in args.app.pools:
+                parser.error('no such pool: {!r}'.format(args.pool))
+        except qubesadmin.exc.QubesDaemonAccessError:
+            # not allowed to list pools (e.g. inside a paranoid mode
+            # DispVM), qubesd will check it when creating VMs
+            pass
+
     if args.paranoid_mode:
         args.dom0_home = False
         restore_in_dispvm = RestoreInDisposableVM(args.app, args)
@@ -289,6 +303,7 @@ def main(args=None, app=None):
     backup.options.ignore_size_limit = args.ignore_size_limit
     backup.options.exclude = args.exclude
     backup.options.verify_only = args.verify_only
+    backup.options.override_pool = args.pool
 
     restore_info = None
     try:
