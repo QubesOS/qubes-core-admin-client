@@ -80,10 +80,10 @@ qubes-update-check
     qubes-manager as 'update-pending' flag.
 
 cups
-    Default: enabled only in AppVM
+    Default: disabled
 
-    Enable CUPS service. The user can disable cups in VM which do not need
-    printing to speed up booting.
+    Enable CUPS service, needed to print to a printer. Enable it only in the
+    qube you print from, then restart that qube.
 
 crond
     Default: disabled
