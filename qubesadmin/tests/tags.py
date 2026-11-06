@@ -23,7 +23,7 @@
 from operator import contains
 from unittest.mock import Mock, call, patch
 
-from qubesadmin.exc import PermissionDenied
+from qubesadmin.exc import PermissionDenied, QubesValueError
 import qubesadmin.tests
 import qubesadmin.tags
 
@@ -113,6 +113,16 @@ class TC_00_Tags(qubesadmin.tests.QubesTestCase):
             b'2\0QubesTagNotFoundError\0\0Tag not set for domain test-vm: ' \
             b'tag1\0'
         self.tags.discard('tag1')
+        self.assertAllCalled()
+
+    def test_060_empty(self):
+        with self.assertRaises(QubesValueError):
+            self.tags.add('')
+        with self.assertRaises(QubesValueError):
+            self.tags.remove('')
+        with self.assertRaises(QubesValueError):
+            self.tags.discard('')
+        self.assertNotIn('', self.tags)
         self.assertAllCalled()
 
 

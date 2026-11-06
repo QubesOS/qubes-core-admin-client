@@ -38,6 +38,8 @@ def mode_query(args):
             print('\n'.join(tags))
     else:
         # real query
+        if not args.tag:
+            raise qubesadmin.exc.QubesValueError('tag cannot be empty')
         if args.tag not in args.domains[0].tags:
             return 1
         print(args.tag)

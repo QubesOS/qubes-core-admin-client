@@ -23,6 +23,9 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import typing
+
+import qubesadmin.exc
+
 if typing.TYPE_CHECKING:
     from qubesadmin.vm import QubesVM
 
@@ -60,11 +63,15 @@ class Tags:
 
     def remove(self, elem: str) -> None:
         '''Remove a tag'''
+        if not elem:
+            raise qubesadmin.exc.QubesValueError('tag cannot be empty')
         self.vm.qubesd_call(self.vm.name, 'admin.vm.tag.Remove', elem)
         self.record_membership(elem, False)
 
     def add(self, elem: str) -> None:
         '''Add a tag'''
+        if not elem:
+            raise qubesadmin.exc.QubesValueError('tag cannot be empty')
         self.vm.qubesd_call(self.vm.name, 'admin.vm.tag.Set', elem)
         self.record_membership(elem, True)
 
@@ -93,6 +100,8 @@ class Tags:
 
     def __contains__(self, elem: str) -> bool:
         '''Does the VM have a tag'''
+        if not elem:
+            return False
         if elem in self._membership_cache:
             return self._membership_cache[elem]
         response = self.vm.qubesd_call(self.vm.name, 'admin.vm.tag.Get', elem)
