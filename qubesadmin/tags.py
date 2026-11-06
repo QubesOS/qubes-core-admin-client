@@ -20,6 +20,7 @@
 
 '''VM tags interface'''
 
+import qubesadmin.exc
 
 class Tags:
     '''Manager of the tags.
@@ -35,10 +36,14 @@ class Tags:
 
     def remove(self, elem):
         '''Remove a tag'''
+        if not elem:
+            raise qubesadmin.exc.QubesValueError('tag cannot be empty')
         self.vm.qubesd_call(self.vm.name, 'admin.vm.tag.Remove', elem)
 
     def add(self, elem):
         '''Add a tag'''
+        if not elem:
+            raise qubesadmin.exc.QubesValueError('tag cannot be empty')
         self.vm.qubesd_call(self.vm.name, 'admin.vm.tag.Set', elem)
 
     def update(self, *others):
@@ -61,5 +66,7 @@ class Tags:
 
     def __contains__(self, elem):
         '''Does the VM have a tag'''
+        if not elem:
+            return False
         response = self.vm.qubesd_call(self.vm.name, 'admin.vm.tag.Get', elem)
         return response == b'1'
