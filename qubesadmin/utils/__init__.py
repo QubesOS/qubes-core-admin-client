@@ -369,7 +369,7 @@ async def generic_action(
 
 class DriveAction(argparse.Action):
     """Action for argument parser that stores drive image path.
-    Intended use for device attachment before domain is started."""
+    Intended use for device attachment before qube is started."""
 
     # pylint: disable=redefined-builtin
     def __init__(
@@ -393,7 +393,7 @@ class DriveAction(argparse.Action):
 def get_drive_assignment(app, drive_str):
     """
     Prepare :py:class:`qubesadmin.device_protocol.DeviceAssignment` object for a
-    given drive. Intended to be used during before domain is started.
+    given drive. Intended to be used during before qube is started.
 
     If running in dom0, it will also take care about creating the appropriate
     loop device (if necessary). Otherwise, only existing block devices are
@@ -494,7 +494,7 @@ def start_expert(
     check_if_running: bool = True,
 ):
     """
-    Start the domain, optionally specifying a drive and checking its state.
+    Start the qube, optionally specifying a drive and checking its state.
     """
     if check_if_running and domain.is_running():
         if skip_if_running:

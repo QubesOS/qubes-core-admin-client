@@ -43,9 +43,9 @@ def interrupt_on_vm_shutdown(vms: set[QubesVM], dispatcher: EventsDispatcher,
 
 
 async def wait_for_domain_shutdown(vms: Iterable[QubesVM]) -> None:
-    """ Helper function to wait for domain shutdown.
+    """ Helper function to wait for qube shutdown.
 
-    This function wait for domain shutdown, but do not initiate the shutdown
+    This function wait for qube shutdown, but do not initiate the shutdown
     itself.
 
     :param vms: QubesVM object collection to wait for shutdown on

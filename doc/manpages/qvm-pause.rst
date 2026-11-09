@@ -1,6 +1,6 @@
 .. program:: qvm-pause
 
-:program:`qvm-pause` -- pause a domain
+:program:`qvm-pause` -- pause a qube
 ======================================
 
 Synopsis

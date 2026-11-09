@@ -145,8 +145,8 @@ def get_parser() -> argparse.ArgumentParser:
              'Individual repositories may point at repo-specific key '
              'using \'gpgkey\' option')
     parser_main.add_argument('--updatevm', default=UPDATEVM,
-        help=('Specify VM to download updates from.'
-            ' (Set to empty string to specify the current VM.)'))
+        help=('Specify qube to download updates from.'
+            ' (Set to empty string to specify the current qube.)'))
     parser_main.add_argument('--enablerepo', action=RepoOptCallback, default=[],
         metavar='REPOID', dest='repos',
         help=('Enable additional repositories by an id or a glob.'
@@ -245,8 +245,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser_remove = parser_add_command('remove',
         help_str='Remove installed templates.')
     parser_remove.add_argument('--disassoc', action='store_true',
-            help=('Also disassociate VMs from the templates to be removed.'
-                ' This creates a dummy template for the VMs to link with.'))
+            help=('Also disassociate qubes from the templates to be removed.'
+                ' This creates a dummy template for the qubes to link with.'))
     parser_remove.add_argument('templates', nargs='*', metavar='TEMPLATE')
 
     # qvm-template purge

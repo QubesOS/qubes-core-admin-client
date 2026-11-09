@@ -44,27 +44,27 @@ parser.add_argument("--verify-only", action="store_true",
 
 parser.add_argument("--skip-broken", action="store_true", dest="skip_broken",
     default=False,
-    help="Do not restore VMs that have missing TemplateVMs "
+    help="Do not restore qubes that have missing TemplateVMs "
          "or NetVMs")
 
 parser.add_argument("--ignore-missing", action="store_true",
     dest="ignore_missing", default=False,
-    help="Restore VMs even if their associated TemplateVMs "
+    help="Restore qubes even if their associated TemplateVMs "
          "and NetVMs are missing")
 
 parser.add_argument("--skip-conflicting", action="store_true",
     dest="skip_conflicting", default=False,
-    help="Do not restore VMs that are already present on "
+    help="Do not restore qubes that are already present on "
          "the host")
 
 parser.add_argument("--rename-conflicting", action="store_true",
     dest="rename_conflicting", default=False,
-    help="Restore VMs that are already present on the host "
+    help="Restore qubes that are already present on the host "
          "under different names")
 
 parser.add_argument("-x", "--exclude", action="append", dest="exclude",
     default=[],
-    help="Skip restore of specified VM (may be repeated)")
+    help="Skip restore of specified qube (may be repeated)")
 
 parser.add_argument("--skip-dom0-home", action="store_false", dest="dom0_home",
     default=True,
@@ -85,7 +85,7 @@ parser.add_argument("--compression-filter", "-Z", action="store",
          "instead of the one from the backup header")
 
 parser.add_argument("-d", "--dest-vm", action="store", dest="appvm",
-    help="Specify VM containing the backup to be restored")
+    help="Specify qube containing the backup to be restored")
 
 parser.add_argument("-p", "--passphrase-file", action="store",
     dest="pass_file", default=None,
@@ -107,7 +107,7 @@ parser.add_argument('backup_location', action='store',
     help="Backup directory name, or command to pipe from")
 
 parser.add_argument('vms', nargs='*', action='store', default=[],
-    help='Restore only those VMs')
+    help='Restore only those qubes')
 
 
 def handle_broken(app, args, restore_info):

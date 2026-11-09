@@ -41,7 +41,7 @@ parser = qubesadmin.tools.QubesArgumentParser()
 
 parser.add_argument('--class', '-C', dest='cls',
     default='AppVM',
-    help='specify the class of the new domain (default: %(default)s)')
+    help='specify the class of the new qube (default: %(default)s)')
 
 parser.add_argument('--standalone',
     action="store_true",
@@ -53,7 +53,7 @@ parser.add_argument('--disp',
 
 parser.add_argument('--property', '--prop',
     action=qubesadmin.tools.PropertyAction,
-    help='set domain\'s property, like "internal", "memory" or "vcpus"')
+    help='set qube\'s property, like "internal", "memory" or "vcpus"')
 
 parser.add_argument('--pool', '-p',
                     action='append',
@@ -72,7 +72,7 @@ parser.add_argument('--template', '-t',
 
 parser.add_argument('--label', '-l',
     action=qubesadmin.tools.SinglePropertyAction,
-    help='specify the label to use for the new domain'
+    help='specify the label to use for the new qube'
         ' (e.g. red, yellow, green, ...)')
 
 parser.add_argument('--help-classes',
@@ -95,7 +95,7 @@ parser_root.add_argument('--no-root',
 parser.add_argument('name', metavar='VMNAME',
     action=qubesadmin.tools.SinglePropertyAction,
     nargs='?',
-    help='name of the domain to create')
+    help='name of the qube to create')
 
 
 def main(args=None, app=None):

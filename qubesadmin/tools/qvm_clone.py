@@ -20,7 +20,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-''' Clone a domain '''
+''' Clone a qube '''
 
 import sys
 
@@ -31,11 +31,11 @@ parser = QubesArgumentParser(description=__doc__, vmname_nargs=1)
 parser.add_argument('new_name',
                     metavar='NEWVM',
                     action='store',
-                    help='name of the domain to create')
+                    help='name of the qube to create')
 
 parser.add_argument('--class', '-C', dest='cls',
     default=None,
-    help='specify the class of the new domain (default: same as source)')
+    help='specify the class of the new qube (default: same as source)')
 
 parser.add_argument('--ignore-errors', action='store_true',
     default=False,
@@ -47,7 +47,7 @@ group.add_argument('-P',
                     metavar='POOL',
                     dest='one_pool',
                     default='',
-                    help='pool to use for the new domain')
+                    help='pool to use for the new qube')
 
 group.add_argument('-p',
                     '--pool',

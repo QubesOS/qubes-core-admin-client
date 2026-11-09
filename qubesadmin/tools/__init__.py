@@ -136,22 +136,22 @@ class SinglePropertyAction(argparse.Action):
 
 
 class VmNameAction(QubesAction):
-    """ Action for parsing one or multiple domains from provided VMNAMEs """
+    """ Action for parsing one or multiple qubes from provided VMNAMEs """
 
     # pylint: disable=redefined-builtin
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
                  **kwargs):
         if help is None:
             if nargs == argparse.OPTIONAL:
-                help = 'at most one domain name'
+                help = 'at most one qube name'
             elif nargs == 1:
-                help = 'a domain name'
+                help = 'a qube name'
             elif nargs == argparse.ZERO_OR_MORE:
-                help = 'zero or more domain names'
+                help = 'zero or more qube names'
             elif nargs == argparse.ONE_OR_MORE:
-                help = 'one or more domain names'
+                help = 'one or more qube names'
             elif nargs > 1:
-                help = '%s domain names' % nargs
+                help = '%s qube names' % nargs
             else:
                 raise argparse.ArgumentError(
                     nargs, "Passed unexpected value {!s} as {!s} nargs ".format(
@@ -212,22 +212,22 @@ class VmNameAction(QubesAction):
 
 
 class RunningVmNameAction(VmNameAction):
-    ''' Action for argument parser that gets a running domain from VMNAME '''
+    ''' Action for argument parser that gets a running qube from VMNAME '''
 
     def __init__(self, option_strings, nargs=1, dest='vmnames', help=None,
                  **kwargs):
         # pylint: disable=redefined-builtin
         if help is None:
             if nargs == argparse.OPTIONAL:
-                help = 'at most one running domain'
+                help = 'at most one running qube'
             elif nargs == 1:
-                help = 'running domain name'
+                help = 'running qube name'
             elif nargs == argparse.ZERO_OR_MORE:
-                help = 'zero or more running domains'
+                help = 'zero or more running qubes'
             elif nargs == argparse.ONE_OR_MORE:
-                help = 'one or more running domains'
+                help = 'one or more running qubes'
             elif nargs > 1:
-                help = '%s running domains' % nargs
+                help = '%s running qubes' % nargs
             else:
                 raise argparse.ArgumentError(
                     nargs, "Passed unexpected value {!s} as {!s} nargs ".format(
@@ -247,7 +247,7 @@ class VMVolumeAction(QubesAction):
         :py:class:``qubes.storage.Volume`` from a VM:VOLUME string.
     '''
 
-    def __init__(self, help='A VM & volume id combination',
+    def __init__(self, help='A qube & volume id combination',
                  required=True, **kwargs):
         # pylint: disable=redefined-builtin
         super().__init__(help=help, required=required,

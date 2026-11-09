@@ -21,7 +21,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-ls - List available domains'''
+'''qvm-ls - List available qubes'''
 
 
 from __future__ import print_function
@@ -62,7 +62,7 @@ class Column:
     def cell(self, vm, insertion=0):
         '''Format one cell, handling tree indentation for the NAME column.
 
-        :param vm: Domain to get a value from.
+        :param vm: Qube to get a value from.
         :param insertion: Tree depth; shifts NAME value to the right.
         :returns: string to display
         '''
@@ -261,7 +261,7 @@ SORT_NUMERIC = ['MEMORY', 'DISK', 'PRIV-CURR', 'PRIV-MAX', 'ROOT-CURR', 'XID',
 class Table:
     '''Table that is displayed to the user.
 
-    :param domains: Domains to include in the table.
+    :param domains: Qubes to include in the table.
     :param list colnames: Names of the columns (need not to be uppercase).
     '''
     def __init__(self, domains, colnames, spinner, *, raw_data=False,
@@ -282,7 +282,7 @@ class Table:
         return [col.head for col in self.columns]
 
     def get_row(self, vm, insertion=0):
-        '''Get single table row data (all columns for one domain).'''
+        '''Get single table row data (all columns for one qube).'''
         ret = []
         for col in self.columns:
             if self.tree_sorted and col.head == 'NAME':
@@ -307,11 +307,11 @@ class Table:
         return childs
 
     def sort_to_tree(self, domains):
-        '''Sort the domains as a network tree. It returns a list of sets. Each
+        '''Sort the qubes as a network tree. It returns a list of sets. Each
         tuple stores the insertion of the cell name and the vm object.
         Note: mutates `domains` to an empty list
 
-        :param list() domains: The domains which will be sorted
+        :param list() domains: The qubes which will be sorted
         :return list(tuple()) tree: returns a list of tuple(insertion, vm)
         '''
         tree = []
@@ -474,7 +474,7 @@ DOMAIN_POWER_STATES = ['running', 'paused', 'halted']
 
 
 def matches_power_states(domain, **states):
-    '''Filter domains by their power state'''
+    '''Filter qubes by their power state'''
     # if all values are False (default) => return match on every VM
     if not states or set(states.values()) == {False}:
         return True
@@ -497,7 +497,7 @@ def get_parser():
     parser = qubesadmin.tools.QubesArgumentParser(
         vmname_nargs=argparse.ZERO_OR_MORE,
         formatter_class=argparse.RawTextHelpFormatter,
-        description='List Qubes domains and their parameters.',
+        description='List qubes and their parameters.',
         epilog='available formats (see --help-formats):\n{}\n\n'
                'available columns (see --help-columns):\n{}'.format(
                 wrapper.fill(', '.join(sorted(formats.keys()))),
@@ -516,10 +516,10 @@ def get_parser():
 
     parser_format.add_argument('--tree', '-t',
         action='store_const', const='tree',
-        help='sort domain list as network tree')
+        help='sort qube list as network tree')
 
     parser_format.add_argument('--raw-data', action='store_true',
-        help='Display specify data of specified VMs. Intended for '
+        help='Display specify data of specified qubes. Intended for '
              'bash-parsing.')
 
     # shortcuts for common format/output combinations
@@ -559,7 +559,7 @@ def get_parser():
 
     for pwstate in DOMAIN_POWER_STATES:
         parser_filter.add_argument('--{}'.format(pwstate), action='store_true',
-        help='show {} VMs'.format(pwstate))
+        help='show {} qubes'.format(pwstate))
 
     parser_filter.add_argument('--template-source', nargs='+',
         metavar='TEMPLATE', action='store',
@@ -657,7 +657,7 @@ def main(args=None, app=None):
         domains = args.app.domains
 
     if args.all_domains:
-        # Normally, --all means "all domains except for AdminVM".
+        # Normally, --all means "all qubes except for AdminVM".
         # However, in the case of qvm-ls it does not make sense to exclude
         # AdminVMs, so we override the list from parser.
         domains = [

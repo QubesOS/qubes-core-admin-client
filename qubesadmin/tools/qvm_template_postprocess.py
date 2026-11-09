@@ -41,7 +41,7 @@ parser = qubesadmin.tools.QubesArgumentParser(
 parser.add_argument('--really', action='store_true', default=False,
     help='Really perform the action, YOU SHOULD REALLY KNOW WHAT YOU ARE DOING')
 parser.add_argument('--skip-start', action='store_true',
-    help='Do not start the VM - do not retrieve menu entries etc.')
+    help='Do not start the qube - do not retrieve menu entries etc.')
 parser.add_argument('--keep-source', action='store_true',
     help='Do not remove source data (*dir* directory) after import')
 parser.add_argument('--no-installed-by-rpm', action='store_true',
@@ -49,7 +49,7 @@ parser.add_argument('--no-installed-by-rpm', action='store_true',
 parser.add_argument('--allow-pv', action='store_true',
     help='Allow setting virt_mode to pv in configuration file.')
 parser.add_argument('--pool',
-    help='Specify pool to store created VMs in.')
+    help='Specify pool to store created qubes in.')
 parser.add_argument('action', choices=['post-install', 'pre-remove'],
     help='Action to perform')
 parser.add_argument('name', action='store',

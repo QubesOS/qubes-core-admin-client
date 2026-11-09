@@ -220,7 +220,7 @@ def list_volumes(args):
         except KeyError:
             vd_dict[volume.pool] = {volume.vid: volume_data}
 
-    for domain in domains:  # gather the domain names
+    for domain in domains:  # gather the qube names
         try:
             for name, volume in domain.volumes.items():
                 try:
@@ -230,11 +230,11 @@ def list_volumes(args):
                     # Skipping volume
                     continue
         except AttributeError:
-            # Skipping domain without volumes
+            # Skipping qube without volumes
             continue
 
     if hasattr(args, 'domains') and args.domains:
-        result = [x  # reduce to only VolumeData with assigned domains
+        result = [x  # reduce to only VolumeData with assigned qubes
                   for p in vd_dict.values() for x in p.values()
                   if x.domains]
     else:
@@ -281,7 +281,7 @@ def init_list_parser(sub_parsers):
 
     vm_name_group = qubesadmin.tools.VmNameGroup(
         list_parser, required=False, vm_action=qubesadmin.tools.VmNameAction,
-        help='list volumes from specified domain(s)')
+        help='list volumes from specified qube(s)')
     list_parser._mutually_exclusive_groups.append(vm_name_group)
     list_parser.set_defaults(func=list_volumes)
 
@@ -304,7 +304,7 @@ def init_revert_parser(sub_parsers):
 def init_resize_parser(sub_parsers):
     """ Add 'resize' action related options """
     resize_parser = sub_parsers.add_parser(
-        "resize", aliases=('extend', ), help="resize volume for domain")
+        "resize", aliases=('extend', ), help="resize volume for qube")
     resize_parser.add_argument(metavar='VM:VOLUME', dest='volume',
                                action=qubesadmin.tools.VMVolumeAction)
     resize_parser.add_argument('size', help='New size in bytes')

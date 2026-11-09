@@ -1,6 +1,6 @@
 .. program:: qvm-tags
 
-:program:`qvm-tags` -- manage domain's tags
+:program:`qvm-tags` -- manage qube's tags
 ===========================================
 
 Synopsis

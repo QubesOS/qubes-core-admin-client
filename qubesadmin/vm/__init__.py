@@ -59,7 +59,7 @@ PowerState = Literal[POWER_STATES]
 
 
 class QubesVM(qubesadmin.base.PropertyHolder):
-    """Qubes domain."""
+    """Qube."""
 
     log: Logger
     tags: qubesadmin.tags.Tags
@@ -82,7 +82,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     @property
     def name(self) -> str:
-        """Domain name"""
+        """Qube name"""
         return self._method_dest
 
     @name.setter
@@ -117,7 +117,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def start(self):
         """
-        Start domain.
+        Start qube.
 
         :return:
         """
@@ -125,7 +125,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def shutdown(self, force=False, wait=False):
         """
-        Shutdown domain.
+        Shutdown qube.
 
         :return:
         """
@@ -142,7 +142,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def kill(self):
         """
-        Kill domain (forcefuly shutdown).
+        Kill qube (forcefuly shutdown).
 
         :return:
         """
@@ -159,7 +159,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def pause(self):
         """
-        Pause domain.
+        Pause qube.
 
         Pause its execution without any prior notification.
 
@@ -169,7 +169,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def unpause(self):
         """
-        Unpause domain.
+        Unpause qube.
 
         Opposite to :py:meth:`pause`.
 
@@ -179,9 +179,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def suspend(self):
         """
-        Suspend domain.
+        Suspend qube.
 
-        Suspend domain (S3). Pauses it if it does not suspend.
+        Suspend qube (S3). Pauses it if it does not suspend.
 
         :return:
         """
@@ -189,7 +189,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     def resume(self):
         """
-        Resume domain (from S3).
+        Resume qube (from S3).
 
         Opposite to :py:meth:`suspend`.
 
@@ -255,17 +255,17 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return state
 
     def is_halted(self):
-        """ Check whether this domain's state is 'Halted'
-            :returns: :py:obj:`True` if this domain is halted, \
+        """ Check whether this qube's state is 'Halted'
+            :returns: :py:obj:`True` if this qube is halted, \
                 :py:obj:`False` otherwise.
             :rtype: bool
         """
         return self.get_power_state() == "Halted"
 
     def is_paused(self):
-        """Check whether this domain is paused.
+        """Check whether this qube is paused.
 
-        :returns: :py:obj:`True` if this domain is paused, \
+        :returns: :py:obj:`True` if this qube is paused, \
             :py:obj:`False` otherwise.
         :rtype: bool
         """
@@ -273,9 +273,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return self.get_power_state() == "Paused"
 
     def is_suspended(self):
-        """Check whether this domain is suspended.
+        """Check whether this qube is suspended.
 
-        :returns: :py:obj:`True` if this domain is suspended, \
+        :returns: :py:obj:`True` if this qube is suspended, \
             :py:obj:`False` otherwise.
         :rtype: bool
         """
@@ -283,9 +283,9 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         return self.get_power_state() == "Suspended"
 
     def is_running(self):
-        """Check whether this domain is running.
+        """Check whether this qube is running.
 
-        :returns: :py:obj:`True` if this domain is started, \
+        :returns: :py:obj:`True` if this qube is started, \
             :py:obj:`False` otherwise.
         :rtype: bool
         """
@@ -374,7 +374,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
         )
 
     def run(self, command, input=None, **kwargs):
-        """Run a shell command inside the domain using qubes.VMShell qrexec."""
+        """Run a shell command inside the qube using qubes.VMShell qrexec."""
         # pylint: disable=redefined-builtin
         try:
             service = "qubes.VMShell"
@@ -398,7 +398,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
             raise e
 
     def run_with_args(self, *args, **kwargs):
-        """Run a single command inside the domain. Use the qubes.VMExec qrexec,
+        """Run a single command inside the qube. Use the qubes.VMExec qrexec,
         if available.
 
         This method execute a single command, without interpreting any shell
@@ -433,7 +433,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     @property
     def appvms(self):
-        """Returns a generator containing all domains based on the current
+        """Returns a generator containing all qubes based on the current
         TemplateVM.
 
         Do not check vm type of self, core (including its extentions) have
@@ -449,7 +449,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
     @property
     def derived_vms(self):
         """
-        Return list of all domains based on the current TemplateVM
+        Return list of all qubes based on the current TemplateVM
         at any level of inheritance.
         """
         return list(QubesVM._get_derived_vms(self))
@@ -457,7 +457,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
     @staticmethod
     def _get_derived_vms(vm):
         """
-        Return `set` of all domains based on the current TemplateVM
+        Return `set` of all qubes based on the current TemplateVM
         at any level of inheritance.
         """
         # first build a map of templates -> children
@@ -486,7 +486,7 @@ class QubesVM(qubesadmin.base.PropertyHolder):
 
     @property
     def connected_vms(self):
-        """Return a generator containing all domains connected to the current
+        """Return a generator containing all qubes connected to the current
         NetVM.
         """
         for vm in self.app.domains:

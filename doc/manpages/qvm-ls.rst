@@ -27,7 +27,7 @@ Positional arguments
 
 .. option:: VMNAME ...
 
-   Zero or more domain names
+   Zero or more qube names
 
 General options
 ---------------

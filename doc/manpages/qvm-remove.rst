@@ -1,6 +1,6 @@
 .. program:: qvm-remove
 
-:program:`qvm-remove` -- remove domain
+:program:`qvm-remove` -- remove qube
 ======================================
 
 Synopsis

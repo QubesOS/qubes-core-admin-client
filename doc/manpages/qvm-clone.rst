@@ -38,7 +38,7 @@ Options
 
 .. option:: -P POOL
 
-    Pool to use for the new domain. All volumes besides snapshots volumes are
+    Pool to use for the new qube. All volumes besides snapshots volumes are
     imported in to the specified POOL. THIS IS WHAT YOU WANT TO USE NORMALLY.
     Cannot be used together with :option:`--pool`.
 

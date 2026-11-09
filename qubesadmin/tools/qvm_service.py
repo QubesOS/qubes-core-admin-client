@@ -22,7 +22,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-service - Manage domain's services'''
+'''qvm-service - Manage qube's services'''
 
 from __future__ import print_function
 
@@ -36,7 +36,7 @@ import qubesadmin.tools
 parser = qubesadmin.tools.QubesArgumentParser(
     vmname_nargs=1,
     argument_default=argparse.SUPPRESS,
-    description='manage domain\'s services')
+    description='manage qube\'s services')
 
 parser.add_argument('service', metavar='SERVICE',
     action='store', nargs='?',
@@ -49,7 +49,7 @@ parser.add_argument('value', metavar='VALUE',
 parser.add_argument('--unset', '--default', '--delete', '-D',
     dest='delete', default=False,
     action='store_true',
-    help='unset service (default to VM preference)')
+    help='unset service (default to qube preference)')
 
 parser.add_argument('--list', '-l',
     dest='list',

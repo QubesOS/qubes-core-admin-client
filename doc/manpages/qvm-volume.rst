@@ -51,7 +51,7 @@ passed or stdout is redirected to a pipe or file.
 
 .. option:: --full
 
-   print domain names
+   print qube names
 
 .. option:: --all
 

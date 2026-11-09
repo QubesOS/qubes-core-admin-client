@@ -78,7 +78,7 @@ Options
 
 .. option:: --watch
 
-   Keep watching for further domain startups and start the daemons for them
+   Keep watching for further qube startups and start the daemons for them
    as they come up. Cannot be used with :option:`--notify-monitor-layout`.
 
 .. option:: --force-stubdomain

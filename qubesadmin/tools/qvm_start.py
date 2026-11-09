@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-"""qvm-start - start a domain"""
+"""qvm-start - start a qube"""
 import asyncio
 import sys
 
@@ -28,7 +28,7 @@ import qubesadmin.utils
 
 
 parser = qubesadmin.tools.QubesArgumentParser(
-    description="start a domain", vmname_nargs="+"
+    description="start a qube", vmname_nargs="+"
 )
 
 parser.add_argument(
@@ -70,7 +70,7 @@ parser_drive.add_argument(
     dest="drive",
     default=False,
     const="cdrom:dom0:/usr/lib/qubes/qubes-windows-tools.iso",
-    help="temporarily attach Windows tools CDROM to the domain",
+    help="temporarily attach Windows tools CDROM to the qube",
 )
 
 

@@ -116,7 +116,7 @@ def list_devices(args):
     # short command without (list/ls) should print just existing devices
     # short command is not a great place for introducing listing specific flags
     if getattr(args, "assignments", False):
-        # we need to check assignments for all domains since
+        # we need to check assignments for all qubes since
         # selected vm can be mentioned there as backend
         extra_lines = _load_lines(
             args.app, [], args.devclass, actual_devices=False
@@ -140,7 +140,7 @@ def _load_lines(app, domains, devclass, actual_devices: bool):
 
 def _load_devices(app, domains, devclass, actual_devices):
     """
-    Loads device exposed or connected to given domains.
+    Loads device exposed or connected to given qubes.
 
     If `domains` is empty/`None` load all devices.
     If `actual_devices` is True only devices currently present will be included,
@@ -487,7 +487,7 @@ def init_list_parser(sub_parsers):
         list_parser,
         required=False,
         vm_action=qubesadmin.tools.VmNameAction,
-        help="list devices assigned to specific domain(s)",
+        help="list devices assigned to specific qube(s)",
     )
     list_parser._mutually_exclusive_groups.append(vm_name_group)
     list_parser.set_defaults(func=list_devices)
@@ -594,23 +594,23 @@ def get_parser(device_class=None):
     )
     init_list_parser(sub_parsers)
     attach_parser = sub_parsers.add_parser(
-        "attach", help="Attach device to domain", aliases=("at", "a")
+        "attach", help="Attach device to qube", aliases=("at", "a")
     )
     detach_parser = sub_parsers.add_parser(
-        "detach", help="Detach device from domain", aliases=("d", "dt")
+        "detach", help="Detach device from qube", aliases=("d", "dt")
     )
     assign_parser = sub_parsers.add_parser(
         "assign",
-        help="Assign device to domain or edit existing assignment",
+        help="Assign device to qube or edit existing assignment",
         aliases=("s",),
     )
     unassign_parser = sub_parsers.add_parser(
         "unassign",
-        help="Remove assignment of device from domain",
+        help="Remove assignment of device from qube",
         aliases=("u",),
     )
     info_parser = sub_parsers.add_parser(
-        "info", help="Show info about device from domain", aliases=("i",)
+        "info", help="Show info about device from qube", aliases=("i",)
     )
 
     attach_parser.add_argument(
