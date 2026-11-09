@@ -22,7 +22,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-features - Manage domain's features'''
+'''qvm-features - Manage qube's features'''
 
 from __future__ import print_function
 
@@ -33,7 +33,7 @@ import qubesadmin.tools
 
 parser = qubesadmin.tools.QubesArgumentParser(
     vmname_nargs=1,
-    description='manage domain\'s features')
+    description='manage qube\'s features')
 
 parser.add_argument('feature', metavar='FEATURE',
     action='store', nargs='?',

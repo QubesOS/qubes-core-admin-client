@@ -34,22 +34,22 @@ Options
 
 .. option:: --wait
 
-   wait for the VMs to shut down. If some domains are providing network to other
-   domains, wait for those domains to shut down before shutting down their
+   wait for the qubes to shut down. If some qubes are providing network to other
+   qubes, wait for those qubes to shut down before shutting down their
    dependents, unless :option:`--all` was specified
 
 .. option:: --timeout
 
-   timeout after which domains are killed when using :option:`--wait`
+   timeout after which qubes are killed when using :option:`--wait`
 
 .. option:: --force
 
-   force qube shutdown, regardless of whether there exist any connected domains
+   force qube shutdown, regardless of whether there exist any connected qubes
    (such as those using it as network VM)
 
 .. option:: --dry-run
 
-   don't really shutdown or kill the domains; useful with :option:`--wait`
+   don't really shutdown or kill the qubes; useful with :option:`--wait`
 
 .. option:: --version
 

@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
-'''qvm-unpause - Unpause a domain'''
+'''qvm-unpause - Unpause a qube'''
 
 import asyncio
 import sys
@@ -27,7 +27,7 @@ import qubesadmin
 
 parser = qubesadmin.tools.QubesArgumentParser(
     vmname_nargs='+',
-    description='unpause a domain')
+    description='unpause a qube')
 
 
 def main(args=None, app=None):

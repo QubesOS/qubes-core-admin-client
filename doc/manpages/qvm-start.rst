@@ -1,6 +1,6 @@
 .. program:: qvm-start
 
-:program:`qvm-start` -- start a domain
+:program:`qvm-start` -- start a qube
 ======================================
 
 Synopsis
@@ -82,7 +82,7 @@ Options
 
 .. option:: --install-windows-tools
 
-   Temporarily attach Windows tools CDROM to the domain. This is equivalent with
+   Temporarily attach Windows tools CDROM to the qube. This is equivalent with
    `--cdrom=dom0:/usr/lib/qubes/qubes-windows-tools.iso`.
 
 .. option:: --version

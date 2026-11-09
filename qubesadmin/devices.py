@@ -23,12 +23,12 @@
 
 """API for various types of devices.
 
-Main concept is that some domain main
-expose (potentially multiple) devices, which can be attached to other domains.
+Main concept is that some qube may
+expose (potentially multiple) devices, which can be attached to other qubes.
 Devices can be of different classes (like 'pci', 'usb', etc.). Each device
 class is implemented by an extension.
 
-Devices are identified by pair of (backend domain, `port_id`), where `port_id`
+Devices are identified by pair of (backend qube, `port_id`), where `port_id`
 is :py:class:`str`.
 """
 from __future__ import annotations
@@ -72,7 +72,7 @@ class DeviceCollection:
 
     def attach(self, assignment: DeviceAssignment) -> None:
         """
-        Attach (add) device to domain.
+        Attach (add) device to qube.
 
         :param DeviceAssignment assignment: device object
         """
@@ -89,7 +89,7 @@ class DeviceCollection:
 
     def detach(self, assignment: DeviceAssignment) -> None:
         """
-        Detach (remove) device from domain.
+        Detach (remove) device from qube.
 
         :param DeviceAssignment assignment: device to detach
             (obtained from :py:meth:`assignments`)
@@ -135,7 +135,7 @@ class DeviceCollection:
 
     def assign(self, assignment: DeviceAssignment) -> None:
         """
-        Assign device to domain (add to :file:`qubes.xml`).
+        Assign device to qube (add to :file:`qubes.xml`).
 
         :param DeviceAssignment assignment: device object
         """
@@ -147,7 +147,7 @@ class DeviceCollection:
 
     def unassign(self, assignment: DeviceAssignment) -> None:
         """
-        Unassign device from domain (remove from :file:`qubes.xml`).
+        Unassign device from qube (remove from :file:`qubes.xml`).
 
         :param DeviceAssignment assignment: device to unassign
             (obtained from :py:meth:`assignments`)
@@ -323,7 +323,7 @@ class DeviceCollection:
 
         :returns: py:class:`DeviceInfo`
 
-        If domain isn't running, it is impossible to check device validity,
+        If qube isn't running, it is impossible to check device validity,
         so return UnknownDevice object. Also do the same for non-existing
         devices - otherwise it will be impossible to detach already
         disconnected device.

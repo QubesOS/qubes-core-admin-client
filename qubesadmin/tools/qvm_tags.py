@@ -19,7 +19,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-'''qvm-tags - Manage domain's tags'''
+'''qvm-tags - Manage qube's tags'''
 
 from __future__ import print_function
 
@@ -64,7 +64,7 @@ def get_parser():
     ''' Return qvm-tags tool command line parser '''
     parser = qubesadmin.tools.QubesArgumentParser(
         vmname_nargs=1,
-        description='manage domain\'s tags')
+        description='manage qube\'s tags')
     parser.register('action', 'parsers',
         qubesadmin.tools.AliasedSubParsersAction)
 

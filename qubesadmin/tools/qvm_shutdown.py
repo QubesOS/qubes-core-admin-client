@@ -39,7 +39,7 @@ parser.add_argument(
     "--wait",
     action="store_true",
     default=False,
-    help="wait for the VMs to shut down",
+    help="wait for the qubes to shut down",
 )
 
 parser.add_argument(
@@ -63,7 +63,7 @@ parser.add_argument(
     action="store_true",
     dest="dry_run",
     default=False,
-    help="don't really shutdown or kill the domains; useful with --wait",
+    help="don't really shutdown or kill the qubes; useful with --wait",
 )
 
 

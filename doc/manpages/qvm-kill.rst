@@ -1,6 +1,6 @@
 .. program:: qvm-kill
 
-:program:`qvm-kill` -- forceful shutdown of a domain
+:program:`qvm-kill` -- forceful shutdown of a qube
 ====================================================
 
 Synopsis

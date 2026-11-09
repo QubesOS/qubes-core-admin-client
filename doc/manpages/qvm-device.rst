@@ -184,7 +184,7 @@ block
 
 Block device. Available options:
 
-* `frontend-dev` - device node in target domain, by default first available, starting from `xvdi`
+* `frontend-dev` - device node in target qube, by default first available, starting from `xvdi`
 * `read-only` - attach device in read-only mode; default depends on device, if possible - attach read-write; if device itself is read-only, only read-only attach is allowed
 * `devtype` - type of device - either `disk` or `cdrom`; default: `disk`
 
@@ -198,7 +198,7 @@ pci
 
 PCI device. Only dom0 expose such devices. One should be very careful when attaching this type of devices, because some of them are strictly required to stay in dom0 (for example host bridge). Available options:
 
-* `no-strict-reset` - allow to attach device even if it does not support any reliable reset operation; switching such device to another domain (without full host restart) can be a security risk; default: `False`, accepted values: `True`, `False` (option absent)
+* `no-strict-reset` - allow to attach device even if it does not support any reliable reset operation; switching such device to another qube (without full host restart) can be a security risk; default: `False`, accepted values: `True`, `False` (option absent)
 * `permissive` - allow write access to most of PCI config space, instead of only selected whitelisted rregisters; a workaround for some PCI passthrough problems, potentially unsafe; default: `False`, accepted values: `True`, `False` (option absent)
 
 mic

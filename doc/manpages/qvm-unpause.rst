@@ -1,6 +1,6 @@
 .. program:: qvm-unpause
 
-:program:`qvm-unpause` -- unpause a domain
+:program:`qvm-unpause` -- unpause a qube
 ==========================================
 
 Synopsis

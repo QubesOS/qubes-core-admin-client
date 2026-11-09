@@ -51,11 +51,11 @@ no_profile = parser.add_argument_group(title="Profile setup",
                 "(could not be used together with --profile option)")
 no_profile.add_argument("--exclude", "-x", action="append",
     dest="exclude_list", default=[],
-    help="Exclude the specified VM from the backup (may be "
+    help="Exclude the specified qube from the backup (may be "
          "repeated)")
 no_profile.add_argument("--dest-vm", "-d", action="store",
     dest="appvm", default=None,
-    help="Specify the destination VM to which the backup "
+    help="Specify the destination qube to which the backup "
          "will be sent (implies -e)")
 no_profile.add_argument("--encrypt", "-e", action="store_true",
     dest="encrypted", default=True,
@@ -84,7 +84,7 @@ no_profile.add_argument("backup_location", action="store", default=None,
          "or command to pipe backup to)")
 
 no_profile.add_argument("vms", nargs="*", action=qubesadmin.tools.VmNameAction,
-    help="Backup only those VMs")
+    help="Backup only those qubes")
 
 
 def write_backup_profile(output_stream, args, passphrase=None):

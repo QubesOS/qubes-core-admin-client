@@ -1,6 +1,6 @@
 .. program:: qvm-create
 
-:program:`qvm-create` -- create new domain
+:program:`qvm-create` -- create new qube
 ==========================================
 
 Synopsis
@@ -39,12 +39,12 @@ Options
 
 .. option:: --class, -C
 
-   The new domain class name (default: **AppVM** for
+   The new qube class name (default: **AppVM** for
    :py:class:`qubes.vm.appvm.AppVM`).
 
 .. option:: --prop=NAME=VALUE, --property=NAME=VALUE
 
-   Set domain's property, like "internal", "memory" or "vcpus". Any property may
+   Set qube's property, like "internal", "memory" or "vcpus". Any property may
    be set this way, even "qid".
 
 .. option:: --template=VALUE, -t VALUE
@@ -54,7 +54,7 @@ Options
 
 .. option:: --label=VALUE, -l VALUE
 
-   Specify the label to use for the new domain (e.g. red, yellow, green, ...).
+   Specify the label to use for the new qube (e.g. red, yellow, green, ...).
    This in an alias for ``--property label=VALUE``.
 
 .. option:: --root-copy-from=FILENAME, -r FILENAME
@@ -73,7 +73,7 @@ Options
 
 .. option:: -P POOL
 
-    Pool to use for the new domain. All volumes besides snapshots volumes are
+    Pool to use for the new qube. All volumes besides snapshots volumes are
     imported in to the specified POOL. THIS IS WHAT YOU WANT TO USE NORMALLY.
 
 .. option:: --pool=VOLUME=POOL, -p VOLUME=POOL

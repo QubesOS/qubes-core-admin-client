@@ -165,13 +165,13 @@ parser.add_argument(
 parser.add_argument(
     "--watch",
     action="store_true",
-    help="Keep watching for further domain startups",
+    help="Keep watching for further qube startups",
 )
 parser.add_argument(
     "--force-stubdomain",
     action="store_true",
     help="Start GUI to stubdomain-emulated VGA,"
-    " even if gui-agent is running in the VM",
+    " even if gui-agent is running in the qube",
 )
 parser.add_argument(
     "--pidfile",
@@ -933,7 +933,7 @@ class DAEMONLauncher:
 
     def on_connection_established(self, _subject, _event, **_kwargs):
         """Handler of 'connection-established' event, used to launch GUI/AUDIO
-        daemon for domains started before this tool."""
+        daemon for qubes started before this tool."""
         monitor_layout = get_monitor_layout()
         self.app.domains.clear_cache()
         for vm in self.app.domains:
@@ -977,7 +977,7 @@ class DAEMONLauncher:
         if not self.is_watched(vm):
             return
 
-        # read XID from cache, as stopped domain reports it already as -1
+        # read XID from cache, as stopped qube reports it already as -1
         try:
             xid, stubdom_xid = self.xid_cache[vm.name]
             del self.xid_cache[vm.name]
@@ -1081,7 +1081,7 @@ class DAEMONLauncher:
         os.unlink(config_file)
 
     def register_events(self, events):
-        """Register domain startup events in app.events dispatcher"""
+        """Register qube startup events in app.events dispatcher"""
         events.add_handler("domain-spawn", self.on_domain_spawn)
         events.add_handler("domain-start", self.on_domain_start)
         events.add_handler(

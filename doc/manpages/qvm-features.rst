@@ -1,6 +1,6 @@
 .. program:: qvm-features
 
-:program:`qvm-features` -- manage domain's features
+:program:`qvm-features` -- manage qube's features
 ===================================================
 
 Synopsis
@@ -34,11 +34,11 @@ Options
 Description
 -----------
 
-This command is used to manually manage the *features* of the domain. The
+This command is used to manually manage the *features* of the qube. The
 features are key-value pairs with both key and value being strings. They are
-used by extensions to store information about the domain and make policy
+used by extensions to store information about the qube and make policy
 decisions based on them. For example, they may indicate that some specific
-software package was installed inside the template and the domains based on it
+software package was installed inside the template and the qubes based on it
 have some specific capability.
 
 .. warning::
@@ -143,7 +143,7 @@ List of known features
 .. option:: input-dom0-proxy
 
    When set to :py:obj:`True`, Qubes input proxy sender services will start
-   for every non-virtual input devices available in dom0 on domain start.
+   for every non-virtual input devices available in dom0 on qube start.
 
 
 .. option:: qrexec
@@ -507,7 +507,7 @@ List of known features
 
 .. option:: expert-mode
 
-   Allows expert mode for specific domain(s) or the entire system if it is enabled
+   Allows expert mode for specific qube(s) or the entire system if it is enabled
    for the GUIVM (dom0 by default). At the time of writing this documentation, the
    only recognized feature is the `Debug Console` in Qui Domains systray widget.
 

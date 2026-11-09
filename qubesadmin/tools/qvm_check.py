@@ -18,7 +18,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-""" Exits sucessfull if the provided domain(s) exist, else returns failure """
+""" Exits sucessfull if the provided qube(s) exist, else returns failure """
 
 import sys
 
@@ -59,7 +59,7 @@ class QvmCheckVmNameAction(qubesadmin.tools.VmNameAction):
 
 
 class QvmCheckArgumentParser(qubesadmin.tools.QubesArgumentParser):
-    """ Extended argument parser for qvm-check to collect invalid domains """
+    """ Extended argument parser for qvm-check to collect invalid qubes """
     def __init__(self, description):
         super().__init__(description=description, vmname_nargs=None)
         vm_name_group = qubesadmin.tools.VmNameGroup(
@@ -70,20 +70,20 @@ class QvmCheckArgumentParser(qubesadmin.tools.QubesArgumentParser):
 parser = QvmCheckArgumentParser(description=__doc__)
 parser.add_argument("--running", action="store_true", dest="running",
                     default=False,
-                    help="Determine if (any of given) VM is running")
+                    help="Determine if (any of given) qube is running")
 parser.add_argument("--paused", action="store_true", dest="paused",
                     default=False,
-                    help="Determine if (any of given) VM is paused")
+                    help="Determine if (any of given) qube is paused")
 parser.add_argument("--template", action="store_true", dest="template",
                     default=False,
-                    help="Determine if (any of given) VM is a template")
+                    help="Determine if (any of given) qube is a template")
 parser.add_argument("--networked", action="store_true", dest="networked",
                     default=False,
-                    help="Determine if (any of given) VM can reach network")
+                    help="Determine if (any of given) qube can reach network")
 
 
 def print_msg(log, domains, status):
-    """Print message in appropriate form about given valid domain(s)"""
+    """Print message in appropriate form about given valid qube(s)"""
     if not domains:
         log.info("None of qubes: {!s}".format(', '.join(status)))
     else:

@@ -19,7 +19,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Remove domains from the system"""
+"""Remove qubes from the system"""
 
 import sys
 

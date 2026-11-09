@@ -386,9 +386,9 @@ class QubesBase(qubesadmin.base.PropertyHolder):
 
     @staticmethod
     def get_vm_class(clsname: str) -> str:
-        """Find the class for a domain.
+        """Find the class for a qube.
 
-        Compatibility function, client tools use str to identify domain classes.
+        Compatibility function, client tools use str to identify qube classes.
 
         :param str clsname: name of the class
         :return str: class
