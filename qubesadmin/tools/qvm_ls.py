@@ -309,6 +309,7 @@ class Table:
     def sort_to_tree(self, domains):
         '''Sort the domains as a network tree. It returns a list of sets. Each
         tuple stores the insertion of the cell name and the vm object.
+        Note: mutates `domains` to an empty list
 
         :param list() domains: The domains which will be sorted
         :return list(tuple()) tree: returns a list of tuple(insertion, vm)
@@ -390,7 +391,7 @@ class Table:
                     continue
 
 
-#: Available formats. Feel free to plug your own one.
+# Available formats
 formats = {
     'simple': (
         'name', 'state', 'class', 'label', 'active_template', 'template',
@@ -402,7 +403,6 @@ formats = {
         'kernelopts'
     ),
     'full': ('name', 'state', 'class', 'label', 'qid', 'xid', 'uuid'),
-#   'perf': ('name', 'state', 'cpu', 'memory'),
     'prefs': ('name', 'label', 'active_template', 'template', 'netvm',
         'vcpus', 'initialmem', 'maxmem', 'virt_mode'),
     'disk': ('name', 'state', 'disk',
@@ -501,7 +501,7 @@ def get_parser():
         epilog='available formats (see --help-formats):\n{}\n\n'
                'available columns (see --help-columns):\n{}'.format(
                 wrapper.fill(', '.join(sorted(formats.keys()))),
-                wrapper.fill(', '.join(sorted(sorted(Column.columns.keys()))))))
+                wrapper.fill(', '.join(sorted(Column.columns.keys())))))
 
     parser_format = parser.add_argument_group(title='formatting options')
     parser_format_exclusive = parser_format.add_mutually_exclusive_group()
@@ -522,7 +522,7 @@ def get_parser():
         help='Display specify data of specified VMs. Intended for '
              'bash-parsing.')
 
-    # shortcuts, compatibility with Qubes 3.2
+    # shortcuts for common format/output combinations
     parser_format.add_argument('--raw-list', action='store_true',
         help='Same as --raw-data --fields=name')
 
@@ -602,19 +602,11 @@ def get_parser():
     parser_sort.add_argument('--ignore-case', action='store_true',
         default=False, help='ignore case distinctions when sorting')
 
-    parser.add_argument('--spinner',
-        action='store_true', dest='spinner',
-        help='reenable spinner')
-
     parser.add_argument('--no-spinner',
         action='store_false', dest='spinner',
         help='disable spinner')
 
     parser.set_defaults(spinner=True)
-
-#   parser.add_argument('--conf', '-c',
-#       action='store', metavar='CFGFILE',
-#       help='Qubes config file')
 
     return parser
 
