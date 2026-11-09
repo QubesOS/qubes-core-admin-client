@@ -83,6 +83,12 @@ autostart
     Start the VM during system startup. The default netvm is autostarted
     regardless of this setting.
 
+cleanup_logs
+    Property type: bool
+
+    Remove the VM's log files in dom0 when the VM is removed. Default: True.
+    For Disposable VMs, set it on their template for disposables.
+
 debug
     Property type: bool
 
