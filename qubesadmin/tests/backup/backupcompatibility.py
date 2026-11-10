@@ -312,7 +312,10 @@ parsed_qubes_xml_r2 = {
             'properties': {'maxmem': '1535'},
             'devices': {},
             'tags': set(),
-            'features': {'service.meminfo-writer': True},
+            'features': {
+                'service.meminfo-writer': True,
+                'service.qubes-update-check': False,
+            },
             'template': 'fedora-20-x64',
             'backup_path': 'appvms/test-work',
             'included_in_backup': True,
