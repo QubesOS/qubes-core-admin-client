@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -4029,7 +4028,7 @@ test-vm : Qubes template for fedora-31
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
-            '{} should not exist before'.format(path))
+            f'{path} should not exist before')
         # just create an empty file
         with open(path, 'wb') as f_template:
             f_template.truncate(dlsize)
@@ -4510,7 +4509,7 @@ test-vm : Qubes template for fedora-31
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
         self.assertFalse(os.path.exists(path),
-            '{} should not exist before'.format(path))
+            f'{path} should not exist before')
         # just create an empty file
         with open(path, 'wb') as f_pkg:
             f_pkg.truncate(dlsize // 2)
@@ -5769,7 +5768,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/etc/os-release', 'r',
+            mock_open.assert_called_with('/etc/os-release',
                                          encoding='ascii')
         self.assertAllCalled()
 
@@ -5794,7 +5793,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/etc/os-release', 'r',
+            mock_open.assert_called_with('/etc/os-release',
                                          encoding='ascii')
         self.assertAllCalled()
 
@@ -5814,7 +5813,7 @@ CPE_NAME="cpe:/o:ITL:qubes:4.2"
             self.assertEqual(mock_exists.mock_calls, [
                 mock.call('/usr/share/qubes/marker-vm')
             ])
-            mock_open.assert_called_with('/usr/share/qubes/marker-vm', 'r',
+            mock_open.assert_called_with('/usr/share/qubes/marker-vm',
                                          encoding='ascii')
         self.assertAllCalled()
 

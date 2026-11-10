@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -21,7 +20,6 @@
 '''Qubes' command line tools
 '''
 
-from __future__ import print_function
 
 import argparse
 import fnmatch
@@ -75,7 +73,7 @@ class PropertyAction(argparse.Action):
         try:
             prop, value = values.split('=', 1)
         except ValueError:
-            parser.error('Invalid property token: {!r}'.format(values))
+            parser.error(f'Invalid property token: {values!r}')
 
         properties = getattr(namespace, self.dest)
         if properties is None:
@@ -100,9 +98,9 @@ class SinglePropertyAction(argparse.Action):
             required: bool=False,
             help: str | None=None):
         if help is None:
-            help = 'set {!r} property to a value'.format(dest)
+            help = f'set {dest!r} property to a value'
             if const is not None:
-                help += ' {!r}'.format(const)
+                help += f' {const!r}'
 
         if const is not None and nargs is None:
             nargs = argparse.OPTIONAL
@@ -189,7 +187,7 @@ class VmNameAction(QubesAction):
                     try:
                         namespace.domains += [app.domains[vm_name]]
                     except KeyError:
-                        parser.error('no such domain: {!r}'.format(vm_name))
+                        parser.error(f'no such domain: {vm_name!r}')
             else:
                 destinations = []
                 for destination in getattr(namespace, self.dest):
@@ -208,7 +206,7 @@ class VmNameAction(QubesAction):
                     try:
                         namespace.domains += [app.domains[vm_name]]
                     except KeyError:
-                        parser.error('no such domain: {!r}'.format(vm_name))
+                        parser.error(f'no such domain: {vm_name!r}')
 
 
 class RunningVmNameAction(VmNameAction):
@@ -275,7 +273,7 @@ class VMVolumeAction(QubesAction):
                     parser.error_runtime('vm {!r} has no volume {!r}'.format(
                         vm_name, vol_name))
             except KeyError:
-                parser.error_runtime('no vm {!r}'.format(vm_name))
+                parser.error_runtime(f'no vm {vm_name!r}')
         except ValueError:
             parser.error('expected a vm & volume combination like foo:bar')
 
@@ -430,7 +428,7 @@ class QubesArgumentParser(argparse.ArgumentParser):
 
         :param str message: message to show
         '''
-        self.exit(exit_code, '{}: error: {}\n'.format(self.prog, message))
+        self.exit(exit_code, f'{self.prog}: error: {message}\n')
 
 
     @staticmethod
@@ -483,7 +481,7 @@ class SubParsersHelpAction(argparse._HelpAction):
             for pseudo_action in subparsers_action._choices_actions:
                 choice = pseudo_action.dest.split(' ', 1)[0]
                 subparser = subparsers_action.choices[choice]
-                print("\nCommand '{}':".format(choice))
+                print(f"\nCommand '{choice}':")
                 choice_help = subparser.format_usage()
                 choice_help = self._indent(2, choice_help)
                 print(choice_help)

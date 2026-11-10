@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -172,7 +171,7 @@ class TC_10_qvm_firewall(qubesadmin.tests.QubesTestCase):
                 r'0   accept  qubes-os.org  tcp       443      -         '
                 r'      -          \+(.{4})s  -',
                 line)
-            self.assertTrue(match, "no match for: {!r}".format(line))
+            self.assertTrue(match, f"no match for: {line!r}")
             duration = int(match.group(1))
             self.assertTrue(3590 < duration <= 3600)
 

@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -65,7 +64,7 @@ import asyncio
 from unittest import mock
 from copy import deepcopy
 
-from typing import List, Optional, Dict, Tuple, Any
+from typing import Any
 
 import qubesadmin.events
 from qubesadmin.tests import QubesTest
@@ -269,7 +268,7 @@ class VolumeInfo:
         qube_name: str,
         volume_type: str,
         outdated: bool = False,
-        usage_perc: Optional[float] = 0.0,
+        usage_perc: float | None = 0.0,
         save_on_stop: bool = False,
     ):
         """
@@ -347,11 +346,11 @@ class MockQube:
         qapp: QubesTest,
         klass: str = "AppVM",
         running: bool = False,
-        features: Optional[Dict] = None,
-        usage: Optional[float] = 0.0,
-        tags: Optional[List] = None,
-        firewall_rules: Optional[List[Dict[str, str]]] = None,
-        override_default_props: Optional[Dict] = None,
+        features: dict | None = None,
+        usage: float | None = 0.0,
+        tags: list | None = None,
+        firewall_rules: list[dict[str, str]] | None = None,
+        override_default_props: dict | None = None,
         **kwargs,
     ):
         """
@@ -655,7 +654,7 @@ class MockQube:
             (self.name, "admin.vm.device.mic.Attached", None, None)
         ] = b"0\x00"
 
-    def setup_firewall_rules(self, rule_list: List[Dict[str, str]]):
+    def setup_firewall_rules(self, rule_list: list[dict[str, str]]):
         """setup firewall with provided rules: rules should be provided as
         list of dictionaries. Typical keys are action, proto, dsthost,
         dstports, icmptype, specialtarget, expire and comment"""
@@ -703,8 +702,8 @@ class MockDevice:
         port: str,
         product: str,
         vendor: str,
-        attached: Optional[str] = None,
-        assigned: Optional[List[Tuple[str, str, list[Any] | None]]] = None,
+        attached: str | None = None,
+        assigned: list[tuple[str, str, list[Any] | None]] | None = None,
         device_unknown: bool = False,
     ):
         """
@@ -839,7 +838,7 @@ class QubesTestWrapper(QubesTest):
         self._devices = []
         self.app.qubesd_connection_type = "qrexec"
 
-        self._qubes: Dict[str, MockQube] = {"dom0": MockAdminVM(self)}
+        self._qubes: dict[str, MockQube] = {"dom0": MockAdminVM(self)}
 
         labels = [
             "red",
@@ -929,7 +928,7 @@ class QubesTestWrapper(QubesTest):
                         + b"\x00"
                     )
 
-    def set_global_property(self, property_name: str, value: Optional[str]):
+    def set_global_property(self, property_name: str, value: str | None):
         self._global_properties[property_name].value = value
 
     def update_global_properties(self):
@@ -1288,7 +1287,7 @@ class MockEvent:
         self,
         event_subject: str,
         event_name: str,
-        additional_keys: Optional[List[Tuple[str, str]]] = None,
+        additional_keys: list[tuple[str, str]] | None = None,
     ):
         """
         event subject - the name of the object that fired the event

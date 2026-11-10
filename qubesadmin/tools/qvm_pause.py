@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -55,7 +54,7 @@ def main(args=None, app=None):
     if failed:
         exit_code = 1
         for qube, exc in failed.items():
-            parser.print_error("Failed to {}: {}: {}".format(action, qube, exc))
+            parser.print_error(f"Failed to {action}: {qube}: {exc}")
 
     return exit_code
 

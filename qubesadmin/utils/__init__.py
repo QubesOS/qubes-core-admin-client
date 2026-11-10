@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -72,7 +71,7 @@ def parse_size(size: str) -> int:
             size = size[: -len(unit)].strip()
             return int(size) * multiplier
 
-    raise qubesadmin.exc.QubesException("Invalid size: {0}.".format(size))
+    raise qubesadmin.exc.QubesException(f"Invalid size: {size}.")
 
 
 def mbytes_to_kmg(size: float | int) -> str:
@@ -198,7 +197,7 @@ def encode_for_vmexec(args: Iterable[str]) -> str:
     def encode(part: re.Match) -> bytes:
         if part.group(0) == b"-":
             return b"--"
-        return "-{:02X}".format(ord(part.group(0))).encode("ascii")
+        return f"-{ord(part.group(0)):02X}".encode("ascii")
 
     parts = []
     for arg in args:
@@ -258,7 +257,7 @@ def qbool(value: str | int | bool) -> bool:
         if lcvalue in ("1", "yes", "true", "on"):
             return True
         raise QubesValueError(
-            "Invalid literal for boolean property: {!r}".format(value)
+            f"Invalid literal for boolean property: {value!r}"
         )
 
     return bool(value)
@@ -515,7 +514,7 @@ def start_expert(
         if drive_assignment:
             # don't reconnect this device after VM reboot
             domain.devices["block"].unassign(drive_assignment)
-    except (IOError, OSError, qubesadmin.exc.QubesException, ValueError) as e:
+    except (OSError, qubesadmin.exc.QubesException, ValueError) as e:
         if drive_assignment:
             try:
                 domain.devices["block"].detach(drive_assignment)

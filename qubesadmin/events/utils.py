@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -21,7 +20,7 @@
 """ Utilities for common events-based actions """
 
 import functools
-from typing import Iterable
+from collections.abc import Iterable
 
 import qubesadmin.events
 from qubesadmin.events import EventsDispatcher
