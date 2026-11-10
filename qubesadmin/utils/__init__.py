@@ -155,6 +155,7 @@ def vm_dependencies(
 
     vm_properties = [
         "template",
+        "active_template",
         "netvm",
         "guivm",
         "audiovm",
@@ -178,7 +179,7 @@ def vm_dependencies(
                 and not is_prop_default
                 and not (
                     is_preload
-                    and prop == "template"
+                    and prop in ["template", "active_template"]
                     or (
                         prop == "default_dispvm"
                         and getattr(vm, "template", None) == vm
