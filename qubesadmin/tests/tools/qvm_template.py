@@ -452,6 +452,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 yes=False,
                 allow_pv=False,
                 skip_start=False,
+                skip_space_check=True,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -567,6 +568,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 yes=False,
                 allow_pv=True,
                 skip_start=False,
+                skip_space_check=True,
                 pool='my-pool'
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -885,6 +887,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 yes=False,
                 allow_pv=False,
                 skip_start=False,
+                skip_space_check=True,
                 pool=None,
                 name='fedora-42-custom'
             )
@@ -1228,6 +1231,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 keep_cache=False,
                 allow_pv=False,
                 skip_start=False,
+                skip_space_check=True,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -1411,6 +1415,7 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
                 yes=False,
                 allow_pv=False,
                 skip_start=False,
+                skip_space_check=True,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -1445,6 +1450,158 @@ class TC_00_qvm_template(qubesadmin.tests.QubesTestCase):
         # No templates downloaded, thus no renames needed
         self.assertEqual(mock_rename.mock_calls, [])
         self.assertAllCalled()
+
+    def _install_with_pool_usage(self, data_usage, postprocess_ok=True,
+            skip_space_check=False, pool_size=10 * 1024 ** 3):
+        """Install a template of 2 GiB into a pool of *pool_size* bytes
+        that has *data_usage* bytes used"""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b'0\0'
+        self.app.expected_calls[('dom0', 'admin.property.Get',
+            'default_pool_root', None)] = b'0\0default=True type=str vm-pool'
+        self.app.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+            b'0\0vm-pool\n'
+        self.app.expected_calls[(
+            'dom0', 'admin.pool.UsageDetails', 'vm-pool', None)] = \
+            f'0\0data_size={pool_size}\n' \
+            f'data_usage={data_usage}\n'.encode()
+        for key, val in [
+                ('name', 'test-vm'),
+                ('epoch', '2'),
+                ('version', '4.1'),
+                ('release', '2020'),
+                ('reponame', '@commandline'),
+                ('buildtime', '2020-09-01 14:30:00'),
+                ('installtime', '2020-09-01 15:30:00'),
+                ('license', 'GPL'),
+                ('url', 'https://qubes-os.org'),
+                ('summary', 'Summary'),
+                ('description', 'Desc|desc')]:
+            self.app.expected_calls[(
+                'test-vm',
+                'admin.vm.feature.Set',
+                f'template-{key}',
+                val.encode())] = b'0\0'
+        mock_time = mock.Mock(wraps=datetime.datetime)
+        mock_time.now.return_value = \
+            datetime.datetime(2020, 9, 1, 15, 30, tzinfo=datetime.timezone.utc)
+        with mock.patch('qubesadmin.tools.qvm_template.LOCK_FILE',
+                        '/tmp/test.lock'), \
+                mock.patch('qubesadmin.tools.qvm_template.verify_rpm') \
+                    as mock_verify, \
+                mock.patch('qubesadmin.tools.qvm_template.get_dl_list',
+                           return_value={}), \
+                mock.patch('qubesadmin.tools.qvm_template.download'), \
+                mock.patch('qubesadmin.tools.qvm_template.extract_rpm') \
+                    as mock_extract, \
+                mock.patch('subprocess.check_call') as mock_call, \
+                mock.patch('os.makedirs'), \
+                mock.patch('datetime.datetime', new=mock_time), \
+                mock.patch('tempfile.TemporaryDirectory') as mock_tmpdir, \
+                mock.patch('sys.stderr', new=io.StringIO()), \
+                tempfile.NamedTemporaryFile(suffix='.rpm') as template_file:
+            mock_verify.return_value = {
+                rpm.RPMTAG_NAME        : 'qubes-template-test-vm',
+                rpm.RPMTAG_BUILDTIME   : 1598970600,
+                rpm.RPMTAG_DESCRIPTION : 'Desc\ndesc',
+                rpm.RPMTAG_EPOCHNUM    : 2,
+                rpm.RPMTAG_LICENSE     : 'GPL',
+                rpm.RPMTAG_LONGSIZE    : 2 * 1024 ** 3,
+                rpm.RPMTAG_RELEASE     : '2020',
+                rpm.RPMTAG_SUMMARY     : 'Summary',
+                rpm.RPMTAG_URL         : 'https://qubes-os.org',
+                rpm.RPMTAG_VERSION     : '4.1'
+            }
+            if postprocess_ok:
+                mock_call.side_effect = self.add_new_vm_side_effect
+            else:
+                mock_call.side_effect = subprocess.CalledProcessError(1, [])
+            mock_tmpdir.return_value.__enter__.return_value = \
+                '/var/tmp/qvm-template-tmpdir'
+            args = argparse.Namespace(
+                templates=[template_file.name],
+                keyring='/tmp/keyring.gpg',
+                nogpgcheck=False,
+                cachedir='/var/cache/qvm-template',
+                repo_files=[],
+                releasever='4.1',
+                yes=False,
+                allow_pv=False,
+                skip_start=False,
+                skip_space_check=skip_space_check,
+                pool=None
+            )
+            try:
+                qubesadmin.tools.qvm_template.install(args, self.app)
+            except Exception as e:  # pylint: disable=broad-except
+                return e, mock_extract, mock_call
+        return None, mock_extract, mock_call
+
+    def test_109_b_install_pool_space_success(self):
+        # 2 GiB needed, 3 GiB free
+        exc, mock_extract, mock_call = \
+            self._install_with_pool_usage(7 * 1024 ** 3)
+        self.assertIsNone(exc)
+        mock_extract.assert_called_once()
+        mock_call.assert_called_once()
+        self.assertAllCalled()
+
+    def test_109_c_install_pool_space_fail(self):
+        # 2 GiB needed, 1 GiB free
+        exc, mock_extract, mock_call = \
+            self._install_with_pool_usage(9 * 1024 ** 3)
+        self.assertIsInstance(exc, qubesadmin.exc.QubesException)
+        self.assertEqual(str(exc),
+            'Not enough free space in storage pool \'vm-pool\' to install '
+            'template \'test-vm\': the template needs about 2.0 GiB, only '
+            '1.0 GiB of 10.0 GiB is free. Free some space, or use '
+            '--skip-space-check to try anyway.')
+        # nothing done
+        mock_extract.assert_not_called()
+        mock_call.assert_not_called()
+
+    def test_109_d_install_pool_space_skip_check(self):
+        # 2 GiB needed, 1 GiB free, but check skipped
+        exc, mock_extract, mock_call = self._install_with_pool_usage(
+            9 * 1024 ** 3, skip_space_check=True)
+        self.assertIsNone(exc)
+        mock_extract.assert_called_once()
+        mock_call.assert_called_once()
+
+    def test_109_e_install_pool_space_unknown(self):
+        # pool size not readable, check skipped
+        exc, mock_extract, mock_call = self._install_with_pool_usage('None')
+        self.assertIsNone(exc)
+        mock_extract.assert_called_once()
+        mock_call.assert_called_once()
+
+    def test_109_f_install_import_fail_pool_full(self):
+        # import failed, and the pool is more than 90% full
+        exc, _, mock_call = self._install_with_pool_usage(
+            int(9.5 * 1024 ** 3), postprocess_ok=False, skip_space_check=True)
+        self.assertIsInstance(exc, qubesadmin.exc.QubesException)
+        self.assertEqual(str(exc),
+            'Failed to install template \'test-vm\', storage pool '
+            '\'vm-pool\' is full or nearly full: the template needs about '
+            '2.0 GiB, only 512.0 MiB of 10.0 GiB is free.')
+        mock_call.assert_called_once()
+
+    def test_109_g_install_import_fail_pool_nearly_full(self):
+        # import failed, the template should fit but the pool is 96% full
+        exc, _, mock_call = self._install_with_pool_usage(
+            96 * 1024 ** 3, postprocess_ok=False, pool_size=100 * 1024 ** 3)
+        self.assertIsInstance(exc, qubesadmin.exc.QubesException)
+        self.assertEqual(str(exc),
+            'Failed to install template \'test-vm\', storage pool '
+            '\'vm-pool\' is full or nearly full: the template needs about '
+            '2.0 GiB, only 4.0 GiB of 100.0 GiB is free.')
+        mock_call.assert_called_once()
+
+    def test_109_h_install_import_fail_pool_not_full(self):
+        # import failed for some other reason
+        exc, _, mock_call = self._install_with_pool_usage(
+            5 * 1024 ** 3, postprocess_ok=False)
+        self.assertIsInstance(exc, subprocess.CalledProcessError)
+        mock_call.assert_called_once()
 
     def test_110_qrexec_payload_refresh_success(self):
         with tempfile.NamedTemporaryFile() as repo_conf1, \
@@ -4506,6 +4663,43 @@ test-vm : Qubes template for fedora-31
             ])
             self.assertEqual(mock_dllist.mock_calls, [])
 
+    @mock.patch('qubesadmin.tools.qvm_template.verify_rpm')
+    @mock.patch('qubesadmin.tools.qvm_template.get_dl_list')
+    @mock.patch('qubesadmin.tools.qvm_template.qrexec_download')
+    def test_192_download_fail_no_space(self, mock_qrexec, mock_dllist,
+                                        mock_verify_rpm):
+        with tempfile.TemporaryDirectory() as tmpdir, \
+                mock.patch('shutil.disk_usage') as mock_usage:
+            mock_usage.return_value.free = 2 * 1024 ** 2
+            # already downloaded, not counted
+            with open(os.path.join(tmpdir,
+                    'qubes-template-fedora-31-1:2-3.rpm'), 'wb'):
+                pass
+            args = argparse.Namespace(
+                repo_files=[],
+                keyring='/tmp/keyring.gpg',
+                releasever='4.1',
+                nogpgcheck=False,
+                retries=1
+            )
+            with self.assertRaises(qubesadmin.exc.QubesException) as e:
+                qubesadmin.tools.qvm_template.download(
+                    args, self.app, tmpdir, {
+                        'fedora-31': qubesadmin.tools.qvm_template.DlEntry(
+                            ('1', '2', '3'), 'qubes-templates-itl',
+                            1024 ** 2),
+                        'fedora-32': qubesadmin.tools.qvm_template.DlEntry(
+                            ('0', '1', '2'), 'qubes-templates-itl',
+                            3 * 1024 ** 2),
+                    })
+            self.assertEqual(str(e.exception),
+                f'Not enough free space in {tmpdir} to download templates: '
+                '3.0 MiB needed, only 2.0 MiB is free.')
+            mock_usage.assert_called_once_with(tmpdir)
+        self.assertEqual(mock_qrexec.mock_calls, [])
+        self.assertEqual(mock_verify_rpm.mock_calls, [])
+        self.assertEqual(mock_dllist.mock_calls, [])
+
     def _mock_qrexec_download_short(self, args, app, spec, path,
                               key, dlsize=None, refresh=False):
         # pylint: disable=unused-argument
@@ -4602,6 +4796,7 @@ test-vm : Qubes template for fedora-31
                 keep_cache=True,
                 allow_pv=False,
                 skip_start=False,
+                skip_space_check=True,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
@@ -4821,6 +5016,7 @@ test-vm : Qubes template for fedora-31
                 yes=False,
                 allow_pv=False,
                 skip_start=False,
+                skip_space_check=True,
                 pool=None
             )
             mock_tmpdir.return_value.__enter__.return_value = \
