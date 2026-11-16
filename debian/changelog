@@ -1,3 +1,35 @@
+qubes-core-admin-client (4.3.36-1) unstable; urgency=medium
+
+  [ Ben Grande ]
+  * Add standalone disposable template to mock_app
+
+  [ Kunal Mehta ]
+  * Optimize QubesVM._get_derived_vms()
+
+  [ Frédéric Pierret (fepitre) ]
+  * qvm-template: add --name to install under a different name
+
+  [ Marek Marczykowski-Górecki ]
+  * tests: add admin.deviceclass.List call to mockups
+  * pylint: fix comment location
+
+  [ Frédéric Pierret (fepitre) ]
+  * qvm-template: keep the source template name in template-name
+
+  [ Marek Marczykowski-Górecki ]
+  * Skip restoring and cloning automatically managed tags
+
+  [ anon ]
+  * doc: fix cups default in qvm-service manpage
+
+  [ Alex Schose ]
+  * tags: reject an empty tag before calling qubesd
+
+  [ Marek Marczykowski-Górecki ]
+  * Adjust man page generation to updated setuptools
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 16 Nov 2026 05:55:28 +0100
+
 qubes-core-admin-client (4.3.35-1) unstable; urgency=medium
 
   [ Divina Commedia ]
