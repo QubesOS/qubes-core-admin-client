@@ -928,6 +928,7 @@ class BackupRestore:
             self.name = vm.name
             self.subdir = vm.backup_path
             self.size = vm.size
+            self.max_size = max(int(vm.size), vm.max_size)
             self.problems = set()
             self.template = vm.template
             if vm.properties.get('netvm', None):
@@ -1461,34 +1462,39 @@ class BackupRestore:
         return backup_app
 
     def _restore_vm_data(self, vms_dirs: list[str], vms_size: int,
+                         vms_max_size: int,
                          handlers: dict[str, Callable]) -> None:
         '''Restore data of VMs
 
         :param vms_dirs: list of directories to extract (skip others)
-        :param vms_size: expected size (abort if source stream exceed this
-        value)
+        :param vms_size: expected size
+        :param vms_max_size: maximum size (abort if source stream exceed this
+        value, plus a margin)
         :param handlers: handlers for restored files - see
         :py:class:`ExtractWorker3` for details
         '''
         self.log.debug("Working in temporary dir: %s", self.tmpdir)
         self.log.info("Extracting data: %s to restore", size_to_human(vms_size))
 
+        # margin for tar headers, compression overhead and small files
+        limit_bytes = (vms_max_size + vms_max_size // 10 +
+                       len(vms_dirs) * 10 * 1024 * 1024)
         # Currently each VM consists of at most 7 archives (count
         # file_to_backup calls in backup_prepare()), but add some safety
         # margin for further extensions. Each archive is divided into 100MB
         # chunks. Additionally each file have own hmac file. So assume upper
         # limit as 2*(10*COUNT_OF_VMS+TOTAL_SIZE/100MB)
         limit_count = str(2 * (10 * len(vms_dirs) +
-                               int(vms_size / (100 * 1024 * 1024))))
+                               int(limit_bytes / (100 * 1024 * 1024))))
 
         if self.options.ignore_size_limit:
             limit_count = '0'
-            vms_size = 0
+            limit_bytes = 0
 
         # retrieve backup from the backup stream (either VM, or dom0 file)
         (retrieve_proc, filelist_pipe, error_pipe) = \
             self._start_retrieval_process(
-                vms_dirs, limit_count, vms_size)
+                vms_dirs, limit_count, limit_bytes)
 
         to_extract = Queue()
 
@@ -2001,6 +2007,7 @@ class BackupRestore:
         vms_dirs = []
         handlers = {}
         vms_size = 0
+        vms_max_size = 0
         for vm_info in self._templates_first(restore_info.values()):
             vm: QubesVM = vm_info.restored_vm
             if vm and vm_info.subdir:
@@ -2008,12 +2015,14 @@ class BackupRestore:
                         vm_info.good_to_go:
                     vms_dirs.append(os.path.dirname(vm_info.subdir))
                     vms_size += int(vm_info.size)
+                    vms_max_size += vm_info.max_size
                     if self.options.verify_only:
                         continue
 
                     handlers[vm_info.subdir] = self._handle_dom0
                 else:
                     vms_size += int(vm_info.size)
+                    vms_max_size += vm_info.max_size
                     vms_dirs.append(vm_info.subdir)
 
                     if self.options.verify_only:
@@ -2033,13 +2042,14 @@ class BackupRestore:
                     handlers[os.path.join(vm_info.subdir,
                         'whitelisted-appmenus.list')] = \
                         functools.partial(self._handle_appmenus_list, vm)
+        extract_error = None
         try:
             self._restore_vm_data(vms_dirs=vms_dirs, vms_size=vms_size,
-                handlers=handlers)
+                vms_max_size=vms_max_size, handlers=handlers)
         except QubesException as err:
             if self.options.verify_only:
                 raise
-            self.log.error('Error extracting data: %s', str(err))
+            extract_error = err
         finally:
             if self.log.getEffectiveLevel() > logging.DEBUG:
                 shutil.rmtree(self.tmpdir)
@@ -2047,6 +2057,12 @@ class BackupRestore:
         if self.canceled:
             raise BackupCanceledError("Restore canceled",
                                       tmpdir=self.tmpdir)
+
+        if extract_error is not None:
+            # qubes restored so far are kept, but do not report success
+            raise QubesException(
+                'Error extracting data, restored qubes may be incomplete: '
+                '{}'.format(extract_error)) from extract_error
 
         self.log.info("-> Done.")
         if not self.options.verify_only:

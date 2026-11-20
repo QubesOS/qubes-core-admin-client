@@ -154,6 +154,11 @@ class Core3Qubes(qubesadmin.backup.BackupApp):
         if vm.features.pop('backup-content', False):
             vm.backup_path = vm.features.pop('backup-path', None)
             vm.size = vm.features.pop('backup-size', 0)
+            # backup-size can be too low; the data can't exceed the volume sizes
+            vm.max_size = sum(
+                int(node.get('size', 0))
+                for node in element.findall('./volume-config/volume')
+                if node.get('save_on_stop') == 'True')
 
         self.domains[vm.name] = vm
 

@@ -63,6 +63,8 @@ class BackupVM:
         self.backup_path = None
         #: size of the VM
         self.size = 0
+        #: upper bound of the VM data size in the backup, 0 if unknown
+        self.max_size = 0
 
     @property
     def included_in_backup(self) -> bool:
