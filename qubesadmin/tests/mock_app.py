@@ -194,6 +194,7 @@ DEFAULT_DOM0_FEATURES = {
 
 GLOBAL_PROPERTIES = {
     "clockvm": Property("", "vm", False),
+    "check_updates_vm": Property("True", "bool", True),
     "default_audiovm": Property("", "vm", False),
     "default_dispvm": Property("", "vm", False),
     "default_kernel": Property("1.1", "str", True),
