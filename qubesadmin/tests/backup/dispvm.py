@@ -102,6 +102,19 @@ class TC_00_RestoreInDispVM(qubesadmin.tests.QubesTestCase):
         expected_argv = ['--location-is-service', 'qubes.RestoreById+abc']
         self.assertEqual(expected_argv, reconstructed_argv)
 
+    def test_004_prepare_inner_args_pool(self):
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
+            b'0\0dom0 class=AdminVM state=Running\n'
+        )
+        argv = ['--pool', 'pool2', '/backup/location']
+        args = qvm_backup_restore.parser.parse_args(argv)
+        obj = RestoreInDisposableVM(self.app, args)
+        obj.storage_access_id = 'abc'
+        reconstructed_argv = obj.prepare_inner_args()
+        expected_argv = ['--pool', 'pool2',
+                         '--location-is-service', 'qubes.RestoreById+abc']
+        self.assertEqual(expected_argv, reconstructed_argv)
+
     def test_010_clear_old_tags(self):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = (
             b'0\0dom0 class=AdminVM state=Running\n'

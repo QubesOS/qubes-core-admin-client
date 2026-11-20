@@ -105,6 +105,7 @@ class RestoreInDisposableVM:
             handle_store_true),
         'compression': Option(('--compression-filter', '-Z'), handle_store),
         'appvm': Option(('--dest-vm', '-d'), handle_store),
+        'pool': Option(('--pool', '-P'), handle_store),
         'pass_file': Option(('--passphrase-file', '-p'), handle_store),
         'location_is_service': Option(('--location-is-service',),
             handle_store_true),
