@@ -184,6 +184,14 @@ List of known features
    Default: start with ``nomodeset`` kernel option unless GPU is attached to the
    qube.
 
+.. option:: no-logs-cleanup
+
+   When set to :py:obj:`True`, the qube's log files in dom0 are kept when the
+   qube is removed. Set it on a disposable template or a template to keep the
+   logs of the qubes based on it.
+
+   Default: remove the qube's logs in dom0 when the qube is removed
+
 .. option:: internal
 
    Internal qubes (with this feature set to :py:obj:`True`) are not included in the
