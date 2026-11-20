@@ -29,7 +29,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import fcntl
-import os
 import re
 import string
 import subprocess
@@ -105,27 +104,6 @@ def size_to_human(size: int) -> str:
     if size < 1024 * 1024 * 1024:
         return str(round(size / (1024.0 * 1024), 1)) + " MiB"
     return str(round(size / (1024.0 * 1024 * 1024), 1)) + " GiB"
-
-
-UPDATES_DEFAULT_VM_DISABLE_FLAG = (
-    "/var/lib/qubes/updates/vm-default-disable-updates"
-)
-
-
-def updates_vms_status(qvm_collection: QubesBase) -> bool | None:
-    """Check whether all VMs have the same check-updates value;
-    if yes, return it; otherwise, return None
-    """
-    # default value:
-    status = not os.path.exists(UPDATES_DEFAULT_VM_DISABLE_FLAG)
-    # check if all the VMs uses the default value
-    for vm in qvm_collection.domains:
-        if vm.qid == 0:
-            continue
-        if vm.features.get("check-updates", True) != status:
-            # "mixed"
-            return None
-    return status
 
 
 def vm_dependencies(
