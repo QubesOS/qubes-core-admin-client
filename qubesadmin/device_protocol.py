@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -907,7 +906,7 @@ class DeviceInfo(VirtualDevice):
     """Holds all information about a device"""
 
     # Subclasses should override this.
-    SUPPORTED_ASSIGNMENT_MODES: "frozenset[AssignmentMode]" = frozenset(
+    SUPPORTED_ASSIGNMENT_MODES: frozenset[AssignmentMode] = frozenset(
         {AssignmentMode.MANUAL, AssignmentMode.ASK, AssignmentMode.AUTO}
     )
 

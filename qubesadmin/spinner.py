@@ -1,5 +1,3 @@
-# vim: fileencoding=utf-8
-
 #
 # The Qubes OS Project, https://www.qubes-os.org/
 #
@@ -99,7 +97,7 @@ class QubesSpinner(AbstractSpinner):
 
     def show(self, prompt: str) -> None:
         self.hidelen = len(prompt) + 2
-        self.stream.write('{} {}'.format(prompt, next(self.charset)))
+        self.stream.write(f'{prompt} {next(self.charset)}')
         self.stream.flush()
 
     def hide(self) -> None:

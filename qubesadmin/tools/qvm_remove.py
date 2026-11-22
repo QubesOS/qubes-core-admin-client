@@ -96,12 +96,12 @@ def main(args=None, app=None):  # pylint: disable=missing-docstring
                     for holder, prop in dependencies:
                         if holder:
                             print(
-                                " - {} for {}".format(prop, holder.name),
+                                f" - {prop} for {holder.name}",
                                 file=sys.stderr,
                             )
                         else:
                             print(
-                                " - global property {}".format(prop),
+                                f" - global property {prop}",
                                 file=sys.stderr,
                             )
                 # Display the original message as well

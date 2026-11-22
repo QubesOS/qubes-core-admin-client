@@ -1,4 +1,3 @@
-# -*- encoding: utf8 -*-
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -19,8 +18,6 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=missing-docstring
-
-import sys
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
@@ -56,11 +53,8 @@ class TC_00_qvm_prefs(qubesadmin.tests.QubesTestCase):
         with self.assertRaises(SystemExit):
             with qubesadmin.tests.tools.StderrBuffer() as stderr:
                 qubesadmin.tools.qvm_prefs.main([], app=self.app)
-        if sys.version_info[0] == 2:
-            self.assertIn('too few arguments', stderr.getvalue())
-        else:
-            self.assertIn('error: the following arguments are required: VMNAME',
-                stderr.getvalue())
+        self.assertIn('error: the following arguments are required: VMNAME',
+            stderr.getvalue())
         self.assertAllCalled()
 
     def test_002_set_property(self):

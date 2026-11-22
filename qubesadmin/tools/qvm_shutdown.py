@@ -1,4 +1,3 @@
-# encoding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
@@ -22,7 +21,6 @@
 
 """Shutdown a qube"""
 
-from __future__ import print_function
 
 import asyncio
 import sys
@@ -159,7 +157,7 @@ async def run_async(args=None, app=None):
     for item in [unhandled, used, timedout]:
         for qube, exc in item.items():
             parser.print_error(
-                "Failed to shut down: {}: {}".format(qube.name, str(exc))
+                f"Failed to shut down: {qube.name}: {str(exc)}"
             )
 
     exit_code = len(unhandled) + len(used) + len(timedout)
