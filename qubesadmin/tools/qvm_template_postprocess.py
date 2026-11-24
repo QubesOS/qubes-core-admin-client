@@ -244,7 +244,11 @@ async def call_postinstall_service(vm):
                 timeout=qubesadmin.config.defaults['shutdown_timeout'],
             )
         except TimeoutError:
-            await asyncio.to_thread(vm.kill)
+            try:
+                await asyncio.to_thread(vm.kill)
+            except qubesadmin.exc.QubesVMNotStartedError:
+                # halted between the timeout and the kill
+                pass
     finally:
         vm.netvm = qubesadmin.DEFAULT
 
