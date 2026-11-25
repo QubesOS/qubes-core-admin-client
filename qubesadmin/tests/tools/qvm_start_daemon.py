@@ -1269,3 +1269,90 @@ global: {
             ],
         )
         self.assertEqual(mock_start_gui_for_stubdomain.mock_calls, [])
+
+    def setup_guivm_change(self, power_state=b"Running"):
+        self.app.expected_calls[("dom0", "admin.vm.List", None, None)] = (
+            b"0\x00test-vm class=AppVM state=Running\n"
+            b"gui-vm class=AppVM state=Running"
+        )
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.property.Get", "is_preload", None)
+        ] = b"0\x00default=True type=bool False"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.CurrentState", None, None)
+        ] = b"0\x00power_state=" + power_state
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.feature.CheckWithTemplate", "gui", None)
+        ] = b"0\x00True"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.property.Get", "xid", None)
+        ] = b"0\x00default=False type=int 3000"
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.property.Get", "stubdom_xid", None)
+        ] = b"0\x00default=False type=int -1"
+        # pylint: disable=protected-access
+        self.app._local_name = "gui-vm"
+        return self.app.domains["test-vm"]
+
+    def test_090_guivm_set_here(self):
+        """Switching a running qube's guivm here starts its GUI daemon"""
+        vm = self.setup_guivm_change()
+        with (
+            unittest.mock.patch("asyncio.ensure_future") as mock_future,
+            unittest.mock.patch.object(
+                self.launcher,
+                "start_gui_for_vm",
+                new_callable=unittest.mock.Mock,
+            ) as mock_start,
+            unittest.mock.patch("os.path.exists", return_value=False),
+        ):
+            self.launcher.on_property_guivm_set(
+                vm, "property-set:guivm", newvalue="gui-vm"
+            )
+        mock_start.assert_called_once_with(vm)
+        mock_future.assert_called_once_with(mock_start.return_value)
+        self.assertEqual(self.launcher.xid_cache["test-vm"], (3000, -1))
+
+    def test_091_guivm_set_elsewhere(self):
+        """Switching guivm to another qube starts nothing here"""
+        vm = self.setup_guivm_change()
+        with unittest.mock.patch.object(
+            self.launcher,
+            "start_gui_for_vm",
+            new_callable=unittest.mock.Mock,
+        ) as mock_start:
+            self.launcher.on_property_guivm_set(
+                vm, "property-set:guivm", newvalue="other-gui-vm"
+            )
+        mock_start.assert_not_called()
+
+    def test_092_guivm_set_halted(self):
+        """Switching guivm of a halted qube starts nothing"""
+        vm = self.setup_guivm_change(power_state=b"Halted")
+        with unittest.mock.patch.object(
+            self.launcher,
+            "start_gui_for_vm",
+            new_callable=unittest.mock.Mock,
+        ) as mock_start:
+            self.launcher.on_property_guivm_set(
+                vm, "property-set:guivm", newvalue="gui-vm"
+            )
+        mock_start.assert_not_called()
+
+    def test_093_guivm_reset_here(self):
+        """Resetting guivm to a default that is this qube starts GUI"""
+        vm = self.setup_guivm_change()
+        self.app.expected_calls[
+            ("test-vm", "admin.vm.property.Get", "guivm", None)
+        ] = b"0\x00default=True type=vm gui-vm"
+        with (
+            unittest.mock.patch("asyncio.ensure_future"),
+            unittest.mock.patch.object(
+                self.launcher,
+                "start_gui_for_vm",
+                new_callable=unittest.mock.Mock,
+            ) as mock_start,
+            unittest.mock.patch("os.path.exists", return_value=False),
+        ):
+            self.launcher.on_property_guivm_set(vm, "property-reset:guivm")
+        mock_start.assert_called_once_with(vm)
