@@ -640,6 +640,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
              'test-vm1+dev1+dead+beef+babe+u012345', None)] = b'0\0'
+        self.expected_device_call('test-vm2', 'Assigned')
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
@@ -653,6 +654,7 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         self.app.expected_calls[
             ('test-vm2', 'admin.vm.device.testclass.Unassign',
              'test-vm1+dev7+0000+0000++_______', None)] = b'0\0'
+        self.expected_device_call('test-vm2', 'Assigned')
         self.app.expected_calls[(
             'test-vm2', 'admin.vm.device.testclass.Attached', None, None
         )] = b'0\0'
@@ -738,6 +740,76 @@ class TC_00_qvm_device(qubesadmin.tests.QubesTestCase):
         )] = b'0\0'
         qubesadmin.tools.qvm_device.main(
             ['testclass', 'unassign', 'test-vm2'], app=self.app)
+        self.assertAllCalled()
+
+    def test_058_unassign_port_missing_device(self):
+        """Port without device ID unassigns the stored assignment of a gone
+        device."""
+        self.expected_device_call(
+            'test-vm2', 'Assigned',
+            b"0\0test-vm1+dev7+cafe+cafe++0123456u654321 "
+            b"devclass='testclass' mode='required'\n")
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+dev7+cafe+cafe++0123456u654321', None)] = b'0\0'
+        self.expected_device_call('test-vm2', 'Attached')
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev7'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_059_unassign_port_other_device(self):
+        """Port without device ID unassigns the stored assignment when
+        another device is on the port now."""
+        self.expected_device_call(
+            'test-vm2', 'Assigned',
+            b"0\0test-vm1+dev1+cafe+cafe++0123456u654321 "
+            b"devclass='testclass'\n")
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+dev1+cafe+cafe++0123456u654321', None)] = b'0\0'
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1'],
+            app=self.app)
+        self.assertAllCalled()
+
+    def test_0591_unassign_port_several(self):
+        """Port without device ID refuses when the port has several
+        assignments and none is the present device."""
+        self.expected_device_call(
+            'test-vm2', 'Assigned',
+            b"0\0test-vm1+dev7+cafe+cafe++0123456u654321 "
+            b"devclass='testclass'\n"
+            b"test-vm1+dev7+dead+dead++0123456u654321 "
+            b"devclass='testclass'\n")
+        with qubesadmin.tests.tools.StderrBuffer() as stderr:
+            ret = qubesadmin.tools.qvm_device.main(
+                ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev7'],
+                app=self.app)
+        self.assertEqual(ret, 1)
+        self.assertIn('several assignments', stderr.getvalue())
+        self.assertIn('test-vm1:dev7:cafe:cafe::0123456u654321',
+                      stderr.getvalue())
+        self.assertIn('test-vm1:dev7:dead:dead::0123456u654321',
+                      stderr.getvalue())
+        self.assertAllCalled()
+
+    def test_0592_unassign_port_several_present(self):
+        """Port without device ID unassigns the present device when the port
+        has several assignments."""
+        self.expected_device_call(
+            'test-vm2', 'Assigned',
+            b"0\0test-vm1+dev1+cafe+cafe++0123456u654321 "
+            b"devclass='testclass'\n"
+            b"test-vm1+dev1+dead+beef+babe+u012345 "
+            b"devclass='testclass'\n")
+        self.app.expected_calls[
+            ('test-vm2', 'admin.vm.device.testclass.Unassign',
+             'test-vm1+dev1+dead+beef+babe+u012345', None)] = b'0\0'
+        self.expected_device_call('test-vm2', 'Attached')
+        qubesadmin.tools.qvm_device.main(
+            ['testclass', 'unassign', 'test-vm2', 'test-vm1:dev1'],
+            app=self.app)
         self.assertAllCalled()
 
     def test_060_device_info(self):
