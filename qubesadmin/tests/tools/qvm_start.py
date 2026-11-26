@@ -318,3 +318,15 @@ class TC_00_qvm_start(qubesadmin.tests.QubesTestCase):
             app=self.app)
         self.assertEqual(retcode, 1)
         self.assertAllCalled()
+
+    def test_017_dispvm_hint(self):
+        """--dispvm fails and points to qvm-run, with or without a name."""
+        for args in (['--dispvm'], ['--dispvm', 'some-dvm'],
+                     ['--dispvm=some-dvm']):
+            with self.subTest(args=args):
+                with self.assertRaises(SystemExit) as e:
+                    with qubesadmin.tests.tools.StderrBuffer() as stderr:
+                        qubesadmin.tools.qvm_start.main(args, app=self.app)
+                self.assertEqual(e.exception.code, 2)
+                self.assertIn('qvm-run --dispvm', stderr.getvalue())
+        self.assertAllCalled()

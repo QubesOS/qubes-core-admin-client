@@ -19,6 +19,7 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 """qvm-start - start a domain"""
+import argparse
 import asyncio
 import sys
 
@@ -27,8 +28,33 @@ import qubesadmin.tools
 import qubesadmin.utils
 
 
+DISPVM_HINT = "To create and start a new disposable qube, use qvm-run --dispvm."
+
+
+class DispVMAction(argparse.Action):
+    """Point --dispvm users to qvm-run"""
+
+    def __call__(self, parser_, namespace, values, option_string=None):
+        parser_.error(
+            "qvm-start cannot create disposables. "
+            + DISPVM_HINT
+            + " For example, to open a terminal in a new disposable:"
+            " qvm-run --service --dispvm -- qubes.StartApp+qubes-run-terminal"
+        )
+
+
 parser = qubesadmin.tools.QubesArgumentParser(
-    description="start a domain", vmname_nargs="+"
+    description="start a domain",
+    epilog=DISPVM_HINT,
+    vmname_nargs="+",
+)
+
+parser.add_argument(
+    "--dispvm",
+    action=DispVMAction,
+    nargs="?",
+    metavar="DISPOSABLE_TEMPLATE",
+    help="not supported, use qvm-run --dispvm instead",
 )
 
 parser.add_argument(

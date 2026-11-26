@@ -145,6 +145,18 @@ Options
 
    Show program's version number and exit
 
+Examples
+--------
+
+To open a terminal in a new disposable qube based on the default disposable
+template:
+
+.. code-block:: console
+
+   qvm-run --service --dispvm -- qubes.StartApp+qubes-run-terminal
+
+The disposable is removed when the terminal is closed.
+
 Authors
 -------
 
