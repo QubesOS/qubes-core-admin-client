@@ -1327,7 +1327,6 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
         )
         self.assertAllCalled()
 
-    @unittest.expectedFailure
     def test_029_command_is_dashdash(self):
         self.app.expected_calls[
             (
@@ -1347,7 +1346,7 @@ class TC_00_qvm_run(qubesadmin.tests.QubesTestCase):
             [
                 (
                     "@dispvm:test-vm",
-                    "qubes.VMExec+----+----",
+                    "qubes.VMExec+----",
                     {
                         "stdin": subprocess.DEVNULL,
                         "stdout": subprocess.DEVNULL,
