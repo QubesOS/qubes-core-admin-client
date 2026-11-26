@@ -80,6 +80,22 @@ class TC_00_Dispvm(qubesadmin.tests.QubesTestCase):
         self.assertEqual(self.app.service_calls, [])
         self.assertAllCalled()
 
+    def test_003_local_cleanup_already_removed(self):
+        """cleanup() ignores a disposable already killed and removed"""
+        self.app.qubesd_connection_type = 'socket'
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.CreateDisposable', None, None)] = b'0\0disp123'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.Kill', None, None)] = \
+            b'2\0QubesVMNotFoundError\0\0No such domain: \'disp123\'\0'
+        self.app.expected_calls[
+            ('disp123', 'admin.vm.property.Get', 'qrexec_timeout', None)] = \
+            b'0\0default=yes type=int 30'
+        vm = qubesadmin.vm.DispVM.from_appvm(self.app, None)
+        vm.run_service_for_stdio('test.service')
+        vm.cleanup()
+        self.assertAllCalled()
+
     def test_010_remote_create_default(self):
         vm = qubesadmin.vm.DispVM.from_appvm(self.app, None)
         vm.run_service_for_stdio('test.service')
