@@ -301,7 +301,7 @@ def main(args=None, app=None):
     backup.options.dom0_home = args.dom0_home
     backup.options.ignore_username_mismatch = args.ignore_username_mismatch
     backup.options.ignore_size_limit = args.ignore_size_limit
-    backup.options.exclude = args.exclude
+    backup.options.exclude = list(args.exclude)
     backup.options.verify_only = args.verify_only
     backup.options.override_pool = args.pool
 
