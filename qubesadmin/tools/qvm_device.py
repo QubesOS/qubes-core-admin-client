@@ -570,12 +570,7 @@ def get_parser(device_class=None):
     )
     parser.allow_abbrev = False
     if device_class:
-        parser.add_argument(
-            "devclass",
-            const=device_class,
-            action="store_const",
-            help=argparse.SUPPRESS,
-        )
+        parser.set_defaults(devclass=device_class)
     else:
         parser.add_argument(
             "devclass",
