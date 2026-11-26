@@ -25,7 +25,8 @@ from operator import delitem, setitem
 from unittest.mock import patch
 
 import qubesadmin.features
-from qubesadmin.exc import PermissionDenied, QubesFeatureNotFoundError
+from qubesadmin.exc import PermissionDenied, QubesDaemonAccessError, \
+    QubesFeatureNotFoundError
 import qubesadmin.tests
 
 
@@ -76,6 +77,41 @@ class TC_00_Features(qubesadmin.tests.QubesTestCase):
             ('test-vm', 'admin.vm.feature.Get', 'feature1', None)] = \
             b'2\x00QubesFeatureNotFoundError\x00\x00feature1\x00'
         self.assertEqual(self.vm.features.get('feature1', 'other'), 'other')
+        self.assertAllCalled()
+
+    def test_014_get_if_allowed(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.Get', 'feature1', None)] = b''
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.Get', 'feature2', None)] = \
+            b'2\x00QubesFeatureNotFoundError\x00\x00feature2\x00'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.Get', 'feature3', None)] = \
+            b'0\0value3'
+        with self.assertRaises(QubesDaemonAccessError):
+            self.vm.features.get('feature1', 'other')
+        self.assertEqual(
+            self.vm.features.get_if_allowed('feature1', 'other'), 'other')
+        self.assertIsNone(self.vm.features.get_if_allowed('feature1'))
+        self.assertEqual(
+            self.vm.features.get_if_allowed('feature2', 'other'), 'other')
+        self.assertEqual(
+            self.vm.features.get_if_allowed('feature3', 'other'), 'value3')
+        self.assertAllCalled()
+
+    def test_015_check_with_template_if_allowed(self):
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'feature1',
+             None)] = b''
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.CheckWithTemplate', 'feature2',
+             None)] = b'0\0value2'
+        with self.assertRaises(QubesDaemonAccessError):
+            self.vm.features.check_with_template('feature1', 'other')
+        self.assertEqual(self.vm.features.check_with_template_if_allowed(
+            'feature1', 'other'), 'other')
+        self.assertEqual(self.vm.features.check_with_template_if_allowed(
+            'feature2', 'other'), 'value2')
         self.assertAllCalled()
 
     def test_020_set(self):

@@ -25,7 +25,7 @@ import typing
 from typing import TypeVar
 from collections.abc import Iterator, Generator
 
-from qubesadmin.exc import QubesFeatureNotFoundError
+from qubesadmin.exc import QubesDaemonAccessError, QubesFeatureNotFoundError
 
 if typing.TYPE_CHECKING:
     from qubesadmin.vm import QubesVM
@@ -139,9 +139,26 @@ class Features:
             return default
 
     @typing.overload
-    def check_with_template(self, item: str) -> str | None: ...
+    def get_if_allowed(self, item: str) -> str | None: ...
     @typing.overload
-    def check_with_template(self, item: str, default: T) -> str | T: ...
+    def get_if_allowed(self, item: str, default: T) -> str | T: ...
+    # Overloaded to handle default None return type
+    def get_if_allowed(self, item: str, default: object = None) -> object:
+        '''
+        Get a feature, as :py:meth:`get` does. Return default value if the
+        feature is missing and also if the policy refuses to read it.
+        '''
+        try:
+            return self.get(item, default)
+        except QubesDaemonAccessError:
+            return default
+
+    @typing.overload
+    def check_with_template(self, feature: str, *,
+                            active: bool = True) -> str | None: ...
+    @typing.overload
+    def check_with_template(self, feature: str, default: T,
+                            active: bool = True) -> str | T: ...
     # Overloaded to handle default None return type
     def check_with_template(self, feature: str, default: object = None,
                             active: bool = True) -> object:
@@ -159,4 +176,24 @@ class Features:
         except KeyError:
             if default is self.NO_DEFAULT:
                 raise
+            return default
+
+    @typing.overload
+    def check_with_template_if_allowed(self, feature: str, *,
+                                       active: bool = True) -> str | None: ...
+    @typing.overload
+    def check_with_template_if_allowed(self, feature: str, default: T,
+                                       active: bool = True) -> str | T: ...
+    # Overloaded to handle default None return type
+    def check_with_template_if_allowed(self, feature: str,
+                                       default: object = None,
+                                       active: bool = True) -> object:
+        '''
+        Check if the vm's template has the specified feature, as
+        :py:meth:`check_with_template` does. Return default value if the
+        feature is missing and also if the policy refuses to read it.
+        '''
+        try:
+            return self.check_with_template(feature, default, active)
+        except QubesDaemonAccessError:
             return default
