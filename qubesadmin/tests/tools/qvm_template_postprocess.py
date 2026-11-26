@@ -25,6 +25,7 @@ import asyncio
 import os
 import subprocess
 import tempfile
+import time
 from unittest import mock
 import qubesadmin.tests
 import qubesadmin.tools.qvm_template_postprocess
@@ -494,6 +495,42 @@ class TC_00_qvm_template_postprocess(qubesadmin.tests.QubesTestCase):
         mock_import_appmenus.assert_called_once_with(self.app.domains[
             'test-vm'], self.source_dir.name, skip_generate=False)
         self.assertEqual(self.app.service_calls, [])
+        self.assertAllCalled()
+
+    @mock.patch.dict('qubesadmin.config.defaults', {'shutdown_timeout': 0.1})
+    @mock.patch('qubesadmin.vm.QubesVM.shutdown',
+        side_effect=lambda wait: time.sleep(0.5))
+    @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_appmenus')
+    @mock.patch('qubesadmin.tools.qvm_template_postprocess.import_root_img')
+    @mock.patch('qubesadmin.tools.qvm_template_postprocess.reset_private_img')
+    def test_023_post_install_halted_before_kill(self, _mock_reset_private_img,
+            _mock_import_root_img, _mock_import_appmenus, _mock_shutdown):
+        """Shutdown timeout, then the qube halts before the kill: no error."""
+        self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = \
+            b'0\0test-vm class=TemplateVM state=Halted\n'
+        self.app.add_new_vm = mock.Mock()
+
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Set', 'netvm', b'')] = b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Set', 'installed_by_rpm', b'True')] \
+            = b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.property.Reset', 'netvm', None)] = b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.feature.Set', 'qrexec', b'1')] = b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Start', None, None)] = b'0\0'
+        self.app.expected_calls[
+            ('test-vm', 'admin.vm.Kill', None, None)] = \
+            b'2\x00QubesVMNotStartedError\x00\x00Domain is powered off: ' \
+            b'test-vm\x00'
+
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        ret = qubesadmin.tools.qvm_template_postprocess.main([
+            '--really', 'post-install', 'test-vm', self.source_dir.name],
+            app=self.app)
+        self.assertEqual(ret, 0)
         self.assertAllCalled()
 
     def test_030_pre_remove(self):
