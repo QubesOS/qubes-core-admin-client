@@ -50,6 +50,19 @@ class TC_00_Column(qubesadmin.tests.QubesTestCase):
         finally:
             del qubesadmin.tools.qvm_ls.Column.columns['TESTCOLUMN']
 
+    def test_110_help_lists_name(self):
+        '''NAME is listed by --help and --help-columns.'''
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_ls.main(['--help-columns'], app=TestApp())
+        self.assertRegex(stdout.getvalue(), r'(?m)^  NAME +Name of the qube')
+        with qubesadmin.tests.tools.StdoutBuffer() as stdout:
+            with self.assertRaises(SystemExit):
+                qubesadmin.tools.qvm_ls.main(['--help'], app=TestApp())
+        columns = stdout.getvalue().split(
+            'available columns (see --help-columns):')[1]
+        self.assertRegex(columns, r'\bNAME\b')
+
 
 class TC_50_List(qubesadmin.tests.QubesTestCase):
     def test_100_list_with_status(self):
