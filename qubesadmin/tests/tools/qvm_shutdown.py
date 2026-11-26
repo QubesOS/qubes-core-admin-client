@@ -21,10 +21,21 @@
 # pylint: disable=missing-docstring
 
 import asyncio
+from collections import Counter
 
 import qubesadmin.tests
 import qubesadmin.tests.tools
 import qubesadmin.tools.qvm_shutdown
+
+
+def _in_use(*names):
+    '''qubesd reply for QubesVMInUseError, as raised by the NetVM
+    ``domain-pre-shutdown`` guard.'''
+    return (
+        b'2\x00QubesVMInUseError\x00\x00'
+        b'There are other VMs connected to this VM: '
+        + ', '.join(names).encode() + b'\x00'
+    )
 
 
 class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
@@ -362,3 +373,61 @@ class TC_00_qvm_shutdown(qubesadmin.tests.QubesTestCase):
                 ['--wait', 'some-vm'], app=self.app)
         self.assertEqual(cmg.exception.code, 1)
         self.assertAllCalled()
+
+    def test_018_wait_netvm_chain(self):
+        '''--wait drains a three-level NetVM chain (qubes-issues#10860)
+
+        The reported command, ``qvm-shutdown sys-net sys-firewall
+        sys-whonix``, is modelled with scripted replies for a chain where
+        ``sys-net`` provides network to ``sys-firewall``, which provides
+        network to ``sys-whonix``.  Each provider's first attempt is
+        refused with ``QubesVMInUseError`` and a later attempt is accepted,
+        which exercises the client's retry path over the whole chain -
+        including its retry-count boundary, as ``sys-net`` is accepted only
+        on the client's last permitted retry pass.
+
+        This is a client unit test with *scripted* server replies, not a
+        live server lifecycle test.  Replies are fixed per (qube, attempt)
+        and returned immediately: the mock does not simulate shutdown
+        timing, and it does not check that a dependent has actually halted
+        before its provider succeeds.  The test therefore covers only the
+        client side - that ``--wait`` retries the chain to completion and
+        that every shutdown request carries the ``wait`` argument - and it
+        does not independently verify real server-side shutdown ordering or
+        lifecycle.
+        '''
+        self.app.expected_calls[
+            ('dom0', 'admin.vm.List', None, None)] = \
+            b'0\x00' \
+            b'sys-net class=AppVM state=Running\n' \
+            b'sys-firewall class=AppVM state=Running\n' \
+            b'sys-whonix class=AppVM state=Running\n'
+        # Scripted replies, one consumed per attempt.  sys-whonix is the end
+        # of the chain, so its first attempt is accepted.
+        self.app.expected_calls[
+            ('sys-whonix', 'admin.vm.Shutdown', 'wait', None)] = b'0\x00'
+        # sys-firewall: refused once, accepted on the retry.
+        self.app.expected_calls[
+            ('sys-firewall', 'admin.vm.Shutdown', 'wait', None)] = [
+            _in_use('sys-whonix'), b'0\x00']
+        # sys-net: refused twice, accepted on the third attempt.
+        self.app.expected_calls[
+            ('sys-net', 'admin.vm.Shutdown', 'wait', None)] = [
+            _in_use('sys-firewall'), _in_use('sys-firewall'), b'0\x00']
+        # A failed shutdown exits non-zero (raises SystemExit); returning
+        # without one means the client ended with no failed qubes.
+        qubesadmin.tools.qvm_shutdown.main(
+            ['--wait', 'sys-net', 'sys-firewall', 'sys-whonix'], app=self.app)
+        self.assertAllCalled()
+        # Every qube is attempted once per pass, so the retry counts follow
+        # the scripted chain depth: 1, 2 and 3 attempts.  Order *within* a
+        # pass is concurrent (asyncio.to_thread), so these per-qube counts -
+        # not a global call sequence - are what can be asserted reliably.
+        self.assertEqual(
+            Counter(
+                dest
+                for dest, method, _arg, _payload in self.app.actual_calls
+                if method == 'admin.vm.Shutdown'
+            ),
+            {'sys-whonix': 1, 'sys-firewall': 2, 'sys-net': 3},
+        )
