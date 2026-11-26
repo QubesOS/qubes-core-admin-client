@@ -128,7 +128,9 @@ class QubesSpinnerEnterpriseEdition(QubesSpinner):
             try:
                 curses.setupterm()
                 self.has_terminfo = True
-                self.cub1 = typing.cast(bytes, curses.tigetstr('cub1')).decode()
+                cub1 = curses.tigetstr('cub1')
+                if cub1 is not None:
+                    self.cub1 = cub1.decode()
             except (curses.error, io.UnsupportedOperation):
                 # we are in very non-Enterprise environment
                 self.has_terminfo = False
