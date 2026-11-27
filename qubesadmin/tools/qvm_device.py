@@ -421,10 +421,40 @@ def unassign_device(args):
                 port=Port(device.backend_domain, "*", device.devclass)
             )
         assignment = DeviceAssignment(device, frontend_domain=vm)
+        if not (args.only_port or args.only_device or args.device_id_given):
+            assignment = _assignment_on_port(assignment, vm, args.devclass)
         _unassign_and_show_message(assignment, vm, args)
     else:
         for assignment in vm.devices[args.devclass].get_assigned_devices():
             _unassign_and_show_message(assignment, vm, args)
+
+
+def _assignment_on_port(assignment, vm, devclass):
+    """
+    Resolve a port given without device ID against the VM's assignments,
+    so an assignment can be removed even if its device is gone or changed.
+    """
+    on_port = []
+    for assigned in vm.devices[devclass].get_assigned_devices():
+        if assigned == assignment:
+            return assignment
+        if (
+            assigned.backend_domain == assignment.backend_domain
+            and assigned.port_id == assignment.port_id
+        ):
+            on_port.append(assigned)
+    if len(on_port) > 1:
+        raise qubesadmin.exc.QubesException(
+            f"{assignment.backend_name}:{assignment.port_id} has several "
+            "assignments, give the device ID of the one to remove:\n"
+            + "\n".join(
+                f"\t{a.backend_name}:{a.port_id}:{a.device_id}"
+                for a in on_port
+            )
+        )
+    if on_port:
+        return on_port[0]
+    return assignment
 
 
 def _unassign_and_show_message(assignment, vm, args):
@@ -532,6 +562,7 @@ class DeviceAction(qubesadmin.tools.QubesAction):
                 parser.error_runtime("no such backend vm!")
                 return
 
+            namespace.device_id_given = dev.is_device_id_set
             try:
                 # load device info
                 _dev = dev.backend_domain.devices[devclass][dev.port_id]

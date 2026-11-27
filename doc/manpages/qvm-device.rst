@@ -153,6 +153,8 @@ unassign
 | :command:`qvm-device` *DEVICE_CLASS* unassign [-h] [--verbose] [--quiet] *VMNAME* *BACKEND_DOMAIN:PORT_ID[:DEVICE_ID]*
 
 Remove assignment of device with *BACKEND_DOMAIN:PORT_ID:DEVICE_ID* from domain *VMNAME*.
+If *DEVICE_ID* is not given, remove the assignment on that port, even if its device is gone or another device is there now.
+If the port has several assignments and none of them is the device there now, nothing is removed and the error shows their device IDs.
 If no device is given, remove assignments of all *DEVICE_CLASS* devices.
 
 .. option:: --port, --only-port
