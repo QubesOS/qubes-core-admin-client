@@ -204,6 +204,23 @@ qrexec_timeout
 
     TemplateBasedVM uses its template's value as a default.
 
+allowed_reboots
+    Property type: int
+
+    Number of reboot requests that can be acknowledged. If set to ``0``, no
+    request will be fulfilled. If set to ``-1``, all requests will be fulfilled.
+    If set to a number greater than zero, consecutive reboots will be allowed up
+    to that threshold, attempting to reboot when the counter is over the maximum
+    allowed, will simple shut down. A non-reboot shutdown resets the counter.
+
+    A shutdown generates a volume revision (see `revisions_to_keep` in
+    :manpage:`qvm-volume(1)`). Allowing the qube to reboot several times, also
+    allows it to throw away previous revisions of its storage volumes, and a
+    user will not be able to revert to a known good state in case of compromise
+    or unintentional restart loop.
+
+    TemplateBasedVM uses its template's value as a default.
+
 stubdom_mem
     Accepted values: memory in MiB
 
