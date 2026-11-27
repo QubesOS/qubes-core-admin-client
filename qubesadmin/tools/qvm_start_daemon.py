@@ -1045,6 +1045,32 @@ class DAEMONLauncher:
         ):
             asyncio.ensure_future(self.start_audio(vm))
 
+    def on_property_guivm_set(self, vm, _event, **kwargs):
+        """Start the GUI daemon of a running qube whose guivm is now this
+        qube"""
+        if (
+            "guivm" not in self.enabled_services
+            or not self.is_watched(vm)
+            or getattr(vm, "is_preload", False)
+        ):
+            return
+        if "newvalue" in kwargs:  # pylint: disable=consider-using-get
+            newvalue = kwargs["newvalue"]
+        else:
+            newvalue = str(getattr(vm, "guivm", None))
+        if newvalue != self.app.local_name:
+            return
+        try:
+            if vm.get_power_state() != "Running":
+                return
+            if not vm.features.check_with_template("gui", True):
+                return
+            self.xid_cache[vm.name] = vm.xid, vm.stubdom_xid
+            if not os.path.exists(self.guid_pidfile(vm.xid)):
+                asyncio.ensure_future(self.start_gui_for_vm(vm))
+        except qubesadmin.exc.QubesException as e:
+            vm.log.warning("Failed to start GUI for %s: %s", vm.name, str(e))
+
     def cleanup_guid(self, xid):
         """
         Clean up after qubes-guid.
@@ -1099,6 +1125,9 @@ class DAEMONLauncher:
             "property-reset:audiovm",
         ]:
             events.add_handler(event, self.on_property_audiovm_set)
+
+        for event in ["property-set:guivm", "property-reset:guivm"]:
+            events.add_handler(event, self.on_property_guivm_set)
 
     def is_watched(self, vm):
         """
