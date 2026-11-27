@@ -58,6 +58,7 @@ from qubesadmin.exc import (
     QubesVMNotFoundError,
 )
 from qubesadmin.label import Label
+from qubesadmin.stats import StatsData, StatsMonitor
 from qubesadmin.tools import QubesArgumentParser
 from qubesadmin.utils import start, pause, unpause, shutdown, kill
 from qubesadmin.vm import QubesVM, POWER_STATES
@@ -284,9 +285,6 @@ class Stats:
     # pylint: disable=too-many-instance-attributes
 
     outdated_by_removal: list[str] = []
-    host_checked: bool = False
-    host_memory_max: int | str = "NA"
-    host_no_cpus: int | str = "NA"
 
     def __init__(self, vm: QubesVM) -> None:
         super().__init__()
@@ -328,14 +326,6 @@ class Stats:
         self.memory_used_total: int | str = "NA"
         self.cpu_time_total: int | str = "NA"
         self.online_vcpus_total: int | str = "NA"
-
-        if self.__class__.host_checked is False:
-            self.__class__.host_checked = True
-            host_memory_max: int | str = getattr(self.vm.app, "maxmem", "NA")
-            if isinstance(host_memory_max, int):
-                host_memory_max = int(host_memory_max) * 1024
-            self.__class__.host_memory_max = host_memory_max
-            self.__class__.host_no_cpus = getattr(self.vm.app, "no_cpus", "NA")
 
     def can_gui(self) -> bool:
         """
@@ -481,98 +471,16 @@ class Stats:
         )
         self.set_verbose({"start_time": newvalue})
 
-    def update_stats(self, **kwargs: Any) -> None:
+    def update_stats(self, data: StatsData) -> None:
         """
         Update memory and CPU statistics.
         """
-        memory_assigned_total = int(kwargs["memory_assigned_total"])
-        memory_assigned_usable = int(kwargs["memory_assigned_usable"])
-        memory_with_swap_used = int(kwargs["memory_with_swap_used"])
-        memory_used_total = memory_with_swap_used
-        swap_used = kwargs.get("swap_used")
-        if swap_used:
-            swap_used = int(swap_used)
-            memory_used_noswap = round(
-                memory_with_swap_used - swap_used, MEMORY_UNIT_PRECISION
-            )
-        else:
-            swap_used = "NA"
-            memory_used_noswap = "NA"
-
-        if isinstance(self.memory_max, int) and self.memory_max > 0:
-            memory_usage_assigned: float | str = round(
-                float(memory_assigned_total / self.memory_max) * 100, 1
-            )
-        else:
-            memory_usage_assigned = "NA"
-        if memory_assigned_usable > 0:
-            if isinstance(memory_used_noswap, (int, float)):
-                memory_usage_used: float | str = round(
-                    float(memory_used_noswap / memory_assigned_usable) * 100, 1
-                )
-            else:
-                memory_usage_used = "NA"
-        else:
-            memory_usage_used = 0.0
-        if (
-            isinstance(memory_used_noswap, (int, float))
-            and memory_used_noswap > 0
-            and isinstance(swap_used, (int, float))
-        ):
-            memory_usage_swap_over_used: float | str = round(
-                float(swap_used / memory_used_noswap) * 100, 1
-            )
-        elif not isinstance(memory_used_noswap, (int, float)) or not isinstance(
-            swap_used, (int, float)
-        ):
-            memory_usage_swap_over_used = "NA"
-        else:
-            memory_usage_swap_over_used = 0.0
-
-        cpu_time = int(kwargs["cpu_time"]) // 10**3
-        cpu_time_internal = kwargs.get("cpu_time_internal")
-        if cpu_time_internal is None:
-            cpu_time_internal = "NA"
-            cpu_time_total = cpu_time
-        else:
-            cpu_time_internal = int(cpu_time_internal) // 10**3
-            cpu_time_total = cpu_time + cpu_time_internal
-
-        cpu_usage = int(kwargs["cpu_usage"])
-        cpu_usage_internal = kwargs.get("cpu_usage_internal")
-        if cpu_usage_internal is None:
-            cpu_usage_internal = "NA"
-        else:
-            cpu_usage_internal = float(cpu_usage_internal)
-
-        online_vcpus = int(kwargs["online_vcpus"])
-        online_vcpus_internal = kwargs.get("online_vcpus_internal")
-        if online_vcpus_internal is None:
-            online_vcpus_internal = "NA"
-            online_vcpus_total = online_vcpus
-        else:
-            online_vcpus_internal = int(online_vcpus_internal)
-            online_vcpus_total = online_vcpus + online_vcpus_internal
-
-        data = {
-            "memory_assigned_total": memory_assigned_total,
-            "memory_assigned_usable": memory_assigned_usable,
-            "memory_used_total": memory_used_total,
-            "memory_used_noswap": memory_used_noswap,
-            "swap_used": swap_used,
-            "memory_usage_used": memory_usage_used,
-            "memory_usage_assigned": memory_usage_assigned,
-            "memory_usage_swap_over_used": memory_usage_swap_over_used,
-            "cpu_time": cpu_time,
-            "cpu_usage": cpu_usage,
-            "online_vcpus": online_vcpus,
-            "cpu_time_internal": cpu_time_internal,
-            "cpu_usage_internal": cpu_usage_internal,
-            "online_vcpus_internal": online_vcpus_internal,
-            "cpu_time_total": cpu_time_total,
-            "online_vcpus_total": online_vcpus_total,
-        }
-        self.set_verbose(data)
+        self.set_verbose(
+            {
+                key: "NA" if value is None else value
+                for key, value in data.items()
+            }
+        )
 
     def update_memory_init(self, value: int) -> None:
         """
@@ -582,22 +490,9 @@ class Stats:
 
     def update_memory_max(self, value: int) -> None:
         """
-        Update maximum memory and it's related properties.
+        Update maximum memory.
         """
-        memory_max = int(value) * 1024
-        if memory_max > 0:
-            memory_usage_assigned: float | str = "NA"
-            if isinstance(self.memory_assigned_total, int):
-                memory_usage_assigned = round(
-                    float(self.memory_assigned_total / memory_max) * 100, 1
-                )
-        else:
-            memory_usage_assigned = "NA"
-        data = {
-            "memory_max": memory_max,
-            "memory_usage_assigned": memory_usage_assigned,
-        }
-        self.set_verbose(data)
+        self.set_verbose({"memory_max": int(value) * 1024})
 
     def update_generic(self, name: str, value: Any) -> None:
         """
@@ -626,6 +521,7 @@ class Screen:
     def __init__(
         self,
         app: QubesBase,
+        vm_stats: StatsMonitor,
         show_halted: bool,
         allow_color: bool,
         filter_query: str,
@@ -637,6 +533,7 @@ class Screen:
         # pylint: disable=too-many-positional-arguments
         self.allow_color = allow_color
         self.app = app
+        self.vm_stats = vm_stats
         self.show_halted = show_halted
         self.filter_query = filter_query
         self.filter = False
@@ -1275,16 +1172,18 @@ class Screen:
             used_text = "used"
             swap_text = "swap"
 
-        memory_total = Stats.host_memory_max
-        if isinstance(memory_total, int):
-            memory_total = convert_memory(memory_total)
+        memory_total: int | float | str = "NA"
+        if (host_memory_max := self.vm_stats.host_memory_max) is not None:
+            memory_total = convert_memory(host_memory_max)
         sum_memory_used_noswap = convert_memory(sum(memory_used_noswap_total))
         sum_swap_used = convert_memory(sum(swap_used_total))
         sum_memory_assigned_total_total = convert_memory(
             sum(memory_assigned_total_total)
         )
 
-        no_cpus = Stats.host_no_cpus
+        no_cpus: int | str | None = self.vm_stats.host_cpus
+        if no_cpus is None:
+            no_cpus = "NA"
         header_cpu_prefix = "  {}".format(cpu_text)
         header_cpu_suffix = ": {}".format(no_cpus)
         if MEMORY_UNIT_PRECISION == 0:
@@ -1945,11 +1844,16 @@ class Monitor:
         self.dispatcher = dispatcher
         self.stats_dispatcher = stats_dispatcher
         self.all_domains = all_domains
+        self.vm_stats = StatsMonitor(
+            app=app, dispatcher=dispatcher, stats_dispatcher=stats_dispatcher
+        )
+        self.vm_stats.listeners.append(self.update_stats)
         sort_col_index: int | None = None
         if sort_column is not None:
             sort_col_index = list(columns.keys()).index(sort_column)
         self.screen = Screen(
             app=self.app,
+            vm_stats=self.vm_stats,
             show_halted=show_halted,
             allow_color=allow_color,
             filter_query=filter_query,
@@ -1977,13 +1881,13 @@ class Monitor:
         ):
             self.add_domain(submitter=None, vm=vm, event=None)
 
-    def update_stats(self, vm: QubesVM, _event: str, **kwargs: Any) -> None:
+    def update_stats(self, name: str, data: StatsData | None) -> None:
         """
-        Read vm-stats and update qube statistics.
+        Update qube statistics. Stats dropped when a qube stops stay shown.
         """
-        if vm not in self.__class__.entries:
+        if data is None or name not in self.__class__.entries:
             return
-        self.__class__.entries[vm].update_stats(**kwargs)
+        self.__class__.entries[name].update_stats(data)  # type: ignore[index]
 
     def refresh_all_items(
         self, submitter: QubesVM | None, _event: str, **_kwargs: Any
@@ -2160,7 +2064,6 @@ class Monitor:
         """
         Track and set event handlers.
         """
-        stats_handlers = [("vm-stats", self.update_stats)]
         handlers = [
             ("connection-established", self.refresh_all_items),
             ("domain-add", self.add_domain),
@@ -2179,8 +2082,7 @@ class Monitor:
         ]
         for event in POWER_EVENTS:
             handlers.append((event, self.update_domain_item))
-        for event, handler in stats_handlers:
-            self.stats_dispatcher.add_handler(event=event, handler=handler)
+        self.vm_stats.register_events()
         for event, handler in handlers:
             self.dispatcher.add_handler(event=event, handler=handler)
 
@@ -2188,6 +2090,7 @@ class Monitor:
         """
         Stop watchers.
         """
+        self.vm_stats.unregister_events()
         self.stats_dispatcher.stop()
         self.dispatcher.stop()
 

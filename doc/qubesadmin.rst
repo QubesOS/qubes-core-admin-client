@@ -95,6 +95,14 @@ qubesadmin\.spinner module
     :undoc-members:
     :show-inheritance:
 
+qubesadmin\.stats module
+------------------------
+
+.. automodule:: qubesadmin.stats
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 qubesadmin\.storage module
 --------------------------
 
