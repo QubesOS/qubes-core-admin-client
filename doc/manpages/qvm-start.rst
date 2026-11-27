@@ -31,6 +31,10 @@ be temporarily attached to the started qube, for example to boot an installer
 image. The attachment is not persistent - it will not be re-attached on the
 next qube startup.
 
+This tool does not create disposable qubes. A new disposable is created by
+:command:`qvm-run` :option:`--dispvm`, which starts an application in it and
+removes the disposable when the application exits. See :manpage:`qvm-run(1)`.
+
 Options
 -------
 
@@ -84,6 +88,11 @@ Options
 
    Temporarily attach Windows tools CDROM to the domain. This is equivalent with
    `--cdrom=dom0:/usr/lib/qubes/qubes-windows-tools.iso`.
+
+.. option:: --dispvm [DISPOSABLE_TEMPLATE]
+
+   Not supported. Prints a pointer to :command:`qvm-run` :option:`--dispvm`
+   and exits with an error.
 
 .. option:: --version
 
