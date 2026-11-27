@@ -1,3 +1,79 @@
+qubes-core-admin-client (4.4.3-1) unstable; urgency=medium
+
+  [ Ben Grande ]
+  * Add active_template to mock_app
+
+  [ Andreas Glashauser ]
+  * doc: revise qvm-unpause manpage
+  * doc: revise qvm-tags manpage
+  * doc: revise qvm-remove manpage
+  * doc: revise qvm-clone manpage
+  * doc: revise qvm-check manpage
+  * doc: revise qvm-start manpage
+  * doc: revise qvm-backup-restore manpage
+  * doc: revise qvm-start-daemon manpage
+  * doc: correct qvm-backup-restore integrity description
+  * qvm-tags: allow deleting multiple tags at once
+
+  [ Marek Marczykowski-Górecki ]
+  * Skip restoring and cloning automatically managed tags
+
+  [ Frédéric Pierret (fepitre) ]
+  * qvm-start-daemon: add the max_clipboard_image_size gui option
+
+  [ Andreas Glashauser ]
+  * Cache direct VM feature and tag reads
+
+  [ Alex Schose ]
+  * tags: reject an empty tag before calling qubesd
+
+  [ Marek Marczykowski-Górecki ]
+  * Add features related to clipboard limits to test mockups
+
+  [ anon ]
+  * doc: fix cups default in qvm-service manpage
+
+  [ hippalectryon ]
+  * remove 3.x compatibility interface
+  * remove unused --spinner default
+  * qvm-features: document no-logs-cleanup
+  * qvm-backup-restore: add --pool option
+  * qvm-template: check free space before download and import
+  * backup: restore R3 qubes-update-check as service.qubes-update-check
+  * utils: remove unused updates_vms_status()
+
+  [ Marta Marczykowska-Górecka ]
+  * Add missing check_updates_vm global prop to mock
+
+  [ Ben Grande ]
+  * Include active_template when checking qube deps
+  * Unified method to check VM properties
+  * Add deferred features from manager settings
+
+  [ hippalectryon ]
+  * backup/restore: limit restored data to the size of the qubes'
+    volumes
+  * tests: fix expected service call in qvm-run test_029
+  * spinner: don't crash when terminfo has no cub1
+  * qvm-backup-restore: don't modify the parser's default exclude list
+  * backup: revoke backup storage access after paranoid restore
+  * qvm-template-postprocess: ignore kill error if template already
+    halted
+
+  [ Mickey Slaven ]
+  * qvm-device: fix wrappers on Python 3.14
+
+  [ Abhijit Balpande ]
+  * qvm-shutdown: document --wait dependency handling
+
+  [ Frédéric Pierret (fepitre) ]
+  * features: add reads that tolerate refusal
+  * exc: drop quotes from device error messages
+  * devices: list nothing when listing is refused
+  * tags: add membership that tolerates refusal
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 27 Nov 2026 23:37:23 +0100
+
 qubes-core-admin-client (4.4.2-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
