@@ -191,6 +191,10 @@ def calc_used(vm, volume_name):
 
 # todo maxmem
 
+Column('NAME',
+    attr='name',
+    doc='Name of the qube.')
+
 Column('STATE',
     attr=(lambda vm: vm.get_power_state()),
     doc='Current power state.')
