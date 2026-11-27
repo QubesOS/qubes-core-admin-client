@@ -222,9 +222,12 @@ class DeviceCollection:
             yield from self._attachment_cache
             return
         new_cache = []
-        assignments_str = self._vm.qubesd_call(
-            None, "admin.vm.device.{}.Attached".format(self._class)
-        ).decode()
+        try:
+            assignments_str = self._vm.qubesd_call(
+                None, "admin.vm.device.{}.Attached".format(self._class)
+            ).decode()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            return
         for assignment_str in assignments_str.splitlines():
             head, _, untrusted_rest = assignment_str.partition(" ")
             device = VirtualDevice.from_qarg(
@@ -254,9 +257,12 @@ class DeviceCollection:
                     yield assignment
             return
         new_cache = []
-        assignments_str = self._vm.qubesd_call(
-            None, "admin.vm.device.{}.Assigned".format(self._class)
-        ).decode()
+        try:
+            assignments_str = self._vm.qubesd_call(
+                None, "admin.vm.device.{}.Assigned".format(self._class)
+            ).decode()
+        except qubesadmin.exc.QubesDaemonAccessError:
+            return
         for assignment_str in assignments_str.splitlines():
             head, _, untrusted_rest = assignment_str.partition(" ")
             device = VirtualDevice.from_qarg(
@@ -277,9 +283,12 @@ class DeviceCollection:
         """
         List devices exposed by this vm.
         """
-        devices: bytes = self._vm.qubesd_call(
-            None, "admin.vm.device.{}.Available".format(self._class)
-        )
+        try:
+            devices: bytes = self._vm.qubesd_call(
+                None, "admin.vm.device.{}.Available".format(self._class)
+            )
+        except qubesadmin.exc.QubesDaemonAccessError:
+            return
         for dev_serialized in devices.splitlines():
             yield DeviceInfo.deserialize(
                 serialization=dev_serialized,

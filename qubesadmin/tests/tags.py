@@ -201,6 +201,22 @@ class TC_10_TagCache(qubesadmin.tests.QubesTestCase):
                                 contains(self.vm.tags, tag)
                     self.assertEqual(len(self.app.actual_calls), 2)
 
+    def test_contains_if_allowed(self) -> None:
+        for response, is_present in ((b'0\x001', True), (b'0\x000', False),
+                                     (b'', False)):
+            with self.subTest(response=response):
+                self.vm.tags.clear_cache()
+                self.app.actual_calls.clear()
+                self.expect_read('Get', response, 'tag')
+                values = [self.vm.tags.contains_if_allowed('tag')
+                          for _ in range(2)]
+                self.assertEqual(values, [is_present, is_present])
+                calls = 2 if response == b'' else 1
+                self.assertEqual(len(self.app.actual_calls), calls)
+        self.expect_read('Get', b'', 'tag')
+        with self.assertRaises(qubesadmin.exc.QubesDaemonAccessError):
+            contains(self.vm.tags, 'tag')
+
     def test_list_decoding_errors_not_cached(self) -> None:
         self.expect_read('List', b'0\0\xff')
         for _ in range(2):

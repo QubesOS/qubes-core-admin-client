@@ -341,6 +341,21 @@ class TC_00_DeviceCollection(qubesadmin.tests.QubesTestCase):
         self.assertEqual(devs[1].port_id, 'dev2')
         self.assertAllCalled()
 
+    def test_061_list_refused(self):
+        self.app.cache_enabled = True
+        collection = self.vm.devices['test']
+        for method, get in (
+                ('Available', collection.get_exposed_devices),
+                ('Assigned', collection.get_assigned_devices),
+                ('Attached', collection.get_attached_devices)):
+            with self.subTest(method):
+                self.app.expected_calls[
+                    ('test-vm', 'admin.vm.device.test.' + method, None,
+                     None)] = b''
+                self.app.actual_calls.clear()
+                self.assertEqual([list(get()) for _ in range(2)], [[], []])
+                self.assertEqual(len(self.app.actual_calls), 2)
+
     _test_class_modes = {
         'test': {'assignment_modes': 'ask-to-attach,auto-attach,required'}}
 

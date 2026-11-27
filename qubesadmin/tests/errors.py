@@ -51,6 +51,18 @@ class TC_00_Errors(qubesadmin.tests.QubesTestCase):
             self.fail('TypeError: {!s}'.format(e))
         self.assertEqual(str(context.exception), 'An error occurred: 1, 2')
 
+    def test_003_key_error_exception(self):
+        for name in ('DeviceNotAssigned', 'DeviceAlreadyAttached',
+                'DeviceAlreadyAssigned'):
+            with self.subTest(name):
+                self.app.expected_calls[
+                    ('dom0', 'admin.vm.List', None, None)] = \
+                    b'2\x00' + name.encode() + b'\x00\x00Device %s\x00toto\x00'
+                with self.assertRaises(getattr(qubesadmin.exc, name)) \
+                        as context:
+                    list(self.app.domains)
+                self.assertEqual(str(context.exception), 'Device toto')
+
     def test_010_empty(self):
         self.app.expected_calls[('dom0', 'admin.vm.List', None, None)] = b''
         with self.assertRaises(qubesadmin.exc.QubesDaemonNoResponseError) \

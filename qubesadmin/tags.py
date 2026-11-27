@@ -109,3 +109,13 @@ class Tags:
         if self.vm.app.cache_enabled:
             self._membership_cache[elem] = is_present
         return is_present
+
+    def contains_if_allowed(self, elem: str) -> bool:
+        '''
+        Does the VM have a tag, as ``in`` does. Return False also if the
+        policy refuses to read it.
+        '''
+        try:
+            return elem in self
+        except qubesadmin.exc.QubesDaemonAccessError:
+            return False

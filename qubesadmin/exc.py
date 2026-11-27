@@ -177,17 +177,29 @@ class DeviceNotAssigned(QubesException, KeyError):
     Trying to unassign not assigned device.
     """
 
+    def __str__(self) -> str:
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
+
 
 class DeviceAlreadyAttached(QubesException, KeyError):
     """
     Trying to attach already attached device.
     """
 
+    def __str__(self) -> str:
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
+
 
 class DeviceAlreadyAssigned(QubesException, KeyError):
     """
     Trying to assign already assigned device.
     """
+
+    def __str__(self) -> str:
+        # KeyError overrides __str__ method
+        return QubesException.__str__(self)
 
 
 class UnrecognizedDevice(QubesException, ValueError):
