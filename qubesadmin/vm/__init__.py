@@ -568,7 +568,10 @@ class DispVMWrapper(QubesVM):
         ):
             try:
                 self.kill()
-            except qubesadmin.exc.QubesVMNotRunningError:
+            except (
+                qubesadmin.exc.QubesVMNotRunningError,
+                qubesadmin.exc.QubesVMNotFoundError,
+            ):
                 pass
 
     def start(self):
